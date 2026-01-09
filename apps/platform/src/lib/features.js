@@ -1,5 +1,5 @@
 // src/lib/features.js
-import { getConfig } from "./supabase";
+import { getConfig } from "./supabase.js";
 
 /**
  * Vérifie si une fonctionnalité est activée dans la configuration de l'instance.

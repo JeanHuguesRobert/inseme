@@ -8,13 +8,13 @@ import ConsultationLayout, {
   BarChartSection,
   ScoreSection,
 } from "../../components/consultations/ConsultationLayout";
-import { ShareCallToAction, ShareButton } from "../../components/consultations/ShareConsultation";
+import { ShareCallToAction, ShareButton } from "@inseme/brique-kudocracy";
 import FilNewsFeed from "../../components/fil/FilNewsFeed";
-import { getDynamicConfig, getCommunityLabels } from "../../constants";
+import { getDynamicConfig, getCommunityLabels } from "../../constants.js";
 import {
   getCommunityQuestionnaireModules,
   generateInitialFormState,
-} from "../../config/questionnaireModules";
+} from "../../config/questionnaireModules.js";
 import {
   getConsultationBySlug,
   submitConsultationResponse,
@@ -27,8 +27,8 @@ import {
   loadDraft,
   clearDraft,
   formatDraftDate,
-} from "../../lib/consultations";
-import { useCurrentUser } from "../../lib/useCurrentUser";
+} from "../../lib/consultations.js";
+import { useCurrentUser } from "@inseme/cop-host";
 
 // Slug de cette consultation
 const CONSULTATION_SLUG = "quasquara-2024";

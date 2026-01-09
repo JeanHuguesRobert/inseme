@@ -1,125 +1,113 @@
-# 🗳️ Inseme Monorepo - Écosystème Citoyen & Démocratie Liquide
+# 🗳️ Inseme Monorepo - Citizen Ecosystem & Liquid Democracy
 
-Bienvenue dans le dépôt **Inseme**, une infrastructure numérique **open source** et **neutre** dédiée à la participation citoyenne, à la délibération augmentée et à la transparence démocratique.
+Welcome to the **Inseme** repository, an **open-source** and **neutral** digital infrastructure dedicated to citizen participation, augmented deliberation, and democratic transparency.
 
-Ce projet regroupe les outils du mouvement citoyen **#PERTITELLU** (Corte, Corse) et vise à fournir des solutions libres pour redonner le pouvoir aux citoyens.
+This project brings together the tools of the **#PERTITELLU** citizen movement (Corte, Corsica) and aims to provide free solutions to empower citizens.
 
 ---
 
-## 🏛️ Structure du Dépôt
+## 🏗️ Modular Architecture
 
-Le projet est organisé en monorepo (Turbo) pour faciliter le partage de code entre les différentes briques de l'écosystème :
+Inseme is designed as a modular ecosystem of "Bricks" orchestrated by a central protocol. This ensures flexibility, sovereignty, and collective intelligence.
+
+> **[Read the Detailed Modular System Documentation](docs/MODULAR_SYSTEM.md)**
+
+---
+
+## 🏛️ Repository Structure
+
+The project is organized as a monorepo (Turbo) to facilitate code sharing between the different components of the ecosystem:
 
 ### 📱 Applications (`/apps`)
 
-- **`apps/platform` (Kudocracy.Survey)** : La plateforme de consultation et d'engagement.
-  - **Focus** : Consultations, Wiki collaboratif, Gazette citoyenne, Café social.
-  - **Architecture** : Multi-instances (Corte, Bastia, Università di Corsica, etc.).
-  - **Stack** : React 19, Vite 7, Tailwind CSS 4, Supabase.
+- **`apps/platform` (Kudocracy.Survey)**: The consultation and engagement platform.
+  - **Focus**: Consultations, Collaborative Wiki, Citizen Gazette, Social Café.
+  - **Architecture**: Multi-instance (Corte, Bastia, Università di Corsica, etc.).
+- **`apps/inseme` (The Agora)**: Direct and liquid democracy tool.
+  - **Focus**: Physical/remote assemblies, instant voting, digital gestures.
+  - **AI**: Ophélia (AI Mediator) integrated via Edge Functions.
+- **`apps/cyrnea` (Cyrnea)**: Social and gamified experience for community spaces.
+  - **Focus**: Bar animation, quizzes, collaborative playlists, Vibe Monitor.
 
-- **`apps/inseme` (L'Agora)** : Outil de démocratie directe et liquide.
-  - **Focus** : Assemblées physiques/distantes, vote instantané, gestuelle digitale.
-  - **IA** : Ophélia (Médiatrice IA) intégrée via Edge Functions.
-  - **Stack** : React 18, Vite 5, Tailwind CSS, Supabase.
+### 📦 Key Packages (`/packages`)
 
-- **`apps/cyrnea` (Cyrnea)** : Expérience sociale et gamifiée pour lieux de convivialité.
-  - **Focus** : Animation de bars, quiz, playlists collaboratives, Vibe Monitor.
-  - **Interaction** : Dashboard Barman vs Mini-App Client.
-  - **Stack** : React 18, Vite, Supabase Realtime.
+The ecosystem is composed of several specialized packages:
 
-### 📦 Packages (`/packages`)
-
-- **`packages/cop-core`** : Logique métier partagée (Cognitive Orchestration Protocol).
-- **`packages/ophelia`** : Cœur de l'intelligence artificielle médiatrice.
-
----
-
-## 🎯 À quoi ça sert ?
-
-L'écosystème Inseme rassemble plusieurs espaces complémentaires pour le quotidien citoyen :
-
-### 1. 💬 Ophélia — L'IA Médiatrice
-
-Ophélia est l'IA de la plateforme. Elle répond aux questions, aide à formuler des idées, guide vers les démarches utiles et facilite le consensus lors des débats sans jamais s'imposer.
-
-### 2. ☕ Café & Social — Discuter et s'organiser
-
-Le Café est un lieu convivial pour créer des groupes par quartier, association ou thème. Tout est pensé pour rendre les échanges lisibles et bienveillants.
-
-### 3. 🗳️ Kudocracy — Débattre et voter (Agora Liquide)
-
-Permet de déposer des propositions, de voter et de déléguer sa voix à quelqu'un de confiance sur un sujet précis. Inseme (Agora) pousse ce concept plus loin avec une gestuelle digitale temps réel.
-
-### 4. 📖 Wiki collaboratif — La mémoire commune
-
-Un carnet de bord collectif pour les comptes rendus, fiches pratiques et idées de quartier. La recherche est instantanée et l'interface simple.
-
-### 5. 📊 Consultations & Transparence
-
-Prendre le pouls de la population via des enquêtes et suivre les engagements des élus via un tableau de bord de transparence (score de transparence automatique).
+- **`packages/cop-*`**: Cognitive Orchestration Protocol (Kernel, CLI, Host).
+- **`packages/brique-*`**: Functional modules (Wiki, Blog, Tasks, Group, etc.).
+- **`packages/models`**: Sovereign LLM controller for local inference.
+- **`packages/kudocracy`**: Core governance models and liquid democracy logic.
+- **`packages/ui`**: Shared design system and component library.
 
 ---
 
-## 🚀 Technologie (Modern Stack)
+## 🎯 Key Features
 
-- **Frontend** : React (v18/v19) + Vite + Tailwind CSS.
-- **Backend Realtime** : Supabase (PostgreSQL, Realtime, Auth).
-- **AI Agent** : OpenAI GPT-4o orchestré via **Netlify Edge Functions** (Deno).
-- **Multi-Instance** : Système de résolution dynamique par sous-domaine pour déployer une instance par commune. [Voir la documentation](packages/cop-host/docs/MULTI_INSTANCE.md) et la [liste des tâches restantes](packages/cop-host/docs/TODO.md).
+### 1. 💬 Ophélia — The AI Mediator
+Ophélia is the platform's AI. She answers questions, helps formulate ideas, guides users through processes, and facilitates consensus during debates without ever imposing herself.
+
+### 2. 🗳️ Liquid Democracy (Kudocracy)
+Allows users to submit proposals, vote, and delegate their voice to a trusted person on a specific topic. The Agora (`apps/inseme`) pushes this concept further with real-time digital gestures.
+
+### 3. 🛡️ Digital Sovereignty
+Built-in support for local LLMs via `@kudocracy/models`, ensuring that sensitive data and democratic deliberations stay within your infrastructure.
 
 ---
 
-## 🛠️ Installation et Développement
+## 🚀 Technology (Modern Stack)
 
-### Prérequis
+- **Frontend**: React (v18/v19) + Vite + Tailwind CSS.
+- **Backend Realtime**: Supabase (PostgreSQL, Realtime, Auth).
+- **AI Orchestration**: Multi-provider support (OpenAI, Local LLMs via GGUF).
+- **Multi-Instance**: Dynamic subdomain-based resolution for per-commune deployment. [See Multi-Instance Doc](packages/cop-host/docs/MULTI_INSTANCE.md).
 
-- Node.js (v20+ recommandé)
+---
+
+## 🛠️ Installation & Development
+
+### Prerequisites
+- Node.js (v20+ recommended)
 - Netlify CLI (`npm install netlify-cli -g`)
 
-### Setup Rapide
+### Quick Setup
 
-1.  **Clonez le dépôt** :
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/JeanHuguesRobert/inseme.git
+   cd inseme
+   ```
 
-    ```bash
-    git clone https://github.com/JeanHuguesRobert/inseme.git
-    cd inseme
-    ```
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-2.  **Installez les dépendances** :
+3. **Launch an application**:
+   ```bash
+   # For the Citizen Platform (Survey)
+   npm run platform:dev
 
-    ```bash
-    npm install
-    ```
-
-3.  **Lancez l'application souhaitée** :
-
-    ```bash
-    # Pour la Plateforme Citoyenne (Survey)
-    npm run platform:dev
-
-    # Pour l'Agora Inseme
-    npm run inseme:dev
-    ```
-
-_Note : Pour le développement avec les Edge Functions, utilisez `netlify dev` dans le dossier de l'application correspondante._
+   # For the Inseme Agora
+   npm run inseme:dev
+   ```
 
 ---
 
-## ⚖️ Neutralité & Engagement
+## ⚖️ Neutrality & Commitment
 
-Inseme est une infrastructure **neutre** et **indépendante**. Elle ne finance, ne promeut et ne soutient aucun parti politique, aucune campagne électorale, ni aucun candidat ou liste. Elle fournit des outils numériques utilisables par tout citoyen, collectif ou institution souhaitant renforcer la démocratie locale.
+Inseme is a **neutral** and **independent** infrastructure. It does not finance, promote, or support any political party, electoral campaign, candidate, or list. It provides digital tools usable by any citizen, collective, or institution wishing to strengthen local democracy.
 
 ---
 
-## 📜 Licence & Auteur
+## 📜 License & Author
 
-Ce projet est sous licence **MIT**.
+This project is licensed under the **MIT License**.
 
-**Auteur : Jean Hugues Noël Robert**
+**Author: Jean Hugues Noël Robert**
 
-- Projet porté par l'association **C.O.R.S.I.C.A.** (Président Fondateur : Jean Hugues Noël Robert).
-- Communauté [LePP.fr](https://lepp.fr).
-- Fait avec ❤️ à Corte, Corse.
+- Project supported by the **C.O.R.S.I.C.A.** association.
+- [LePP.fr](https://lepp.fr) community.
+- Made with ❤️ in Corte, Corsica.
 
 ---
 

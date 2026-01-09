@@ -6,40 +6,74 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import SiteFooter from "../../components/layout/SiteFooter";
+import { getSupabase, useCurrentUser } from "@inseme/cop-host";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
 const ACTION_TYPES = {
-  EMAIL_MAIRIE: { label: "Email à la mairie", emoji: "🏛️", color: "bg-blue-100 text-blue-800" },
+  EMAIL_MAIRIE: {
+    label: "Email à la mairie",
+    emoji: "🏛️",
+    color: "bg-blue-100 text-blue-800",
+  },
   EMAIL_PREFECTURE: {
     label: "Email à la préfecture",
     emoji: "🏛️",
     color: "bg-indigo-100 text-indigo-800",
   },
-  EMAIL_CADA: { label: "Email à la CADA", emoji: "⚖️", color: "bg-purple-100 text-purple-800" },
-  COURRIER_LRAR: { label: "Courrier LRAR", emoji: "📬", color: "bg-orange-100 text-orange-800" },
-  PUBLICATION_WEB: { label: "Publication web", emoji: "🌐", color: "bg-green-100 text-green-800" },
+  EMAIL_CADA: {
+    label: "Email à la CADA",
+    emoji: "⚖️",
+    color: "bg-purple-100 text-purple-800",
+  },
+  COURRIER_LRAR: {
+    label: "Courrier LRAR",
+    emoji: "📬",
+    color: "bg-orange-100 text-orange-800",
+  },
+  PUBLICATION_WEB: {
+    label: "Publication web",
+    emoji: "🌐",
+    color: "bg-green-100 text-green-800",
+  },
   NOTIFICATION_PREFET: {
     label: "Notification préfet",
     emoji: "📋",
     color: "bg-red-100 text-red-800",
   },
-  SAISINE_TA: { label: "Saisine TA", emoji: "⚖️", color: "bg-slate-100 text-slate-800" },
+  SAISINE_TA: {
+    label: "Saisine TA",
+    emoji: "⚖️",
+    color: "bg-slate-100 text-slate-800",
+  },
   AUTRE: { label: "Autre", emoji: "📄", color: "bg-slate-100 text-slate-600" },
 };
 
 const STATUS_BADGES = {
-  PENDING: { label: "En attente", emoji: "⏳", class: "bg-yellow-100 text-yellow-800" },
-  APPROVED: { label: "Approuvée", emoji: "✅", class: "bg-green-100 text-green-800" },
+  PENDING: {
+    label: "En attente",
+    emoji: "⏳",
+    class: "bg-yellow-100 text-yellow-800",
+  },
+  APPROVED: {
+    label: "Approuvée",
+    emoji: "✅",
+    class: "bg-green-100 text-green-800",
+  },
   SENT: { label: "Envoyée", emoji: "📤", class: "bg-blue-100 text-blue-800" },
-  CONFIRMED: { label: "Confirmée", emoji: "✔️", class: "bg-green-100 text-green-800" },
+  CONFIRMED: {
+    label: "Confirmée",
+    emoji: "✔️",
+    class: "bg-green-100 text-green-800",
+  },
   FAILED: { label: "Échec", emoji: "❌", class: "bg-red-100 text-red-800" },
-  CANCELLED: { label: "Annulée", emoji: "🚫", class: "bg-slate-100 text-slate-600" },
+  CANCELLED: {
+    label: "Annulée",
+    emoji: "🚫",
+    class: "bg-slate-100 text-slate-600",
+  },
   REJECTED: { label: "Rejetée", emoji: "⛔", class: "bg-red-100 text-red-800" },
 };
 
@@ -48,7 +82,11 @@ const STATUS_BADGES = {
 // ============================================================================
 
 const StatusBadge = ({ status }) => {
-  const badge = STATUS_BADGES[status] || { label: status, emoji: "❓", class: "bg-slate-100" };
+  const badge = STATUS_BADGES[status] || {
+    label: status,
+    emoji: "❓",
+    class: "bg-slate-100",
+  };
   return (
     <span
       className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${badge.class}`}
@@ -59,7 +97,11 @@ const StatusBadge = ({ status }) => {
 };
 
 const TypeBadge = ({ type }) => {
-  const info = ACTION_TYPES[type] || { label: type, emoji: "📄", color: "bg-slate-100" };
+  const info = ACTION_TYPES[type] || {
+    label: type,
+    emoji: "📄",
+    color: "bg-slate-100",
+  };
   return (
     <span
       className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${info.color}`}
@@ -85,7 +127,14 @@ const PriorityIndicator = ({ priority }) => {
   );
 };
 
-const ActionCard = ({ action, onApprove, onReject, onMarkSent, isExpanded, onToggle }) => {
+const ActionCard = ({
+  action,
+  onApprove,
+  onReject,
+  onMarkSent,
+  isExpanded,
+  onToggle,
+}) => {
   const [showDetails, setShowDetails] = useState(false);
 
   return (
@@ -106,10 +155,14 @@ const ActionCard = ({ action, onApprove, onReject, onMarkSent, isExpanded, onTog
               </p>
             )}
             <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
-              <span>Créée le {new Date(action.created_at).toLocaleDateString("fr-FR")}</span>
+              <span>
+                Créée le{" "}
+                {new Date(action.created_at).toLocaleDateString("fr-FR")}
+              </span>
               {action.date_butoir && (
                 <span className="text-orange-600">
-                  ⏰ Échéance: {new Date(action.date_butoir).toLocaleDateString("fr-FR")}
+                  ⏰ Échéance:{" "}
+                  {new Date(action.date_butoir).toLocaleDateString("fr-FR")}
                 </span>
               )}
             </div>
@@ -125,20 +178,28 @@ const ActionCard = ({ action, onApprove, onReject, onMarkSent, isExpanded, onTog
         {showDetails && (
           <div className="mt-4 pt-4 border-t border-slate-100">
             <div className="bg-slate-50 rounded-lg p-4 mb-4">
-              <div className="text-xs font-medium text-slate-500 mb-2">Contenu du message:</div>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap">{action.corps}</p>
+              <div className="text-xs font-medium text-slate-500 mb-2">
+                Contenu du message:
+              </div>
+              <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                {action.corps}
+              </p>
             </div>
 
             {action.motif && (
               <div className="mb-4">
-                <div className="text-xs font-medium text-slate-500 mb-1">Motif:</div>
+                <div className="text-xs font-medium text-slate-500 mb-1">
+                  Motif:
+                </div>
                 <p className="text-sm text-slate-700">{action.motif}</p>
               </div>
             )}
 
             {action.acte_numero && (
               <div className="mb-4">
-                <div className="text-xs font-medium text-slate-500 mb-1">Acte concerné:</div>
+                <div className="text-xs font-medium text-slate-500 mb-1">
+                  Acte concerné:
+                </div>
                 <Link
                   to={`/actes/${action.acte_id}`}
                   className="text-sm text-blue-600 hover:text-blue-800"
@@ -150,7 +211,9 @@ const ActionCard = ({ action, onApprove, onReject, onMarkSent, isExpanded, onTog
 
             {action.pieces_jointes?.length > 0 && (
               <div className="mb-4">
-                <div className="text-xs font-medium text-slate-500 mb-1">Pièces jointes:</div>
+                <div className="text-xs font-medium text-slate-500 mb-1">
+                  Pièces jointes:
+                </div>
                 <ul className="text-sm text-slate-600">
                   {action.pieces_jointes.map((pj, i) => (
                     <li key={i}>📎 {pj.name || pj}</li>
@@ -165,7 +228,9 @@ const ActionCard = ({ action, onApprove, onReject, onMarkSent, isExpanded, onTog
       {/* Actions */}
       {action.status === "PENDING" && (
         <div className="bg-slate-50 px-4 py-3 border-t border-slate-200 flex items-center justify-between">
-          <div className="text-xs text-slate-500">⚠️ Validation humaine requise avant envoi</div>
+          <div className="text-xs text-slate-500">
+            ⚠️ Validation humaine requise avant envoi
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => onReject(action)}
@@ -203,8 +268,8 @@ const ActionCard = ({ action, onApprove, onReject, onMarkSent, isExpanded, onTog
       {action.status === "SENT" && action.sent_at && (
         <div className="bg-blue-50 px-4 py-3 border-t border-blue-200">
           <div className="text-xs text-blue-700">
-            📤 Envoyée le {new Date(action.sent_at).toLocaleDateString("fr-FR")} via{" "}
-            {action.send_method}
+            📤 Envoyée le {new Date(action.sent_at).toLocaleDateString("fr-FR")}{" "}
+            via {action.send_method}
             {action.send_reference && ` (Réf: ${action.send_reference})`}
           </div>
         </div>
@@ -240,20 +305,27 @@ const ApprovalModal = ({ action, onClose, onConfirm }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">✅ Confirmer l'approbation</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            ✅ Confirmer l'approbation
+          </h2>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
             <div className="text-sm text-yellow-800">
-              <strong>⚠️ Attention:</strong> En approuvant cette action, vous autorisez son envoi.
-              Vous serez identifié comme le validateur de cette action.
+              <strong>⚠️ Attention:</strong> En approuvant cette action, vous
+              autorisez son envoi. Vous serez identifié comme le validateur de
+              cette action.
             </div>
           </div>
 
           <div className="mb-4">
-            <div className="text-sm font-medium text-slate-700 mb-2">Action à approuver:</div>
+            <div className="text-sm font-medium text-slate-700 mb-2">
+              Action à approuver:
+            </div>
             <div className="bg-slate-50 rounded-lg p-3">
               <div className="font-medium">{action.sujet}</div>
-              <div className="text-sm text-slate-500 mt-1">→ {action.destinataire_nom}</div>
+              <div className="text-sm text-slate-500 mt-1">
+                → {action.destinataire_nom}
+              </div>
             </div>
           </div>
 
@@ -310,10 +382,14 @@ const RejectionModal = ({ action, onClose, onConfirm }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">❌ Rejeter l'action</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            ❌ Rejeter l'action
+          </h2>
 
           <div className="mb-4">
-            <div className="text-sm font-medium text-slate-700 mb-2">Action à rejeter:</div>
+            <div className="text-sm font-medium text-slate-700 mb-2">
+              Action à rejeter:
+            </div>
             <div className="bg-slate-50 rounded-lg p-3">
               <div className="font-medium">{action.sujet}</div>
             </div>
@@ -370,10 +446,14 @@ const SendModal = ({ action, onClose, onConfirm }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">📤 Marquer comme envoyée</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            📤 Marquer comme envoyée
+          </h2>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Méthode d'envoi</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Méthode d'envoi
+            </label>
             <select
               value={method}
               onChange={(e) => setMethod(e.target.value)}
@@ -426,7 +506,7 @@ const SendModal = ({ action, onClose, onConfirm }) => {
 // ============================================================================
 
 export default function OutgoingActionsQueue() {
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -498,11 +578,14 @@ export default function OutgoingActionsQueue() {
     if (!user?.id) return;
 
     try {
-      const { error: rpcError } = await getSupabase().rpc("approve_outgoing_action", {
-        p_action_id: actionId,
-        p_validator_id: user.id,
-        p_note: note || null,
-      });
+      const { error: rpcError } = await getSupabase().rpc(
+        "approve_outgoing_action",
+        {
+          p_action_id: actionId,
+          p_validator_id: user.id,
+          p_note: note || null,
+        }
+      );
 
       if (rpcError) throw rpcError;
 
@@ -519,11 +602,14 @@ export default function OutgoingActionsQueue() {
     if (!user?.id) return;
 
     try {
-      const { error: rpcError } = await getSupabase().rpc("reject_outgoing_action", {
-        p_action_id: actionId,
-        p_validator_id: user.id,
-        p_reason: reason,
-      });
+      const { error: rpcError } = await getSupabase().rpc(
+        "reject_outgoing_action",
+        {
+          p_action_id: actionId,
+          p_validator_id: user.id,
+          p_reason: reason,
+        }
+      );
 
       if (rpcError) throw rpcError;
 
@@ -579,7 +665,9 @@ export default function OutgoingActionsQueue() {
           <h1 className="text-2xl font-bold text-slate-900">
             📤 File d'attente des actions sortantes
           </h1>
-          <p className="text-slate-500 mt-1">Validation humaine obligatoire avant tout envoi</p>
+          <p className="text-slate-500 mt-1">
+            Validation humaine obligatoire avant tout envoi
+          </p>
         </div>
       </div>
 
@@ -589,11 +677,14 @@ export default function OutgoingActionsQueue() {
           <div className="flex items-start gap-3">
             <span className="text-2xl">⚠️</span>
             <div>
-              <h3 className="font-semibold text-amber-800">Garde-fou humain actif</h3>
+              <h3 className="font-semibold text-amber-800">
+                Garde-fou humain actif
+              </h3>
               <p className="text-sm text-amber-700 mt-1">
-                Aucune action (email, courrier, publication) n'est envoyée automatiquement. Chaque
-                action doit être validée manuellement par un utilisateur habilité. Votre validation
-                engage votre responsabilité.
+                Aucune action (email, courrier, publication) n'est envoyée
+                automatiquement. Chaque action doit être validée manuellement
+                par un utilisateur habilité. Votre validation engage votre
+                responsabilité.
               </p>
             </div>
           </div>
@@ -609,8 +700,12 @@ export default function OutgoingActionsQueue() {
                 : "border-slate-200 bg-white hover:border-slate-300"
             }`}
           >
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-            <div className="text-sm text-slate-500">⏳ En attente de validation</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.pending}
+            </div>
+            <div className="text-sm text-slate-500">
+              ⏳ En attente de validation
+            </div>
           </button>
 
           <button
@@ -621,8 +716,12 @@ export default function OutgoingActionsQueue() {
                 : "border-slate-200 bg-white hover:border-slate-300"
             }`}
           >
-            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-            <div className="text-sm text-slate-500">✅ Approuvées (à envoyer)</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.approved}
+            </div>
+            <div className="text-sm text-slate-500">
+              ✅ Approuvées (à envoyer)
+            </div>
           </button>
 
           <button
@@ -697,8 +796,6 @@ export default function OutgoingActionsQueue() {
           onConfirm={handleMarkSent}
         />
       )}
-
-      <SiteFooter />
     </div>
   );
 }

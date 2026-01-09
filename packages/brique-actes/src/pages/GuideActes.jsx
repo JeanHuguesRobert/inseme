@@ -1,4 +1,4 @@
-import MarkdownDoc from "../../components/common/MarkdownDoc";
+import { MarkdownDoc } from "@inseme/ui";
 
 /**
  * Page du Guide Citoyen pour le contrôle des actes municipaux

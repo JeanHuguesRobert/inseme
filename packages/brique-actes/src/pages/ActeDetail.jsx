@@ -1,9 +1,13 @@
 import React from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useCurrentUser } from "@inseme/cop-host";
+import { useActe } from "../lib/hooks.js";
+import { wrapFetch } from "../lib/api.js";
 
 export default function ActeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAdmin, session } = useAuth();
+  const { isAdmin, session } = useCurrentUser();
 
   const query = useActe(id);
   const acte = query.data;

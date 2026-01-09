@@ -22,7 +22,12 @@ export {
   getAllConfigKeys,
   getInstance,
 } from "./client/supabase.js";
-export { resolveInstance, getSubdomain } from "./client/instanceResolver.js";
+export {
+  resolveInstance,
+  getInstanceParam,
+  extractSubdomain,
+  getSubdomain,
+} from "./lib/instanceResolver.js";
 
 // Common libs
 export * from "./lib/formatDate.js";
@@ -31,21 +36,28 @@ export * from "./lib/permissions.js";
 export * from "./lib/socialMetadata.js";
 export * from "./lib/useStatusOperations.js";
 export * from "./lib/useCurrentUser.js";
+export { wrapFetch } from "./client/fetch.js";
 export * from "./hooks/useVoiceRecorder.js";
+export * from "./hooks/useSupabaseAuth.js";
 export * from "./lib/useUserProfile.js";
 export * from "./lib/metadata.js";
 export * from "./lib/template.js";
 export * from "./lib/userTransform.js";
 export * from "./lib/storage.js";
 export * from "./lib/useGroup.js";
+export * from "./lib/SafeEval.js";
+export * from "./lib/propositions.js";
+export * from "./lib/postPredicates.js";
+export * from "./lib/postActions.js";
 
 // Contexts
-export * from "./contexts/CurrentUserContext.jsx";
+export * from "./contexts/Cop-hostCurrentUserContext";
 
 // Components
-export { default as CommentSection } from "./components/CommentSection.jsx";
-export { default as FacebookShareButton } from "./components/FacebookShareButton.jsx";
-export { default as ShareMenu } from "./components/ShareMenu.jsx";
-export { default as Icon } from "./components/Icon.jsx";
-export { default as CommentForm } from "./components/CommentForm.jsx";
-export { default as ReactionPicker } from "./components/ReactionPicker.jsx";
+export { default as CommentSection } from "./components/Cop-hostCommentSection";
+export { default as AuthModal } from "./components/Cop-hostAuthModal";
+export { default as FacebookShareButton } from "./components/FacebookShareButton";
+export { default as ShareMenu } from "./components/ShareMenu";
+export { Icon as default, Icon } from "./components/Cop-hostIcon";
+export { default as CommentForm } from "./components/CommentForm";
+export { default as ReactionPicker } from "./components/ReactionPicker";

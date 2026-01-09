@@ -6,9 +6,7 @@
 
 import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import SiteFooter from "../../components/layout/SiteFooter";
+import { getSupabase, useCurrentUser } from "@inseme/cop-host";
 
 // ============================================================================
 // CONSTANTS
@@ -17,7 +15,8 @@ import SiteFooter from "../../components/layout/SiteFooter";
 const EXPORT_TYPES = {
   ACTE_COMPLET: {
     label: "Acte complet",
-    description: "Inclut l'acte, toutes les versions, preuves et demandes liées",
+    description:
+      "Inclut l'acte, toutes les versions, preuves et demandes liées",
     emoji: "📋",
   },
   DEMANDE_DOSSIER: {
@@ -37,7 +36,8 @@ const EXPORT_TYPES = {
   },
   SAISINE_CADA: {
     label: "Dossier saisine CADA",
-    description: "Pièces pour la Commission d'Accès aux Documents Administratifs",
+    description:
+      "Pièces pour la Commission d'Accès aux Documents Administratifs",
     emoji: "📨",
   },
 };
@@ -417,7 +417,7 @@ const generateCADASection = (data) => `
 // ============================================================================
 
 export default function ExportPDF() {
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
   const [searchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(false);
@@ -425,7 +425,9 @@ export default function ExportPDF() {
   const [success, setSuccess] = useState(false);
 
   // Form state
-  const [exportType, setExportType] = useState(searchParams.get("type") || "ACTE_COMPLET");
+  const [exportType, setExportType] = useState(
+    searchParams.get("type") || "ACTE_COMPLET"
+  );
   const [entityId, setEntityId] = useState(searchParams.get("id") || "");
   const [format, setFormat] = useState("A4");
   const [includeProofs, setIncludeProofs] = useState(true);
@@ -437,7 +439,10 @@ export default function ExportPDF() {
 
   // Generate PDF
   const handleExport = async (preview = false) => {
-    if (!entityId && (exportType === "ACTE_COMPLET" || exportType === "DEMANDE_DOSSIER")) {
+    if (
+      !entityId &&
+      (exportType === "ACTE_COMPLET" || exportType === "DEMANDE_DOSSIER")
+    ) {
       setError("Veuillez sélectionner un acte ou une demande");
       return;
     }
@@ -547,7 +552,9 @@ export default function ExportPDF() {
             <span className="text-slate-700">Export PDF</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900">📄 Export PDF</h1>
-          <p className="text-slate-500 mt-1">Génération de documents légaux au format PDF</p>
+          <p className="text-slate-500 mt-1">
+            Génération de documents légaux au format PDF
+          </p>
         </div>
       </div>
 
@@ -555,7 +562,9 @@ export default function ExportPDF() {
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
           {/* Export type selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-3">Type d'export</label>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Type d'export
+            </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {Object.entries(EXPORT_TYPES).map(([key, info]) => (
                 <button
@@ -578,10 +587,12 @@ export default function ExportPDF() {
           </div>
 
           {/* Entity ID */}
-          {(exportType === "ACTE_COMPLET" || exportType === "DEMANDE_DOSSIER") && (
+          {(exportType === "ACTE_COMPLET" ||
+            exportType === "DEMANDE_DOSSIER") && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Identifiant {exportType === "ACTE_COMPLET" ? "de l'acte" : "de la demande"}
+                Identifiant{" "}
+                {exportType === "ACTE_COMPLET" ? "de l'acte" : "de la demande"}
               </label>
               <input
                 type="text"
@@ -590,13 +601,17 @@ export default function ExportPDF() {
                 placeholder="UUID ou référence"
                 className="w-full border border-slate-200 rounded-lg px-4 py-2"
               />
-              <p className="text-xs text-slate-500 mt-1">Copiez l'UUID depuis la page de détail</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Copiez l'UUID depuis la page de détail
+              </p>
             </div>
           )}
 
           {/* Options */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-3">Options</label>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Options
+            </label>
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -605,7 +620,9 @@ export default function ExportPDF() {
                   onChange={(e) => setIncludeProofs(e.target.checked)}
                   className="rounded"
                 />
-                <span className="text-sm">Inclure les pièces justificatives</span>
+                <span className="text-sm">
+                  Inclure les pièces justificatives
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -614,7 +631,9 @@ export default function ExportPDF() {
                   onChange={(e) => setIncludeVersions(e.target.checked)}
                   className="rounded"
                 />
-                <span className="text-sm">Inclure l'historique des versions</span>
+                <span className="text-sm">
+                  Inclure l'historique des versions
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -691,12 +710,14 @@ export default function ExportPDF() {
                 ✕
               </button>
             </div>
-            <iframe srcDoc={previewHTML} className="w-full h-[600px]" title="Aperçu PDF" />
+            <iframe
+              srcDoc={previewHTML}
+              className="w-full h-[600px]"
+              title="Aperçu PDF"
+            />
           </div>
         )}
       </div>
-
-      <SiteFooter />
     </div>
   );
 }

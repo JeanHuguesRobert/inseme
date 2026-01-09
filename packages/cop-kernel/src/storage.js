@@ -86,83 +86,84 @@ async function loadStorageCreator(storageType, options) {
   const isNode = typeof process !== "undefined" && !isDeno;
 
   // 1. Détermination du chemin en fonction du type et de l'environnement
-  switch (storageType) {
-    case "memory":
-      // Cas spécial: importé statiquement et très léger, nous le retournons directement.
-      return createInMemoryStorage;
-
-    case "indexeddb":
-    case "browser":
-      if (isBrowser) {
-        path = "./storage-implementations/browserStorage.js";
-        creatorFunctionName = "createBrowserStorage"; // Supposons un export nommé
-      }
-      break;
-
-    case "sqlite":
-      if (isDeno) {
-        path = "./storage-implementations/denoSqliteStorage.js";
-        creatorFunctionName = "createDenoSqliteStorage";
-      } else if (isNode) {
-        path = "./storage-implementations/sqliteStorage.js";
-        creatorFunctionName = "createNodeSqliteStorage";
-      } else if (isBrowser) {
-        path = "./storage-implementations/browserSqliteStorage.js";
-        creatorFunctionName = "createBrowserSqliteStorage";
-      }
-      break;
-
-    case "redis":
-      if (isNode || isDeno) {
-        path = "./storage-implementations/redisStorage.js";
-        creatorFunctionName = "createRedisStorage";
-      }
-      break;
-
-    case "file":
-      if (isDeno) {
-        path = "./storage-implementations/denoFileBasedStorage.js";
-        creatorFunctionName = "createDenoFileBasedStorage";
-      } else if (isNode) {
-        path = "./storage-implementations/fileBasedStorage.js";
-        creatorFunctionName = "createFileBasedStorage";
-      }
-      break;
-
-    case "supabase":
-      // Supabase peut être utilisé sur Node, Deno ou Browser
-      path = "./storage-implementations/supabaseStorage.js";
-      creatorFunctionName = "createSupabaseStorage";
-      break;
-
-    default:
-      throw new Error(`loadStorageCreator: unknown storage kind '${storageType}'`);
-  }
-
-  // 2. Si le chemin est invalide pour l'environnement, lever une erreur (ou fallback)
-  if (!path) {
-    console.error(
-      `Storage kind '${storageType}' requested in unsupported environment. Falling back to in-memory.`
-    );
-    return createInMemoryStorage;
-  }
-
-  // 3. Importation dynamique
   try {
-    const module = await import(path);
+    let module;
+    switch (storageType) {
+      case "memory":
+        // Cas spécial: importé statiquement et très léger, nous le retournons directement.
+        return createInMemoryStorage;
 
-    // Si nous avons un nom d'export spécifique, nous le cherchons
-    const createFunction = creatorFunctionName ? module[creatorFunctionName] : module.default; // Sinon, on prend l'export par défaut
+      case "indexeddb":
+      case "browser":
+        if (isBrowser) {
+          module = await import(/* @vite-ignore */ "./storage-implementations/browserStorage.js");
+          creatorFunctionName = "createBrowserStorage";
+        }
+        break;
+
+      case "sqlite":
+        if (isDeno) {
+          module = await import(/* @vite-ignore */ "./storage-implementations/denoSqliteStorage.js");
+          creatorFunctionName = "createDenoSqliteStorage";
+        } else if (isNode) {
+          module = await import(/* @vite-ignore */ "./storage-implementations/sqliteStorage.js");
+          creatorFunctionName = "createNodeSqliteStorage";
+        } else if (isBrowser) {
+          module = await import(/* @vite-ignore */ "./storage-implementations/browserSqliteStorage.js");
+          creatorFunctionName = "createBrowserSqliteStorage";
+        }
+        break;
+
+      case "redis":
+        /* 
+        if (isNode || isDeno) {
+          module = await import("./storage-implementations/redisStorage.js");
+          creatorFunctionName = "createRedisStorage";
+        }
+        */
+        console.warn("Redis storage is not yet implemented.");
+        break;
+
+      case "file":
+        if (isDeno) {
+          module = await import(/* @vite-ignore */ "./storage-implementations/denoFileBasedStorage.js");
+          creatorFunctionName = "createDenoFileBasedStorage";
+        } else if (isNode) {
+          module = await import(/* @vite-ignore */ "./storage-implementations/fileBasedStorage.js");
+          creatorFunctionName = "createFileBasedStorage";
+        }
+        break;
+
+      case "supabase":
+        // Supabase peut être utilisé sur Node, Deno ou Browser
+        module = await import(/* @vite-ignore */ "./storage-implementations/supabaseStorage.js");
+        creatorFunctionName = "createSupabaseStorage";
+        break;
+
+      default:
+        throw new Error(`loadStorageCreator: unknown storage kind '${storageType}'`);
+    }
+
+    // 2. Si le module n'a pas été chargé pour l'environnement, lever une erreur (ou fallback)
+    if (!module) {
+      console.error(
+        `Storage kind '${storageType}' requested in unsupported environment. Falling back to in-memory.`
+      );
+      return createInMemoryStorage;
+    }
+
+    // 3. Extraction de la fonction de création
+    const createFunction = creatorFunctionName ? module[creatorFunctionName] : module.default;
 
     if (typeof createFunction !== "function") {
       throw new Error(
-        `Le module '${path}' n'a pas d'export valide nommé '${creatorFunctionName || "default"}'.`
+        `Le module pour '${storageType}' n'a pas d'export valide nommé '${creatorFunctionName || "default"}'.`
       );
     }
 
     return createFunction;
   } catch (error) {
-    console.error(`Erreur lors du chargement dynamique de '${storageType}' depuis ${path}`, error);
+    console.error(`Erreur lors du chargement dynamique de '${storageType}'`, error);
     // En cas d'échec d'import (dépendances manquantes, etc.), on fallback à in-memory
     if (storageType !== "memory") {
       console.warn(`Falling back to 'memory' storage.`);
@@ -230,7 +231,7 @@ export async function initStorage(options) {
       );
       // Assurez-vous que createInMemoryStorage est importé et disponible
       const { createInMemoryStorage } =
-        await import("./storage-implementations/inMemoryStorage.js");
+        await import(/* @vite-ignore */ "./storage-implementations/inMemoryStorage.js");
       const inMemoryFallbackStorage = createInMemoryStorage(currentOptions);
       inMemoryFallbackStorage.options = inMemoryFallbackStorage.options || {};
       inMemoryFallbackStorage.options.type = "memory";

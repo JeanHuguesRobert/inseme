@@ -5,17 +5,17 @@ export default {
     routes: [
       {
         path: "/chat",
-        component: "./components/chat/OpheliaChat.jsx",
+        component: "./components/chat/OpheliaChat",
         protected: false,
       },
       {
         path: "/ophelia",
-        component: "./InsemeRoom.jsx",
+        component: "./InsemeRoom",
         protected: false,
       },
       {
         path: "/ophelia/:roomName",
-        component: "./InsemeRoom.jsx",
+        component: "./InsemeRoom",
         protected: false,
       },
     ],
@@ -84,6 +84,10 @@ export default {
       "sessions": {
         handler: "./edge/sessions.js",
         path: "/api/sessions"
+      },
+      "health": {
+        handler: "./edge/health.js",
+        path: "/api/health"
       }
     }
   };

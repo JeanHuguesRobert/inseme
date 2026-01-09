@@ -1,12 +1,16 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getSupabase, canWrite } from "@inseme/cop-host";
 import { PetitionLinkSimple } from "../common/PetitionLink";
-import { useVoteRecommendation } from "../../hooks/useVoteRecommendation";
+import { useVoteRecommendation } from "../../hooks/useVoteRecommendation.js";
 
 export default function PropositionCard({ proposition, user }) {
-  const [votes, setVotes] = useState({ approve: 0, disapprove: 0, blank: 0, proxyCount: 0 });
+  const [votes, setVotes] = useState({
+    approve: 0,
+    disapprove: 0,
+    blank: 0,
+    proxyCount: 0,
+  });
   const [userVote, setUserVote] = useState(null);
 
   // Hook for Liquid Democracy Recommendation
@@ -55,11 +59,15 @@ export default function PropositionCard({ proposition, user }) {
     }
   };
 
-  const totalVotes = votes.approve + votes.disapprove + votes.blank + (votes.falseChoice || 0);
-  const approvePercent = totalVotes > 0 ? (votes.approve / totalVotes) * 100 : 0;
+  const totalVotes =
+    votes.approve + votes.disapprove + votes.blank + (votes.falseChoice || 0);
+  const approvePercent =
+    totalVotes > 0 ? (votes.approve / totalVotes) * 100 : 0;
   const blankPercent = totalVotes > 0 ? (votes.blank / totalVotes) * 100 : 0;
-  const disapprovePercent = totalVotes > 0 ? (votes.disapprove / totalVotes) * 100 : 0;
-  const falseChoicePercent = totalVotes > 0 ? ((votes.falseChoice || 0) / totalVotes) * 100 : 0;
+  const disapprovePercent =
+    totalVotes > 0 ? (votes.disapprove / totalVotes) * 100 : 0;
+  const falseChoicePercent =
+    totalVotes > 0 ? ((votes.falseChoice || 0) / totalVotes) * 100 : 0;
 
   return (
     <div className="theme-card p-6">
@@ -71,7 +79,9 @@ export default function PropositionCard({ proposition, user }) {
               {proposition.title}
             </h3>
           </Link>
-          <p className="text-gray-600 mb-4 line-clamp-3">{proposition.description}</p>
+          <p className="text-gray-600 mb-4 line-clamp-3">
+            {proposition.description}
+          </p>
 
           <div className="flex flex-wrap gap-2 mb-4">
             {proposition.proposition_tags.map((pt) => (
@@ -176,7 +186,8 @@ export default function PropositionCard({ proposition, user }) {
                   {recommendation.voteValue === "approve" && "Pour"}
                   {recommendation.voteValue === "disapprove" && "Contre"}
                   {recommendation.voteValue === "neutral" && "Neutre"}
-                  {recommendation.voteValue === "false_choice" && "Faux Dilemme"}
+                  {recommendation.voteValue === "false_choice" &&
+                    "Faux Dilemme"}
                   {/* Fallback */}
                   {recommendation.voteValue === true && "Pour"}
                   {recommendation.voteValue === false && "Contre"}
@@ -200,7 +211,9 @@ export default function PropositionCard({ proposition, user }) {
       {(!user || !canWrite(user)) && (
         <div className="vote-status vote-status--info text-center">
           <p>
-            {user ? "Les utilisateurs anonymes ne peuvent pas voter" : "Connectez-vous pour voter"}
+            {user
+              ? "Les utilisateurs anonymes ne peuvent pas voter"
+              : "Connectez-vous pour voter"}
           </p>
         </div>
       )}

@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { getSupabase } from "../../lib/supabase";
-import { getDisplayName } from "../../lib/userDisplay";
-import { useCurrentUser } from "../../lib/useCurrentUser";
-import { isAdmin } from "../../lib/permissions";
+import { getSupabase } from "../../lib/supabase.js";
+import { getDisplayName } from "@inseme/cop-host";
+import { useCurrentUser } from "@inseme/cop-host";
+import { isAdmin } from "@inseme/cop-host";
 import FilConvertMenu from "./FilConvertMenu";
 
 export default function FilItemCard({ post, rank, currentUserId, onVote }) {

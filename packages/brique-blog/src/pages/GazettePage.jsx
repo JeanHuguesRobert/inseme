@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { getSupabase } from "@inseme/cop-host";
-import GazetteLayout from "../components/gazette/GazetteLayout";
-import GazettePost from "../components/gazette/GazettePost";
+import GazetteLayout from "../components/gazette/BlogGazetteLayout";
+import GazettePost from "../components/gazette/BlogGazettePost";
 
 export default function GazettePage() {
   const { name } = useParams();

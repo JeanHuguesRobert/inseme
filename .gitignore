@@ -2,11 +2,18 @@
 node_modules/
 **/node_modules/
 dist/
+**/dist/
 build/
+**/build/
 .netlify/
 .cache/
 .parcel-cache/
 .turbo/
+**/playwright-report/
+**/test-results/
+**/coverage/
+.temp/
+**/.temp/
 
 # --- Lockfiles Interdits dans les sous-dossiers ---
 # On autorise le lockfile à la racine, mais on ignore ceux des apps
@@ -50,3 +57,36 @@ scripts/test-*.js
 *.bak
 *.tmp
 *.backup
+*.txt
+
+# --- Executables & Binaries ---
+*.exe
+*.dll
+*.so
+*.dylib
+ngrok
+turbo
+esbuild
+
+# --- Large Files & Models ---
+models/
+*.gguf
+*.bin
+*.onnx
+*.weights
+*.h5
+*.pt
+*.pth
+*.tflite
+*.ckpt
+*.safetensors
+
+
+# --- Generated Briques wrappers ---
+**/netlify/functions/generated/
+**/netlify/edge-functions/generated/
+**/src/netlify/functions/generated/
+**/src/netlify/edge-functions/generated/
+**/src/generated/
+**/public/generated/
+src/brique-registry.gen.js

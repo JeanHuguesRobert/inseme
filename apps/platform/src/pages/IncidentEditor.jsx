@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import { isDeleted } from "../lib/metadata";
+import { getSupabase } from "../lib/supabase.js";
+import { useCurrentUser } from "@inseme/cop-host";
+import { isDeleted, enrichUserMetadata } from "@inseme/cop-host";
 import IncidentEditorForm from "../components/incidents/IncidentEditorForm";
 import SiteFooter from "../components/layout/SiteFooter";
-import { enrichUserMetadata } from "../lib/userTransform";
 import { getConfig } from "../common/config/instanceConfig.client.js";
 
 export default function IncidentEditor() {

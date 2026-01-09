@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../../lib/supabase";
-import { isDeleted } from "../../lib/metadata";
-import { getParentCommentId, isReply, isEdited } from "../../lib/socialMetadata";
-import CommentForm from "../social/CommentForm";
-import ReactionPicker from "../social/ReactionPicker";
-import { getDisplayName, getUserInitials } from "../../lib/userDisplay";
-import { enrichUserMetadata } from "../../lib/userTransform";
+import { getSupabase } from "../../lib/supabase.js";
+import { isDeleted, getParentCommentId, isReply, isEdited } from "@inseme/cop-host";
+import { CommentForm } from "@inseme/cop-host";
+import { ReactionPicker } from "@inseme/cop-host";
+import { getDisplayName, getUserInitials } from "@inseme/cop-host";
+import { enrichUserMetadata } from "@inseme/cop-host";
 import { Link } from "react-router-dom";
-import { useDataLoader, useDataSaver, useFormSubmitter } from "../../lib/useStatusOperations";
-import { canComment } from "../../lib/permissions";
+import { useDataLoader, useDataSaver, useFormSubmitter } from "@inseme/cop-host";
+import { canComment } from "@inseme/cop-host";
 
 /**
  * Section de commentaires réutilisable avec toggle show/hide

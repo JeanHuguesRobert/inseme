@@ -350,6 +350,12 @@
     "https://deno.land/x/postgresjs@v3.4.7/src/result.js": "001ff5e0c8d634674f483d07fbcd620a797e3101f842d6c20ca3ace936260465",
     "https://deno.land/x/postgresjs@v3.4.7/src/subscribe.js": "9e4d0c3e573a6048e77ee2f15abbd5bcd17da9ca85a78c914553472c6d6c169b",
     "https://deno.land/x/postgresjs@v3.4.7/src/types.js": "471f4a6c35412aa202a7c177c0a7e5a7c3bd225f01bbde67c947894c1b8bf6ed",
+    "https://edge.netlify.com/": "fd941d61d88673d5f28aab283fb86fcc50f08a3bc80ee5470498fcfa88c65cfb",
+    "https://edge.netlify.com/bootstrap/config.ts": "6a2ce0e544e15e8f8883a5c18da5948e37fd0f2619f68cb31f3af53c51817025",
+    "https://edge.netlify.com/bootstrap/context.ts": "e97240232121e2f369f6546ce961490f34d961ea1ea54be3ff09633e3f08373f",
+    "https://edge.netlify.com/bootstrap/cookie.ts": "8b0baae708989ca183c6f3b4ab3d029e6abcbc2e43f93edeb0ff447b3bbc3a05",
+    "https://edge.netlify.com/bootstrap/edge_function.ts": "b8253e86aa83c67341f5cfedeba5049d77fbf84dcab7eceff7566b7728ae9b39",
+    "https://edge.netlify.com/bootstrap/globals/types.ts": "eaa6148ded3121d8dee62dd91c86e7fe76601df0f3ca8d7962243a30f4c8935f",
     "https://esm.sh/@aws-crypto/crc32@5.2.0/denonext/crc32.mjs": "c2a71dab9655223428b6fd41746ddd25d82f748e0933260d4a3373bf0ca40c21",
     "https://esm.sh/@aws-crypto/crc32c@5.2.0/denonext/crc32c.mjs": "3576f794f449a5e92ecddde7e93150a34d4bf57241e2e64348d4ffb9dbe4c78a",
     "https://esm.sh/@aws-crypto/util@5.2.0/denonext/util.mjs": "40c9cb57b5c9efad64de8495488187880ec6a1feb9cad556815fa92aeaf5df20",
@@ -606,8 +612,11 @@
     "https://esm.sh/openai@4.104.0/denonext/streaming.mjs": "1204202398716dbd28c39ddbf4f96fb17712a251dbfebe33305bfef7a501a3af",
     "https://esm.sh/openai@4.104.0/denonext/uploads.mjs": "a6342147888188dff7b9d5f8e5044ce18739fa5ec1badd26652757f646237ec4",
     "https://esm.sh/openai@4.104.0/denonext/version.mjs": "9a3989cd11d14591e922414b9e064e5c7be07eb6c19460dcc6a5c6d2a3ff2c38",
+    "https://esm.sh/readline-sync@1.4.9/denonext/readline-sync.mjs": "665440fee9ff8d2ce26ae080684f1a8256f11c6ada31ec5ccd42247437cc3567",
     "https://esm.sh/strnum@2.1.2/denonext/strnum.mjs": "9460132a806cc1d53cb18b06b0aebdfc75946229d355df3a5b79c3c97d11597a",
     "https://esm.sh/strnum@2.1.2?target=denonext": "72d88aef438ab2f3664985432eb5fa4e505747ebcda6b4bca76fa247293e5745",
+    "https://esm.sh/tau-prolog@0.3.4": "2cd96acecdb11dabfb11e63c0c2d7dfc2db3651305a43288f72b282bb5e06a1d",
+    "https://esm.sh/tau-prolog@0.3.4/denonext/tau-prolog.mjs": "c2122b9b7291c25d46110d2065d051080f04fa39257a28dacef9d1b494927b44",
     "https://esm.sh/tr46@0.0.3/denonext/tr46.mjs": "5753ec0a99414f4055f0c1f97691100f13d88e48a8443b00aebb90a512785fa2",
     "https://esm.sh/tr46@0.0.3?target=denonext": "19cb9be0f0d418a0c3abb81f2df31f080e9540a04e43b0f699bce1149cba0cbb",
     "https://esm.sh/tslib@2.8.1/denonext/tslib.mjs": "ebce3cd5facb654623020337f867b426ba95f71596ba87acc9e6c6f4e55905ca",
@@ -620,26 +629,76 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:glob@^11.0.1",
         "npm:husky@^9.1.7",
         "npm:lint-staged@^16.2.7",
         "npm:lucide-react@0.562",
         "npm:prettier@^3.7.4",
-        "npm:turbo@2"
+        "npm:turbo@^2.7.3"
       ]
     },
     "members": {
+      "apps/cyrnea": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@dnd-kit/core@^6.1.0",
+            "npm:@dnd-kit/utilities@^3.2.2",
+            "npm:@playwright/test@^1.57.0",
+            "npm:@supabase/supabase-js@^2.87.1",
+            "npm:@tailwindcss/vite@^4.1.17",
+            "npm:@tanstack/react-query@5",
+            "npm:@vitejs/plugin-react@^4.3.4",
+            "npm:autoprefixer@^10.4.20",
+            "npm:date-fns@^3.6.0",
+            "npm:eslint-plugin-react-hooks@5",
+            "npm:eslint-plugin-react-refresh@~0.4.19",
+            "npm:eslint-plugin-react@^7.37.4",
+            "npm:eslint@^9.21.0",
+            "npm:framer-motion@^10.16.4",
+            "npm:geoportal-extensions-leaflet@^2.4.3",
+            "npm:glob@^10.3.10",
+            "npm:globals@^15.15.0",
+            "npm:html2canvas@^1.4.1",
+            "npm:jsdom@^27.4.0",
+            "npm:jspdf@^2.5.1",
+            "npm:leaflet@^1.9.4",
+            "npm:lucide-react@0.562",
+            "npm:react-dom@^18.3.1",
+            "npm:react-leaflet@^4.2.1",
+            "npm:react-router-dom@^6.20.0",
+            "npm:react@^18.3.1",
+            "npm:recharts@^2.10.3",
+            "npm:swr@^2.2.5",
+            "npm:tailwindcss@^4.1.17",
+            "npm:tau-prolog@~0.3.4",
+            "npm:vite@^7.2.7",
+            "npm:vitest@^2.1.9"
+          ]
+        }
+      },
       "apps/inseme": {
         "packageJson": {
           "dependencies": [
-            "npm:@inseme/cop-host@*",
-            "npm:@inseme/ui@*",
+            "npm:@dnd-kit/core@^6.1.0",
+            "npm:@dnd-kit/utilities@^3.2.2",
             "npm:@jitsi/react-sdk@^1.4.4",
             "npm:@supabase/supabase-js@^2.87.1",
             "npm:@tailwindcss/vite@^4.1.17",
+            "npm:@tanstack/react-query@5",
             "npm:@vitejs/plugin-react@^4.3.4",
+            "npm:date-fns@^3.6.0",
+            "npm:framer-motion@^10.16.4",
+            "npm:geoportal-extensions-leaflet@^2.4.3",
+            "npm:html2canvas@^1.4.1",
+            "npm:jspdf@^2.5.1",
+            "npm:leaflet@^1.9.4",
+            "npm:lucide-react@0.294",
             "npm:react-dom@^18.3.1",
-            "npm:react-markdown@^10.1.0",
+            "npm:react-leaflet@^4.2.1",
+            "npm:react-router-dom@^6.20.0",
             "npm:react@^18.3.1",
+            "npm:recharts@^2.10.3",
+            "npm:swr@^2.2.5",
             "npm:tailwindcss@^4.1.17",
             "npm:vite@^7.2.7"
           ]
@@ -654,25 +713,27 @@
             "npm:@dnd-kit/utilities@^3.2.2",
             "npm:@google/generative-ai@~0.24.1",
             "npm:@huggingface/inference@^4.13.5",
-            "npm:@inseme/cop-host@*",
-            "npm:@inseme/ui@*",
             "npm:@mistralai/mistralai@^1.10.0",
-            "npm:@phosphor-icons/react@^2.1.10",
             "npm:@supabase/supabase-js@^2.87.1",
             "npm:@tailwindcss/typography@~0.5.19",
+            "npm:@tanstack/react-query@5",
             "npm:@vitejs/plugin-react@^4.3.4",
             "npm:autoprefixer@^10.4.22",
             "npm:cheerio@^1.0.0-rc.12",
             "npm:chromatic@^13.3.4",
+            "npm:date-fns@^3.6.0",
             "npm:dompurify@^3.3.1",
             "npm:dotenv@^17.2.3",
             "npm:drizzle-orm@~0.45.1",
             "npm:eslint-config-prettier@^10.1.8",
             "npm:eslint-plugin-prettier@^5.5.4",
+            "npm:framer-motion@^10.16.4",
             "npm:geoportal-extensions-leaflet@^2.4.3",
             "npm:glob@13",
+            "npm:html2canvas@^1.4.1",
+            "npm:jspdf@^2.5.1",
             "npm:leaflet@^1.9.4",
-            "npm:marked@^17.0.1",
+            "npm:lucide-react@0.294",
             "npm:minimist@^1.2.8",
             "npm:ngrok@^5.0.0-beta.2",
             "npm:node-fetch@3",
@@ -685,11 +746,9 @@
             "npm:react-dom@^18.3.1",
             "npm:react-is@^18.3.1",
             "npm:react-leaflet@^4.2.0",
-            "npm:react-markdown@^10.1.0",
             "npm:react-router-dom@^7.10.1",
             "npm:react@^18.3.1",
             "npm:recharts@^3.5.1",
-            "npm:remark-gfm@^4.0.1",
             "npm:sqlite3@^5.1.7",
             "npm:sqlite@^5.1.1",
             "npm:stylelint-config-standard@^39.0.1",
@@ -698,6 +757,114 @@
             "npm:swr@^2.3.7",
             "npm:tailwindcss@^4.1.17",
             "npm:vite@^7.2.7"
+          ]
+        }
+      },
+      "packages/brique-actes": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@tanstack/react-query@5",
+            "npm:html2canvas@^1.4.1",
+            "npm:jspdf@^2.5.1",
+            "npm:react-dom@^18.2.0",
+            "npm:react-router-dom@^6.20.0",
+            "npm:react@^18.2.0"
+          ]
+        }
+      },
+      "packages/brique-blog": {
+        "packageJson": {
+          "dependencies": [
+            "npm:date-fns@^3.6.0",
+            "npm:react-router-dom@^6.26.1",
+            "npm:react@^18.3.1"
+          ]
+        }
+      },
+      "packages/brique-communes": {
+        "packageJson": {
+          "dependencies": [
+            "npm:lucide-react@0.294",
+            "npm:react-dom@^18.2.0",
+            "npm:react@^18.2.0"
+          ]
+        }
+      },
+      "packages/brique-cyrnea": {
+        "packageJson": {
+          "dependencies": [
+            "npm:lucide-react@0.562",
+            "npm:react-dom@^18.3.1",
+            "npm:react@^18.3.1"
+          ]
+        }
+      },
+      "packages/brique-fil": {
+        "packageJson": {
+          "dependencies": [
+            "npm:react-router-dom@^6.26.1",
+            "npm:react@^18.3.1"
+          ]
+        }
+      },
+      "packages/brique-group": {
+        "packageJson": {
+          "dependencies": [
+            "npm:react-router-dom@^6.26.1",
+            "npm:react@^18.3.1"
+          ]
+        }
+      },
+      "packages/brique-kudocracy": {
+        "packageJson": {
+          "dependencies": [
+            "npm:react-dom@^18.2.0",
+            "npm:react-router-dom@^6.20.0",
+            "npm:react@^18.2.0",
+            "npm:recharts@^2.10.3"
+          ]
+        }
+      },
+      "packages/brique-map": {
+        "packageJson": {
+          "dependencies": [
+            "npm:geoportal-extensions-leaflet@^2.4.3",
+            "npm:leaflet@^1.9.4",
+            "npm:react-dom@^18.2.0",
+            "npm:react-leaflet@^4.2.1",
+            "npm:react-router-dom@^6.20.0",
+            "npm:react@^18.2.0",
+            "npm:swr@^2.2.5"
+          ]
+        }
+      },
+      "packages/brique-ophelia": {
+        "packageJson": {
+          "dependencies": [
+            "npm:lucide-react@0.294",
+            "npm:react-dom@^18.2.0",
+            "npm:react@^18.2.0"
+          ]
+        }
+      },
+      "packages/brique-tasks": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@dnd-kit/core@^6.1.0",
+            "npm:@dnd-kit/utilities@^3.2.2",
+            "npm:framer-motion@^10.16.4",
+            "npm:react-dom@^18.2.0",
+            "npm:react-router-dom@^6.20.0",
+            "npm:react@^18.2.0"
+          ]
+        }
+      },
+      "packages/brique-wiki": {
+        "packageJson": {
+          "dependencies": [
+            "npm:react-router-dom@^6.26.1",
+            "npm:react@^18.3.1",
+            "npm:recharts@^2.12.7"
           ]
         }
       },
@@ -713,7 +880,9 @@
       "packages/cop-host": {
         "packageJson": {
           "dependencies": [
-            "npm:@supabase/supabase-js@^2.39.0"
+            "npm:@supabase/supabase-js@^2.39.0",
+            "npm:glob@^10.3.10",
+            "npm:react-router-dom@^6.20.0"
           ]
         }
       },
@@ -721,14 +890,37 @@
         "packageJson": {
           "dependencies": [
             "npm:@supabase/supabase-js@2",
-            "npm:mysql2@^3.15.3"
+            "npm:mysql2@^3.15.3",
+            "npm:sqlite3@^5.1.7",
+            "npm:sqlite@^5.1.1"
+          ]
+        }
+      },
+      "packages/cop-prolog": {
+        "packageJson": {
+          "dependencies": [
+            "npm:tau-prolog@~0.3.4"
+          ]
+        }
+      },
+      "packages/room": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@jitsi/react-sdk@1",
+            "npm:lucide-react@0.562",
+            "npm:react-router-dom@^6.20.0"
           ]
         }
       },
       "packages/ui": {
         "packageJson": {
           "dependencies": [
-            "npm:lucide-react@0.469"
+            "npm:dompurify@^3.3.1",
+            "npm:lucide-react@0.469",
+            "npm:marked@^17.0.1",
+            "npm:react-markdown@^10.1.0",
+            "npm:react-router-dom@^6.20.0",
+            "npm:remark-gfm@^4.0.1"
           ]
         }
       }

@@ -1,151 +1,189 @@
+// packages/brique-cyrnea/pages/ClientMiniApp.jsx
+
 import React, { useState } from "react";
-import { Music, Gamepad2, MessageSquare, Mic, Heart, Plus } from "lucide-react";
 import {
-  Badge,
+  Music,
+  Gamepad2,
+  Mic,
+  Heart,
+  ThumbsUp,
+  ThumbsDown,
+} from "lucide-react";
+import {
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
   Button,
-} from "../../../ui/src/index";
-import { InsemeRoom } from "../../../inseme-core/index";
+} from "@inseme/ui";
+import { useInsemeContext, TalkButton, Chat } from "@inseme/room";
 
-/**
- * ClientMiniApp - Mode "Scan & Play"
- * Refactorisé pour intégrer InsemeRoom au sein des onglets.
- */
+/* =========================
+   BLOC CYRNEA (bar vivant)
+   ========================= */
+const CyrneaBlock = ({ color = "white", children, className = "", onClick }) => {
+  const colorMap = {
+    red: "bg-[#E10600] text-white",
+    blue: "bg-[#0055A4] text-white",
+    yellow: "bg-[#FFD500] text-black",
+    black: "bg-black text-white",
+    white: "bg-white text-black",
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      className={`
+        border-4 border-black p-4 flex flex-col justify-between
+        transition-all active:translate-x-1 active:translate-y-1
+        ${colorMap[color]}
+        ${className}
+      `}
+    >
+      {children}
+    </div>
+  );
+};
+
+/* =========================
+   APP CLIENT BAR
+   ========================= */
 export default function ClientMiniApp({ roomId = "cyrnea-general" }) {
   const [activeTab, setActiveTab] = useState("music");
 
+  const {
+    castVote,
+    roomData,
+    messages,
+    vocalState,
+    isRecording,
+    isTranscribing,
+    startRecording,
+    stopRecording,
+    duration,
+  } = useInsemeContext();
+
+  const activeChallenges = messages?.filter(
+    (msg) => msg.type === "challenge_start" && msg.metadata?.status === "active"
+  );
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col overflow-hidden">
-      {/* Header compact */}
-      <header className="p-4 flex items-center justify-between border-b border-white/5 bg-slate-900/40 backdrop-blur-md z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-            <span className="text-xs font-bold text-slate-950">CY</span>
-          </div>
-          <h1 className="font-bold text-lg tracking-tight">Cyrnea Bar</h1>
+    <div className="min-h-screen bg-white text-black flex flex-col overflow-hidden">
+
+      {/* HEADER : IDENTITÉ BAR */}
+      <header className="p-4 border-b-4 border-black bg-[#E10600] text-white flex items-center justify-between">
+        <div>
+          <h1 className="font-black text-2xl uppercase italic tracking-tighter">
+            Cyrnea Bar
+          </h1>
+          <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">
+            À Corte · Ici, l’ambiance se construit ensemble
+          </p>
         </div>
-        <Badge
-          variant="outline"
-          className="text-[10px] text-slate-500 border-white/10 uppercase tracking-tighter"
-        >
-          Votre Table
-        </Badge>
+
+        <div className="flex border-4 border-black bg-white">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-none border-r-2 border-black hover:bg-[#FFD500]"
+            onClick={() => castVote("vibe:up")}
+          >
+            <ThumbsUp className="w-4 h-4 text-black" strokeWidth={3} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-none hover:bg-black hover:text-white"
+            onClick={() => castVote("vibe:down")}
+          >
+            <ThumbsDown className="w-4 h-4" strokeWidth={3} />
+          </Button>
+        </div>
       </header>
 
-      <main className="flex-1 overflow-hidden flex flex-col p-4">
+      {/* CONTENU */}
+      <main className="flex-1 flex flex-col overflow-hidden">
         <Tabs
           defaultValue="music"
-          className="w-full flex-1 flex flex-col"
+          className="flex-1 flex flex-col"
           onValueChange={setActiveTab}
         >
-          <TabsList className="grid grid-cols-3 bg-slate-900/50 p-1 rounded-2xl border border-white/5 mb-6 flex-shrink-0">
-            <TabsTrigger
-              value="music"
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 rounded-xl py-2"
-            >
+          <TabsList className="grid grid-cols-3 bg-black border-b-4 border-black">
+            <TabsTrigger value="music" className="font-black uppercase">
               <Music className="w-4 h-4 mr-2" /> Musique
             </TabsTrigger>
-            <TabsTrigger
-              value="games"
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 rounded-xl py-2"
-            >
+            <TabsTrigger value="games" className="font-black uppercase">
               <Gamepad2 className="w-4 h-4 mr-2" /> Jeux
             </TabsTrigger>
-            <TabsTrigger
-              value="ophelia"
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 rounded-xl py-2"
-            >
+            <TabsTrigger value="ophelia" className="font-black uppercase">
               <Mic className="w-4 h-4 mr-2" /> Ophélia
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent
-            value="music"
-            className="flex-1 overflow-y-auto space-y-4 animate-in fade-in"
-          >
-            {/* Playlist UI (déjà implémentée avant) */}
-            <div className="space-y-3">
-              {[
-                {
-                  id: 1,
-                  title: "L'Orchestra",
-                  artist: "Canta u Populu Corsu",
-                  votes: 12,
-                },
-                { id: 2, title: "Get Lucky", artist: "Daft Punk", votes: 8 },
-              ].map((m) => (
-                <div
-                  key={m.id}
-                  className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-bold text-slate-200">{m.title}</p>
-                    <p className="text-xs text-slate-500">{m.artist}</p>
+          <div className="flex-1 p-4 overflow-hidden">
+
+            {/* MUSIQUE */}
+            <TabsContent value="music" className="space-y-4">
+              {[{
+                id: 1,
+                title: "L'Orchestra",
+                artist: "Canta u Populu Corsu",
+                votes: 12,
+              }].map((m) => (
+                <CyrneaBlock key={m.id}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-black text-xl uppercase">{m.title}</p>
+                      <p className="text-[10px] uppercase opacity-60">
+                        {m.artist}
+                      </p>
+                    </div>
+                    <Button
+                      className="border-4 border-black bg-white hover:bg-[#FFD500]"
+                      onClick={() => castVote(`music:${m.id}`)}
+                    >
+                      <Heart
+                        className={`w-5 h-5 ${
+                          roomData.votes?.[`music:${m.id}`]
+                            ? "text-[#E10600] fill-[#E10600]"
+                            : "text-black"
+                        }`}
+                        strokeWidth={3}
+                      />
+                      <span className="ml-2 font-black">
+                        {m.votes + (roomData.results?.[`music:${m.id}`] || 0)}
+                      </span>
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex flex-col gap-1 h-auto py-2"
-                  >
-                    <Heart className="w-4 h-4 text-emerald-500" />
-                    <span className="text-[10px] text-slate-400">
-                      {m.votes}
-                    </span>
-                  </Button>
-                </div>
+                </CyrneaBlock>
               ))}
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent
-            value="games"
-            className="flex-1 overflow-y-auto space-y-4 animate-in fade-in"
-          >
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5 text-center">
-                <p className="text-xs font-bold text-amber-500 mb-2 uppercase">
-                  Échecs
-                </p>
-                <Button variant="outline" className="w-full rounded-xl">
-                  Rejoindre
-                </Button>
+            {/* OPHÉLIA */}
+            <TabsContent value="ophelia" className="flex flex-col space-y-4">
+              <div className="border-4 border-black flex-1 flex flex-col">
+                <div className="bg-black text-white text-[10px] uppercase font-black p-2">
+                  Ophélia · La voix du bar
+                </div>
+                <Chat variant="minimal" className="flex-1" />
               </div>
-              <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5 text-center">
-                <p className="text-xs font-bold text-amber-500 mb-2 uppercase">
-                  Cartes
-                </p>
-                <Button variant="outline" className="w-full rounded-xl">
-                  Défier
-                </Button>
-              </div>
-            </div>
-          </TabsContent>
 
-          <TabsContent
-            value="ophelia"
-            className="flex-1 flex flex-col animate-in fade-in h-0"
-          >
-            {/* Intégration directe de la vocal assembly Inseme */}
-            <div className="flex-1 bg-slate-950/80 rounded-3xl border border-white/5 overflow-hidden flex flex-col relative">
-              <InsemeRoom
-                roomName={roomId}
-                variant="minimal"
-                hideHeader
-                hideFooter={false}
-              />
-            </div>
-          </TabsContent>
+              <div className="border-4 border-black bg-[#FFD500] flex justify-center py-4">
+                <TalkButton
+                  size="lg"
+                  vocalState={vocalState}
+                  isRecording={isRecording}
+                  isTranscribing={isTranscribing}
+                  startRecording={startRecording}
+                  stopRecording={stopRecording}
+                  duration={duration}
+                />
+              </div>
+            </TabsContent>
+
+          </div>
         </Tabs>
       </main>
-
-      <footer className="p-4 bg-slate-950 text-center opacity-30">
-        <p className="text-[8px] uppercase tracking-widest">
-          Powered by Inseme Core
-        </p>
-      </footer>
     </div>
   );
 }

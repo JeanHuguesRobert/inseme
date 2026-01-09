@@ -144,7 +144,7 @@ export const DEFAULT_OPTIONS = {
 
 async function ensureOcrWorker() {
   if (ocrWorker) return ocrWorker;
-  const { createWorker } = await import("tesseract.js");
+  const { createWorker } = await import("tesseract");
   ocrWorker = await createWorker({ logger: null });
 
   await ocrWorker.load();
@@ -193,7 +193,7 @@ export async function convertPdfToMarkdown(pdfData, options = {}) {
 
   async function ensureOcrWorker() {
     if (ocrWorker) return ocrWorker;
-    const { createWorker } = await import("tesseract.js");
+    const { createWorker } = await import("tesseract");
     ocrWorker = await createWorker({ logger: null });
     await ocrWorker.load();
     const langs = Array.isArray(settings.ocrLanguages)

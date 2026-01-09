@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../../contexts/AuthContext";
-import { wrapFetch } from "../../services/wrapFetch";
+import { useCurrentUser } from "@inseme/cop-host";
+import { wrapFetch } from "../lib/api.js";
 
 export default function ActeList() {
-  const { getAuthHeader, session } = useAuth();
+  const { session } = useCurrentUser();
   const [actes, setActes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,7 +33,8 @@ export default function ActeList() {
   }, [session]);
 
   if (loading) return <div className="p-4">Loading actes…</div>;
-  if (error) return <div className="p-4 text-red-600">Error: {error.message}</div>;
+  if (error)
+    return <div className="p-4 text-red-600">Error: {error.message}</div>;
 
   return (
     <div className="p-4">

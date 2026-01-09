@@ -4,8 +4,7 @@
  * Utilities for working with task metadata, commands, and state transitions
  */
 
-import { getSupabase } from "@inseme/cop-host";
-import { getMetadata, setMetadata } from "./metadata";
+import { getSupabase, getMetadata, setMetadata } from "@inseme/cop-host";
 import {
   TASK_STATUSES,
   TASK_COMMANDS,
@@ -13,7 +12,7 @@ import {
   isValidPriority,
   parseTaskCommand as kudocracyParseTaskCommand,
   normalizeStatusArg,
-} from "./taskMetadata";
+} from "./taskMetadata.js";
 
 /**
  * Get task details from post metadata

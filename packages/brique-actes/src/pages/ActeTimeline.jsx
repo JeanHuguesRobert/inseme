@@ -7,7 +7,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getSupabase } from "@inseme/cop-host";
-import SiteFooter from "../../components/layout/SiteFooter";
 
 // ============================================================================
 // CONSTANTS
@@ -70,7 +69,11 @@ const daysBetween = (date1, date2) => {
 
 const TimelineEvent = ({ event, isLast }) => {
   const [expanded, setExpanded] = useState(false);
-  const typeInfo = EVENT_TYPES[event.type] || { label: event.type, emoji: "📋", color: "slate" };
+  const typeInfo = EVENT_TYPES[event.type] || {
+    label: event.type,
+    emoji: "📋",
+    color: "slate",
+  };
 
   const colorClasses = {
     blue: "bg-blue-500 border-blue-500",
@@ -90,8 +93,12 @@ const TimelineEvent = ({ event, isLast }) => {
     <div className="relative flex gap-4">
       {/* Line and dot */}
       <div className="flex flex-col items-center">
-        <div className={`w-4 h-4 rounded-full ${colorClasses[typeInfo.color]} z-10`}></div>
-        {!isLast && <div className="w-0.5 flex-1 bg-slate-200 min-h-[60px]"></div>}
+        <div
+          className={`w-4 h-4 rounded-full ${colorClasses[typeInfo.color]} z-10`}
+        ></div>
+        {!isLast && (
+          <div className="w-0.5 flex-1 bg-slate-200 min-h-[60px]"></div>
+        )}
       </div>
 
       {/* Content */}
@@ -104,9 +111,13 @@ const TimelineEvent = ({ event, isLast }) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xl">{typeInfo.emoji}</span>
-                <span className="font-medium text-slate-800">{typeInfo.label}</span>
+                <span className="font-medium text-slate-800">
+                  {typeInfo.label}
+                </span>
               </div>
-              <div className="text-sm text-slate-500">{formatDate(event.date, true)}</div>
+              <div className="text-sm text-slate-500">
+                {formatDate(event.date, true)}
+              </div>
             </div>
 
             <p className="text-slate-600 mt-2">{event.description}</p>
@@ -125,7 +136,9 @@ const TimelineEvent = ({ event, isLast }) => {
           {/* Expanded details */}
           {expanded && event.metadata && (
             <div className="px-4 pb-4 pt-0 border-t border-slate-100 mt-2">
-              <h4 className="text-xs font-medium text-slate-500 mt-3 mb-2">Détails</h4>
+              <h4 className="text-xs font-medium text-slate-500 mt-3 mb-2">
+                Détails
+              </h4>
               <pre className="text-xs bg-slate-50 p-3 rounded overflow-x-auto">
                 {JSON.stringify(event.metadata, null, 2)}
               </pre>
@@ -164,7 +177,9 @@ const FilterButton = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
     className={`px-3 py-1.5 rounded text-sm transition-colors ${
-      active ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+      active
+        ? "bg-blue-600 text-white"
+        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
     }`}
   >
     {children}
@@ -186,7 +201,8 @@ export default function ActeTimeline() {
 
   // Filters
   const zoomLevel = searchParams.get("zoom") || "MONTH";
-  const filterTypes = searchParams.get("types")?.split(",").filter(Boolean) || [];
+  const filterTypes =
+    searchParams.get("types")?.split(",").filter(Boolean) || [];
 
   // Fetch data
   useEffect(() => {
@@ -368,7 +384,9 @@ export default function ActeTimeline() {
 
   // Filter events
   const filteredEvents =
-    filterTypes.length > 0 ? events.filter((e) => filterTypes.includes(e.type)) : events;
+    filterTypes.length > 0
+      ? events.filter((e) => filterTypes.includes(e.type))
+      : events;
 
   // Update URL params
   const updateZoom = (newZoom) => {
@@ -430,7 +448,8 @@ export default function ActeTimeline() {
           </p>
           {id && acte?.mandats && (
             <div className="mt-4 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium border border-blue-100">
-              👤 Porté par : {acte.mandats.user?.display_name} ({acte.mandats.role})
+              👤 Porté par : {acte.mandats.user?.display_name} (
+              {acte.mandats.role})
             </div>
           )}
         </div>
@@ -440,10 +459,16 @@ export default function ActeTimeline() {
         {/* Zoom controls (global only) */}
         {!id && (
           <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
-            <h3 className="text-sm font-medium text-slate-700 mb-3">📏 Période</h3>
+            <h3 className="text-sm font-medium text-slate-700 mb-3">
+              📏 Période
+            </h3>
             <div className="flex flex-wrap gap-2">
               {Object.entries(ZOOM_LEVELS).map(([key, info]) => (
-                <FilterButton key={key} active={zoomLevel === key} onClick={() => updateZoom(key)}>
+                <FilterButton
+                  key={key}
+                  active={zoomLevel === key}
+                  onClick={() => updateZoom(key)}
+                >
                   {info.label}
                 </FilterButton>
               ))}
@@ -453,7 +478,9 @@ export default function ActeTimeline() {
 
         {/* Type filters */}
         <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
-          <h3 className="text-sm font-medium text-slate-700 mb-3">🏷️ Types d'événements</h3>
+          <h3 className="text-sm font-medium text-slate-700 mb-3">
+            🏷️ Types d'événements
+          </h3>
           <div className="flex flex-wrap gap-2">
             {Object.entries(EVENT_TYPES).map(([key, info]) => (
               <FilterButton
@@ -481,7 +508,11 @@ export default function ActeTimeline() {
 
         {/* Stats */}
         {dateRange && (
-          <DateRange start={dateRange.start} end={dateRange.end} events={filteredEvents.length} />
+          <DateRange
+            start={dateRange.start}
+            end={dateRange.end}
+            events={filteredEvents.length}
+          />
         )}
 
         {/* Error */}
@@ -526,7 +557,9 @@ export default function ActeTimeline() {
                 ),
               ].join("\n");
 
-              const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+              const blob = new Blob(["\uFEFF" + csv], {
+                type: "text/csv;charset=utf-8",
+              });
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
               a.href = url;
@@ -540,8 +573,6 @@ export default function ActeTimeline() {
           </button>
         </div>
       </div>
-
-      <SiteFooter />
     </div>
   );
 }

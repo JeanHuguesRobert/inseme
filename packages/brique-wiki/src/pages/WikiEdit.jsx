@@ -6,7 +6,7 @@ import {
   appendOrMergeLastModifiedBy, 
   getDisplayName 
 } from "@inseme/cop-host";
-import wikiFederation from "../lib/wikiFederation";
+import wikiFederation from "../lib/wikiFederation.js";
 
 export default function WikiEdit() {
   const { slug: initialSlug } = useParams();

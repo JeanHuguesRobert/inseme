@@ -1,0 +1,52 @@
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent1","payload":{"agent_id":"agent1","agent_name":"Test Agent","status":"active"},"timestamp":"2026-01-08T15:36:37.742Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent2","payload":{"agent_id":"agent2","agent_name":"Agent Two","status":"active"},"timestamp":"2026-01-08T15:36:37.767Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent3","payload":{"agent_id":"agent3","agent_name":"Agent Three","status":"inactive"},"timestamp":"2026-01-08T15:36:37.781Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent4","payload":{"agent_id":"agent4","agent_name":"Agent Four","status":"active"},"timestamp":"2026-01-08T15:36:37.802Z"}
+{"eventType":"AgentIdentityStatusUpdated","entityType":"agentIdentity","entityId":"agent4","payload":{"oldStatus":"active","newStatus":"inactive"},"timestamp":"2026-01-08T15:36:37.811Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task1","payload":{"id":"task1","name":"Test Task","status":"pending","version":1},"timestamp":"2026-01-08T15:36:37.819Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task2","payload":{"id":"task2","name":"Test Task 2","status":"pending","version":1},"timestamp":"2026-01-08T15:36:37.846Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step1","payload":{"id":"step1","task_id":"task1","name":"Test Step","status":"created"},"timestamp":"2026-01-08T15:36:37.901Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step2","payload":{"id":"step2","task_id":"task2","name":"Test Step 2","status":"created"},"timestamp":"2026-01-08T15:36:37.916Z"}
+{"eventType":"StepUpdated","entityType":"step","entityId":"step2","payload":{"patch":{"status":"running"},"newStep":{"id":"step2","task_id":"task2","name":"Test Step 2","status":"running"}},"timestamp":"2026-01-08T15:36:37.919Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent5","payload":{"agent_id":"agent5","agent_name":"Agent Five","status":"active"},"timestamp":"2026-01-08T15:36:37.986Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task3","payload":{"id":"task3","name":"Task Three","status":"pending","version":1},"timestamp":"2026-01-08T15:36:37.998Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step3","payload":{"id":"step3","task_id":"task3","name":"Step Three","status":"created"},"timestamp":"2026-01-08T15:36:38.000Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent1","payload":{"agent_id":"agent1","agent_name":"Test Agent","status":"active"},"timestamp":"2026-01-08T15:52:39.087Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent2","payload":{"agent_id":"agent2","agent_name":"Agent Two","status":"active"},"timestamp":"2026-01-08T15:52:39.120Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent3","payload":{"agent_id":"agent3","agent_name":"Agent Three","status":"inactive"},"timestamp":"2026-01-08T15:52:39.139Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent4","payload":{"agent_id":"agent4","agent_name":"Agent Four","status":"active"},"timestamp":"2026-01-08T15:52:39.185Z"}
+{"eventType":"AgentIdentityStatusUpdated","entityType":"agentIdentity","entityId":"agent4","payload":{"oldStatus":"active","newStatus":"inactive"},"timestamp":"2026-01-08T15:52:39.190Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task1","payload":{"id":"task1","name":"Test Task","status":"pending","version":1},"timestamp":"2026-01-08T15:52:39.215Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task2","payload":{"id":"task2","name":"Test Task 2","status":"pending","version":1},"timestamp":"2026-01-08T15:52:39.234Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step1","payload":{"id":"step1","task_id":"task1","name":"Test Step","status":"created"},"timestamp":"2026-01-08T15:52:39.271Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step2","payload":{"id":"step2","task_id":"task2","name":"Test Step 2","status":"created"},"timestamp":"2026-01-08T15:52:39.314Z"}
+{"eventType":"StepUpdated","entityType":"step","entityId":"step2","payload":{"patch":{"status":"running"},"newStep":{"id":"step2","task_id":"task2","name":"Test Step 2","status":"running"}},"timestamp":"2026-01-08T15:52:39.319Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent5","payload":{"agent_id":"agent5","agent_name":"Agent Five","status":"active"},"timestamp":"2026-01-08T15:52:39.390Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task3","payload":{"id":"task3","name":"Task Three","status":"pending","version":1},"timestamp":"2026-01-08T15:52:39.402Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step3","payload":{"id":"step3","task_id":"task3","name":"Step Three","status":"created"},"timestamp":"2026-01-08T15:52:39.405Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent1","payload":{"agent_id":"agent1","agent_name":"Test Agent","status":"active"},"timestamp":"2026-01-08T15:53:08.316Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent2","payload":{"agent_id":"agent2","agent_name":"Agent Two","status":"active"},"timestamp":"2026-01-08T15:53:08.333Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent3","payload":{"agent_id":"agent3","agent_name":"Agent Three","status":"inactive"},"timestamp":"2026-01-08T15:53:08.341Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent4","payload":{"agent_id":"agent4","agent_name":"Agent Four","status":"active"},"timestamp":"2026-01-08T15:53:08.353Z"}
+{"eventType":"AgentIdentityStatusUpdated","entityType":"agentIdentity","entityId":"agent4","payload":{"oldStatus":"active","newStatus":"inactive"},"timestamp":"2026-01-08T15:53:08.367Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task1","payload":{"id":"task1","name":"Test Task","status":"pending","version":1},"timestamp":"2026-01-08T15:53:08.392Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task2","payload":{"id":"task2","name":"Test Task 2","status":"pending","version":1},"timestamp":"2026-01-08T15:53:08.412Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step1","payload":{"id":"step1","task_id":"task1","name":"Test Step","status":"created"},"timestamp":"2026-01-08T15:53:08.423Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step2","payload":{"id":"step2","task_id":"task2","name":"Test Step 2","status":"created"},"timestamp":"2026-01-08T15:53:08.435Z"}
+{"eventType":"StepUpdated","entityType":"step","entityId":"step2","payload":{"patch":{"status":"running"},"newStep":{"id":"step2","task_id":"task2","name":"Test Step 2","status":"running"}},"timestamp":"2026-01-08T15:53:08.446Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent5","payload":{"agent_id":"agent5","agent_name":"Agent Five","status":"active"},"timestamp":"2026-01-08T15:53:08.500Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task3","payload":{"id":"task3","name":"Task Three","status":"pending","version":1},"timestamp":"2026-01-08T15:53:08.503Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step3","payload":{"id":"step3","task_id":"task3","name":"Step Three","status":"created"},"timestamp":"2026-01-08T15:53:08.516Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent1","payload":{"agent_id":"agent1","agent_name":"Test Agent","status":"active"},"timestamp":"2026-01-08T15:54:30.518Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent2","payload":{"agent_id":"agent2","agent_name":"Agent Two","status":"active"},"timestamp":"2026-01-08T15:54:30.538Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent3","payload":{"agent_id":"agent3","agent_name":"Agent Three","status":"inactive"},"timestamp":"2026-01-08T15:54:30.547Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent4","payload":{"agent_id":"agent4","agent_name":"Agent Four","status":"active"},"timestamp":"2026-01-08T15:54:30.587Z"}
+{"eventType":"AgentIdentityStatusUpdated","entityType":"agentIdentity","entityId":"agent4","payload":{"oldStatus":"active","newStatus":"inactive"},"timestamp":"2026-01-08T15:54:30.590Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task1","payload":{"id":"task1","name":"Test Task","status":"pending","version":1},"timestamp":"2026-01-08T15:54:30.618Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task2","payload":{"id":"task2","name":"Test Task 2","status":"pending","version":1},"timestamp":"2026-01-08T15:54:30.641Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step1","payload":{"id":"step1","task_id":"task1","name":"Test Step","status":"created"},"timestamp":"2026-01-08T15:54:30.667Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step2","payload":{"id":"step2","task_id":"task2","name":"Test Step 2","status":"created"},"timestamp":"2026-01-08T15:54:30.686Z"}
+{"eventType":"StepUpdated","entityType":"step","entityId":"step2","payload":{"patch":{"status":"running"},"newStep":{"id":"step2","task_id":"task2","name":"Test Step 2","status":"running"}},"timestamp":"2026-01-08T15:54:30.689Z"}
+{"eventType":"AgentIdentityUpserted","entityType":"agentIdentity","entityId":"agent5","payload":{"agent_id":"agent5","agent_name":"Agent Five","status":"active"},"timestamp":"2026-01-08T15:54:30.739Z"}
+{"eventType":"TaskUpserted","entityType":"task","entityId":"task3","payload":{"id":"task3","name":"Task Three","status":"pending","version":1},"timestamp":"2026-01-08T15:54:30.748Z"}
+{"eventType":"StepUpserted","entityType":"step","entityId":"step3","payload":{"id":"step3","task_id":"task3","name":"Step Three","status":"created"},"timestamp":"2026-01-08T15:54:30.751Z"}

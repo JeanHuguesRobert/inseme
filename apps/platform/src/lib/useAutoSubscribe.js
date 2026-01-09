@@ -1,4 +1,4 @@
-import { getSupabase } from "./supabase";
+import { getSupabase } from "./supabase.js";
 
 /**
  * Types de contenu pour lesquels on peut s'abonner

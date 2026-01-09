@@ -8,7 +8,7 @@ export default {
   routes: [
     {
       path: "/consultation/barometre",
-      component: "./src/pages/ConsultationDemocratieLocale.jsx",
+      component: "./src/pages/ConsultationDemocratieLocale",
       protected: false,
     }
   ],

@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import CitizenMap from "../components/map/CitizenMap";
-import LocationPicker from "../components/map/LocationPicker";
+import { CitizenMap, LocationPicker } from "@inseme/brique-map";
 import SiteFooter from "../components/layout/SiteFooter";
 
 export default function PostLocationPicker() {

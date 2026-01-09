@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { listEntities } from "../../lib/adminApi";
+import { listEntities } from "../../lib/adminApi.js";
 
 export default function EntityList({ type, onSelect }) {
   const [items, setItems] = useState([]);

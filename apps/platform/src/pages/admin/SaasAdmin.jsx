@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useCurrentUser } from "../../lib/useCurrentUser";
-import { getUserRole, ROLE_ADMIN } from "../../lib/permissions";
-import { getSupabase } from "../../lib/supabase";
+import { useCurrentUser } from "@inseme/cop-host";
+import { getUserRole, ROLE_ADMIN } from "@inseme/cop-host";
+import { getSupabase } from "../../lib/supabase.js";
 import SiteFooter from "../../components/layout/SiteFooter";
 
 // Communes du Centre Corse (pilote)

@@ -13,19 +13,21 @@
   ],
   "scripts": {
     "inseme:dev": "npm run dev -w inseme",
+    "inseme:backend": "netlify dev --cwd apps/inseme --port 8888",
     "platform:dev": "npm run dev -w platform",
+    "platform:backend": "netlify dev --cwd apps/platform",
     "cyrnea:dev": "npm run dev -w cyrnea",
-    "inseme:netlify": "npm run netlify:dev -w inseme",
-    "platform:netlify": "npm run netlify:dev -w platform",
+    "cyrnea:backend": "netlify dev --cwd apps/cyrnea",
     "compile:briques": "node packages/cop-host/scripts/compile-briques.js",
     "inseme:build": "npm run build -w inseme",
     "platform:build": "npm run build -w platform"
   },
   "devDependencies": {
+    "glob": "^11.0.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
-    "turbo": "^2.0.0"
+    "turbo": "^2.7.3"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "*"

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { X, Brain, Check, Trash, Plus, Sparkle } from "@phosphor-icons/react";
-import { useCurrentUser } from "../../lib/useCurrentUser";
+import { Icon } from "@inseme/cop-host";
+import { useCurrentUser } from "@inseme/cop-host";
 import { getConfig } from "../../common/config/instanceConfig.client.js";
 
 export default function FeedOpheliaModal({
@@ -107,11 +107,11 @@ export default function FeedOpheliaModal({
         {/* Header */}
         <div className="p-4 border-b flex justify-between items-center bg-indigo-50">
           <div className="flex items-center gap-2 text-indigo-700">
-            <Brain size={24} weight="duotone" />
+            <Icon name="brain" size={24} />
             <h2 className="font-bold text-lg">Curator: Feed {botName}</h2>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X size={24} />
+            <Icon name="x" size={24} /> 
           </button>
         </div>
 
@@ -119,7 +119,7 @@ export default function FeedOpheliaModal({
         <div className="flex-1 overflow-y-auto p-6">
           {step === "initial" && (
             <div className="text-center py-10">
-              <Brain size={64} className="mx-auto text-indigo-300 mb-4" weight="duotone" />
+              <Icon name="brain" size={64} className="mx-auto text-indigo-300 mb-4" />
               <h3 className="text-xl font-semibold mb-2">
                 Teach {botName} about "{title}"
               </h3>
@@ -132,7 +132,7 @@ export default function FeedOpheliaModal({
                 onClick={handleAnalyze}
                 className="btn btn-primary flex items-center gap-2 mx-auto"
               >
-                <Sparkle size={20} />
+                <Icon name="sparkles" size={20} />  
                 Start Analysis
               </button>
             </div>
@@ -169,7 +169,7 @@ export default function FeedOpheliaModal({
                     onClick={addChunk}
                     className="text-indigo-600 text-sm hover:underline flex items-center gap-1"
                   >
-                    <Plus size={16} /> Add Fact
+                    <Icon name="plus" size={16} /> Add Fact
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -184,7 +184,7 @@ export default function FeedOpheliaModal({
                         onClick={() => removeChunk(i)}
                         className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash size={18} />
+                        <Icon name="trash" size={18} /> 
                       </button>
                     </div>
                   ))}
@@ -237,7 +237,7 @@ export default function FeedOpheliaModal({
 
           {step === "success" && (
             <div className="text-center py-20 text-green-600">
-              <Check size={64} className="mx-auto mb-4" weight="bold" />
+              <Check size={64} className="mx-auto mb-4" />
               <h3 className="text-2xl font-bold">Knowledge Ingested!</h3>
               <p className="text-gray-600 mt-2">{botName} now knows about this.</p>
             </div>

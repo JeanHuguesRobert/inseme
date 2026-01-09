@@ -8,13 +8,13 @@ import {
   isTaskOverdue,
   isTaskBlocked,
   getTaskTitleFromPost,
-} from "../../lib/taskHelpers";
+} from "../../lib/taskHelpers.js";
 import {
   TASK_STATUS_LABELS,
   TASK_STATUS_COLORS,
   TASK_PRIORITY_ICONS,
   TASK_PRIORITY_COLORS,
-} from "../../lib/taskMetadata";
+} from "../../lib/taskMetadata.js";
 
 /**
  * Task Card Component

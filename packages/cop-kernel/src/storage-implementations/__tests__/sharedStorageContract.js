@@ -5,7 +5,7 @@ import { ERROR_CODES } from "../../storage.js";
 /**
  * Fonction utilitaire pour tester le contrat de l'interface de stockage.
  * @param {string} storageName - Le nom de l'implémentation de stockage (ex: "InMemoryStorage").
- * @param {function(): Promise<import('../../storage.js').StorageInterface>} createStorageInstance - Une fonction qui retourne une nouvelle instance de l'interface de stockage.
+ * @param {function(): Promise<import('../../storage').StorageInterface>} createStorageInstance - Une fonction qui retourne une nouvelle instance de l'interface de stockage.
  */
 export function testStorageContract(storageName, createStorageInstance) {
   describe(`${storageName} - StorageInterface Contract`, () => {

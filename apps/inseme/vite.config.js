@@ -14,6 +14,10 @@ export default defineConfig(({ mode }) => ({
   ],
   resolve: {
     alias: {
+      "@inseme/room": path.resolve(__dirname, "../../packages/room"),
+      "@inseme/ui": path.resolve(__dirname, "../../packages/ui"),
+      "@inseme/cop-host": path.resolve(__dirname, "../../packages/cop-host"),
+      "@inseme/kudocracy": path.resolve(__dirname, "../../packages/kudocracy"),
       "@inseme/ophelia": path.resolve(
         __dirname,
         "../../packages/ophelia/index.js"

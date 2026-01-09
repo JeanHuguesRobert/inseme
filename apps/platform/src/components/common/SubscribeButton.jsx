@@ -1,5 +1,5 @@
-import { isAnonymous } from "../../lib/permissions";
-import { useSubscription } from "../../lib/useSubscription";
+import { isAnonymous } from "@inseme/cop-host";
+import { useSubscription } from "../../lib/useSubscription.js";
 
 /**
  * Bouton d'abonnement universel pour tout type de contenu

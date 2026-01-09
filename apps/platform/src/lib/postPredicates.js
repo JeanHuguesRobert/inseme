@@ -1,12 +1,12 @@
-import { getMetadata } from "./metadata";
 import {
+  getMetadata,
   POST_TYPES,
   LINKED_TYPES,
   getPostType,
   getShareInfo,
   getShares,
   getShareCount,
-} from "./socialMetadata";
+} from "@inseme/cop-host";
 
 // ============================================================================
 // GETTERS (Read-Only Instance Accessors)

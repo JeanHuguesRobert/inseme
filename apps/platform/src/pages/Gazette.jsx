@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
-import { isDeleted } from "../lib/metadata";
-import { enrichUserMetadata } from "../lib/userTransform";
-import { useCurrentUser } from "../lib/useCurrentUser";
+import { getSupabase } from "../lib/supabase.js";
+import { isDeleted, enrichUserMetadata } from "@inseme/cop-host";
+import { useCurrentUser } from "@inseme/cop-host";
 import GazetteLayout from "../components/gazette/GazetteLayout";
 import GazettePost from "../components/gazette/GazettePost";
-import { isEventPost, getPostEvent } from "../lib/postPredicates";
+import { isEventPost, getPostEvent } from "../lib/postPredicates.js";
 import { getConfig } from "../common/config/instanceConfig.client.js";
 
 // Collapsible help banner for editors

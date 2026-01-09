@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../client/supabase";
-import { REACTION_EMOJIS } from "../lib/socialMetadata";
-import { isAnonymous } from "../lib/permissions";
+import { getSupabase } from "../client/supabase.js";
+import { REACTION_EMOJIS } from "../lib/socialMetadata.js";
+import { isAnonymous } from "../lib/permissions.js";
 
 /**
  * Sélecteur de réactions emoji avec compteur

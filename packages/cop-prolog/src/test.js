@@ -1,5 +1,5 @@
 import { createPrologEngine } from "./index.js";
-import { toPrologFacts } from "../../kudocracy/src/governance.js";
+import { toPrologFacts } from "../../brique-kudocracy/src/governance.js";
 
 async function test() {
   console.log("--- Test Inseme Prolog Engine ---");

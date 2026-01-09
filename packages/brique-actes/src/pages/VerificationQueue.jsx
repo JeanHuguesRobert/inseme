@@ -6,9 +6,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import SiteFooter from "../../components/layout/SiteFooter";
+import { getSupabase, useCurrentUser } from "@inseme/cop-host";
 
 // ============================================================================
 // CONSTANTS
@@ -36,7 +34,10 @@ const STATUS_BADGES = {
 // ============================================================================
 
 const StatusBadge = ({ status }) => {
-  const badge = STATUS_BADGES[status] || { label: status, class: "bg-slate-100" };
+  const badge = STATUS_BADGES[status] || {
+    label: status,
+    class: "bg-slate-100",
+  };
   return (
     <span
       className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${badge.class}`}
@@ -60,7 +61,8 @@ const ProofCard = ({ item, onVerify, onReject, onAssign }) => {
             onClick={() => setShowPreview(true)}
           >
             {item.url_fichier ? (
-              item.proof_type === "SCREENSHOT" || item.proof_type === "PHOTO" ? (
+              item.proof_type === "SCREENSHOT" ||
+              item.proof_type === "PHOTO" ? (
                 <img
                   src={item.url_fichier}
                   alt="Aperçu"
@@ -86,7 +88,8 @@ const ProofCard = ({ item, onVerify, onReject, onAssign }) => {
 
             {item.date_constat && (
               <div className="text-sm text-slate-500 mb-1">
-                📅 Constaté le: {new Date(item.date_constat).toLocaleDateString("fr-FR")}
+                📅 Constaté le:{" "}
+                {new Date(item.date_constat).toLocaleDateString("fr-FR")}
               </div>
             )}
 
@@ -154,7 +157,9 @@ const ProofCard = ({ item, onVerify, onReject, onAssign }) => {
 
         {item.status === "IN_PROGRESS" && (
           <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-            <div className="text-sm text-blue-600">⏳ En cours de vérification...</div>
+            <div className="text-sm text-blue-600">
+              ⏳ En cours de vérification...
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={() => onReject(item)}
@@ -183,7 +188,11 @@ const ProofCard = ({ item, onVerify, onReject, onAssign }) => {
             {item.proof_type === "SCREENSHOT" || item.proof_type === "PHOTO" ? (
               <img src={item.url_fichier} alt="Preuve" className="max-w-full" />
             ) : item.proof_type === "PDF" ? (
-              <iframe src={item.url_fichier} className="w-full h-[80vh]" title="Document PDF" />
+              <iframe
+                src={item.url_fichier}
+                className="w-full h-[80vh]"
+                title="Document PDF"
+              />
             ) : (
               <div className="bg-white rounded-lg p-8 text-center">
                 <a
@@ -222,7 +231,9 @@ const VerificationModal = ({ item, onClose, onConfirm }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">✅ Valider cette preuve</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            ✅ Valider cette preuve
+          </h2>
 
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
             <p className="text-sm text-green-700">
@@ -296,7 +307,9 @@ const RejectionModal = ({ item, onClose, onConfirm }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">❌ Rejeter cette preuve</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            ❌ Rejeter cette preuve
+          </h2>
 
           <div className="mb-4">
             <div className="text-sm text-slate-500 mb-2">Motifs fréquents:</div>
@@ -357,7 +370,7 @@ const RejectionModal = ({ item, onClose, onConfirm }) => {
 // ============================================================================
 
 export default function VerificationQueue() {
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -414,7 +427,9 @@ export default function VerificationQueue() {
       // Refresh
       setItems((prev) =>
         prev.map((i) =>
-          i.id === item.id ? { ...i, status: "IN_PROGRESS", assigned_to: user.id } : i
+          i.id === item.id
+            ? { ...i, status: "IN_PROGRESS", assigned_to: user.id }
+            : i
         )
       );
     } catch (err) {
@@ -503,7 +518,9 @@ export default function VerificationQueue() {
             <span>/</span>
             <span className="text-slate-700">Vérification des preuves</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">🔍 File de vérification des preuves</h1>
+          <h1 className="text-2xl font-bold text-slate-900">
+            🔍 File de vérification des preuves
+          </h1>
           <p className="text-slate-500 mt-1">
             Modération des documents téléversés par les citoyens
           </p>
@@ -516,10 +533,13 @@ export default function VerificationQueue() {
           <div className="flex items-start gap-3">
             <span className="text-2xl">🔍</span>
             <div>
-              <h3 className="font-semibold text-blue-800">Vérification des preuves</h3>
+              <h3 className="font-semibold text-blue-800">
+                Vérification des preuves
+              </h3>
               <p className="text-sm text-blue-700 mt-1">
-                Chaque preuve téléversée doit être vérifiée avant d'être considérée comme valide.
-                Vérifiez l'authenticité, la date de constat et la pertinence du document.
+                Chaque preuve téléversée doit être vérifiée avant d'être
+                considérée comme valide. Vérifiez l'authenticité, la date de
+                constat et la pertinence du document.
               </p>
             </div>
           </div>
@@ -528,13 +548,21 @@ export default function VerificationQueue() {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="p-4 rounded-lg border border-yellow-200 bg-yellow-50">
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-            <div className="text-sm text-slate-500">⏳ En attente de vérification</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.pending}
+            </div>
+            <div className="text-sm text-slate-500">
+              ⏳ En attente de vérification
+            </div>
           </div>
 
           <div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
-            <div className="text-2xl font-bold text-blue-600">{stats.inProgress}</div>
-            <div className="text-sm text-slate-500">🔄 En cours de traitement</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.inProgress}
+            </div>
+            <div className="text-sm text-slate-500">
+              🔄 En cours de traitement
+            </div>
           </div>
         </div>
 
@@ -554,7 +582,9 @@ export default function VerificationQueue() {
         ) : items.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
             <div className="text-4xl mb-4">✅</div>
-            <p className="text-slate-500">Aucune preuve en attente de vérification</p>
+            <p className="text-slate-500">
+              Aucune preuve en attente de vérification
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -587,8 +617,6 @@ export default function VerificationQueue() {
           onConfirm={handleReject}
         />
       )}
-
-      <SiteFooter />
     </div>
   );
 }

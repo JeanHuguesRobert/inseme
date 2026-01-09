@@ -1,4 +1,4 @@
-import { useUserProfileById } from "../../lib/useCurrentUser";
+import { useUserProfileById } from "@inseme/cop-host";
 
 /**
  * Affichage compact d'un nom d'utilisateur avec infos optionnelles

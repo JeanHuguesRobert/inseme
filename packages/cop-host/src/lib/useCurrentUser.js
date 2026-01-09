@@ -2,7 +2,7 @@
 /* This file provides hooks to access the current user context and fetch user profiles */
 
 import { useContext, useState, useEffect, useCallback } from "react";
-import { CurrentUserContext } from "../contexts/CurrentUserContext.jsx";
+import { CurrentUserContext } from "../contexts/Cop-hostCurrentUserContext";
 import { getSupabase } from "../client/supabase.js";
 import { useDataLoader } from "./useStatusOperations.js";
 
@@ -28,7 +28,7 @@ export function useUserProfileById(userId) {
       setError(null);
       return;
     }
-    
+
     setLoading(true);
     try {
       const { data, error: fetchError } = await getSupabase()
@@ -36,7 +36,7 @@ export function useUserProfileById(userId) {
         .select("*")
         .eq("id", userId)
         .maybeSingle();
-        
+
       if (fetchError) throw fetchError;
       setProfile(data);
       setError(null);

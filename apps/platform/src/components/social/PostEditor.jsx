@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { getSupabase } from "../../lib/supabase";
+import { getSupabase } from "../../lib/supabase.js";
 import {
   createPostMetadata,
   POST_TYPES,
@@ -11,9 +11,9 @@ import {
   getPostSubtype,
   getPostIncident,
   appendOrMergeLastModifiedBy,
-} from "../../lib/socialMetadata";
-import { isAnonymous } from "../../lib/permissions";
-import { getMetadata } from "../../lib/metadata";
+  getMetadata,
+} from "@inseme/cop-host";
+import { isAnonymous } from "@inseme/cop-host";
 import {
   getPostGroupId,
   getPostEvent,
@@ -21,7 +21,7 @@ import {
   getPostSourceUrl,
   isPinnedPost,
   isLockedPost,
-} from "../../lib/postPredicates";
+} from "../../lib/postPredicates.js";
 import { getConfig } from "../../common/config/instanceConfig.client.js";
 
 /**

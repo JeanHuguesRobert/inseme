@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import SiteFooter from "../components/layout/SiteFooter";
-import { getSupabase } from "../lib/supabase";
-import { BOT_NAME } from "../constants";
+import { getSupabase } from "../lib/supabase.js";
+import { BOT_NAME } from "../constants.js";
 
 // Catégories de communautés (niches)
 const COMMUNITY_CATEGORIES = [

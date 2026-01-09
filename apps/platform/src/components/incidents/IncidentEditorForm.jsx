@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSupabase } from "../../lib/supabase";
+import { getSupabase } from "../../lib/supabase.js";
 import {
   createPostMetadata,
   POST_TYPES,
@@ -9,11 +9,11 @@ import {
   getPostTitle,
   getPostSubtitle,
   getPostGroupId,
-} from "../../lib/socialMetadata";
-import { getMetadata } from "../../lib/metadata";
-import { isAnonymous } from "../../lib/permissions";
-import { getDisplayName } from "../../lib/userDisplay";
-import { validatePetitionUrl } from "../../lib/petitions";
+  getMetadata,
+} from "@inseme/cop-host";
+import { isAnonymous } from "@inseme/cop-host";
+import { getDisplayName } from "@inseme/cop-host";
+import { validatePetitionUrl } from "@inseme/brique-kudocracy";
 import { PetitionUrlField } from "../common/PetitionLink";
 
 export default function IncidentEditorForm({ post, currentUser }) {

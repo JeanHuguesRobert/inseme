@@ -1,5 +1,5 @@
 {
-  "name": "cop-kernel",
+  "name": "@inseme/cop-kernel",
   "version": "0.2.0",
   "description": "Cognitive Orchestration Protocol v0.2 kernel implementation (runtime helpers, registries, node/agent utilities) built on top of cop-core.",
   "type": "module",
@@ -25,7 +25,9 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.0.0",
     "cop-core": "file:../cop-core",
-    "mysql2": "^3.15.3"
+    "mysql2": "^3.15.3",
+    "sqlite3": "^5.1.7",
+    "sqlite": "^5.1.1"
   },
   "engines": {
     "node": ">=18.0.0"

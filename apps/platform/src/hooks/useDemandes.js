@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listDemandes, getDemande, createDemande, updateDemande } from "../services/api/demandes";
+import { listDemandes, getDemande, createDemande, updateDemande } from "../services/api/demandes.js";
 import { useAuth } from "../contexts/AuthContext";
 
 export function useDemandesList(params = {}) {

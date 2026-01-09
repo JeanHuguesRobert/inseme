@@ -11,7 +11,7 @@ import {
   markTaskFailed,
   markTaskStepCompleted,
   markTaskStepFailed,
-} from "./tasks.js";
+} from "./Cop-kerneltasks.js";
 import { emitCopArtifact } from "./artifacts.js";
 import { extractContinuationFromMessage } from "./continuation.js";
 import { callAgentWithContinuation, resumeContinuationAndSend } from "./call.js";

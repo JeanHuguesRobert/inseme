@@ -1,7 +1,7 @@
 import { MarkdownViewer } from "@inseme/ui";
 import SiteFooter from "../layout/SiteFooter";
 import FilHeader from "./FilHeader";
-import { useMarkdownDoc } from "../../hooks/useMarkdownDoc";
+import { useMarkdownDoc } from "../../hooks/useMarkdownDoc.js";
 
 export default function FilGuidelines() {
   const { content, loading, error } = useMarkdownDoc("fil-guidelines.md");

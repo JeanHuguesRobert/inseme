@@ -30,8 +30,8 @@ export default async (req, context) => {
     // Mark as proposed upstream locally and optionally notify parent
     // Prefer vault-stored secret (server-side) for secure forwarding
     const parentApiKeyVault = await getConfig("parent_hub_api_key");
-    // For security, do NOT trust client-provided API keys. Only use vault-stored or env var keys.
-    const parentApiKey = parentApiKeyVault || process.env.PARENT_HUB_API_KEY || null;
+    // For security, do NOT trust client-provided API keys. Only use vault-stored keys.
+    const parentApiKey = parentApiKeyVault || null;
     const res = await wikiFederation.proposeToParent({
       pageKey: slug,
       notifyParent: !!parentApiKey,

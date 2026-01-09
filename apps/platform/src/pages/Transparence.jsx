@@ -1,17 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
+import { getSupabase } from "../lib/supabase.js";
 import {
   CITY_NAME,
   HASHTAG,
   COMMUNITY_NAME,
   COMMUNITY_TYPE,
   getCommunityLabels,
-} from "../constants";
+} from "../constants.js";
 import {
   getCommunityTransparencyCriteria,
   calculateTransparencyScore,
-} from "../config/transparencyCriteria";
+} from "../config/transparencyCriteria.js";
 import SiteFooter from "../components/layout/SiteFooter";
 
 // Obtenir les critères dynamiques basés sur le type de communauté

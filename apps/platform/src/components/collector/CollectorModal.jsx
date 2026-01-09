@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAiSummary } from "../../lib/useAiSummary";
+import { useAiSummary } from "../../lib/useAiSummary.js";
 
 const DATA_TYPES = ["Titre", "Description", "Date", "Lieu", "Personne", "Organisation", "Autre"];
 

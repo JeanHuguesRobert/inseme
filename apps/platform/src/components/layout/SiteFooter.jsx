@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { APP_VERSION, DEPLOY_DATE, VOLUNTEER_URL } from "../../constants";
-import { getSupabase } from "../../lib/supabase";
-import { useCurrentUser } from "../../lib/useCurrentUser";
-import { getUserRole, ROLE_ADMIN } from "../../lib/permissions";
-import { getDisplayName } from "../../lib/userDisplay";
+import { APP_VERSION, DEPLOY_DATE, VOLUNTEER_URL } from "../../constants.js";
+import { getSupabase } from "../../lib/supabase.js";
+import { useCurrentUser } from "@inseme/cop-host";
+import { getUserRole, ROLE_ADMIN } from "@inseme/cop-host";
+import { getDisplayName } from "@inseme/cop-host";
 import AuthModal from "../common/AuthModal";
-import cafeApi from "../../services/cafe-api";
+import cafeApi from "../../services/cafe-api.js";
 
 export default function SiteFooter({
   showWiki = true,

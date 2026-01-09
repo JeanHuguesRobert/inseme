@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import { getMetadata } from "../lib/metadata";
+import { getSupabase } from "../lib/supabase.js";
+import { useCurrentUser } from "@inseme/cop-host";
+import { getMetadata } from "@inseme/cop-host";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import SiteFooter from "../components/layout/SiteFooter";
 

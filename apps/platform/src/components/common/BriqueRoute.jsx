@@ -3,7 +3,7 @@ import React, { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import FeatureRoute from "./FeatureRoute";
 import SiteFooter from "../layout/SiteFooter";
-import { BRIQUE_COMPONENTS } from "../../brique-registry.gen";
+import { BRIQUE_COMPONENTS } from "../../generated/brique-registry.js";
 
 /**
  * Composant pour rendre dynamiquement les routes d'une brique

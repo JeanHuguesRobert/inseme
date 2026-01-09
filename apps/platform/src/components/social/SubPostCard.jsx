@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { MarkdownViewer } from "@inseme/ui";
-import { getPostTitle, getPostSubtitle, getThreadDepth } from "../../lib/socialMetadata";
-import { getDisplayName, getUserInitials } from "../../lib/userDisplay";
+import { getPostTitle, getPostSubtitle, getThreadDepth } from "../../../../../packages/cop-host/src/lib/socialMetadata.js";
+import { getDisplayName, getUserInitials } from "@inseme/cop-host";
 
 /**
  * Card component for displaying sub-posts in a thread hierarchy

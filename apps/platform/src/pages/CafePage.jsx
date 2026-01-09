@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import SiteFooter from "../components/layout/SiteFooter";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import { useVoiceInterface } from "../hooks/useVoiceInterface";
-import { getSupabase } from "../lib/supabase";
+import { useCurrentUser } from "@inseme/cop-host";
+import { useVoiceInterface } from "../hooks/useVoiceInterface.js";
+import { getSupabase } from "../lib/supabase.js";
 
 export default function CafePage() {
   const { currentUser } = useCurrentUser();

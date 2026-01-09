@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { getMetadata } from "../../lib/metadata";
-import { TASK_STATUSES } from "../../lib/taskMetadata";
+import { getMetadata } from "../../../../cop-host/src/lib/metadata.js";
+import { TASK_STATUSES } from "../../lib/taskMetadata.js";
 
 /**
  * Task Project Card Component

@@ -9,6 +9,8 @@ import {
   TASK_STATUS_LABELS as K_LABELS,
   TASK_PRIORITIES as K_PRIORITIES,
   TASK_COMMANDS as K_COMMANDS,
+  parseTaskCommand,
+  normalizeStatusArg,
 } from "@inseme/kudocracy";
 
 // Task workflow statuses
@@ -54,6 +56,8 @@ export const TASK_PRIORITY_ICONS = {
 
 // Comment commands for task management
 export const TASK_COMMANDS = K_COMMANDS;
+
+export { parseTaskCommand, normalizeStatusArg };
 
 // Command descriptions for help text
 export const TASK_COMMAND_HELP = {

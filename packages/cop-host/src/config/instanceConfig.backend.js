@@ -4,7 +4,11 @@
  * Gère l'accès aux variables d'environnement côté serveur et l'initialisation du client Supabase.
  */
 
-import { inited, initializeInstanceCore, loadInstanceConfigCore } from "./instanceConfig.core.js";
+import {
+  inited,
+  initializeInstanceCore,
+  loadInstanceConfigCore,
+} from "./instanceConfig.core.js";
 import { createClient } from "@supabase/supabase-js";
 
 // Fonction pour récupérer les variables d'environnement côté backend (Node.js)
@@ -49,15 +53,34 @@ export function newSupabase(admin = true, options = {}) {
   return createSupabase(admin, options);
 }
 
-export async function initializeInstance(supabase = null, admin = false, options = {}) {
-  return await initializeInstanceCore(supabase, getenv, newSupabase, admin, options);
+export async function initializeInstance(
+  supabase = null,
+  admin = false,
+  options = {}
+) {
+  return await initializeInstanceCore(
+    supabase,
+    getenv,
+    newSupabase,
+    admin,
+    options
+  );
 }
 
 export async function initializeInstanceAdmin(supabase = null, options = {}) {
-  return await initializeInstanceCore(supabase, getenv, newSupabase, true, options);
+  return await initializeInstanceCore(
+    supabase,
+    getenv,
+    newSupabase,
+    true,
+    options
+  );
 }
 
-export async function loadInstanceConfig(force = false, supabase_config = null) {
+export async function loadInstanceConfig(
+  force = false,
+  supabase_config = null
+) {
   if (!inited()) {
     console.warn("loadInstanceConfig: calling initializeInstanceAdmin()");
     await initializeInstanceAdmin();
@@ -67,4 +90,3 @@ export async function loadInstanceConfig(force = false, supabase_config = null) 
 
 // Ré-exporter tout de instanceConfig.core.js pour une utilisation facile dans le backend
 export * from "./instanceConfig.core.js";
-

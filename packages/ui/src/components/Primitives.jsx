@@ -1,4 +1,12 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  createContext,
+  useContext,
+} from "react";
+
+const TabsContext = createContext(null);
 
 export const Card = ({ children, className = "" }) => (
   <div
@@ -91,59 +99,47 @@ export const Tabs = ({
   };
 
   return (
-    <div className={className}>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          return React.cloneElement(child, {
-            activeTab,
-            onValueChange: handleValueChange,
-          });
-        }
-        return child;
-      })}
-    </div>
+    <TabsContext.Provider
+      value={{ activeTab, onValueChange: handleValueChange }}
+    >
+      <div className={className}>{children}</div>
+    </TabsContext.Provider>
   );
 };
 
-export const TabsList = ({
-  children,
-  className = "",
-  activeTab,
-  onValueChange,
-}) => (
+export const TabsList = ({ children, className = "" }) => (
   <div
     className={`inline-flex h-10 items-center justify-center rounded-md bg-slate-900/50 p-1 text-slate-400 ${className}`}
   >
-    {React.Children.map(children, (child) => {
-      if (React.isValidElement(child)) {
-        return React.cloneElement(child, { activeTab, onValueChange });
-      }
-      return child;
-    })}
+    {children}
   </div>
 );
 
-export const TabsTrigger = ({
-  value,
-  children,
-  className = "",
-  activeTab,
-  onValueChange,
-}) => (
-  <button
-    onClick={() => onValueChange(value)}
-    data-state={activeTab === value ? "active" : "inactive"}
-    className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer ${
-      activeTab === value
-        ? "bg-amber-500 text-slate-950 shadow-sm"
-        : "hover:text-slate-200"
-    } ${className}`}
-  >
-    {children}
-  </button>
-);
+export const TabsTrigger = ({ value, children, className = "" }) => {
+  const context = useContext(TabsContext);
+  if (!context) return null;
+  const { activeTab, onValueChange } = context;
 
-export const TabsContent = ({ value, children, className = "", activeTab }) => {
+  return (
+    <button
+      onClick={() => onValueChange(value)}
+      data-state={activeTab === value ? "active" : "inactive"}
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer hover:bg-white/5 active:scale-95 ${
+        activeTab === value
+          ? "bg-amber-500 text-slate-950 shadow-sm"
+          : "hover:text-slate-200"
+      } ${className}`}
+    >
+      {children}
+    </button>
+  );
+};
+
+export const TabsContent = ({ value, children, className = "" }) => {
+  const context = useContext(TabsContext);
+  if (!context) return null;
+  const { activeTab } = context;
+
   if (activeTab !== value) return null;
   return (
     <div
@@ -151,6 +147,76 @@ export const TabsContent = ({ value, children, className = "", activeTab }) => {
       className={`mt-2 ring-offset-background focus-visible:outline-none ${className}`}
     >
       {children}
+    </div>
+  );
+};
+
+export const Tooltip = ({
+  children,
+  content,
+  position = "top",
+  delay = 400,
+}) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const timeoutRef = useRef(null);
+
+  const showTooltip = () => {
+    timeoutRef.current = setTimeout(() => {
+      setIsVisible(true);
+    }, delay);
+  };
+
+  const hideTooltip = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setIsVisible(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const positionClasses = {
+    top: "bottom-full left-1/2 -translate-x-1/2 mb-2",
+    bottom: "top-full left-1/2 -translate-x-1/2 mt-2",
+    left: "right-full top-1/2 -translate-y-1/2 mr-2",
+    right: "left-full top-1/2 -translate-y-1/2 ml-2",
+  };
+
+  const arrowClasses = {
+    top: "top-full left-1/2 -translate-x-1/2 border-t-slate-900 border-l-transparent border-r-transparent border-b-transparent",
+    bottom:
+      "bottom-full left-1/2 -translate-x-1/2 border-b-slate-900 border-l-transparent border-r-transparent border-t-transparent",
+    left: "left-full top-1/2 -translate-y-1/2 border-l-slate-900 border-t-transparent border-b-transparent border-r-transparent",
+    right:
+      "right-full top-1/2 -translate-y-1/2 border-r-slate-900 border-t-transparent border-b-transparent border-l-transparent",
+  };
+
+  return (
+    <div
+      className="relative inline-block"
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+      onFocus={showTooltip}
+      onBlur={hideTooltip}
+    >
+      {children}
+      {isVisible && content && (
+        <div
+          className={`absolute z-[100] px-3 py-1.5 text-[11px] font-semibold text-white bg-slate-900/95 backdrop-blur-sm border border-white/5 rounded-lg shadow-xl whitespace-normal break-words max-w-[200px] pointer-events-none animate-in fade-in zoom-in duration-200 ${positionClasses[position]}`}
+        >
+          {content}
+          <div
+            className={`absolute border-4 ${arrowClasses[position]}`}
+            style={{ content: '""' }}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../lib/supabase";
+import { getSupabase } from "../lib/supabase.js";
 
 export function useSocialAvatar(provider) {
   const [avatarUrl, setAvatarUrl] = useState(null);

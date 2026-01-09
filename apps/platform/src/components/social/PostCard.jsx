@@ -1,8 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { MarkdownViewer } from "@inseme/ui";
-import { getMetadata } from "../../lib/metadata";
-import { getPostTitle, getPostType, POST_TYPES } from "../../lib/socialMetadata";
+import { getMetadata, getPostTitle, getPostType, POST_TYPES } from "@inseme/cop-host";
 import {
   isPinnedPost,
   isLockedPost,
@@ -11,9 +10,9 @@ import {
   isShare,
   getPostShareInfo,
   getPostShareCount,
-} from "../../lib/postPredicates";
-import { getDisplayName, getUserInitials } from "../../lib/userDisplay";
-import { sharePost, resolveToOriginal } from "../../lib/sharePost";
+} from "../../lib/postPredicates.js";
+import { getDisplayName, getUserInitials } from "@inseme/cop-host";
+import { sharePost, resolveToOriginal } from "../../lib/sharePost.js";
 import ShareDialog from "../social/ShareDialog";
 
 /**

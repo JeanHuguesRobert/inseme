@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useGroup, useGroupMembers } from "../hooks/useGroup";
+import { useGroup, useGroupMembers, getSupabase } from "@inseme/cop-host";
 import {
   Shield,
   ArrowLeft,
@@ -12,9 +12,9 @@ import {
   X,
   Check,
 } from "lucide-react";
-import { supabase } from "../../../lib/supabase";
 
 export default function GroupAdmin() {
+  const supabase = getSupabase();
   const { id } = useParams();
   const { group, isAdmin, loading, terminology } = useGroup(id);
   const {

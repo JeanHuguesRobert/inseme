@@ -1,8 +1,8 @@
 import { MarkdownViewer } from "@inseme/ui";
 import { Link } from "react-router-dom";
-import { MOVEMENT_NAME, CITY_NAME, BOT_NAME, PARTY_NAME, HASHTAG } from "../constants";
+import { MOVEMENT_NAME, CITY_NAME, BOT_NAME, PARTY_NAME, HASHTAG } from "../constants.js";
 import SiteFooter from "../components/layout/SiteFooter";
-import { useMarkdownDoc } from "../hooks/useMarkdownDoc";
+import { useMarkdownDoc } from "../hooks/useMarkdownDoc.js";
 import { useMemo } from "react";
 
 export default function Audit() {

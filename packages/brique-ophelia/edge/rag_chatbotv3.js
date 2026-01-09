@@ -8,7 +8,7 @@ import {
   loadInstanceConfig,
   getConfig,
   getSupabase,
-} from "../../common/config/instanceConfig.edge.js";
+} from "../../cop-host/src/config/instanceConfig.edge.js";
 
 import createClient from "@supabase/supabase-js";
 
@@ -17,7 +17,7 @@ import createClient from "@supabase/supabase-js";
 import OpenAI from "https://esm.sh/openai@4";
 
 const PROVIDER_META_PREFIX = "__PROVIDER_INFO__";
-import { providerMetrics } from "./lib/utils/provider-metrics.js";
+import { providerMetrics } from "./lib/provider-metrics.js";
 const PROVIDERS_STATUS_PREFIX = "__PROVIDERS_STATUS__";
 const TOOL_TRACE_PREFIX = "__TOOL_TRACE__";
 
@@ -126,7 +126,8 @@ const TOOLS = {
         },
         domain: {
           type: "string",
-          description: "Optional filter for domain field (e.g., 'wiki', 'history').",
+          description:
+            "Optional filter for domain field (e.g., 'wiki', 'history').",
         },
         limit: {
           type: "integer",
@@ -158,7 +159,8 @@ const TOOLS = {
       properties: {
         query: {
           type: "string",
-          description: "The SQL SELECT query to execute. Must be read-only (SELECT only).",
+          description:
+            "The SQL SELECT query to execute. Must be read-only (SELECT only).",
         },
         limit: {
           type: "integer",
@@ -181,9 +183,15 @@ const TOOLS = {
     parameters: {
       type: "object",
       properties: {
-        content: { type: "string", description: "Le contenu du message (Markdown supporté)." },
+        content: {
+          type: "string",
+          description: "Le contenu du message (Markdown supporté).",
+        },
         title: { type: "string", description: "Titre optionnel du message." },
-        group_id: { type: "string", description: "ID du groupe où publier (optionnel)." },
+        group_id: {
+          type: "string",
+          description: "ID du groupe où publier (optionnel).",
+        },
         tags: {
           type: "array",
           items: { type: "string" },
@@ -213,8 +221,14 @@ const TOOLS = {
       type: "object",
       properties: {
         group_id: { type: "string", description: "Filtrer par groupe." },
-        limit: { type: "integer", description: "Nombre max de résultats (défaut 10)." },
-        query: { type: "string", description: "Recherche textuelle dans le contenu." },
+        limit: {
+          type: "integer",
+          description: "Nombre max de résultats (défaut 10).",
+        },
+        query: {
+          type: "string",
+          description: "Recherche textuelle dans le contenu.",
+        },
       },
     },
   },
@@ -228,15 +242,23 @@ const TOOLS = {
         description: { type: "string", description: "Description détaillée." },
         project_id: {
           type: "string",
-          description: "ID du projet (groupe type task_project) ou groupe parent.",
+          description:
+            "ID du projet (groupe type task_project) ou groupe parent.",
         },
         status: {
           type: "string",
           enum: ["todo", "in_progress", "done", "blocked"],
           description: "Statut initial.",
         },
-        priority: { type: "string", enum: ["low", "medium", "high"], description: "Priorité." },
-        assignee_id: { type: "string", description: "ID de l'utilisateur assigné." },
+        priority: {
+          type: "string",
+          enum: ["low", "medium", "high"],
+          description: "Priorité.",
+        },
+        assignee_id: {
+          type: "string",
+          description: "ID de l'utilisateur assigné.",
+        },
       },
       required: ["title"],
     },
@@ -248,7 +270,10 @@ const TOOLS = {
       type: "object",
       properties: {
         id: { type: "string", description: "ID de la tâche." },
-        status: { type: "string", enum: ["todo", "in_progress", "done", "blocked"] },
+        status: {
+          type: "string",
+          enum: ["todo", "in_progress", "done", "blocked"],
+        },
         title: { type: "string" },
         description: { type: "string" },
         priority: { type: "string" },
@@ -258,13 +283,17 @@ const TOOLS = {
   },
   list_tasks: {
     name: "list_tasks",
-    description: "Liste les tâches, filtrables par projet, statut ou assignation.",
+    description:
+      "Liste les tâches, filtrables par projet, statut ou assignation.",
     parameters: {
       type: "object",
       properties: {
         project_id: { type: "string", description: "ID du projet." },
         status: { type: "string", description: "Filtrer par statut." },
-        assignee_id: { type: "string", description: "Filtrer par assigné (me = moi)." },
+        assignee_id: {
+          type: "string",
+          description: "Filtrer par assigné (me = moi).",
+        },
         limit: { type: "integer", description: "Max résultats." },
       },
     },
@@ -374,7 +403,10 @@ const TOOLS = {
     parameters: {
       type: "object",
       properties: {
-        status: { type: "string", description: "Filtrer par statut (défaut: active)." },
+        status: {
+          type: "string",
+          description: "Filtrer par statut (défaut: active).",
+        },
         tag: { type: "string", description: "Filtrer par tag." },
         limit: { type: "integer", description: "Max résultats." },
       },
@@ -386,7 +418,10 @@ const TOOLS = {
     parameters: {
       type: "object",
       properties: {
-        proposition_id: { type: "string", description: "ID de la proposition." },
+        proposition_id: {
+          type: "string",
+          description: "ID de la proposition.",
+        },
         value: {
           type: "integer",
           enum: [1, -1, 0],
@@ -428,8 +463,14 @@ const TOOLS = {
     parameters: {
       type: "object",
       properties: {
-        id: { type: "string", description: "ID de la page (optionnel si title fourni)." },
-        title: { type: "string", description: "Titre exact (optionnel si id fourni)." },
+        id: {
+          type: "string",
+          description: "ID de la page (optionnel si title fourni).",
+        },
+        title: {
+          type: "string",
+          description: "Titre exact (optionnel si id fourni).",
+        },
       },
     },
   },
@@ -459,7 +500,8 @@ const TOOLS = {
   },
   get_schema_info: {
     name: "get_schema_info",
-    description: "Retourne des informations sur la structure de la base de données.",
+    description:
+      "Retourne des informations sur la structure de la base de données.",
     parameters: {
       type: "object",
       properties: {
@@ -469,7 +511,8 @@ const TOOLS = {
   },
   get_user_context: {
     name: "get_user_context",
-    description: "Retourne les informations sur l'utilisateur actuel et le contexte de navigation.",
+    description:
+      "Retourne les informations sur l'utilisateur actuel et le contexte de navigation.",
     parameters: {
       type: "object",
       properties: {},
@@ -494,7 +537,10 @@ const TOOL_HANDLERS = {
   web_search({ query }) {
     return performWebSearch(query);
   },
-  async vector_search({ query, source_type, domain, limit = 5 }, { supabase, openai }) {
+  async vector_search(
+    { query, source_type, domain, limit = 5 },
+    { supabase, openai }
+  ) {
     console.log(`[VectorSearch] ➜ query=${previewForLog(query)}`);
     if (!supabase || !openai) {
       return `Recherche vectorielle non configurée.`;
@@ -508,7 +554,9 @@ const TOOL_HANDLERS = {
       const queryEmbedding = embeddingResponse.data[0].embedding;
 
       // Fetch chunks (limit to 1000 for performance)
-      let qb = supabase.from("knowledge_chunks").select("id,text,embedding,metadata");
+      let qb = supabase
+        .from("knowledge_chunks")
+        .select("id,text,embedding,metadata");
       if (source_type) qb = qb.eq("source_type", source_type);
       if (domain) qb = qb.eq("domain", domain);
       const { data, error } = await qb.limit(1000);
@@ -583,7 +631,9 @@ const TOOL_HANDLERS = {
       }
 
       // Tentative via RPC exec_sql (standard dans nos instances)
-      const { data, error } = await supabase.rpc("exec_sql", { sql_query: cleanQuery });
+      const { data, error } = await supabase.rpc("exec_sql", {
+        sql_query: cleanQuery,
+      });
       if (error) {
         console.warn(
           `[SqlQuery] ⚠️ RPC exec_sql failed, trying direct query if admin: ${error.message}`
@@ -646,10 +696,19 @@ function formatMarkdownCell(value) {
 // UTIL: small preview helper for logs
 function previewForLog(value, max = 400) {
   try {
-    const s = typeof value === "string" ? value : JSON.stringify(value);
+    let s = typeof value === "string" ? value : JSON.stringify(value);
+    // Masquage des secrets (DSN Postgres, clés d'API, tokens)
+    s = s.replace(/postgres:\/\/.*@/g, "postgres://***@");
+    s = s.replace(/(key|token|password|auth|secret)["']?\s*[:=]\s*["']?([^"'\s,}]*)/gi, (m, p1, p2) => {
+      return `${p1}": "***"`;
+    });
     return s.length > max ? s.slice(0, max) + "..." : s;
   } catch {
-    return String(value).slice(0, max) + (String(value).length > max ? "..." : "");
+    let s = String(value);
+    s = s.replace(/postgres:\/\/.*@/g, "postgres://***@");
+    return (
+      s.slice(0, max) + (s.length > max ? "..." : "")
+    );
   }
 }
 
@@ -723,7 +782,9 @@ async function performWebSearch(query) {
       });
     }
 
-    console.log(`[WebSearch] ✅ ${data.web?.results?.length || 0} résultats formatés`);
+    console.log(
+      `[WebSearch] ✅ ${data.web?.results?.length || 0} résultats formatés`
+    );
     return resultText;
   } catch (error) {
     console.error("[WebSearch] ❌ Erreur:", error.message);
@@ -760,20 +821,31 @@ async function executeToolCalls(
   user = null,
   context = {}
 ) {
-  console.log(`[${provider}] 🔁 executeToolCalls parallel called count=${toolCalls.length}`);
+  console.log(
+    `[${provider}] 🔁 executeToolCalls parallel called count=${toolCalls.length}`
+  );
   const toolPromises = toolCalls.map(async (call) => {
     try {
       const toolName = call.function?.name || call.name;
       let args = parseToolArguments(call.function?.arguments || call.arguments);
-      console.log(`[${provider}] ➜ Tool call: ${toolName} args=${previewForLog(args, 400)}`);
+      console.log(
+        `[${provider}] ➜ Tool call: ${toolName} args=${previewForLog(args, 400)}`
+      );
 
       // Apply fallback logic for web_search: use question if query is missing
       if (toolName === "web_search") {
         if (!args || !args.query) {
-          const fallbackQuery = fallbackContext?.web_search?.query || fallbackContext?.defaultQuery;
-          if (fallbackQuery && typeof fallbackQuery === "string" && fallbackQuery.trim()) {
+          const fallbackQuery =
+            fallbackContext?.web_search?.query || fallbackContext?.defaultQuery;
+          if (
+            fallbackQuery &&
+            typeof fallbackQuery === "string" &&
+            fallbackQuery.trim()
+          ) {
             args = { ...args, query: fallbackQuery };
-            console.log(`[${provider}] ℹ️ web_search fallback -> query="${fallbackQuery}"`);
+            console.log(
+              `[${provider}] ℹ️ web_search fallback -> query="${fallbackQuery}"`
+            );
           }
         }
       }
@@ -819,7 +891,8 @@ async function executeToolCalls(
       }
 
       if (toolName === "sql_query" && debugMode) {
-        const rawQuery = typeof args?.query === "string" ? args.query.trim() : "";
+        const rawQuery =
+          typeof args?.query === "string" ? args.query.trim() : "";
         if (rawQuery) {
           const preview = previewForLog(rawQuery, 800);
           const debugMessage = `💡 SQL (debug) requête exécutée :\n${preview}`;
@@ -848,7 +921,13 @@ async function executeToolCalls(
         argumentsPreview: previewForLog(args, 200),
       });
       const t0 = Date.now();
-      const output = await handler(args, { supabase, openai, debugMode, user, context });
+      const output = await handler(args, {
+        supabase,
+        openai,
+        debugMode,
+        user,
+        context,
+      });
       const t1 = Date.now();
       console.log(
         `[${provider}] ⬅ Tool result for ${toolName} preview: ${previewForLog(output, 400)}`
@@ -939,7 +1018,8 @@ const PROVIDER_CONFIGS = {
   },
   google: {
     // Utilisation de l'endpoint de compatibilité OpenAI de Google
-    apiUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    apiUrl:
+      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
     defaultModel: "gemini-2.5-flash",
     toolFormat: "openai", // Gemini via cet endpoint supporte le format OpenAI
   },
@@ -1008,7 +1088,8 @@ async function callLLMAPI({
     `[LLM] ➜ ${provider} payload preview: ${previewForLog({ model: payload.model, firstMessage: payload.messages?.[0]?.content || "", toolCount: formattedTools.length }, 100)}`
   );
 
-  const apiUrl = typeof config.apiUrl === "function" ? config.apiUrl(model) : config.apiUrl;
+  const apiUrl =
+    typeof config.apiUrl === "function" ? config.apiUrl(model) : config.apiUrl;
 
   // Headers spécifiques par provider
   const headers = {
@@ -1027,17 +1108,23 @@ async function callLLMAPI({
     body: JSON.stringify(payload),
   });
 
-  console.log(`[LLM] ⬅ ${provider} response status=${response.status} stream=${stream}`);
+  console.log(
+    `[LLM] ⬅ ${provider} response status=${response.status} stream=${stream}`
+  );
 
   if (!response.ok) {
     const body = await response.text();
-    console.error(`[LLM] ❌ ${provider} error body preview: ${previewForLog(body)}`);
+    console.error(
+      `[LLM] ❌ ${provider} error body preview: ${previewForLog(body)}`
+    );
     throw new Error(`${provider} API ${response.status}: ${body}`);
   }
 
   if (!stream || provider === "huggingface") {
     const data = await response.json();
-    console.log(`[LLM] ⬅ ${provider} non-stream preview: ${previewForLog(data, 1000)}`);
+    console.log(
+      `[LLM] ⬅ ${provider} non-stream preview: ${previewForLog(data, 1000)}`
+    );
     // For Anthropic we keep legacy handling (thinking blocks, tool_uses normalization).
     // For other providers return the raw JSON so callers can normalize different shapes.
     if (provider === "anthropic") return handleDirectResponse(data, provider);
@@ -1059,7 +1146,12 @@ async function* handleStreamingResponse(response, provider) {
   // Buffering for tool call fragments: id -> { name, argsStr }
   const pendingToolArgs = new Map();
   const pushedToolIds = new Set();
-  const context = { pendingToolArgs, pushedToolIds, toolCalls, toolFragmentCounter: 0 };
+  const context = {
+    pendingToolArgs,
+    pushedToolIds,
+    toolCalls,
+    toolFragmentCounter: 0,
+  };
 
   while (true) {
     const { done, value } = await reader.read();
@@ -1080,9 +1172,11 @@ async function* handleStreamingResponse(response, provider) {
 
       try {
         // Small preview to help debugging
-        const preview = payload.length > 300 ? payload.slice(0, 300) + "..." : payload;
+        const preview =
+          payload.length > 300 ? payload.slice(0, 300) + "..." : payload;
         const data = JSON.parse(payload);
-        const delta = provider === "anthropic" ? data.delta : data.choices?.[0]?.delta;
+        const delta =
+          provider === "anthropic" ? data.delta : data.choices?.[0]?.delta;
         const hasToolDelta =
           Boolean(delta?.tool_calls?.length) ||
           Boolean(delta?.tool_call) ||
@@ -1092,10 +1186,16 @@ async function* handleStreamingResponse(response, provider) {
         const shouldLogPayload = !onlyContentDelta;
 
         if (shouldLogPayload) {
-          console.log(`[${provider}] [SSE] incoming payload preview: ${preview}`);
-          console.log(`[${provider}] [SSE] parsed keys: ${Object.keys(data).join(",")}`);
+          console.log(
+            `[${provider}] [SSE] incoming payload preview: ${preview}`
+          );
+          console.log(
+            `[${provider}] [SSE] parsed keys: ${Object.keys(data).join(",")}`
+          );
           if (delta) {
-            console.log(`[${provider}] [SSE] delta keys: ${Object.keys(delta).join(",")}`);
+            console.log(
+              `[${provider}] [SSE] delta keys: ${Object.keys(delta).join(",")}`
+            );
           }
         }
 
@@ -1115,14 +1215,17 @@ async function* handleStreamingResponse(response, provider) {
           }
 
           // Handle tool calls
-          const calls = delta?.tool_use ? delta.tool_use.map(normalizeToolCall) : [];
+          const calls = delta?.tool_use
+            ? delta.tool_use.map(normalizeToolCall)
+            : [];
           if (calls.length) toolCalls.push(...calls);
         } else {
           if (delta?.content) {
             fullContent += delta.content;
             yield delta.content;
           }
-          const rawToolCalls = delta?.tool_calls || (delta?.tool_call ? [delta.tool_call] : []);
+          const rawToolCalls =
+            delta?.tool_calls || (delta?.tool_call ? [delta.tool_call] : []);
           if (rawToolCalls.length) {
             for (const raw of rawToolCalls) {
               processToolCallFragment(context, raw, provider);
@@ -1135,9 +1238,12 @@ async function* handleStreamingResponse(response, provider) {
           }
         }
       } catch (err) {
-        console.error(`[${provider}] [SSE] Erreur parsing payload: ${err.message}`, {
-          payloadPreview: payload.slice(0, 200),
-        });
+        console.error(
+          `[${provider}] [SSE] Erreur parsing payload: ${err.message}`,
+          {
+            payloadPreview: payload.slice(0, 200),
+          }
+        );
       }
     }
   }
@@ -1154,7 +1260,9 @@ function handleDirectResponse(data, provider) {
 
     // Check for thinking blocks
     if (data.thinking && Array.isArray(data.thinking)) {
-      const thinkingContent = data.thinking.map((t) => t.content || t.text || "").join("\n");
+      const thinkingContent = data.thinking
+        .map((t) => t.content || t.text || "")
+        .join("\n");
       if (thinkingContent) {
         content += `<Think>${thinkingContent}</Think>\n\n`;
       }
@@ -1173,7 +1281,13 @@ function handleDirectResponse(data, provider) {
 // Replace previous normalizeToolCall definition:
 const normalizeToolCall = (call, idx = 0) => {
   // Accept multiple possible shapes and extract function-like properties
-  const fnShape = call.function || call.tool || call.action || call.intent || call.metadata || {};
+  const fnShape =
+    call.function ||
+    call.tool ||
+    call.action ||
+    call.intent ||
+    call.metadata ||
+    {};
   let name =
     fnShape.name ||
     call.name ||
@@ -1182,7 +1296,8 @@ const normalizeToolCall = (call, idx = 0) => {
     call.intent?.name ||
     call.metadata?.name ||
     "";
-  let args = fnShape.arguments ?? call.arguments ?? call.params ?? call.payload ?? "{}";
+  let args =
+    fnShape.arguments ?? call.arguments ?? call.params ?? call.payload ?? "{}";
 
   if (args == null) args = "{}";
   if (typeof args !== "string") {
@@ -1264,7 +1379,11 @@ function processToolCallFragment(context, raw, provider) {
   }
 
   // If parsed and not already pushed
-  if (parsedArgs !== undefined && parsedArgs !== null && !pushedToolIds.has(id)) {
+  if (
+    parsedArgs !== undefined &&
+    parsedArgs !== null &&
+    !pushedToolIds.has(id)
+  ) {
     // Infer a name if missing
     let finalName = combinedName || "";
     if (!finalName && parsedArgs && typeof parsedArgs === "object") {
@@ -1300,7 +1419,8 @@ function processToolCallFragment(context, raw, provider) {
 // ============================================================================
 
 const MODEL_DIRECTIVE_REGEX = /model\s*=\s*([^\s;]+)/i;
-const PROVIDER_DIRECTIVE_REGEX = /provider\s*=\s*(anthropic|openai|huggingface|mistral|google)/i;
+const PROVIDER_DIRECTIVE_REGEX =
+  /provider\s*=\s*(anthropic|openai|huggingface|mistral|google)/i;
 const MODE_DIRECTIVE_REGEX = /mode\s*=\s*(debug)/i;
 const DB_URL_DIRECTIVE_REGEX = /db(?:_url)?\s*=\s*([^\s;]+)/i;
 
@@ -1316,8 +1436,10 @@ const PROVIDERS = ["openai", "mistral", "huggingface", "anthropic", "google"];
 const parseDirectives = (rawQuestion = "") => {
   const trimmed = String(rawQuestion).trim();
   const semicolonIndex = trimmed.indexOf(";");
-  const directiveSource = semicolonIndex >= 0 ? trimmed.slice(0, semicolonIndex).trim() : trimmed;
-  let userQuestion = semicolonIndex >= 0 ? trimmed.slice(semicolonIndex + 1).trim() : trimmed;
+  const directiveSource =
+    semicolonIndex >= 0 ? trimmed.slice(0, semicolonIndex).trim() : trimmed;
+  let userQuestion =
+    semicolonIndex >= 0 ? trimmed.slice(semicolonIndex + 1).trim() : trimmed;
 
   if (semicolonIndex < 0) {
     userQuestion = userQuestion
@@ -1349,7 +1471,9 @@ const detectModelProvider = (model) => {
   if (!model) return null;
   const target = model.toLowerCase();
   return PROVIDERS.find((provider) =>
-    MODEL_PROVIDER_PATTERNS[provider]?.some((pattern) => target.includes(pattern))
+    MODEL_PROVIDER_PATTERNS[provider]?.some((pattern) =>
+      target.includes(pattern)
+    )
   );
 };
 
@@ -1360,7 +1484,8 @@ const PROVIDER_ENV_CHECKERS = {
   huggingface: () => Boolean(getConfig("HUGGINGFACE_API_KEY")),
   google: () => Boolean(getConfig("GEMINI_API_KEY")),
 };
-const isProviderAvailable = (provider) => Boolean(PROVIDER_ENV_CHECKERS[provider]?.());
+const isProviderAvailable = (provider) =>
+  Boolean(PROVIDER_ENV_CHECKERS[provider]?.());
 
 const isMistralCapacityError = (error) => {
   const msg = error?.message || "";
@@ -1389,7 +1514,8 @@ const shouldSkipProvider = ({
       return false; // Respecter le choix explicite de l'utilisateur
     }
 
-    const modelName = resolvedModel || resolveModelForProvider(provider, modelMode);
+    const modelName =
+      resolvedModel || resolveModelForProvider(provider, modelMode);
     if (!modelName) return false;
 
     const skip = providerMetrics.shouldSkip(provider, modelName);
@@ -1398,7 +1524,8 @@ const shouldSkipProvider = ({
       const status = entry?.status || "unknown";
       const consecutiveErrors = entry?.metrics?.consecutiveErrors || 0;
       const lastErrorMessage = entry?.metrics?.lastError?.message;
-      const reason = lastErrorMessage || `${consecutiveErrors} consecutive errors`;
+      const reason =
+        lastErrorMessage || `${consecutiveErrors} consecutive errors`;
       console.log(
         `[EdgeFunction] ⏭️ Skipping ${provider} (${modelName}) due to ${status}${
           reason ? ` – ${reason}` : ""
@@ -1424,7 +1551,10 @@ const buildProviderOrder = ({
   let prioritizedOrder;
 
   if (enforcedProvider && order.includes(enforcedProvider)) {
-    prioritizedOrder = [enforcedProvider, ...order.filter((p) => p !== enforcedProvider)];
+    prioritizedOrder = [
+      enforcedProvider,
+      ...order.filter((p) => p !== enforcedProvider),
+    ];
   } else if (!failedProviders.has("openai") && order.includes("openai")) {
     // Prioriser OpenAI si non échoué
     prioritizedOrder = ["openai", ...order.filter((p) => p !== "openai")];
@@ -1433,7 +1563,13 @@ const buildProviderOrder = ({
   }
 
   const filteredOrder = prioritizedOrder.filter(
-    (provider) => !shouldSkipProvider({ provider, modelMode, enforcedProvider, quiet: true })
+    (provider) =>
+      !shouldSkipProvider({
+        provider,
+        modelMode,
+        enforcedProvider,
+        quiet: true,
+      })
   );
 
   // Si tous les providers ont été filtrés, retomber sur l'ordre priorisé initial
@@ -1458,7 +1594,9 @@ function createDebugLogger() {
   const originals = {};
 
   const formatArgs = (args) =>
-    args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" ");
+    args
+      .map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg)))
+      .join(" ");
 
   const safeEnqueue = (line) => {
     if (!controllerRef || !encoderRef) {
@@ -1566,7 +1704,9 @@ async function _fetchCouncilContext(siteUrl) {
   if (!siteUrl) return null;
   try {
     const councilUrl = `${siteUrl}/docs/conseils/conseil-consolidated.semantic.md`;
-    console.log(`[Council] ➜ fetching consolidated council context from ${councilUrl}`);
+    console.log(
+      `[Council] ➜ fetching consolidated council context from ${councilUrl}`
+    );
     const response = await fetch(councilUrl);
     console.log(`[Council] ⬅ status=${response.status}`);
     if (response.ok) {
@@ -1575,7 +1715,10 @@ async function _fetchCouncilContext(siteUrl) {
       if (text.trim()) return text;
     }
   } catch (error) {
-    console.warn("[Council] ❌ Unable to fetch consolidated council context:", error.message);
+    console.warn(
+      "[Council] ❌ Unable to fetch consolidated council context:",
+      error.message
+    );
   }
   return null;
 }
@@ -1663,7 +1806,9 @@ async function getSystemPrompt() {
       basePrompt += `\n\n🏛 **Contexte municipal (conseils consolidés) :** indisponible pour le moment.`;
     }
     */
-  console.log(`[SystemPrompt] ✅ Prompt chargé (${basePrompt.length} caractères)`);
+  console.log(
+    `[SystemPrompt] ✅ Prompt chargé (${basePrompt.length} caractères)`
+  );
   return basePrompt;
 }
 
@@ -1682,7 +1827,10 @@ const handler = async (request) => {
   // Quick healthcheck support (frontend calls GET /api/chat-stream?healthcheck=true)
   try {
     const url = new URL(request.url);
-    if (request.method === "GET" && url.searchParams.get("healthcheck") === "true") {
+    if (
+      request.method === "GET" &&
+      url.searchParams.get("healthcheck") === "true"
+    ) {
       const providersList = (PROVIDERS || []).map((p) => {
         const configured = isProviderAvailable(p);
         const model = resolveModelForProvider(p);
@@ -1712,7 +1860,9 @@ const handler = async (request) => {
 
   // 1. Vérifie la méthode HTTP
   if (request.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Méthode non autorisée." }), { status: 405 });
+    return new Response(JSON.stringify({ error: "Méthode non autorisée." }), {
+      status: 405,
+    });
   }
 
   // 2. Parse le corps de la requête
@@ -1727,7 +1877,8 @@ const handler = async (request) => {
   try {
     if (
       body &&
-      (body.healthcheck === true || String(body.question || "").toLowerCase() === "healthcheck")
+      (body.healthcheck === true ||
+        String(body.question || "").toLowerCase() === "healthcheck")
     ) {
       const providersList = (PROVIDERS || []).map((p) => {
         const configured = isProviderAvailable(p);
@@ -1757,14 +1908,6 @@ const handler = async (request) => {
   }
 
   // 3. Valide la question
-  // Early explicit SQL handling: allow `?sql=` or `body.sql` to run without a `question` field.
-  try {
-    const { handleExplicitSql } = await import("./lib/sql-handler.js");
-    const sqlResp = await handleExplicitSql(request, body, TOOL_HANDLERS);
-    if (sqlResp) return sqlResp;
-  } catch (err) {
-    console.warn("[EdgeFunction] ⚠️ Early SQL helper error:", err?.message || err);
-  }
   const rawQuestion = String(body?.question || "").trim();
   if (!rawQuestion) {
     return new Response("Question manquante", { status: 400 });
@@ -1800,7 +1943,10 @@ const handler = async (request) => {
           .map((s) => s.trim())
           .filter(Boolean);
         if (lines.length > 0) {
-          conversation_history = lines.map((l) => ({ role: "user", content: l }));
+          conversation_history = lines.map((l) => ({
+            role: "user",
+            content: l,
+          }));
           break;
         }
       }
@@ -1821,20 +1967,28 @@ const handler = async (request) => {
 
   // Diagnostic logging to help frontend debugging: show counts and sample
   try {
-    const totalChars = conversation_history.reduce((s, m) => s + String(m.content || "").length, 0);
-    const first = conversation_history
-      .slice(0, 3)
-      .map((m) => ({ role: m.role, preview: String(m.content || "").slice(0, 200) }));
-    const last = conversation_history
-      .slice(-3)
-      .map((m) => ({ role: m.role, preview: String(m.content || "").slice(0, 200) }));
+    const totalChars = conversation_history.reduce(
+      (s, m) => s + String(m.content || "").length,
+      0
+    );
+    const first = conversation_history.slice(0, 3).map((m) => ({
+      role: m.role,
+      preview: String(m.content || "").slice(0, 200),
+    }));
+    const last = conversation_history.slice(-3).map((m) => ({
+      role: m.role,
+      preview: String(m.content || "").slice(0, 200),
+    }));
     console.log(
       `[EdgeFunction] 📚 Historique: ${conversation_history.length} messages, totalChars=${totalChars}`
     );
     console.log(`[EdgeFunction] 📚 Sample first: ${JSON.stringify(first)}`);
     console.log(`[EdgeFunction] 📚 Sample last: ${JSON.stringify(last)}`);
   } catch (err) {
-    console.warn("[EdgeFunction] ⚠️ Failed to log conversation sample:", err?.message || err);
+    console.warn(
+      "[EdgeFunction] ⚠️ Failed to log conversation sample:",
+      err?.message || err
+    );
   }
 
   // 5. Parse les directives (modèle, fournisseur, debug)
@@ -1848,13 +2002,19 @@ const handler = async (request) => {
   } = parseDirectives(rawQuestion);
 
   const bodyModelMode =
-    typeof body?.modelMode === "string" ? body.modelMode.trim().toLowerCase() : null;
+    typeof body?.modelMode === "string"
+      ? body.modelMode.trim().toLowerCase()
+      : null;
   const effectiveModelMode = directiveModelMode || bodyModelMode;
-  const debugMode = Boolean(rawDirective && MODE_DIRECTIVE_REGEX.test(rawDirective));
+  const debugMode = Boolean(
+    rawDirective && MODE_DIRECTIVE_REGEX.test(rawDirective)
+  );
 
   // 6. Détermine le fournisseur et le modèle
   const forcedProvider = directiveProvider; // Ex: "provider=anthropic"
-  const modelProvider = directiveModel ? detectModelProvider(directiveModel) : null;
+  const modelProvider = directiveModel
+    ? detectModelProvider(directiveModel)
+    : null;
 
   // 7. Vérifie la disponibilité des clés API
   if (forcedProvider && !isProviderAvailable(forcedProvider)) {
@@ -1897,13 +2057,17 @@ const handler = async (request) => {
   // 10. Logs initiaux
   console.log(`[EdgeFunction] ========================================`);
   console.log(`[EdgeFunction] 🎯 Question: "${rawQuestion}"`);
-  console.log(`[EdgeFunction] 📚 Historique: ${conversation_history.length} messages`);
+  console.log(
+    `[EdgeFunction] 📚 Historique: ${conversation_history.length} messages`
+  );
   console.log(`[EdgeFunction] 🔧 Fournisseur: ${enforcedProvider || "auto"}`);
   console.log(`[EdgeFunction] ⏱️ Début: ${new Date().toISOString()}`);
 
   // 11. Charge le prompt système
   let systemPrompt = await getSystemPrompt();
-  console.log(`[EdgeFunction] 📏 System prompt: ${systemPrompt.length} caractères`);
+  console.log(
+    `[EdgeFunction] 📏 System prompt: ${systemPrompt.length} caractères`
+  );
 
   // 11.5. Initialise les clients
   let user = null;
@@ -1943,7 +2107,11 @@ const handler = async (request) => {
       { query: userQuestion, limit: 5 },
       { supabase, openai }
     );
-    if (vectorContext && typeof vectorContext === "string" && vectorContext.trim()) {
+    if (
+      vectorContext &&
+      typeof vectorContext === "string" &&
+      vectorContext.trim()
+    ) {
       // Keep inserted context concise to avoid prompt bloat
       const truncated =
         vectorContext.length > 4000
@@ -1955,7 +2123,10 @@ const handler = async (request) => {
       );
     }
   } catch (err) {
-    console.warn("[EdgeFunction] ⚠️ vector_search failed:", err?.message || err);
+    console.warn(
+      "[EdgeFunction] ⚠️ vector_search failed:",
+      err?.message || err
+    );
   }
 
   // 12. Crée un ReadableStream pour la réponse
@@ -1964,7 +2135,9 @@ const handler = async (request) => {
     async start(controller) {
       debugLogger?.attachStream(controller, encoder);
       const emitProviderMeta = (meta) =>
-        controller.enqueue(encoder.encode(`${PROVIDER_META_PREFIX}${JSON.stringify(meta)}\n`));
+        controller.enqueue(
+          encoder.encode(`${PROVIDER_META_PREFIX}${JSON.stringify(meta)}\n`)
+        );
       const emitThink = (message) => {
         const text = String(message || "").trim();
         if (!text) return;
@@ -1974,12 +2147,18 @@ const handler = async (request) => {
       const emitToolTrace = (trace) => {
         if (!trace) return;
         try {
-          controller.enqueue(encoder.encode(`${TOOL_TRACE_PREFIX}${JSON.stringify(trace)}\n`));
+          controller.enqueue(
+            encoder.encode(`${TOOL_TRACE_PREFIX}${JSON.stringify(trace)}\n`)
+          );
           if (trace.phase === "finish") {
-            const dur = Number.isFinite(trace.durationMs) ? `${trace.durationMs}ms` : null;
+            const dur = Number.isFinite(trace.durationMs)
+              ? `${trace.durationMs}ms`
+              : null;
             emitThink(
               `Outil terminé : ${trace.tool}${dur ? ` (${dur})` : ""}${
-                trace.resultPreview ? ` — ${previewForLog(trace.resultPreview, 160)}` : ""
+                trace.resultPreview
+                  ? ` — ${previewForLog(trace.resultPreview, 160)}`
+                  : ""
               }`
             );
           } else if (trace.phase === "error") {
@@ -1990,7 +2169,10 @@ const handler = async (request) => {
             emitThink(previewForLog(trace.message, 220));
           }
         } catch (err) {
-          console.warn("[EdgeFunction] ⚠️ Failed to emit tool trace:", err?.message || err);
+          console.warn(
+            "[EdgeFunction] ⚠️ Failed to emit tool trace:",
+            err?.message || err
+          );
         }
       };
 
@@ -2012,9 +2194,16 @@ const handler = async (request) => {
               : ""
         }`
       );
-      for (let providerIndex = 0; providerIndex < providerOrder.length; providerIndex++) {
+      for (
+        let providerIndex = 0;
+        providerIndex < providerOrder.length;
+        providerIndex++
+      ) {
         const provider = providerOrder[providerIndex];
-        const resolvedModel = resolveModelForProvider(provider, effectiveModelMode);
+        const resolvedModel = resolveModelForProvider(
+          provider,
+          effectiveModelMode
+        );
 
         const skip = shouldSkipProvider({
           provider,
@@ -2025,8 +2214,11 @@ const handler = async (request) => {
         if (skip) {
           try {
             const modelName =
-              resolvedModel || resolveModelForProvider(provider, effectiveModelMode);
-            const entry = modelName ? providerMetrics.get(provider, modelName) : null;
+              resolvedModel ||
+              resolveModelForProvider(provider, effectiveModelMode);
+            const entry = modelName
+              ? providerMetrics.get(provider, modelName)
+              : null;
             const status = entry?.status || "unknown";
             const consecutiveErrors = entry?.metrics?.consecutiveErrors || 0;
             const lastErrorMessage = entry?.metrics?.lastError?.message;
@@ -2058,7 +2250,9 @@ const handler = async (request) => {
               apiKey = getConfig(`${provider.toUpperCase()}_API_KEY`);
             }
             if (!apiKey) {
-              console.log(`[EdgeFunction] ⏭️ Skipping ${provider} (no API key)`);
+              console.log(
+                `[EdgeFunction] ⏭️ Skipping ${provider} (no API key)`
+              );
               emitThink(`Saut du fournisseur ${provider} : clé API manquante`);
               // Mark provider as failed/unavailable so we don't retry indefinitely
               try {
@@ -2077,7 +2271,9 @@ const handler = async (request) => {
               MODEL_MODES[provider]
             );
             emitProviderMeta({ provider, model: resolvedModel });
-            console.log(`[EdgeFunction] 🚀 Tentative avec ${provider} (model=${resolvedModel})...`);
+            console.log(
+              `[EdgeFunction] 🚀 Tentative avec ${provider} (model=${resolvedModel})...`
+            );
             emitThink(
               `Tentative avec le fournisseur ${provider}${resolvedModel ? ` (${resolvedModel})` : ""}${
                 enforcedProvider ? ` — forcé=${enforcedProvider}` : ""
@@ -2114,13 +2310,20 @@ const handler = async (request) => {
                 try {
                   if (chunk && typeof chunk === "object") {
                     controller.enqueue(
-                      encoder.encode(PROVIDER_META_PREFIX + JSON.stringify(chunk) + "\n")
+                      encoder.encode(
+                        PROVIDER_META_PREFIX + JSON.stringify(chunk) + "\n"
+                      )
                     );
                   } else {
-                    controller.enqueue(encoder.encode(chunkPrefix + String(chunk)));
+                    controller.enqueue(
+                      encoder.encode(chunkPrefix + String(chunk))
+                    );
                   }
                 } catch (err) {
-                  console.warn("[EdgeFunction] ⚠️ Failed to enqueue chunk:", err);
+                  console.warn(
+                    "[EdgeFunction] ⚠️ Failed to enqueue chunk:",
+                    err
+                  );
                 }
               }
               // Populate and emit agent metadata if populated
@@ -2128,7 +2331,8 @@ const handler = async (request) => {
                 if (agentMeta) {
                   agentMeta.provider = agentMeta.provider || provider;
                   agentMeta.model = agentMeta.model || resolvedModel;
-                  agentMeta.agent_duration_ms = Date.now() - providerAttemptStart;
+                  agentMeta.agent_duration_ms =
+                    Date.now() - providerAttemptStart;
                   agentMeta.tool_trace = agentMeta.tool_trace || [];
                   emitProviderMeta({ __agent_metadata__: agentMeta });
                 }
@@ -2146,8 +2350,10 @@ const handler = async (request) => {
             break;
           } catch (error) {
             const isForcedProvider = forcedProvider === provider;
-            const capacityError = provider === "mistral" && isMistralCapacityError(error);
-            const rateLimitError = provider === "openai" && isRateLimitError(error);
+            const capacityError =
+              provider === "mistral" && isMistralCapacityError(error);
+            const rateLimitError =
+              provider === "openai" && isRateLimitError(error);
 
             if (capacityError && !isForcedProvider) {
               console.warn(
@@ -2171,7 +2377,10 @@ const handler = async (request) => {
               continue; // retry same provider
             } else {
               const errorDetail = error.message || String(error);
-              console.error(`[EdgeFunction] ❌ ${provider} error:`, errorDetail);
+              console.error(
+                `[EdgeFunction] ❌ ${provider} error:`,
+                errorDetail
+              );
 
               // If this is a forced provider, show error to user (no fallback available)
               if (isForcedProvider) {
@@ -2190,7 +2399,9 @@ const handler = async (request) => {
               }
 
               // For automatic fallback: log in backend, don't show in UI (unless debug mode)
-              console.warn(`[EdgeFunction] ⚠️ ${provider} failed, trying next provider...`);
+              console.warn(
+                `[EdgeFunction] ⚠️ ${provider} failed, trying next provider...`
+              );
               emitThink(
                 `Changement de fournisseur : ${provider} a échoué — tentative avec le suivant${
                   errorDetail ? ` — ${previewForLog(errorDetail, 160)}` : ""
@@ -2220,13 +2431,22 @@ const handler = async (request) => {
             const metrics = metricEntry?.metrics || {};
             const successRate =
               metrics.requestCount && metrics.requestCount > 0
-                ? Math.round((metrics.successCount / metrics.requestCount) * 100)
+                ? Math.round(
+                    (metrics.successCount / metrics.requestCount) * 100
+                  )
                 : null;
             let retryAfter = null;
             const lastError = metricEntry?.metrics?.lastError;
-            if (metricEntry?.status === "rate_limited" && lastError?.retryAfter) {
-              const retryTime = lastError.timestamp + lastError.retryAfter * 1000;
-              const secondsUntilRetry = Math.max(0, Math.ceil((retryTime - Date.now()) / 1000));
+            if (
+              metricEntry?.status === "rate_limited" &&
+              lastError?.retryAfter
+            ) {
+              const retryTime =
+                lastError.timestamp + lastError.retryAfter * 1000;
+              const secondsUntilRetry = Math.max(
+                0,
+                Math.ceil((retryTime - Date.now()) / 1000)
+              );
               if (secondsUntilRetry > 0) retryAfter = secondsUntilRetry;
             }
             return {
@@ -2234,20 +2454,31 @@ const handler = async (request) => {
               mode,
               avgResponseTime: metrics.avgResponseTime ?? null,
               successRate,
-              recentlyUsed: Boolean(metrics.lastUsed && Date.now() - metrics.lastUsed < 30000),
+              recentlyUsed: Boolean(
+                metrics.lastUsed && Date.now() - metrics.lastUsed < 30000
+              ),
               retryAfter,
               consecutiveErrors: metrics.consecutiveErrors || 0,
-              status: metricEntry?.status || (configured ? "available" : "not_configured"),
+              status:
+                metricEntry?.status ||
+                (configured ? "available" : "not_configured"),
             };
           });
 
           let providerStatus = "available";
           if (!configured) {
             providerStatus = "not_configured";
-          } else if (models.length === 0 || models.every((m) => m.status === "unknown")) {
+          } else if (
+            models.length === 0 ||
+            models.every((m) => m.status === "unknown")
+          ) {
             providerStatus = "unknown";
           } else if (
-            models.some((m) => ["error", "quota_exceeded"].includes((m.status || "").toLowerCase()))
+            models.some((m) =>
+              ["error", "quota_exceeded"].includes(
+                (m.status || "").toLowerCase()
+              )
+            )
           ) {
             providerStatus = "degraded";
           } else if (models.every((m) => m.status === "rate_limited")) {
@@ -2266,7 +2497,10 @@ const handler = async (request) => {
           )
         );
       } catch (err) {
-        console.warn("[EdgeFunction] ⚠️ Failed to emit providers status:", err?.message || err);
+        console.warn(
+          "[EdgeFunction] ⚠️ Failed to emit providers status:",
+          err?.message || err
+        );
       }
       controller.close();
     },
@@ -2312,10 +2546,14 @@ async function* runConversationalAgent({
     { role: "user", content: question },
   ];
 
-  console.log(`[${provider}] ✅ runConversationalAgent initialized (maxToolCalls=${maxToolCalls})`);
+  console.log(
+    `[${provider}] ✅ runConversationalAgent initialized (maxToolCalls=${maxToolCalls})`
+  );
   while (toolCallCount < maxToolCalls) {
     const model = resolveModelForProvider(provider, modelMode);
-    console.log(`[${provider}] 🔁 Appel LLM (model=${model}) - messages:${messages.length}`);
+    console.log(
+      `[${provider}] 🔁 Appel LLM (model=${model}) - messages:${messages.length}`
+    );
     yield `<Think>Appel LLM : fournisseur=${provider}${model ? ` modèle=${model}` : ""}, messages=${messages.length}, outilsUtilisés=${toolCallCount}/${maxToolCalls}</Think>\n`;
     const streamOrDirect = await callLLMAPI({
       provider,
@@ -2335,7 +2573,9 @@ async function* runConversationalAgent({
         `[${provider}] DEBUG streamOrDirect preview: ${previewForLog(streamOrDirect, 1000)}`
       );
     } catch (err) {
-      console.warn(`[${provider}] ⚠️ Failed to preview streamOrDirect: ${err?.message || err}`);
+      console.warn(
+        `[${provider}] ⚠️ Failed to preview streamOrDirect: ${err?.message || err}`
+      );
     }
 
     // Direct (non-stream) response
@@ -2344,7 +2584,9 @@ async function* runConversationalAgent({
       const data = streamOrDirect || {};
       if (data.toolCalls && data.toolCalls.length > 0) {
         const normalized = normalizeToolCalls(data.toolCalls);
-        const valid = normalized.filter((c) => c.function?.name && TOOL_HANDLERS[c.function.name]);
+        const valid = normalized.filter(
+          (c) => c.function?.name && TOOL_HANDLERS[c.function.name]
+        );
         if (valid.length > 0) {
           toolCallCount++;
           console.log(
@@ -2379,7 +2621,9 @@ async function* runConversationalAgent({
             {
               role: "assistant",
               content: data.content || null,
-              ...(provider === "anthropic" ? { tool_uses: valid } : { tool_calls: valid }),
+              ...(provider === "anthropic"
+                ? { tool_uses: valid }
+                : { tool_calls: valid }),
             },
             ...toolMessages,
           ];
@@ -2409,7 +2653,10 @@ async function* runConversationalAgent({
           res = await Promise.race([
             nextPromise,
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("stream-timeout")), idleTimeoutMs)
+              setTimeout(
+                () => reject(new Error("stream-timeout")),
+                idleTimeoutMs
+              )
             ),
           ]);
         } catch (err) {
@@ -2458,10 +2705,14 @@ async function* runConversationalAgent({
 
           toolCallCount++;
           if (toolCallCount > maxToolCalls) {
-            throw new Error(`[${provider}] Limite de ${maxToolCalls} appels d'outils atteinte.`);
+            throw new Error(
+              `[${provider}] Limite de ${maxToolCalls} appels d'outils atteinte.`
+            );
           }
 
-          console.log(`[${provider}] 🛠 Executing tool now: ${fnName} (id=${call.id})`);
+          console.log(
+            `[${provider}] 🛠 Executing tool now: ${fnName} (id=${call.id})`
+          );
           yield `<Think>Outil demandé (flux) : ${fnName} (id=${call?.id || "n/a"}) — exécution</Think>\n`;
           lastStreamToolInfo = { name: fnName, id: call?.id };
           const toolMessages = await executeToolCalls(
@@ -2486,7 +2737,9 @@ async function* runConversationalAgent({
             {
               role: "assistant",
               content: accumulatedContent || null,
-              ...(provider === "anthropic" ? { tool_uses: [call] } : { tool_calls: [call] }),
+              ...(provider === "anthropic"
+                ? { tool_uses: [call] }
+                : { tool_calls: [call] }),
             },
             ...toolMessages,
           ];
@@ -2587,11 +2840,15 @@ async function* runConversationalAgent({
     // Normalize to `direct.toolCalls` as an array of { id, function: { name, arguments } }.
     try {
       try {
-        console.log(`[${provider}] 🔍 Direct response keys:`, Object.keys(direct || {}));
+        console.log(
+          `[${provider}] 🔍 Direct response keys:`,
+          Object.keys(direct || {})
+        );
         console.log(
           `[${provider}] 🔍 choices[0].message.tool_calls preview:`,
           previewForLog(
-            direct?.choices?.[0]?.message?.tool_calls || direct?.choices?.[0]?.tool_calls,
+            direct?.choices?.[0]?.message?.tool_calls ||
+              direct?.choices?.[0]?.tool_calls,
             200
           )
         );
@@ -2601,17 +2858,29 @@ async function* runConversationalAgent({
 
       const directResp = { ...(direct || {}) };
       // Top-level aliases
-      if (Array.isArray(directResp.toolCalls) && directResp.toolCalls.length > 0) {
+      if (
+        Array.isArray(directResp.toolCalls) &&
+        directResp.toolCalls.length > 0
+      ) {
         // already normalized
-      } else if (Array.isArray(directResp.tool_calls) && directResp.tool_calls.length > 0) {
+      } else if (
+        Array.isArray(directResp.tool_calls) &&
+        directResp.tool_calls.length > 0
+      ) {
         directResp.toolCalls = directResp.tool_calls;
-      } else if (Array.isArray(directResp.choices) && directResp.choices.length > 0) {
+      } else if (
+        Array.isArray(directResp.choices) &&
+        directResp.choices.length > 0
+      ) {
         const choice = directResp.choices[0];
         const message = choice?.message || choice || {};
 
         // If tool_calls array is present on the message/choice, use it
         const candidateArray =
-          message?.tool_calls || message?.toolCalls || choice?.tool_calls || choice?.toolCalls;
+          message?.tool_calls ||
+          message?.toolCalls ||
+          choice?.tool_calls ||
+          choice?.toolCalls;
         if (Array.isArray(candidateArray) && candidateArray.length > 0) {
           directResp.toolCalls = candidateArray;
         } else if (
@@ -2623,7 +2892,8 @@ async function* runConversationalAgent({
             {
               id: choice?.id || `call-${Date.now()}`,
               function: {
-                name: message.function_call.name || message.function_call?.id || "",
+                name:
+                  message.function_call.name || message.function_call?.id || "",
                 arguments: message.function_call.arguments || "{}",
               },
             },
@@ -2651,17 +2921,24 @@ async function* runConversationalAgent({
       if (directResp.toolCalls && Array.isArray(directResp.toolCalls)) {
         console.log(
           `[${provider}] 🔧 Normalized direct.toolCalls:`,
-          directResp.toolCalls.map((c) => ({ id: c.id, name: c.function?.name }))
+          directResp.toolCalls.map((c) => ({
+            id: c.id,
+            name: c.function?.name,
+          }))
         );
       }
 
-      const directHasContent = Boolean(directResp?.content && String(directResp.content).trim());
+      const directHasContent = Boolean(
+        directResp?.content && String(directResp.content).trim()
+      );
       const directHasToolCalls =
         Array.isArray(directResp?.toolCalls) && directResp.toolCalls.length > 0;
 
       if (directHasToolCalls) {
         const normalized = normalizeToolCalls(directResp.toolCalls);
-        const valid = normalized.filter((c) => c.function?.name && TOOL_HANDLERS[c.function.name]);
+        const valid = normalized.filter(
+          (c) => c.function?.name && TOOL_HANDLERS[c.function.name]
+        );
         if (valid.length > 0) {
           toolCallCount++;
           console.log(
@@ -2688,7 +2965,9 @@ async function* runConversationalAgent({
             {
               role: "assistant",
               content: directResp.content || null,
-              ...(provider === "anthropic" ? { tool_uses: valid } : { tool_calls: valid }),
+              ...(provider === "anthropic"
+                ? { tool_uses: valid }
+                : { tool_calls: valid }),
             },
             ...toolMessages,
           ];
@@ -2708,13 +2987,20 @@ async function* runConversationalAgent({
         return;
       }
     } catch (e) {
-      console.warn(`[${provider}] ⚠️ toolCalls normalization failed:`, e?.message || e);
+      console.warn(
+        `[${provider}] ⚠️ toolCalls normalization failed:`,
+        e?.message || e
+      );
     }
-    console.warn(`[${provider}] ⚠️ Direct fallback returned no content and no tool_calls.`);
+    console.warn(
+      `[${provider}] ⚠️ Direct fallback returned no content and no tool_calls.`
+    );
     return;
   }
 
-  throw new Error(`[${provider}] Limite de ${maxToolCalls} appels d'outils atteinte.`);
+  throw new Error(
+    `[${provider}] Limite de ${maxToolCalls} appels d'outils atteinte.`
+  );
 }
 
 async function runHuggingFaceAgent(userQuestion, systemPrompt, modelMode) {
@@ -2723,7 +3009,8 @@ async function runHuggingFaceAgent(userQuestion, systemPrompt, modelMode) {
   if (!apiKey) throw new Error("Clé API manquante pour huggingface");
 
   const model =
-    resolveModelForProvider(provider, modelMode) || PROVIDER_CONFIGS.huggingface.defaultModel;
+    resolveModelForProvider(provider, modelMode) ||
+    PROVIDER_CONFIGS.huggingface.defaultModel;
   const url =
     typeof PROVIDER_CONFIGS.huggingface.apiUrl === "function"
       ? PROVIDER_CONFIGS.huggingface.apiUrl(model)
@@ -2755,7 +3042,9 @@ async function runHuggingFaceAgent(userQuestion, systemPrompt, modelMode) {
   console.log(`[huggingface] ⬅ status=${resp.status}`);
   if (!resp.ok) {
     const body = await resp.text();
-    console.error(`[huggingface] ❌ error body preview: ${previewForLog(body)}`);
+    console.error(
+      `[huggingface] ❌ error body preview: ${previewForLog(body)}`
+    );
     throw new Error(`huggingface API ${resp.status}: ${body}`);
   }
 

@@ -1,7 +1,7 @@
 // src/components/common/LegalLinks.jsx
 
 import { LegalPage as UILegalPage, MarkdownViewer } from "@inseme/ui";
-import { LEGAL_CONTENT } from "@inseme/kudocracy";
+import { LEGAL_PATHS } from "@inseme/kudocracy";
 
 /**
  * Composant pour afficher un fichier Markdown depuis /docs/
@@ -11,14 +11,18 @@ export function LegalMarkdown({ file }) {
   // Normaliser le chemin : enlever /docs/ si présent
   const docPath = file?.replace(/^\/docs\//, "") || "";
 
-  // Utiliser les contenus statiques si disponibles
-  let content = "";
-  if (docPath === "privacy-policy.md") content = LEGAL_CONTENT.PRIVACY_POLICY;
-  else if (docPath === "terms-of-use.md") content = LEGAL_CONTENT.TERMS_OF_USE;
+  // Utiliser les chemins statiques si disponibles
+  let url = "";
+  if (docPath === "privacy-policy.md") url = LEGAL_PATHS.PRIVACY_POLICY;
+  else if (docPath === "terms-of-use.md") url = LEGAL_PATHS.TERMS_OF_USE;
+
+  if (url) {
+    return <UILegalPage url={url} />;
+  }
 
   return (
     <div className="markdown-content prose max-w-none">
-      <MarkdownViewer content={content} />
+      <p className="text-slate-500 italic">Document non trouvé : {file}</p>
     </div>
   );
 }
@@ -51,11 +55,11 @@ export default function LegalLinks() {
 export function LegalPage({ type }) {
   const isPrivacy = type === "privacy";
   const title = isPrivacy ? "Politique de confidentialité" : "Conditions d'utilisation";
-  const content = isPrivacy ? LEGAL_CONTENT.PRIVACY_POLICY : LEGAL_CONTENT.TERMS_OF_USE;
+  const url = isPrivacy ? LEGAL_PATHS.PRIVACY_POLICY : LEGAL_PATHS.TERMS_OF_USE;
 
   return (
     <div className="min-h-screen bg-slate-50 py-12">
-      <UILegalPage title={title} content={content} />
+      <UILegalPage title={title} url={url} />
       <div className="mt-8 text-center pb-12">
         <a
           href="/contact"

@@ -1,7 +1,7 @@
 // src/components/SaaS/LandingPage.jsx
 
 import React, { useState } from "react";
-import { submitLead } from "../../lib/leads";
+import { submitLead } from "../../lib/leads.js";
 import {
   ArrowRight,
   Bot,

@@ -1,5 +1,5 @@
-import { OpenAI } from "openai";
-import { loadInstanceConfig, getConfig } from "@inseme/cop-host/backend";
+import OpenAI from "https://esm.sh/openai@4";
+import { loadInstanceConfig, getConfig } from "@inseme/cop-host/backend.js";
 
 export default async (req, context) => {
   if (req.method !== "POST") {

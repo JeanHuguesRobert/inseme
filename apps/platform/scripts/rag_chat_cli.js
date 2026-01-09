@@ -36,8 +36,11 @@ function parseCliArgs(argv) {
     sqlLimit: null,
     sqlFormat: DEFAULT_SQL_FORMAT,
     sqlEndpoint: null,
+    server: false,
     cliToken: null,
     authToken: null,
+    role: null,
+    mode: null,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -45,6 +48,17 @@ function parseCliArgs(argv) {
     switch (token) {
       case "--json":
         opts.json = true;
+        break;
+      case "--server":
+        opts.server = true;
+        break;
+      case "--role":
+        opts.role = argv[i + 1];
+        i++;
+        break;
+      case "--mode":
+        opts.mode = argv[i + 1];
+        i++;
         break;
       case "--top":
         opts.top = Number(argv[i + 1]) || opts.top;
@@ -184,6 +198,7 @@ async function runSqlWorkflow(options) {
   });
 
   const text = await resp.text();
+  console.log("DEBUG: Raw server response:", text);
   if (!resp.ok) {
     let detail = text;
     try {
@@ -196,13 +211,33 @@ async function runSqlWorkflow(options) {
   }
 
   if (format === "markdown") {
-    console.log(text.trim());
+    // Filter out metadata lines if any
+    const lines = text
+      .split("\n")
+      .filter((l) => l.trim() && !l.startsWith("__") && !l.startsWith("<Think>"));
+    console.log(lines.join("\n").trim());
     return;
   }
 
   let parsed;
   try {
-    parsed = JSON.parse(text);
+    // Try to find the first valid JSON line that isn't metadata
+    const lines = text.split("\n");
+    let jsonFound = false;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("__") || trimmed.startsWith("<Think>")) continue;
+      try {
+        parsed = JSON.parse(trimmed);
+        jsonFound = true;
+        break;
+      } catch (e) {
+        // Not a valid JSON line, continue
+      }
+    }
+    if (!jsonFound) {
+      throw new Error("No valid JSON result found in response.");
+    }
   } catch (err) {
     throw new Error(`[SQL] Unable to parse JSON response: ${err.message}`);
   }
@@ -299,13 +334,91 @@ function buildSystemPrompt(snippets) {
 
 function printUsage() {
   console.log(`Usage:
-  # RAG mode (default)
+  # RAG mode (default, local)
   node scripts/rag_chat_cli.js "Your question" [--top N] [--fetch-limit N] [--json]
 
-  # Direct SQL mode (bypasses embeddings)
+  # Server Chat mode (calls Netlify Edge Function)
+  node scripts/rag_chat_cli.js "Your question" --server [--endpoint https://site/api/chat-stream]
+
+  # Direct SQL mode (calls Netlify Edge Function)
   node scripts/rag_chat_cli.js --sql "SELECT * FROM example" [--limit N] [--format markdown|json]
     [--endpoint https://site/api/chat-stream] [--cli-token token] [--auth jwt] [--json]
 `);
+}
+
+async function runServerChat(options) {
+  const endpoint = resolveSqlEndpoint(options.sqlEndpoint);
+  const body = {
+    question: options.question,
+    mode: options.mode || "auto", // Enable adaptive intelligence by default
+    role: options.role || "mediator",
+  };
+
+  console.log(`[Server] Calling ${endpoint}...`);
+  const resp = await fetch(endpoint, {
+    method: "POST",
+    headers: buildSqlHeaders(options.cliToken, options.authToken),
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`[Server] Request failed (${resp.status}): ${text}`);
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let fullResponse = "";
+
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    buffer += chunk;
+
+    let lines = buffer.split("\n");
+    // On garde le dernier élément (potentiellement incomplet) dans le buffer
+    buffer = lines.pop();
+
+    for (const line of lines) {
+      if (line.startsWith("__PROVIDER_INFO__")) {
+        const info = JSON.parse(line.replace("__PROVIDER_INFO__", ""));
+        process.stdout.write(
+          `\n[Provider] ${info.provider} (${info.model}) - Role: ${info.role}\n`
+        );
+        continue;
+      }
+      if (line.startsWith("__TOOL_TRACE__")) {
+        try {
+          const trace = JSON.parse(line.replace("__TOOL_TRACE__", ""));
+          const args = typeof trace.args === "string" ? trace.args : JSON.stringify(trace.args);
+          process.stdout.write(`\n[Tool] ${trace.tool} ${args}\n`);
+        } catch (e) {
+          process.stdout.write(`\n[Tool] (Error parsing trace: ${line})\n`);
+        }
+        continue;
+      }
+      if (line.startsWith("__PROVIDERS_STATUS__")) {
+        continue;
+      }
+
+      // Pour le contenu normal, on écrit la ligne telle quelle
+      // Si c'était une ligne complète (issue d'un split), on rajoute le \n qu'on a enlevé au split
+      process.stdout.write(line + "\n");
+      fullResponse += line + "\n";
+    }
+  }
+  // Afficher le reste du buffer s'il y en a
+  if (buffer.trim()) {
+    if (buffer.startsWith("__PROVIDERS_STATUS__")) {
+      // Ignorer silencieusement à la fin
+    } else {
+      process.stdout.write(buffer + "\n");
+      fullResponse += buffer + "\n";
+    }
+  }
+  console.log("\n[Server] Chat finished.");
 }
 
 async function main() {
@@ -319,6 +432,11 @@ async function main() {
 
   if (sqlMode) {
     await runSqlWorkflow(options);
+    return;
+  }
+
+  if (options.server) {
+    await runServerChat(options);
     return;
   }
 

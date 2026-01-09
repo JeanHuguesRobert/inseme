@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { MarkdownViewer } from "@inseme/ui";
-import { CaretRight, ArrowsClockwise, Wrench, ChartBar, Lightbulb } from "@phosphor-icons/react";
+import { Icon } from "@inseme/cop-host";
 
 // Helper to extract all <Think>...</Think> blocks and regroup consecutive ones
 const extractThoughts = (text) => {
@@ -108,10 +108,10 @@ const ThoughtItem = ({ thought, isStreaming }) => {
         title="Cliquez pour voir les détails"
       >
         <span className={`thought-toggle-icon ${isOpen ? "open" : ""}`}>
-          <CaretRight size={14} weight="bold" />
+          <Icon name="chevron-right" size={14} />
         </span>
         <span className="thought-icon">
-          <Icon size={16} weight="duotone" />
+          <Icon name={type} size={16} />
         </span>
         <span className="thought-label">{label}</span>
         {!thought.isComplete && <span className="thought-pulse" />}

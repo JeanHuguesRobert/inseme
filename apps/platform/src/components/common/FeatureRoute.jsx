@@ -1,7 +1,7 @@
 // src/components/common/FeatureRoute.jsx
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { isFeatureEnabled } from "../../lib/features";
+import { isFeatureEnabled } from "../../lib/features.js";
 
 /**
  * Un composant wrapper pour les routes qui dépendent d'une feature flag.

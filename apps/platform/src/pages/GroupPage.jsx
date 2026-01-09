@@ -1,5 +1,5 @@
-import { useCurrentUser } from "../lib/useCurrentUser";
-import GroupDetail from "../components/social/GroupDetail";
+import { useCurrentUser } from "@inseme/cop-host";
+import { GroupDetail } from "@inseme/brique-group";
 
 /**
  * Page détail d'un groupe

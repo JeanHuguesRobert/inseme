@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../../lib/supabase";
+import { getSupabase } from "../../lib/supabase.js";
 
 /**
  * Badge affichant le nombre de commentaires pour un contenu donné

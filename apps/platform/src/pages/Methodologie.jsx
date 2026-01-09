@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { HASHTAG, CITY_NAME, MOVEMENT_NAME } from "../constants";
+import { HASHTAG, CITY_NAME, MOVEMENT_NAME } from "../constants.js";
 import CommentSection from "../components/common/CommentSection";
-import { useCurrentUser } from "../lib/useCurrentUser";
+import { useCurrentUser } from "@inseme/cop-host";
 
 export default function Methodologie() {
   const { currentUser, userStatus } = useCurrentUser();

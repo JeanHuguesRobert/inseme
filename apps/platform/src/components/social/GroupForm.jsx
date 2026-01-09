@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSupabase } from "../../lib/supabase";
-import { createGroupMetadata, GROUP_TYPES } from "../../lib/socialMetadata";
+import { getSupabase } from "../../lib/supabase.js";
+import { createGroupMetadata, GROUP_TYPES } from "../../../../../packages/cop-host/src/lib/socialMetadata.js";
 
 /**
  * Formulaire de création/édition de groupe

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import OpenAI from "openai";
+import OpenAI from "../netlify/edge-functions/lib/providers/openai.js";
 import { loadConfig, getConfig } from "./lib/config.js";
 
 // Charger la configuration

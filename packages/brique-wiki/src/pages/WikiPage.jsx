@@ -15,7 +15,7 @@ import {
   FacebookShareButton,
   ShareMenu,
 } from "@inseme/cop-host";
-import wikiFederation from "../lib/wikiFederation";
+import wikiFederation from "../lib/wikiFederation.js";
 import ShareModal from "../components/ShareModal";
 
 // Component to display page metadata

@@ -3,15 +3,14 @@
 import { useState, useEffect } from "react";
 import { MarkdownViewer } from "@inseme/ui";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { getSupabase } from "../../lib/supabase";
-import { isDeleted, getMetadata } from "../../lib/metadata";
-import { getGroupType } from "../../lib/socialMetadata";
-import { detectGazetteAssignments } from "../../lib/gazetteAssignments";
+import { getSupabase } from "../../lib/supabase.js";
+import { isDeleted, getMetadata, getGroupType } from "@inseme/cop-host";
+import { detectGazetteAssignments } from "../../lib/gazetteAssignments.js";
 import CommentSection from "../common/CommentSection";
 import SiteFooter from "../layout/SiteFooter";
-import { getDisplayName, getUserInitials } from "../../lib/userDisplay";
-import { enrichUserMetadata } from "../../lib/userTransform";
-import { isAdmin, isAnonymous, canWrite } from "../../lib/permissions";
+import { getDisplayName, getUserInitials } from "@inseme/cop-host";
+import { enrichUserMetadata } from "@inseme/cop-host";
+import { isAdmin, isAnonymous, canWrite } from "@inseme/cop-host";
 import SubscribeButton from "../common/SubscribeButton";
 
 /**

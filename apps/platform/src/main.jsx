@@ -5,25 +5,25 @@
 // - Paramètre URL : localhost:5173?instance=corte → instance Corte (dev)
 
 import React from "react";
-import ReactDOM from "react-dom/client";
+import ReactDOM from "./common/db/client.js";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { ErrorBoundary } from "@inseme/ui";
 import { SupabaseProvider } from "./contexts/SupabaseContext";
 import { GlobalStatusProvider } from "./contexts/GlobalStatusContext";
-import { CurrentUserProvider } from "./contexts/CurrentUserContext";
+import { CurrentUserProvider } from "./contexts/CurrentUserContext.proxy";
 import "./styles/index.css";
 
 // Import des modules multi-instances
-import { resolveInstance, getInstance } from "./lib/instanceResolver";
-import { initSupabaseWithInstance } from "./lib/supabase";
+import { resolveInstance, getInstance } from "./lib/instanceResolver.js";
+import { initSupabaseWithInstance } from "./lib/supabase.js";
 import {
   initializeInstance,
   loadInstanceConfig,
   getSupabase,
   getConfig,
 } from "./common/config/instanceConfig.client.js";
-import { updatePageMeta } from "./lib/meta";
+import { updatePageMeta } from "./lib/meta.js";
 
 // ============================================================================
 // LOADER PENDANT L'INIT

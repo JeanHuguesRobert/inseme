@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSupabase, getDisplayName } from "@inseme/cop-host";
-import { createGroupMetadata, appendOrMergeLastModifiedBy } from "../../lib/socialMetadata";
+import {
+  getSupabase,
+  getDisplayName,
+  createGroupMetadata,
+  appendOrMergeLastModifiedBy,
+} from "@inseme/cop-host";
 
 /**
  * Formulaire de création/édition de mission (basé sur les groupes)

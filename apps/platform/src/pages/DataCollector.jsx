@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getSupabase } from "../lib/supabase";
+import { getSupabase } from "../lib/supabase.js";
 import { useSupabase } from "../contexts/SupabaseContext";
 import IframeViewer from "../components/collector/IframeViewer";
 import CollectorPanel from "../components/collector/CollectorPanel";

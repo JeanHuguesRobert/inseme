@@ -1,2 +1,2 @@
-export * from "@inseme/cop-host/config/instanceConfig.core";
+export * from "@inseme/cop-host/config/instanceConfig.core.js";
 

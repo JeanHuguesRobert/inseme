@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import GroupList from "../components/social/GroupList";
+import { useCurrentUser } from "@inseme/cop-host";
+import { GroupList } from "@inseme/brique-group";
 import PostList from "../components/social/PostList";
-import { getSupabase } from "../lib/supabase";
-import { GROUP_TYPES, POST_TYPES } from "../lib/socialMetadata";
-import { canWrite } from "../lib/permissions";
+import { getSupabase } from "../lib/supabase.js";
+import { GROUP_TYPES, POST_TYPES } from "../../../../packages/cop-host/src/lib/socialMetadata.js";
+import { canWrite } from "@inseme/cop-host";
 import SiteFooter from "../components/layout/SiteFooter";
-import { MOVEMENT_NAME } from "../constants";
-import { detectGazetteAssignments } from "../lib/gazetteAssignments";
+import { MOVEMENT_NAME } from "../constants.js";
+import { detectGazetteAssignments } from "../lib/gazetteAssignments.js";
 
 /**
  * Page principale Social - Vue d'ensemble groupes + posts

@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { getConfig } from "@inseme/cop-host/config/instanceConfig.client";
+import { getConfig } from "../../../../packages/cop-host/src/config/instanceConfig.client.js";
 
 // On tente de récupérer depuis le Vault, sinon depuis les env vars
 const supabaseUrl =

@@ -7,10 +7,8 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import { isAdmin, canWrite } from "@inseme/cop-host";
-import SiteFooter from "../../components/layout/SiteFooter";
-import { CITY_NAME, HASHTAG } from "../../constants";
+import { useCurrentUser, isAdmin, canWrite } from "@inseme/cop-host";
+import { CITY_NAME, HASHTAG } from "@inseme/cop-host";
 
 // ============================================================================
 // HELPER COMPONENTS
@@ -103,7 +101,7 @@ const LegalCard = ({ code, title, description }) => (
 // ============================================================================
 
 export default function ActesHome() {
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
   const userIsAdmin = isAdmin(user);
   const userCanWrite = canWrite(user);
 
@@ -129,7 +127,8 @@ export default function ActesHome() {
           {!user && (
             <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg inline-block">
               <p className="text-amber-800 text-sm">
-                👋 <strong>Connectez-vous</strong> pour accéder à toutes les fonctionnalités
+                👋 <strong>Connectez-vous</strong> pour accéder à toutes les
+                fonctionnalités
               </p>
             </div>
           )}
@@ -144,14 +143,17 @@ export default function ActesHome() {
           </h2>
           <div className="prose prose-slate max-w-none">
             <p className="text-lg text-slate-600 leading-relaxed">
-              Ce système vous permet de <strong>suivre les actes pris par la municipalité</strong>
-              de {CITY_NAME || "votre commune"} : délibérations du conseil municipal, arrêtés du
-              maire, décisions individuelles, procès-verbaux...
+              Ce système vous permet de{" "}
+              <strong>suivre les actes pris par la municipalité</strong>
+              de {CITY_NAME || "votre commune"} : délibérations du conseil
+              municipal, arrêtés du maire, décisions individuelles,
+              procès-verbaux...
             </p>
             <p className="text-slate-600 leading-relaxed">
               Vous pouvez vérifier si ces actes respectent les{" "}
-              <strong>délais légaux de transmission</strong>à la préfecture, faire des{" "}
-              <strong>demandes d'accès aux documents</strong> (CRPA), et si nécessaire, préparer des{" "}
+              <strong>délais légaux de transmission</strong>à la préfecture,
+              faire des <strong>demandes d'accès aux documents</strong> (CRPA),
+              et si nécessaire, préparer des{" "}
               <strong>recours administratifs</strong>.
             </p>
           </div>
@@ -282,9 +284,13 @@ export default function ActesHome() {
             <h2 className="text-2xl font-bold text-amber-700 mb-6 flex items-center gap-2">
               <span>🔐</span> Administration
             </h2>
-            <InfoBox emoji="⚠️" title="Zone réservée aux administrateurs" color="amber">
-              Ces fonctions permettent de modérer les contributions et valider les actions avant
-              leur envoi officiel (Human-in-the-Loop).
+            <InfoBox
+              emoji="⚠️"
+              title="Zone réservée aux administrateurs"
+              color="amber"
+            >
+              Ces fonctions permettent de modérer les contributions et valider
+              les actions avant leur envoi officiel (Human-in-the-Loop).
             </InfoBox>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
@@ -349,34 +355,50 @@ export default function ActesHome() {
             <table className="w-full bg-white rounded-lg border border-slate-200 text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Situation</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Délai</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Conséquence</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Situation
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Délai
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                    Conséquence
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 <tr className="border-b border-slate-100">
                   <td className="px-4 py-3">Transmission à la préfecture</td>
-                  <td className="px-4 py-3 font-medium text-blue-600">15 jours</td>
+                  <td className="px-4 py-3 font-medium text-blue-600">
+                    15 jours
+                  </td>
                   <td className="px-4 py-3 text-slate-600">
                     Acte non exécutoire, potentiellement illégal
                   </td>
                 </tr>
                 <tr className="border-b border-slate-100">
                   <td className="px-4 py-3">Réponse à une demande CRPA</td>
-                  <td className="px-4 py-3 font-medium text-blue-600">1 mois</td>
+                  <td className="px-4 py-3 font-medium text-blue-600">
+                    1 mois
+                  </td>
                   <td className="px-4 py-3 text-slate-600">
                     Refus implicite → Saisine CADA possible
                   </td>
                 </tr>
                 <tr className="border-b border-slate-100">
                   <td className="px-4 py-3">Avis de la CADA</td>
-                  <td className="px-4 py-3 font-medium text-blue-600">1 mois</td>
-                  <td className="px-4 py-3 text-slate-600">Avis favorable ou défavorable</td>
+                  <td className="px-4 py-3 font-medium text-blue-600">
+                    1 mois
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">
+                    Avis favorable ou défavorable
+                  </td>
                 </tr>
                 <tr className="border-b border-slate-100">
                   <td className="px-4 py-3">Recours gracieux</td>
-                  <td className="px-4 py-3 font-medium text-orange-600">2 mois</td>
+                  <td className="px-4 py-3 font-medium text-orange-600">
+                    2 mois
+                  </td>
                   <td className="px-4 py-3 text-slate-600">
                     Rejet implicite → Recours contentieux possible
                   </td>
@@ -408,12 +430,18 @@ export default function ActesHome() {
               </Link>
             </InfoBox>
             <InfoBox emoji="🤖" title="Assistant Ophélia" color="purple">
-              <Link to="/bob" className="text-purple-600 hover:text-purple-800 font-medium">
+              <Link
+                to="/bob"
+                className="text-purple-600 hover:text-purple-800 font-medium"
+              >
                 Poser une question →
               </Link>
             </InfoBox>
             <InfoBox emoji="📧" title="Contact" color="green">
-              <Link to="/contact" className="text-green-600 hover:text-green-800 font-medium">
+              <Link
+                to="/contact"
+                className="text-green-600 hover:text-green-800 font-medium"
+              >
                 Nous contacter →
               </Link>
             </InfoBox>
@@ -425,8 +453,8 @@ export default function ActesHome() {
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
             <h2 className="text-2xl font-bold mb-3">Prêt à commencer ?</h2>
             <p className="text-blue-100 mb-6 max-w-lg mx-auto">
-              Explorez le tableau de bord pour voir l'état de la transparence municipale, ou
-              commencez par ajouter un acte à suivre.
+              Explorez le tableau de bord pour voir l'état de la transparence
+              municipale, ou commencez par ajouter un acte à suivre.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link
@@ -447,8 +475,6 @@ export default function ActesHome() {
           </div>
         </section>
       </div>
-
-      <SiteFooter />
     </div>
   );
 }

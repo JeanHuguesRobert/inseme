@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { getMetadata, setMetadata } from "@inseme/cop-host";
 
 /**
  * Hook to use AI summarization service

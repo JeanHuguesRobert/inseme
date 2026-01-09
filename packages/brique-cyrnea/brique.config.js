@@ -11,12 +11,12 @@ export default {
   routes: [
     {
       path: "/bar",
-      component: "./src/pages/BarmanDashboard.jsx",
+      component: "./src/pages/BarmanDashboard",
       protected: true,
     },
     {
       path: "/q",
-      component: "./src/pages/ClientMiniApp.jsx",
+      component: "./src/pages/ClientMiniApp",
       protected: false,
     },
   ],

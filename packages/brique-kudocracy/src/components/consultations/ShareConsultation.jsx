@@ -3,8 +3,13 @@
 // Supporte le partage sur réseaux sociaux + copie de lien + partage natif
 
 import { useState, useEffect } from "react";
-import { getShareLinks, copyShareLink, nativeShare, trackShare } from "../../lib/consultations";
-import { CONSULTATION_SCOPES } from "../../constants";
+import {
+  getShareLinks,
+  copyShareLink,
+  nativeShare,
+  trackShare,
+} from "../../lib/consultations.js";
+import { CONSULTATION_SCOPES } from "../../constants.js";
 import "./ShareConsultation.css";
 
 /**
@@ -82,9 +87,14 @@ export default function ShareConsultation({
   );
 
   return (
-    <div className={`share-consultation ${compact ? "compact" : ""} ${className}`}>
+    <div
+      className={`share-consultation ${compact ? "compact" : ""} ${className}`}
+    >
       <div className="share-header">
-        <span className="share-scope-badge" style={{ background: scopeInfo.color }}>
+        <span
+          className="share-scope-badge"
+          style={{ background: scopeInfo.color }}
+        >
           {scopeInfo.icon} {scopeInfo.label}
         </span>
         <span className="share-title">Partager cette consultation</span>
@@ -119,7 +129,9 @@ export default function ShareConsultation({
             aria-expanded={showAllPlatforms}
           >
             <span className="share-icon">{showAllPlatforms ? "−" : "+"}</span>
-            <span className="share-label">{showAllPlatforms ? "Moins" : "Plus"}</span>
+            <span className="share-label">
+              {showAllPlatforms ? "Moins" : "Plus"}
+            </span>
           </button>
         )}
 
@@ -143,7 +155,12 @@ export default function ShareConsultation({
 /**
  * Bouton de partage simple (pour intégration dans les en-têtes)
  */
-export function ShareButton({ consultation, scope = "local", stats = null, className = "" }) {
+export function ShareButton({
+  consultation,
+  scope = "local",
+  stats = null,
+  className = "",
+}) {
   const [showDropdown, setShowDropdown] = useState(false);
 
   if (!consultation) return null;
@@ -162,7 +179,10 @@ export function ShareButton({ consultation, scope = "local", stats = null, class
 
       {showDropdown && (
         <>
-          <div className="share-dropdown-backdrop" onClick={() => setShowDropdown(false)} />
+          <div
+            className="share-dropdown-backdrop"
+            onClick={() => setShowDropdown(false)}
+          />
           <div className="share-dropdown">
             <ShareConsultation
               consultation={consultation}
@@ -192,7 +212,12 @@ export function ShareCallToAction({
   return (
     <div className="share-cta">
       <p className="share-cta-message">{message}</p>
-      <ShareConsultation consultation={consultation} scope={scope} stats={stats} compact={true} />
+      <ShareConsultation
+        consultation={consultation}
+        scope={scope}
+        stats={stats}
+        compact={true}
+      />
     </div>
   );
 }

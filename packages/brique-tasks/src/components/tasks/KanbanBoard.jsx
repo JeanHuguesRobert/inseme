@@ -10,8 +10,8 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { TASK_STATUSES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from "../../lib/taskMetadata";
-import { getTaskStatus, transitionTaskStatus } from "../../lib/taskHelpers";
+import { TASK_STATUSES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from "../../lib/taskMetadata.js";
+import { getTaskStatus, transitionTaskStatus } from "../../lib/taskHelpers.js";
 import TaskCard from "./TaskCard";
 
 function KanbanColumn({ status, tasks, projectId, onTaskClick, enableDrag }) {

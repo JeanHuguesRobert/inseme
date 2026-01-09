@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import axios from "axios";
 import { createClient } from "@supabase/supabase-js";
-import { loadConfig, getConfig } from "../../../lib/config.js";
+import { loadConfig, getConfig } from "../../../../../cop-host/src/scripts/config";
 
 // Load configuration
 await loadConfig();

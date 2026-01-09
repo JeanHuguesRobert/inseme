@@ -1,16 +1,16 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  functions = "apps/inseme/src/netlify/functions"
-  edge_functions = "apps/inseme/src/netlify/edge-functions"
+  functions = "netlify/functions"
+  edge_functions = "netlify/edge-functions"
 
 [dev]
   command = "npm run dev"
-  functions = "apps/inseme/src/netlify/functions"
-  edge_functions = "apps/inseme/src/netlify/edge-functions"
+  functions = "netlify/functions"
+  edge_functions = "netlify/edge-functions"
 
 [functions]
-  directory = "apps/inseme/src/netlify/functions"
+  directory = "netlify/functions"
   node_bundler = "esbuild"
 
 
@@ -21,44 +21,112 @@
 # Instance resolver - Doit être AVANT les autres pour intercepter les sous-domaines
 # --- GENERATED BRIQUE EDGE START ---
 [[edge_functions]]
-  function = "ophelia-chat"
-  path = "/api/ophelia"
+  function = "gen-tool-actes-search_actes"
+  path = "/api/tools/actes/search_actes"
 
 [[edge_functions]]
-  function = "ophelia-chat-stream"
-  path = "/api/chat-stream"
+  function = "gen-tool-actes-get_demande_status"
+  path = "/api/tools/actes/get_demande_status"
 
 [[edge_functions]]
-  function = "ophelia-openai-v1"
-  path = "/v1/chat/completions"
+  function = "gen-tool-blog-read_blog_posts"
+  path = "/api/tools/blog/read_blog_posts"
 
 [[edge_functions]]
-  function = "ophelia-vector-search"
-  path = "/api/vector-search"
+  function = "gen-tool-blog-get_blog_post"
+  path = "/api/tools/blog/get_blog_post"
 
 [[edge_functions]]
-  function = "ophelia-transcribe"
-  path = "/api/transcribe"
-
-[[edge_functions]]
-  function = "ophelia-translate"
-  path = "/api/translate"
-
-[[edge_functions]]
-  function = "ophelia-sessions"
-  path = "/api/sessions"
-
-[[edge_functions]]
-  function = "map-municipal-data"
-  path = "/api/municipal/*"
-
-[[edge_functions]]
-  function = "fil-create-item"
+  function = "gen-fil-create-item"
   path = "/api/fil/items"
 
 [[edge_functions]]
-  function = "fil-vote"
+  function = "gen-fil-vote"
   path = "/api/fil/vote"
+
+[[edge_functions]]
+  function = "gen-tool-fil-read_fil"
+  path = "/api/tools/fil/read_fil"
+
+[[edge_functions]]
+  function = "gen-tool-fil-post_to_fil"
+  path = "/api/tools/fil/post_to_fil"
+
+[[edge_functions]]
+  function = "gen-tool-democracy-search_propositions"
+  path = "/api/tools/democracy/search_propositions"
+
+[[edge_functions]]
+  function = "gen-tool-democracy-vote_proposition"
+  path = "/api/tools/democracy/vote_proposition"
+
+[[edge_functions]]
+  function = "gen-tool-democracy-manage_delegation"
+  path = "/api/tools/democracy/manage_delegation"
+
+[[edge_functions]]
+  function = "gen-tool-democracy-emit_vote_recommendation"
+  path = "/api/tools/democracy/emit_vote_recommendation"
+
+[[edge_functions]]
+  function = "gen-tool-democracy-prolog_query"
+  path = "/api/tools/democracy/prolog_query"
+
+[[edge_functions]]
+  function = "gen-map-municipal-data"
+  path = "/api/municipal/*"
+
+[[edge_functions]]
+  function = "gen-tool-map-search_map_places"
+  path = "/api/tools/map/search_map_places"
+
+[[edge_functions]]
+  function = "gen-ophelia-chat"
+  path = "/api/ophelia"
+
+[[edge_functions]]
+  function = "gen-ophelia-chat-stream"
+  path = "/api/chat-stream"
+
+[[edge_functions]]
+  function = "gen-ophelia-openai-v1"
+  path = "/v1/chat/completions"
+
+[[edge_functions]]
+  function = "gen-ophelia-vector-search"
+  path = "/api/vector-search"
+
+[[edge_functions]]
+  function = "gen-ophelia-transcribe"
+  path = "/api/transcribe"
+
+[[edge_functions]]
+  function = "gen-ophelia-translate"
+  path = "/api/translate"
+
+[[edge_functions]]
+  function = "gen-ophelia-sessions"
+  path = "/api/sessions"
+
+[[edge_functions]]
+  function = "gen-ophelia-health"
+  path = "/api/health"
+
+[[edge_functions]]
+  function = "gen-tool-tasks-list_projects"
+  path = "/api/tools/tasks/list_projects"
+
+[[edge_functions]]
+  function = "gen-tool-tasks-get_my_tasks"
+  path = "/api/tools/tasks/get_my_tasks"
+
+[[edge_functions]]
+  function = "gen-tool-wiki-search_wiki"
+  path = "/api/tools/wiki/search_wiki"
+
+[[edge_functions]]
+  function = "gen-tool-wiki-propose_wiki_page"
+  path = "/api/tools/wiki/propose_wiki_page"
 # --- GENERATED BRIQUE EDGE END ---
 
 [[edge_functions]]
@@ -73,32 +141,32 @@
 # --- GENERATED BRIQUE REDIRECTS START ---
 [[redirects]]
   from = "/api/wiki-sync"
-  to = "/.netlify/functions/wiki-sync"
+  to = "/.netlify/functions/gen-wiki-sync"
   status = 200
 
 [[redirects]]
   from = "/api/wiki-resolve"
-  to = "/.netlify/functions/wiki-resolve"
+  to = "/.netlify/functions/gen-wiki-resolve"
   status = 200
 
 [[redirects]]
   from = "/api/wiki-propose"
-  to = "/.netlify/functions/wiki-propose"
+  to = "/.netlify/functions/gen-wiki-propose"
   status = 200
 
 [[redirects]]
   from = "/api/wiki-optimize-title"
-  to = "/.netlify/functions/wiki-optimize-title"
+  to = "/.netlify/functions/gen-wiki-optimize-title"
   status = 200
 
 [[redirects]]
   from = "/api/wiki-propose-ai"
-  to = "/.netlify/functions/wiki-propose-ai"
+  to = "/.netlify/functions/gen-wiki-propose-ai"
   status = 200
 
 [[redirects]]
   from = "/api/wiki-search"
-  to = "/.netlify/functions/wiki-search"
+  to = "/.netlify/functions/gen-wiki-search"
   status = 200
 # --- GENERATED BRIQUE REDIRECTS END ---
 

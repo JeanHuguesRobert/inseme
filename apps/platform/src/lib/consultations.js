@@ -3,14 +3,14 @@
 // Stockage flexible avec Supabase - Logique métier côté JavaScript
 // Supporte la fédération nationale (double écriture local + national)
 
-import { getSupabase } from "./supabase";
+import { getSupabase } from "./supabase.js";
 import { createClient } from "@supabase/supabase-js";
 import {
   getConfig,
   newSupabase as createLocalSupabase,
 } from "../common/config/instanceConfig.client.js";
 
-import { getDynamicConfig } from "../constants";
+import { getDynamicConfig } from "../constants.js";
 
 // Ces imports sont maintenus pour les valeurs par défaut (si non trouvées dans le vault)
 import {
@@ -21,7 +21,7 @@ import {
   IS_NATIONAL_HUB as DEFAULT_IS_NATIONAL_HUB,
   REGION_NAME as DEFAULT_REGION_NAME,
   HASHTAG as DEFAULT_HASHTAG,
-} from "../constants";
+} from "../constants.js";
 
 // Client Supabase pour la base nationale (si configurée et différente de la locale)
 let nationalSupabase = null;

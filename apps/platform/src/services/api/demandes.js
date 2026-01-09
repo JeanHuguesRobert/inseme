@@ -1,4 +1,4 @@
-import { wrapFetch } from "../wrapFetch";
+import { wrapFetch } from "../wrapFetch.js";
 
 export async function listDemandes({ limit = 20, offset = 0, token } = {}) {
   const q = new URLSearchParams({ limit, offset });

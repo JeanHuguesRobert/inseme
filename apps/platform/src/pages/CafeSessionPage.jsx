@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { CafeSessionProvider, useCafeSession } from "../contexts/CafeSessionContext";
 import MicrophoneControl from "../components/cafe/MicrophoneControl";
 import TranscriptFeed from "../components/cafe/TranscriptFeed";
-import { User, PaperPlaneRight, ThumbsUp, Hand } from "@phosphor-icons/react";
+import { Icon } from "@inseme/cop-host";  
 
 import HostControls from "../components/cafe/HostControls";
 
@@ -63,7 +63,7 @@ const SessionInner = () => {
             disabled={!name.trim()}
             className="w-full bg-gray-900 text-white font-bold text-lg py-4 rounded-xl shadow-xl shadow-purple-900/10 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:transform-none transition-all flex items-center justify-center gap-2"
           >
-            Entrer <PaperPlaneRight weight="bold" />
+            Entrer <Send size={20} />
           </button>
           <p className="mt-6 text-xs text-gray-400 font-medium uppercase tracking-widest">
             Session Sécurisée &bull; Anonyme
@@ -117,6 +117,7 @@ const SessionInner = () => {
               className="px-2 py-1 rounded-md border text-xs bg-white/5 text-gray-200 border-gray-600"
               title="Copier la clé d'hôte"
             >
+              <Icon name="key" size={16} />
               Clé hôte
             </button>
           )}
@@ -131,6 +132,7 @@ const SessionInner = () => {
               }}
               className="px-2 py-1 rounded-md border text-xs bg-white/5 text-gray-200 border-gray-600"
               title="Utiliser une clé d\'hôte"
+              <Icon name="brain" size={20} />
             >
               Utiliser clé
             </button>
@@ -190,7 +192,7 @@ const SessionInner = () => {
                       }
                     }}
                     disabled={!messageText.trim()}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-full font-medium text-sm hover:bg-blue-600 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1 shadow-sm"
+                    <Icon name="paper-plane-right" weight="bold" size={16} />
                   >
                     <PaperPlaneRight weight="bold" size={16} />
                   </button>

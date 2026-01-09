@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CurrentUserContext } from "../contexts/CurrentUserContext";
-import { useSocialAvatar } from "../hooks/useSocialAvatar";
+import { CurrentUserContext } from "../contexts/CurrentUserContext.proxy";
+import { useSocialAvatar } from "../hooks/useSocialAvatar.js";
 
 export default function OAuthCallback() {
   const navigate = useNavigate();

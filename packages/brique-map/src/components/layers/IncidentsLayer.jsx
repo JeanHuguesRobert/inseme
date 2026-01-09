@@ -1,7 +1,7 @@
 import React from "react";
 import { Marker, Popup } from "react-leaflet";
 import { Link } from "react-router-dom";
-import { getLatestModifier } from "../../../lib/socialMetadata";
+import { getLatestModifier } from "../../../../cop-host/src/lib/socialMetadata.js";
 
 export default function IncidentsLayer({ incidents }) {
   return (

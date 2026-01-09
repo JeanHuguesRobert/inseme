@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { getSupabase } from "../../lib/supabase";
+import { getSupabase } from "../../lib/supabase.js";
 import { useSupabase } from "../../contexts/SupabaseContext";
-import { getUserRole, ROLE_ADMIN } from "../../lib/permissions";
+import { getUserRole, ROLE_ADMIN } from "@inseme/cop-host";
 
 const DATA_TYPES = ["Titre", "Description", "Date", "Lieu", "Personne", "Organisation", "Autre"];
 const STATUSES = ["draft", "reviewed", "published", "archived"];

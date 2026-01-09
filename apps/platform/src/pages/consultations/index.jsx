@@ -3,7 +3,7 @@
 // Exporte les consultations disponibles et les utilitaires de catalogue
 
 import ConsultationQuasquara from "./ConsultationQuasquara";
-import ConsultationDemocratieLocale from "./ConsultationDemocratieLocale";
+import { ConsultationDemocratieLocale } from "@inseme/brique-communes";
 import ConsultationsHome from "./ConsultationsHome";
 
 // Page d'accueil des consultations (nouvelle route /)
@@ -197,7 +197,7 @@ export function needsSync(consultation) {
 export {
   extractPetitionsFromConsultation as getConsultationPetitions,
   hasPetitions,
-} from "../../lib/petitions";
+} from "@inseme/brique-kudocracy";
 
 // Historique des consultations :
 // - ConsultationQuasquara : Décembre 2024 - L'affaire de la croix de Quasquara (local)

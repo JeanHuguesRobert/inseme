@@ -6,10 +6,8 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import { wrapFetch } from "../../services/wrapFetch";
-import { linkProof } from "../../services/api/proofs";
-import SiteFooter from "../../components/layout/SiteFooter";
+import { useCurrentUser } from "@inseme/cop-host";
+import { wrapFetch, linkProof } from "../lib/api.js";
 
 // ============================================================================
 // CONSTANTS
@@ -192,15 +190,23 @@ const FileDropzone = ({ accept, onSelect, selectedFile }) => {
         <div>
           <div className="text-4xl mb-2">✅</div>
           <div className="font-medium text-slate-700">{selectedFile.name}</div>
-          <div className="text-sm text-slate-500">{formatFileSize(selectedFile.size)}</div>
+          <div className="text-sm text-slate-500">
+            {formatFileSize(selectedFile.size)}
+          </div>
           <div className="text-xs text-blue-600 mt-2">Cliquez pour changer</div>
         </div>
       ) : (
         <div>
           <div className="text-4xl mb-2">📁</div>
-          <div className="font-medium text-slate-700">Glissez-déposez un fichier ici</div>
-          <div className="text-sm text-slate-500">ou cliquez pour sélectionner</div>
-          <div className="text-xs text-slate-400 mt-2">Max {formatFileSize(MAX_FILE_SIZE)}</div>
+          <div className="font-medium text-slate-700">
+            Glissez-déposez un fichier ici
+          </div>
+          <div className="text-sm text-slate-500">
+            ou cliquez pour sélectionner
+          </div>
+          <div className="text-xs text-slate-400 mt-2">
+            Max {formatFileSize(MAX_FILE_SIZE)}
+          </div>
         </div>
       )}
     </div>
@@ -226,7 +232,9 @@ const ExistingProofs = ({ proofs, onDelete }) => {
                 {PROOF_TYPES.find((t) => t.value === proof.type)?.emoji || "📎"}
               </span>
               <div>
-                <div className="font-medium text-slate-700">{proof.label || proof.type}</div>
+                <div className="font-medium text-slate-700">
+                  {proof.label || proof.type}
+                </div>
                 <div className="text-xs text-slate-500">
                   {proof.date_constat
                     ? `Constaté le ${new Date(proof.date_constat).toLocaleDateString("fr-FR")}`
@@ -268,12 +276,17 @@ const ExistingProofs = ({ proofs, onDelete }) => {
 // MAIN COMPONENT
 // ============================================================================
 
-export default function ProofUpload({ acteId: propActeId, demandeId: propDemandeId, onUploaded }) {
+export default function ProofUpload({
+  acteId: propActeId,
+  demandeId: propDemandeId,
+  onUploaded,
+}) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { session, user } = useAuth();
+  const { session, currentUser: user } = useCurrentUser();
 
-  const acteId = propActeId || searchParams.get("actes") || searchParams.get("acte");
+  const acteId =
+    propActeId || searchParams.get("actes") || searchParams.get("acte");
   const demandeId = propDemandeId || searchParams.get("demande");
   const mandatId = searchParams.get("mandat");
 
@@ -311,25 +324,41 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
           if (acte) setLinkedItem({ type: "acte", ...acte });
 
           // Fetch proof-links for this acte
-          const links = await wrapFetch(`/api/proof-links?acte_id=${acteId}`, { token });
+          const links = await wrapFetch(`/api/proof-links?acte_id=${acteId}`, {
+            token,
+          });
           // links expected to be an array of { proof: { ... } } or proofs
-          const proofs = Array.isArray(links) ? links.map((l) => l.proof || l).filter(Boolean) : [];
+          const proofs = Array.isArray(links)
+            ? links.map((l) => l.proof || l).filter(Boolean)
+            : [];
           setExistingProofs(proofs);
         } else if (mandatId) {
           const mandat = await wrapFetch(`/api/mandats/${mandatId}`, { token });
           if (mandat) setLinkedItem({ type: "mandat", ...mandat });
 
-          const links = await wrapFetch(`/api/proof-links?mandat_id=${mandatId}`, { token });
-          const proofs = Array.isArray(links) ? links.map((l) => l.proof || l).filter(Boolean) : [];
+          const links = await wrapFetch(
+            `/api/proof-links?mandat_id=${mandatId}`,
+            { token }
+          );
+          const proofs = Array.isArray(links)
+            ? links.map((l) => l.proof || l).filter(Boolean)
+            : [];
           setExistingProofs(proofs);
         } else if (demandeId) {
-          const demande = await wrapFetch(`/api/demandes/${demandeId}`, { token });
-          if (demande) setLinkedItem({ type: "demande", ...demande });
-
-          const links = await wrapFetch(`/api/proof-links?demande_admin_id=${demandeId}`, {
+          const demande = await wrapFetch(`/api/demandes/${demandeId}`, {
             token,
           });
-          const proofs = Array.isArray(links) ? links.map((l) => l.proof || l).filter(Boolean) : [];
+          if (demande) setLinkedItem({ type: "demande", ...demande });
+
+          const links = await wrapFetch(
+            `/api/proof-links?demande_admin_id=${demandeId}`,
+            {
+              token,
+            }
+          );
+          const proofs = Array.isArray(links)
+            ? links.map((l) => l.proof || l).filter(Boolean)
+            : [];
           setExistingProofs(proofs);
         }
       } catch (err) {
@@ -431,7 +460,11 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
       );
 
       // Create proof via edge API (expects multipart/form-data)
-      const proof = await wrapFetch("/api/proofs", { method: "POST", token, body: fd });
+      const proof = await wrapFetch("/api/proofs", {
+        method: "POST",
+        token,
+        body: fd,
+      });
 
       // Link proof to acte/demande/mandat
       if ((acteId || demandeId || mandatId) && proof?.id) {
@@ -516,7 +549,10 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
             )}
             {linkedItem?.type === "mandat" && (
               <>
-                <Link to={`/mandats/${mandatId}`} className="hover:text-blue-600">
+                <Link
+                  to={`/mandats/${mandatId}`}
+                  className="hover:text-blue-600"
+                >
                   {linkedItem.label || "Mandat"}
                 </Link>
                 <span>/</span>
@@ -524,7 +560,10 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
             )}
             {linkedItem?.type === "demande" && (
               <>
-                <Link to={`/demandes/${demandeId}`} className="hover:text-blue-600">
+                <Link
+                  to={`/demandes/${demandeId}`}
+                  className="hover:text-blue-600"
+                >
                   Demande
                 </Link>
                 <span>/</span>
@@ -532,7 +571,9 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
             )}
             <span className="text-slate-700">Ajouter une preuve</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">📎 Ajouter une preuve</h1>
+          <h1 className="text-2xl font-bold text-slate-900">
+            📎 Ajouter une preuve
+          </h1>
           {linkedItem && (
             <p className="text-slate-500 mt-1">
               Lié à:{" "}
@@ -568,16 +609,22 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
 
           {/* Type selection */}
           <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">📂 Type de preuve</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              📂 Type de preuve
+            </h2>
             <TypeSelector value={proofType} onChange={setProofType} />
             {selectedTypeInfo && (
-              <p className="text-sm text-slate-500 mt-3">{selectedTypeInfo.description}</p>
+              <p className="text-sm text-slate-500 mt-3">
+                {selectedTypeInfo.description}
+              </p>
             )}
           </div>
 
           {/* File upload */}
           <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">📁 Fichier</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              📁 Fichier
+            </h2>
 
             <FileDropzone
               accept={selectedTypeInfo?.accept || "*/*"}
@@ -585,7 +632,9 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
               onSelect={setSelectedFile}
             />
 
-            {errors.file && <p className="text-xs text-red-600 mt-2">{errors.file}</p>}
+            {errors.file && (
+              <p className="text-xs text-red-600 mt-2">{errors.file}</p>
+            )}
 
             {/* Preview */}
             {preview && (
@@ -602,7 +651,9 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
 
           {/* Metadata */}
           <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">📝 Informations</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              📝 Informations
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField label="Libellé" required error={errors.label}>
@@ -615,7 +666,11 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
                 />
               </FormField>
 
-              <FormField label="Date de constat" required error={errors.date_constat}>
+              <FormField
+                label="Date de constat"
+                required
+                error={errors.date_constat}
+              >
                 <input
                   type="date"
                   value={formData.date_constat}
@@ -624,7 +679,10 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
                 />
               </FormField>
 
-              <FormField label="URL source" help="Adresse web de la source (si applicable)">
+              <FormField
+                label="URL source"
+                help="Adresse web de la source (si applicable)"
+              >
                 <input
                   type="url"
                   value={formData.url_source}
@@ -634,7 +692,10 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
                 />
               </FormField>
 
-              <FormField label="Hash SHA-256" help="Empreinte numérique du fichier (optionnel)">
+              <FormField
+                label="Hash SHA-256"
+                help="Empreinte numérique du fichier (optionnel)"
+              >
                 <input
                   type="text"
                   value={formData.hash_sha256}
@@ -660,11 +721,13 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
 
           {/* Legal notice */}
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-amber-800 mb-2">⚠️ Important</h3>
+            <h3 className="text-sm font-semibold text-amber-800 mb-2">
+              ⚠️ Important
+            </h3>
             <p className="text-sm text-amber-700">
-              Les preuves téléversées constituent des éléments de traçabilité. Assurez-vous de leur
-              authenticité et de la date de constat exacte. Pour les captures d'écran, privilégiez
-              un horodatage visible.
+              Les preuves téléversées constituent des éléments de traçabilité.
+              Assurez-vous de leur authenticité et de la date de constat exacte.
+              Pour les captures d'écran, privilégiez un horodatage visible.
             </p>
           </div>
 
@@ -698,8 +761,6 @@ export default function ProofUpload({ acteId: propActeId, demandeId: propDemande
           </div>
         </form>
       </div>
-
-      <SiteFooter />
     </div>
   );
 }

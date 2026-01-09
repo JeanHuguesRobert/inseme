@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { getSupabase } from "@inseme/cop-host";
-import { parseTaskCommand, executeTaskCommand } from "../../lib/taskHelpers";
-import { TASK_COMMAND_HELP } from "../../lib/taskMetadata";
+import { parseTaskCommand, executeTaskCommand } from "../../lib/taskHelpers.js";
+import { TASK_COMMAND_HELP } from "../../lib/taskMetadata.js";
 
 const DEFAULT_HELP_TEXT = 'Exemples: "/status en_cours", "/assign @marie", "/priority urgente"';
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../../lib/supabase";
-import { isDeleted } from "../../lib/metadata";
-import { enrichUserMetadata } from "../../lib/userTransform";
+import { getSupabase } from "../../lib/supabase.js";
+import { isDeleted } from "../../../../../packages/cop-host/src/lib/metadata.js";
+import { enrichUserMetadata } from "@inseme/cop-host";
 import PostCard from "./PostCard";
 
 /**

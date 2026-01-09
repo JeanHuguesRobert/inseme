@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { getSupabase } from "../lib/supabase";
-import { useCurrentUser } from "../lib/useCurrentUser";
+import { getSupabase } from "../lib/supabase.js";
+import { useCurrentUser } from "@inseme/cop-host";
 
 const SupabaseContext = createContext(undefined);
 

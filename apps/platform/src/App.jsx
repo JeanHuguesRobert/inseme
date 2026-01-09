@@ -22,10 +22,10 @@ import PostEdit from "./pages/PostEdit";
 import PostLocationPicker from "./pages/PostLocationPicker";
 import UserProfile from "./pages/UserProfile";
 import UserPage from "./pages/UserPage";
-import VotingDashboard from "./pages/VotingDashboard";
+import VotingDashboard from "../../../packages/brique-kudocracy/src/components/kudocracy/VotingDashboard";
 import UserDashboard from "./pages/UserDashboard";
 import HomeDashboard from "./pages/HomeDashboard";
-import GlobalDashboard from "./pages/GlobalDashboard";
+import GlobalDashboard from "./components/common/GlobalDashboard";
 import SocialDashboard from "./pages/SocialDashboard";
 import SubscriptionFeed from "./pages/SubscriptionFeed";
 import Contact from "./pages/Contact";
@@ -52,18 +52,9 @@ import Incidents from "./pages/Incidents";
 import IncidentEditor from "./pages/IncidentEditor";
 import IncidentPage from "./pages/IncidentPage";
 import SurveyModeEmploi from "./pages/SurveyModeEmploi";
-import MarkdownViewer from "./pages/MarkdownViewer";
+import MarkdownViewer from "../../../packages/ui/src/components/MarkdownViewer";
 import PublicFileHandler from "./components/common/PublicFileHandler";
 import NotFound from "./pages/NotFound";
-import MissionsPage from "./pages/MissionsPage";
-import MissionCreate from "./pages/MissionCreate";
-import MissionDetail from "./pages/MissionDetail";
-import TaskProjectsPage from "./pages/TaskProjectsPage";
-import TaskProjectCreate from "./pages/TaskProjectCreate";
-import TaskProjectDetail from "./pages/TaskProjectDetail";
-import TaskCreate from "./pages/TaskCreate";
-import TaskEdit from "./pages/TaskEdit";
-import TaskDetail from "./pages/TaskDetail";
 import FilFeed from "./components/fil/FilFeed";
 import FilSubmissionForm from "./components/fil/FilSubmissionForm";
 import FilGuidelines from "./components/fil/FilGuidelines";
@@ -71,8 +62,8 @@ import FilFAQ from "./components/fil/FilFAQ";
 import CopCoreLandingPage from "./pages/CopCoreLandingPage";
 import OpheliaLandingPage from "./pages/OpheliaLandingPage";
 import FeatureRoute from "./components/common/FeatureRoute";
-import { FEATURES } from "./lib/features";
-import { BRIQUES } from "./brique-registry.gen";
+import { FEATURES } from "./lib/features.js";
+import { BRIQUES } from "./generated/brique-registry.js";
 import { BriqueRoute } from "./components/common/BriqueRoute";
 
 // Consultation active (module séparé)
@@ -81,27 +72,6 @@ import ConsultationsHome, {
   ConsultationDemocratieLocale,
 } from "./pages/consultations";
 
-// Civic Acts System - Contrôle citoyen des actes municipaux
-import ActesHome from "./pages/actes/ActesHome";
-import ActesDashboard from "./pages/actes/ActesDashboard";
-import ActesList from "./pages/actes/ActesList";
-import ActeDetail from "./pages/actes/ActeDetail";
-import ActeForm from "./pages/actes/ActeForm";
-import DemandesList from "./pages/actes/DemandesList";
-import DemandeDetail from "./pages/actes/DemandeDetail";
-import DemandeForm from "./pages/actes/DemandeForm";
-import ProofUpload from "./pages/actes/ProofUpload";
-import GuideActes from "./pages/actes/GuideActes";
-// Phase 3 - Human-in-the-Loop Components
-import OutgoingActionsQueue from "./pages/actes/OutgoingActionsQueue";
-import VerificationQueue from "./pages/actes/VerificationQueue";
-import PublicationModeration from "./pages/actes/PublicationModeration";
-import ResponsibilityLog from "./pages/actes/ResponsibilityLog";
-// Phase 7 - Exports et indicateurs
-import ExportPDF from "./pages/actes/ExportPDF";
-import ExportCSV from "./pages/actes/ExportCSV";
-import ActeTimeline from "./pages/actes/ActeTimeline";
-import StatsDashboard from "./pages/actes/StatsDashboard";
 import FractalFeedPage from "./pages/FractalFeedPage";
 import CafeSessionPage from "./pages/CafeSessionPage";
 
@@ -304,75 +274,6 @@ export function App() {
                 <Route path="new" element={<FilSubmissionForm />} />
                 <Route path="guidelines" element={<FilGuidelines />} />
                 <Route path="faq" element={<FilFAQ />} />
-              </Routes>
-            </FeatureRoute>
-          }
-        />
-
-        <Route
-          path="/actes/*"
-          element={
-            <FeatureRoute feature={FEATURES.ACTES}>
-              <Routes>
-                <Route index element={<ActesDashboard />} />
-                <Route path="accueil" element={<ActesHome />} />
-                <Route path="liste" element={<ActesList />} />
-                <Route path="nouveau" element={<ActeForm />} />
-                <Route path=":id" element={<ActeDetail />} />
-                <Route path=":id/modifier" element={<ActeForm />} />
-                <Route path=":id/chronologie" element={<ActeTimeline />} />
-                <Route path="chronologie" element={<ActeTimeline />} />
-                <Route path="stats" element={<StatsDashboard />} />
-              </Routes>
-            </FeatureRoute>
-          }
-        />
-
-        {/* Ces routes étaient à la racine mais font partie de la feature Actes ou Demandes */}
-        <Route
-          path="/demandes/*"
-          element={
-            <FeatureRoute feature={FEATURES.ACTES}>
-              <Routes>
-                <Route index element={<DemandesList />} />
-                <Route path="nouvelle" element={<DemandeForm />} />
-                <Route path=":id" element={<DemandeDetail />} />
-                <Route path=":id/modifier" element={<DemandeForm />} />
-              </Routes>
-            </FeatureRoute>
-          }
-        />
-
-        <Route
-          path="/preuves/ajouter"
-          element={
-            <FeatureRoute feature={FEATURES.ACTES}>
-              <ProofUpload />
-            </FeatureRoute>
-          }
-        />
-
-        <Route
-          path="/moderation/*"
-          element={
-            <FeatureRoute feature={FEATURES.ACTES}>
-              <Routes>
-                <Route path="actions" element={<OutgoingActionsQueue />} />
-                <Route path="preuves" element={<VerificationQueue />} />
-                <Route path="publications" element={<PublicationModeration />} />
-                <Route path="responsabilites" element={<ResponsibilityLog />} />
-              </Routes>
-            </FeatureRoute>
-          }
-        />
-
-        <Route
-          path="/exports/*"
-          element={
-            <FeatureRoute feature={FEATURES.ACTES}>
-              <Routes>
-                <Route path="pdf" element={<ExportPDF />} />
-                <Route path="csv" element={<ExportCSV />} />
               </Routes>
             </FeatureRoute>
           }

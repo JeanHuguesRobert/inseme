@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "./supabase";
+import { getSupabase } from "@inseme/cop-host";
 
 /**
  * Types de contenu supportés pour les abonnements

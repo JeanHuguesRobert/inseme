@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { getSupabase } from "@inseme/cop-host";
-import wikiFederation from "../lib/wikiFederation";
+import wikiFederation from "../lib/wikiFederation.js";
 
 export default function WikiCreate() {
   const { slug: initialSlugParam } = useParams();

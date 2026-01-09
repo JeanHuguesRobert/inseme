@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { getPostTitle } from "../../lib/socialMetadata";
+import { getPostTitle } from "../../../../../packages/cop-host/src/lib/socialMetadata.js";
 
 /**
  * Breadcrumb navigation showing the path from root to current post

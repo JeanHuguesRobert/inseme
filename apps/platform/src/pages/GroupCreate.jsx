@@ -1,4 +1,4 @@
-import { useCurrentUser } from "../lib/useCurrentUser";
+import { useCurrentUser } from "@inseme/cop-host";
 import GroupForm from "../components/social/GroupForm";
 
 /**

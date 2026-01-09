@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../lib/supabase";
-import { useCurrentUser } from "../lib/useCurrentUser";
+import { getSupabase } from "../lib/supabase.js";
+import { useCurrentUser } from "@inseme/cop-host";
 import FeedReader from "../components/federation/FeedReader";
 import FeedManager from "../components/federation/FeedManager";
 import { Link } from "react-router-dom";

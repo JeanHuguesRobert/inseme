@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host/runtime/client"; // Assumed helper export
+import { getSupabase } from "@inseme/cop-host";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 

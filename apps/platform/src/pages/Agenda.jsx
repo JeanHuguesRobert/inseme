@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
-import { isDeleted } from "../lib/metadata";
-import { enrichUserMetadata } from "../lib/userTransform";
-import { getDisplayName } from "../lib/userDisplay";
-import { getPostTitle, getPostSubtitle } from "../lib/socialMetadata";
-import { getPostEvent, getPostGazette } from "../lib/postPredicates";
-import CitizenMap from "../components/map/CitizenMap";
-import EventsLayer from "../components/map/layers/EventsLayer";
-import LocationContributionModal from "../components/map/LocationContributionModal";
+import { getSupabase } from "../lib/supabase.js";
+import {
+  isDeleted,
+  getPostTitle,
+  getPostSubtitle,
+  enrichUserMetadata,
+  getDisplayName,
+} from "@inseme/cop-host";
+import { getPostEvent, getPostGazette } from "../lib/postPredicates.js";
+import { CitizenMap, EventsLayer, LocationContributionModal } from "@inseme/brique-map";
 
 function formatDate(date) {
   return date.toLocaleDateString("fr-FR", {

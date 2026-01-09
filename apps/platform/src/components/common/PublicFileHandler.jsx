@@ -2,7 +2,7 @@
 // Handles public file routes (/docs/*, etc.) - renders markdown in-app, others redirect to raw file
 
 import { useLocation, Navigate } from "react-router-dom";
-import MarkdownViewer from "../../pages/MarkdownViewer";
+import MarkdownViewer from "../../../../../packages/ui/src/components/MarkdownViewer";
 
 /**
  * Handles public file routes:

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listActes, getActe, createActe, updateActe } from "../services/api/actes";
+import { listActes, getActe, createActe, updateActe } from "../services/api/actes.js";
 import { useAuth } from "../contexts/AuthContext";
 
 export function useActesList(params = {}) {

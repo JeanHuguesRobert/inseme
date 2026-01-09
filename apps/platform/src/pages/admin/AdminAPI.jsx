@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
-import { useCurrentUser } from "../../lib/useCurrentUser";
+import { useCurrentUser } from "@inseme/cop-host";
 
 export default function AdminAPI() {
   const { currentUser } = useCurrentUser();

@@ -5,9 +5,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import SiteFooter from "../../components/layout/SiteFooter";
+import { getSupabase, useCurrentUser } from "@inseme/cop-host";
 
 // ============================================================================
 // CONSTANTS
@@ -24,7 +22,11 @@ const TYPE_LABELS = {
     emoji: "📋",
     color: "bg-orange-100 text-orange-800",
   },
-  CADA_SAISINE: { label: "Saisine CADA", emoji: "⚖️", color: "bg-purple-100 text-purple-800" },
+  CADA_SAISINE: {
+    label: "Saisine CADA",
+    emoji: "⚖️",
+    color: "bg-purple-100 text-purple-800",
+  },
   RECOURS_GRACIEUX: {
     label: "Recours gracieux",
     emoji: "🤝",
@@ -35,8 +37,16 @@ const TYPE_LABELS = {
     emoji: "📊",
     color: "bg-indigo-100 text-indigo-800",
   },
-  DROIT_ERREUR: { label: "Droit à l'erreur", emoji: "🔄", color: "bg-teal-100 text-teal-800" },
-  AUTRE: { label: "Autre demande", emoji: "📄", color: "bg-slate-100 text-slate-800" },
+  DROIT_ERREUR: {
+    label: "Droit à l'erreur",
+    emoji: "🔄",
+    color: "bg-teal-100 text-teal-800",
+  },
+  AUTRE: {
+    label: "Autre demande",
+    emoji: "📄",
+    color: "bg-slate-100 text-slate-800",
+  },
 };
 
 const STATUS_BADGES = {
@@ -45,7 +55,11 @@ const STATUS_BADGES = {
     emoji: "📝",
     class: "bg-slate-100 text-slate-600 border-slate-200",
   },
-  EN_COURS: { label: "En cours", emoji: "⏳", class: "bg-blue-100 text-blue-800 border-blue-200" },
+  EN_COURS: {
+    label: "En cours",
+    emoji: "⏳",
+    class: "bg-blue-100 text-blue-800 border-blue-200",
+  },
   REPONDUE: {
     label: "Répondue",
     emoji: "✅",
@@ -61,7 +75,11 @@ const STATUS_BADGES = {
     emoji: "⚠️",
     class: "bg-orange-100 text-orange-800 border-orange-200",
   },
-  CLASSEE: { label: "Classée", emoji: "📁", class: "bg-slate-100 text-slate-600 border-slate-200" },
+  CLASSEE: {
+    label: "Classée",
+    emoji: "📁",
+    class: "bg-slate-100 text-slate-600 border-slate-200",
+  },
 };
 
 const RESPONSE_TYPES = {
@@ -138,7 +156,8 @@ const DeadlineDisplay = ({ demande }) => {
     return (
       <div className="text-red-600">
         <div className="font-bold">
-          ⛔ Délai dépassé de {Math.abs(daysLeft)} jour{Math.abs(daysLeft) > 1 ? "s" : ""}
+          ⛔ Délai dépassé de {Math.abs(daysLeft)} jour
+          {Math.abs(daysLeft) > 1 ? "s" : ""}
         </div>
         <div className="text-sm">Échéance: {formattedDate}</div>
       </div>
@@ -149,7 +168,8 @@ const DeadlineDisplay = ({ demande }) => {
     return (
       <div className="text-orange-600">
         <div className="font-bold">
-          ⚠️ {daysLeft} jour{daysLeft > 1 ? "s" : ""} restant{daysLeft > 1 ? "s" : ""}
+          ⚠️ {daysLeft} jour{daysLeft > 1 ? "s" : ""} restant
+          {daysLeft > 1 ? "s" : ""}
         </div>
         <div className="text-sm">Échéance: {formattedDate}</div>
       </div>
@@ -190,18 +210,26 @@ const ResponseCard = ({ response }) => {
       <div className="p-4">
         {response.resume && (
           <div className="mb-3">
-            <div className="text-xs font-medium text-slate-500 mb-1">Résumé</div>
+            <div className="text-xs font-medium text-slate-500 mb-1">
+              Résumé
+            </div>
             <p className="text-slate-700">{response.resume}</p>
           </div>
         )}
         {response.contenu && (
           <div className="mb-3">
-            <div className="text-xs font-medium text-slate-500 mb-1">Contenu</div>
-            <p className="text-slate-700 whitespace-pre-wrap">{response.contenu}</p>
+            <div className="text-xs font-medium text-slate-500 mb-1">
+              Contenu
+            </div>
+            <p className="text-slate-700 whitespace-pre-wrap">
+              {response.contenu}
+            </p>
           </div>
         )}
         {response.reference_courrier && (
-          <div className="text-sm text-slate-500">Réf: {response.reference_courrier}</div>
+          <div className="text-sm text-slate-500">
+            Réf: {response.reference_courrier}
+          </div>
         )}
       </div>
     </div>
@@ -215,7 +243,7 @@ const ResponseCard = ({ response }) => {
 export default function DemandeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -255,11 +283,12 @@ export default function DemandeDetail() {
         setDemande(demandeData);
 
         // Fetch responses
-        const { data: responsesData, error: responsesError } = await getSupabase()
-          .from("reponse_admin")
-          .select("*")
-          .eq("demande_id", id)
-          .order("date_reponse", { ascending: false });
+        const { data: responsesData, error: responsesError } =
+          await getSupabase()
+            .from("reponse_admin")
+            .select("*")
+            .eq("demande_id", id)
+            .order("date_reponse", { ascending: false });
 
         if (responsesError) throw responsesError;
         setResponses(responsesData || []);
@@ -362,7 +391,9 @@ export default function DemandeDetail() {
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-8 text-center">
           <div className="text-4xl mb-4">⚠️</div>
           <h1 className="text-xl font-bold text-slate-800 mb-2">Erreur</h1>
-          <p className="text-slate-600 mb-4">{error || "Demande introuvable"}</p>
+          <p className="text-slate-600 mb-4">
+            {error || "Demande introuvable"}
+          </p>
           <Link to="/demandes" className="text-blue-600 hover:text-blue-800">
             ← Retour à la liste
           </Link>
@@ -398,7 +429,9 @@ export default function DemandeDetail() {
                 {demande.objet || "Demande sans objet"}
               </h1>
               {demande.collectivite && (
-                <p className="text-slate-500 mt-1">{demande.collectivite.nom}</p>
+                <p className="text-slate-500 mt-1">
+                  {demande.collectivite.nom}
+                </p>
               )}
             </div>
 
@@ -437,15 +470,21 @@ export default function DemandeDetail() {
                   label="Date d'envoi"
                   value={
                     demande.date_envoi
-                      ? new Date(demande.date_envoi).toLocaleDateString("fr-FR", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })
+                      ? new Date(demande.date_envoi).toLocaleDateString(
+                          "fr-FR",
+                          {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          }
+                        )
                       : null
                   }
                 />
-                <InfoRow label="Référence d'envoi" value={demande.reference_envoi} />
+                <InfoRow
+                  label="Référence d'envoi"
+                  value={demande.reference_envoi}
+                />
                 <InfoRow label="Méthode d'envoi" value={demande.method_envoi} />
                 <InfoRow
                   label="Date limite de réponse"
@@ -458,13 +497,17 @@ export default function DemandeDetail() {
                   <div className="text-xs font-medium text-slate-500 mb-1">
                     Motifs / Fondements juridiques
                   </div>
-                  <p className="text-slate-700 whitespace-pre-wrap">{demande.motifs}</p>
+                  <p className="text-slate-700 whitespace-pre-wrap">
+                    {demande.motifs}
+                  </p>
                 </div>
               )}
 
               {demande.metadata && Object.keys(demande.metadata).length > 0 && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
-                  <div className="text-xs font-medium text-slate-500 mb-1">Métadonnées</div>
+                  <div className="text-xs font-medium text-slate-500 mb-1">
+                    Métadonnées
+                  </div>
                   <pre className="text-xs bg-slate-50 p-2 rounded overflow-x-auto">
                     {JSON.stringify(demande.metadata, null, 2)}
                   </pre>
@@ -475,7 +518,9 @@ export default function DemandeDetail() {
             {/* Linked acte */}
             {demande.acte && (
               <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-                <h2 className="text-lg font-semibold text-slate-800 mb-4">📑 Acte concerné</h2>
+                <h2 className="text-lg font-semibold text-slate-800 mb-4">
+                  📑 Acte concerné
+                </h2>
                 <Link
                   to={`/actes/${demande.acte.id}`}
                   className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
@@ -534,7 +579,9 @@ export default function DemandeDetail() {
             {/* Proofs */}
             {proofs.length > 0 && (
               <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-                <h2 className="text-lg font-semibold text-slate-800 mb-4">📎 Preuves liées</h2>
+                <h2 className="text-lg font-semibold text-slate-800 mb-4">
+                  📎 Preuves liées
+                </h2>
                 <div className="space-y-2">
                   {proofs.map((proof) => (
                     <div
@@ -557,7 +604,10 @@ export default function DemandeDetail() {
                           </div>
                           {proof.date_constat && (
                             <div className="text-xs text-slate-500">
-                              Constaté le {new Date(proof.date_constat).toLocaleDateString("fr-FR")}
+                              Constaté le{" "}
+                              {new Date(proof.date_constat).toLocaleDateString(
+                                "fr-FR"
+                              )}
                             </div>
                           )}
                         </div>
@@ -591,7 +641,9 @@ export default function DemandeDetail() {
             {/* Legal info */}
             {legalInfo && (
               <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-indigo-800 mb-3">⚖️ Cadre juridique</h3>
+                <h3 className="text-sm font-semibold text-indigo-800 mb-3">
+                  ⚖️ Cadre juridique
+                </h3>
                 <div className="space-y-2 text-sm text-indigo-700">
                   <div>
                     <strong>Articles:</strong> {legalInfo.articles}
@@ -609,7 +661,9 @@ export default function DemandeDetail() {
             {/* Deadlines */}
             {deadlines.length > 0 && (
               <div className="bg-white rounded-lg shadow border border-slate-200 p-4">
-                <h3 className="text-sm font-semibold text-slate-800 mb-3">⏰ Échéances</h3>
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">
+                  ⏰ Échéances
+                </h3>
                 <div className="space-y-2">
                   {deadlines.map((deadline) => {
                     const dueDate = new Date(deadline.due_date);
@@ -634,7 +688,9 @@ export default function DemandeDetail() {
                           {deadline.achieved_at ? (
                             <span className="text-green-600 text-xs">✅</span>
                           ) : isOverdue ? (
-                            <span className="text-red-600 text-xs font-bold">⛔</span>
+                            <span className="text-red-600 text-xs font-bold">
+                              ⛔
+                            </span>
                           ) : (
                             <span className="text-blue-600 text-xs">⏳</span>
                           )}
@@ -651,12 +707,16 @@ export default function DemandeDetail() {
 
             {/* Timeline */}
             <div className="bg-white rounded-lg shadow border border-slate-200 p-4">
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">📅 Chronologie</h3>
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">
+                📅 Chronologie
+              </h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-slate-400 mt-1.5"></div>
                   <div>
-                    <div className="text-sm font-medium text-slate-700">Création</div>
+                    <div className="text-sm font-medium text-slate-700">
+                      Création
+                    </div>
                     <div className="text-xs text-slate-500">
                       {new Date(demande.created_at).toLocaleDateString("fr-FR")}
                     </div>
@@ -666,9 +726,13 @@ export default function DemandeDetail() {
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>
                     <div>
-                      <div className="text-sm font-medium text-slate-700">Envoi</div>
+                      <div className="text-sm font-medium text-slate-700">
+                        Envoi
+                      </div>
                       <div className="text-xs text-slate-500">
-                        {new Date(demande.date_envoi).toLocaleDateString("fr-FR")}
+                        {new Date(demande.date_envoi).toLocaleDateString(
+                          "fr-FR"
+                        )}
                       </div>
                     </div>
                   </div>
@@ -678,12 +742,17 @@ export default function DemandeDetail() {
                     <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5"></div>
                     <div>
                       <div className="text-sm font-medium text-slate-700">
-                        {RESPONSE_TYPES[response.type_reponse]?.label || "Réponse"}
+                        {RESPONSE_TYPES[response.type_reponse]?.label ||
+                          "Réponse"}
                       </div>
                       <div className="text-xs text-slate-500">
                         {response.date_reponse
-                          ? new Date(response.date_reponse).toLocaleDateString("fr-FR")
-                          : new Date(response.created_at).toLocaleDateString("fr-FR")}
+                          ? new Date(response.date_reponse).toLocaleDateString(
+                              "fr-FR"
+                            )
+                          : new Date(response.created_at).toLocaleDateString(
+                              "fr-FR"
+                            )}
                       </div>
                     </div>
                   </div>
@@ -692,9 +761,13 @@ export default function DemandeDetail() {
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 rounded-full bg-slate-600 mt-1.5"></div>
                     <div>
-                      <div className="text-sm font-medium text-slate-700">Classée</div>
+                      <div className="text-sm font-medium text-slate-700">
+                        Classée
+                      </div>
                       <div className="text-xs text-slate-500">
-                        {new Date(demande.updated_at).toLocaleDateString("fr-FR")}
+                        {new Date(demande.updated_at).toLocaleDateString(
+                          "fr-FR"
+                        )}
                       </div>
                     </div>
                   </div>
@@ -704,7 +777,9 @@ export default function DemandeDetail() {
 
             {/* Actions */}
             <div className="bg-white rounded-lg shadow border border-slate-200 p-4">
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">🔗 Actions</h3>
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">
+                🔗 Actions
+              </h3>
               <div className="space-y-2">
                 <button className="w-full text-left px-3 py-2 text-sm rounded hover:bg-slate-50 text-slate-700">
                   📤 Exporter en PDF
@@ -722,8 +797,6 @@ export default function DemandeDetail() {
           </div>
         </div>
       </div>
-
-      <SiteFooter />
     </div>
   );
 }

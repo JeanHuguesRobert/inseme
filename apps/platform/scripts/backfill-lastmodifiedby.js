@@ -13,7 +13,7 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
   process.exit(1);
 }
 const supabase = createSupabaseClient();
-import { appendOrMergeLastModifiedBy } from "../src/lib/socialMetadata.js";
+import { appendOrMergeLastModifiedBy } from "../../../packages/cop-host/src/lib/socialMetadata.js";
 
 async function run() {
   console.log("Starting backfill: lastModifiedBy");

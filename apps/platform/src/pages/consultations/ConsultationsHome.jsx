@@ -5,16 +5,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { CONSULTATIONS } from "./index";
-import { getDynamicConfig, CONSULTATION_SCOPES } from "../../constants";
-import { extractPetitionsFromConsultation } from "../../lib/petitions";
+import { getDynamicConfig, CONSULTATION_SCOPES } from "../../constants.js";
+import { extractPetitionsFromConsultation } from "@inseme/brique-kudocracy";
 import { PetitionLinks } from "../../components/common/PetitionLink";
 import {
   getActiveConsultations,
   hasAlreadyResponded,
   generateSessionId,
   getConsultationStats,
-} from "../../lib/consultations";
-import { useCurrentUser } from "../../lib/useCurrentUser";
+} from "../../lib/consultations.js";
+import { useCurrentUser } from "@inseme/cop-host";
 import FilNewsFeed from "../../components/fil/FilNewsFeed";
 import GestureHeaderMenu from "../../components/layout/GestureHeaderMenu";
 import SiteFooter from "../../components/layout/SiteFooter";

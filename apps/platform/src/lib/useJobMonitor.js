@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSupabase } from "../contexts/SupabaseContext";
+import { useSupabase } from "@inseme/cop-host";
 
 /**
  * Hook for monitoring job progress with realtime updates

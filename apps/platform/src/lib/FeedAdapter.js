@@ -1,3 +1,13 @@
+import {
+  getPostTitle,
+  getPostSubtitle,
+  getPostSubtype,
+  getPostEvent,
+  getPostIncident,
+  getLastModifiedByList,
+  getLatestModifier,
+} from "@inseme/cop-host";
+
 /**
  * Universal Feed Adapter
  * Parses JSON Feed, RSS, and Atom into a normalized internal format.

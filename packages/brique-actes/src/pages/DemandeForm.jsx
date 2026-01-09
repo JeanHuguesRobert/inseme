@@ -5,10 +5,13 @@
 // ============================================================================
 
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import SiteFooter from "../../components/layout/SiteFooter";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
+import { getSupabase, useCurrentUser } from "@inseme/cop-host";
 
 // ============================================================================
 // CONSTANTS
@@ -19,7 +22,8 @@ const TYPES_DEMANDE = [
     value: "CRPA_COMMUNICATION",
     label: "Communication de documents",
     emoji: "📬",
-    description: "Demande d'accès aux documents administratifs (art. L311-1 CRPA)",
+    description:
+      "Demande d'accès aux documents administratifs (art. L311-1 CRPA)",
     delai: "1 mois",
   },
   {
@@ -40,7 +44,8 @@ const TYPES_DEMANDE = [
     value: "RECOURS_GRACIEUX",
     label: "Recours gracieux",
     emoji: "🤝",
-    description: "Demande de retrait ou modification d'un acte (art. L411-2 CRPA)",
+    description:
+      "Demande de retrait ou modification d'un acte (art. L411-2 CRPA)",
     delai: "2 mois pour réponse",
   },
   {
@@ -127,7 +132,9 @@ const TypeCard = ({ type, selected, onSelect }) => (
       <div className="flex-1">
         <div className="font-medium text-slate-800">{type.label}</div>
         <div className="text-xs text-slate-500 mt-0.5">{type.description}</div>
-        <div className="text-xs text-indigo-600 mt-1">⏱️ Délai: {type.delai}</div>
+        <div className="text-xs text-indigo-600 mt-1">
+          ⏱️ Délai: {type.delai}
+        </div>
       </div>
     </div>
   </button>
@@ -141,7 +148,7 @@ export default function DemandeForm() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
   const isEditing = Boolean(id);
   const linkedActeId = searchParams.get("actes") || searchParams.get("acte");
 
@@ -203,7 +210,9 @@ export default function DemandeForm() {
         .limit(50);
 
       if (searchActe) {
-        query = query.or(`numero_interne.ilike.%${searchActe}%,objet_court.ilike.%${searchActe}%`);
+        query = query.or(
+          `numero_interne.ilike.%${searchActe}%,objet_court.ilike.%${searchActe}%`
+        );
       }
 
       const { data } = await query;
@@ -397,12 +406,18 @@ export default function DemandeForm() {
               Demandes
             </Link>
             <span>/</span>
-            <span className="text-slate-700">{isEditing ? "Modifier" : "Nouvelle"}</span>
+            <span className="text-slate-700">
+              {isEditing ? "Modifier" : "Nouvelle"}
+            </span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900">
-            {isEditing ? "✏️ Modifier la demande" : "➕ Nouvelle demande administrative"}
+            {isEditing
+              ? "✏️ Modifier la demande"
+              : "➕ Nouvelle demande administrative"}
           </h1>
-          <p className="text-slate-500 mt-1">Communication, réclamation, recours ou saisine CADA</p>
+          <p className="text-slate-500 mt-1">
+            Communication, réclamation, recours ou saisine CADA
+          </p>
         </div>
       </div>
 
@@ -411,7 +426,8 @@ export default function DemandeForm() {
           {/* Success message */}
           {success && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-700 flex items-center gap-2">
-              ✅ Demande {isEditing ? "modifiée" : "créée"} avec succès ! Redirection...
+              ✅ Demande {isEditing ? "modifiée" : "créée"} avec succès !
+              Redirection...
             </div>
           )}
 
@@ -424,7 +440,9 @@ export default function DemandeForm() {
 
           {/* Type selection */}
           <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">📂 Type de demande</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              📂 Type de demande
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {TYPES_DEMANDE.map((type) => (
@@ -436,18 +454,28 @@ export default function DemandeForm() {
                 />
               ))}
             </div>
-            {errors.type && <p className="text-xs text-red-600 mt-2">{errors.type}</p>}
+            {errors.type && (
+              <p className="text-xs text-red-600 mt-2">{errors.type}</p>
+            )}
           </div>
 
           {/* Basic info */}
           <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">📋 Informations générales</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              📋 Informations générales
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField label="Collectivité" required error={errors.collectivite_id}>
+              <FormField
+                label="Collectivité"
+                required
+                error={errors.collectivite_id}
+              >
                 <select
                   value={formData.collectivite_id}
-                  onChange={(e) => handleChange("collectivite_id", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("collectivite_id", e.target.value)
+                  }
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Sélectionner...</option>
@@ -459,7 +487,10 @@ export default function DemandeForm() {
                 </select>
               </FormField>
 
-              <FormField label="Acte concerné" help="Lier à un acte municipal (optionnel)">
+              <FormField
+                label="Acte concerné"
+                help="Lier à un acte municipal (optionnel)"
+              >
                 <select
                   value={formData.acte_id}
                   onChange={(e) => handleChange("acte_id", e.target.value)}
@@ -468,7 +499,8 @@ export default function DemandeForm() {
                   <option value="">Aucun acte lié</option>
                   {actes.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.numero_interne || a.date_acte} - {a.objet_court?.substring(0, 50)}
+                      {a.numero_interne || a.date_acte} -{" "}
+                      {a.objet_court?.substring(0, 50)}
                     </option>
                   ))}
                 </select>
@@ -483,7 +515,11 @@ export default function DemandeForm() {
             </div>
 
             <div className="mt-6">
-              <FormField label="Objet de la demande" required error={errors.objet}>
+              <FormField
+                label="Objet de la demande"
+                required
+                error={errors.objet}
+              >
                 <input
                   type="text"
                   value={formData.objet}
@@ -512,7 +548,9 @@ export default function DemandeForm() {
 
           {/* Envoi */}
           <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">📤 Envoi et délais</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              📤 Envoi et délais
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField label="Méthode d'envoi">
@@ -538,11 +576,16 @@ export default function DemandeForm() {
                 />
               </FormField>
 
-              <FormField label="Référence d'envoi" help="N° recommandé, n° de ticket...">
+              <FormField
+                label="Référence d'envoi"
+                help="N° recommandé, n° de ticket..."
+              >
                 <input
                   type="text"
                   value={formData.reference_envoi}
-                  onChange={(e) => handleChange("reference_envoi", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("reference_envoi", e.target.value)
+                  }
                   placeholder="1A 123 456 789 0"
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -555,7 +598,9 @@ export default function DemandeForm() {
                 <input
                   type="date"
                   value={formData.date_limite_reponse}
-                  onChange={(e) => handleChange("date_limite_reponse", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("date_limite_reponse", e.target.value)
+                  }
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </FormField>
@@ -564,15 +609,25 @@ export default function DemandeForm() {
 
           {/* Status */}
           <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">📊 Statut</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              📊 Statut
+            </h2>
 
             <div className="flex flex-wrap gap-3">
               {[
                 { value: "BROUILLON", label: "Brouillon", emoji: "📝" },
                 { value: "EN_COURS", label: "En cours", emoji: "⏳" },
                 { value: "REPONDUE", label: "Répondue", emoji: "✅" },
-                { value: "REJET_EXPLICITE", label: "Rejet explicite", emoji: "❌" },
-                { value: "REJET_IMPLICITE", label: "Rejet implicite", emoji: "⚠️" },
+                {
+                  value: "REJET_EXPLICITE",
+                  label: "Rejet explicite",
+                  emoji: "❌",
+                },
+                {
+                  value: "REJET_IMPLICITE",
+                  label: "Rejet implicite",
+                  emoji: "⚠️",
+                },
                 { value: "CLASSEE", label: "Classée", emoji: "📁" },
               ].map((s) => (
                 <label
@@ -604,7 +659,9 @@ export default function DemandeForm() {
               <h3 className="text-sm font-semibold text-indigo-800 mb-2">
                 ⚖️ {selectedType.emoji} {selectedType.label}
               </h3>
-              <p className="text-sm text-indigo-700 mb-2">{selectedType.description}</p>
+              <p className="text-sm text-indigo-700 mb-2">
+                {selectedType.description}
+              </p>
               <p className="text-sm text-indigo-600">
                 <strong>Délai légal:</strong> {selectedType.delai}
               </p>
@@ -659,7 +716,6 @@ export default function DemandeForm() {
         </form>
       </div>
 
-      <SiteFooter />
     </div>
   );
 }

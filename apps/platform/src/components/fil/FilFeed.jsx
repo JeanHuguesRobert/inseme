@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../../lib/supabase";
+import { getSupabase } from "../../lib/supabase.js";
 import FilItemCard from "./FilItemCard";
-import { useCurrentUser } from "../../lib/useCurrentUser";
+import { useCurrentUser } from "@inseme/cop-host";
 import { Link } from "react-router-dom";
 import SiteFooter from "../layout/SiteFooter";
 

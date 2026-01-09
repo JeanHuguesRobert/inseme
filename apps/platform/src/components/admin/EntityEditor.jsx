@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getEntity, updateEntity, updateEntityAsAdmin, deleteEntity } from "../../lib/adminApi";
+import { getEntity, updateEntity, updateEntityAsAdmin, deleteEntity } from "../../lib/adminApi.js";
 
 export default function EntityEditor({ type, id, onClose, onSaved }) {
   const [item, setItem] = useState(null);

@@ -1,7 +1,7 @@
 // src/components/SaaS/SaaSDashboard.jsx
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase.js";
 import {
   Plus,
   Settings,
@@ -22,7 +22,7 @@ import {
   FileText,
   Link,
 } from "lucide-react";
-import { GOVERNANCE_MODELS } from "@inseme/kudocracy";
+import { GOVERNANCE_MODELS } from "../../../../../packages/brique-kudocracy/src/governance.js";
 
 export function SaaSDashboard({ user, onSelectRoom }) {
   const [rooms, setRooms] = useState([]);

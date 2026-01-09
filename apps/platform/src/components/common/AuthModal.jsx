@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { getSupabase } from "../../lib/supabase";
-import { ANONYMOUS_EMAIL } from "../../lib/permissions";
-import { useCurrentUser } from "../../lib/useCurrentUser";
+import { getSupabase } from "../../lib/supabase.js";
+import { ANONYMOUS_EMAIL } from "@inseme/cop-host";
+import { useCurrentUser } from "@inseme/cop-host";
 import { loadInstanceConfig } from "../../common/config/instanceConfig.client.js";
 import { AuthModal as SharedAuthModal } from "@inseme/ui";
 

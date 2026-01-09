@@ -1,4 +1,4 @@
-import { useCurrentUser } from "../lib/useCurrentUser";
+import { useCurrentUser } from "@inseme/cop-host";
 import PostView from "../components/social/PostView";
 import SiteFooter from "../components/layout/SiteFooter";
 

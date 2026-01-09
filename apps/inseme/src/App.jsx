@@ -1,13 +1,13 @@
 //
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "./lib/supabase";
-import { AuthModal } from "@inseme/core";
-import { InsemeRoom, InsemeProvider } from "@inseme/core";
+import { supabase } from "./lib/supabase.js";
+import { AuthModal } from "@inseme/room";
+import { InsemeRoom, InsemeProvider } from "@inseme/room";
 import { SaaSDashboard } from "./components/SaaS/SaaSDashboard";
 import { LandingPage } from "./components/SaaS/LandingPage";
 import { LegalPage } from "@inseme/ui";
-import { LEGAL_CONTENT } from "@inseme/kudocracy";
+import { LEGAL_PATHS } from "@inseme/brique-kudocracy";
 import { Layout, Play, LogOut, UserCheck } from "lucide-react";
 import { CurrentUserProvider, useCurrentUser } from "@inseme/cop-host";
 
@@ -185,8 +185,15 @@ function AppContent() {
                 ← Retour à l'accueil
               </button>
               <LegalPage
-                content={
-                  view === "terms" ? LEGAL_CONTENT.TERMS : LEGAL_CONTENT.PRIVACY
+                title={
+                  view === "terms"
+                    ? "Conditions d'utilisation"
+                    : "Politique de confidentialité"
+                }
+                url={
+                  view === "terms"
+                    ? LEGAL_PATHS.TERMS_OF_USE
+                    : LEGAL_PATHS.PRIVACY_POLICY
                 }
               />
             </div>

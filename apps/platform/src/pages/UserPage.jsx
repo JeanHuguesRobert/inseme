@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
-import { isDeleted } from "../lib/metadata";
-import { getDisplayName, getUserInitials } from "../lib/userDisplay";
-import { getUserRole, ROLE_ADMIN } from "../lib/permissions";
-import { useCurrentUser } from "../lib/useCurrentUser";
+import { getSupabase } from "../lib/supabase.js";
+import { isDeleted } from "../../../../packages/cop-host/src/lib/metadata.js";
+import { getDisplayName, getUserInitials } from "@inseme/cop-host";
+import { getUserRole, ROLE_ADMIN } from "@inseme/cop-host";
+import { useCurrentUser } from "@inseme/cop-host";
 import SubscribeButton from "../components/common/SubscribeButton";
 import SiteFooter from "../components/layout/SiteFooter";
-import { useSubscription } from "../lib/useSubscription";
+import { useSubscription } from "../lib/useSubscription.js";
 import { getConfig } from "../common/config/instanceConfig.client.js";
 
 export default function UserPage() {

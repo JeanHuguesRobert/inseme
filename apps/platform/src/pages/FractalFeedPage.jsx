@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import SiteFooter from "../components/layout/SiteFooter";
 import FeedReader from "../components/federation/FeedReader";
 import FractalGraph from "../components/federation/FractalGraph";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import { getSupabase } from "../lib/supabase";
+import { useCurrentUser } from "@inseme/cop-host";
+import { getSupabase } from "../lib/supabase.js";
 import { useNavigate } from "react-router-dom";
 
 export default function FractalFeedPage() {

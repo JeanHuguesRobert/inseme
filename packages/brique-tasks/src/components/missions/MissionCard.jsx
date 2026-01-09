@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { getMetadata } from "../../lib/metadata";
+import { getMetadata } from "../../../../cop-host/src/lib/metadata.js";
 
 /**
  * Carte d'affichage d'une mission

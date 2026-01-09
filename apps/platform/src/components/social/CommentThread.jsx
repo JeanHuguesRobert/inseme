@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../../lib/supabase";
-import { isDeleted } from "../../lib/metadata";
-import { getParentCommentId, isReply, isEdited } from "../../lib/socialMetadata";
-import CommentForm from "./CommentForm";
-import ReactionPicker from "./ReactionPicker";
-import { getDisplayName, getUserInitials } from "../../lib/userDisplay";
-import { enrichUserMetadata } from "../../lib/userTransform";
+import { getSupabase } from "../../lib/supabase.js";
+import {
+  isDeleted,
+  getParentCommentId,
+  isReply,
+  isEdited,
+  CommentForm,
+  ReactionPicker,
+  getDisplayName,
+  getUserInitials,
+  enrichUserMetadata,
+} from "@inseme/cop-host";
 import { Link } from "react-router-dom";
 
 /**

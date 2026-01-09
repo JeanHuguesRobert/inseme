@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { getSupabase } from "../../lib/supabase";
-import { isDeleted, getMetadata } from "../../lib/metadata";
+import { getSupabase } from "../../lib/supabase.js";
 import {
+  isDeleted,
+  getMetadata,
   getPostTitle,
   getPostType,
   getPostSubtitle,
@@ -18,8 +19,7 @@ import {
   isSubPost,
   getThreadDepth,
   getThreadStats,
-  getThreadPath,
-} from "../../lib/socialMetadata";
+} from "@inseme/cop-host";
 import {
   isPinnedPost,
   isLockedPost,
@@ -32,12 +32,11 @@ import {
   getPostGazette,
   getPostSourceUrl,
   isFacebookPost,
-} from "../../lib/postPredicates";
+} from "../../lib/postPredicates.js";
 import CommentThread from "./CommentThread";
 import { MarkdownViewer } from "@inseme/ui";
 import FacebookEmbed from "../FacebookEmbed";
-import { getDisplayName, getUserInitials } from "../../lib/userDisplay";
-import { enrichUserMetadata } from "../../lib/userTransform";
+import { getDisplayName, getUserInitials, enrichUserMetadata } from "@inseme/cop-host";
 import SubscribeButton from "../common/SubscribeButton";
 import EventInfo from "./EventInfo";
 import IncidentInfo from "./IncidentInfo";

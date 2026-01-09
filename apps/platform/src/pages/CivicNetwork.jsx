@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
-import { useCurrentUser } from "../lib/useCurrentUser";
+import { getSupabase } from "../lib/supabase.js";
+import { useCurrentUser } from "@inseme/cop-host";
 import SiteFooter from "../components/layout/SiteFooter";
 
 export default function CivicNetwork() {

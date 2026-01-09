@@ -1,4 +1,4 @@
-import { useCurrentUser } from "../lib/useCurrentUser";
+import { useCurrentUser } from "@inseme/cop-host";
 import { OpheliaChat as ChatWindow } from "@inseme/brique-ophelia";
 
 function App() {

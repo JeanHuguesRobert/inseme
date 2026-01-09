@@ -6,9 +6,7 @@
 
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import SiteFooter from "../../components/layout/SiteFooter";
+import { getSupabase, useCurrentUser } from "@inseme/cop-host";
 
 // ============================================================================
 // CONSTANTS
@@ -108,7 +106,10 @@ const EXPORT_ENTITIES = {
 };
 
 const DATE_FORMATS = {
-  ISO: { label: "ISO 8601 (2024-01-15)", format: (d) => d?.toISOString?.() || d },
+  ISO: {
+    label: "ISO 8601 (2024-01-15)",
+    format: (d) => d?.toISOString?.() || d,
+  },
   FR: {
     label: "Français (15/01/2024)",
     format: (d) => (d ? new Date(d).toLocaleDateString("fr-FR") : ""),
@@ -204,7 +205,7 @@ const downloadCSV = (content, filename) => {
 // ============================================================================
 
 export default function ExportCSV() {
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -252,7 +253,9 @@ export default function ExportCSV() {
       const entityConfig = EXPORT_ENTITIES[entity];
 
       // Build query
-      let query = getSupabase().from(entityConfig.table).select(selectedColumns.join(","));
+      let query = getSupabase()
+        .from(entityConfig.table)
+        .select(selectedColumns.join(","));
 
       // Apply filters
       if (dateFrom) {
@@ -277,7 +280,9 @@ export default function ExportCSV() {
       }
 
       // Generate CSV
-      const columns = entityConfig.columns.filter((c) => selectedColumns.includes(c.key));
+      const columns = entityConfig.columns.filter((c) =>
+        selectedColumns.includes(c.key)
+      );
       const csv = generateCSV(data, columns, {
         separator,
         dateFormat,
@@ -368,7 +373,9 @@ export default function ExportCSV() {
             </div>
             <div className="mt-2 flex gap-2">
               <button
-                onClick={() => setSelectedColumns(entityConfig.columns.map((c) => c.key))}
+                onClick={() =>
+                  setSelectedColumns(entityConfig.columns.map((c) => c.key))
+                }
                 className="text-xs text-blue-600 hover:text-blue-800"
               >
                 Tout sélectionner
@@ -412,7 +419,9 @@ export default function ExportCSV() {
           {/* Format options */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Séparateur</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Séparateur
+              </label>
               <select
                 value={separator}
                 onChange={(e) => setSeparator(e.target.value)}
@@ -485,23 +494,23 @@ export default function ExportCSV() {
           <h3 className="font-medium text-blue-800 mb-2">💡 Conseils</h3>
           <ul className="text-sm text-blue-700 list-disc ml-4 space-y-1">
             <li>
-              Utilisez le point-virgule (;) comme séparateur pour une meilleure compatibilité avec
-              Excel français
-            </li>
-            <li>L'export inclut l'encodage UTF-8 BOM pour les caractères accentués</li>
-            <li>
-              Pour les analyses, vous pouvez importer le fichier dans Excel, Google Sheets ou
-              LibreOffice
+              Utilisez le point-virgule (;) comme séparateur pour une meilleure
+              compatibilité avec Excel français
             </li>
             <li>
-              Les fichiers peuvent être archivés comme preuve de l'état des données à une date
-              donnée
+              L'export inclut l'encodage UTF-8 BOM pour les caractères accentués
+            </li>
+            <li>
+              Pour les analyses, vous pouvez importer le fichier dans Excel,
+              Google Sheets ou LibreOffice
+            </li>
+            <li>
+              Les fichiers peuvent être archivés comme preuve de l'état des
+              données à une date donnée
             </li>
           </ul>
         </div>
       </div>
-
-      <SiteFooter />
     </div>
   );
 }

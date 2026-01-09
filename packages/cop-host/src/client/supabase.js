@@ -3,7 +3,7 @@
  * Client Supabase dynamique avec support multi-instances et logging (Côté Client)
  */
 import { createClient } from "@supabase/supabase-js";
-import { resolveInstance } from "./instanceResolver.js";
+import { resolveInstance } from "../lib/instanceResolver.js";
 import {
   getConfig as getInstanceConfig,
   getSupabase as getInstanceSupabase,

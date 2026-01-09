@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import { isDeleted } from "../lib/metadata";
+import { getSupabase } from "../lib/supabase.js";
+import { useCurrentUser } from "@inseme/cop-host";
+import { isDeleted } from "@inseme/cop-host";
 import PostEditor from "../components/social/PostEditor";
 import SiteFooter from "../components/layout/SiteFooter";
 import { getConfig } from "../common/config/instanceConfig.client.js";

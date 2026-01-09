@@ -5,27 +5,27 @@ export default {
   routes: [
     {
       path: "/wiki",
-      component: "./src/pages/Wiki.jsx",
+      component: "./src/pages/Wiki",
       protected: false,
     },
     {
       path: "/wiki/new",
-      component: "./src/pages/WikiCreate.jsx",
+      component: "./src/pages/WikiCreate",
       protected: true,
     },
     {
       path: "/wiki/dashboard",
-      component: "./src/pages/WikiDashboard.jsx",
+      component: "./src/pages/WikiDashboard",
       protected: true,
     },
     {
       path: "/wiki/:slug",
-      component: "./src/pages/WikiPage.jsx",
+      component: "./src/pages/WikiPage",
       protected: false,
     },
     {
       path: "/wiki/:slug/edit",
-      component: "./src/pages/WikiEdit.jsx",
+      component: "./src/pages/WikiEdit",
       protected: true,
     },
   ],
@@ -62,6 +62,7 @@ export default {
   tools: [
     {
       type: "function",
+      handler: "./src/edge/tool-search-wiki.js",
       function: {
         name: "search_wiki",
         description:
@@ -85,6 +86,7 @@ export default {
     },
     {
       type: "function",
+      handler: "./src/edge/tool-propose-wiki.js",
       function: {
         name: "propose_wiki_page",
         description:

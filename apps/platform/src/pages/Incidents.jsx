@@ -1,21 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useCurrentUser } from "../lib/useCurrentUser";
+import { useCurrentUser } from "@inseme/cop-host";
 import { useNavigate } from "react-router-dom";
 import { Link, useSearchParams } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
-import { isDeleted } from "../lib/metadata";
-import { enrichUserMetadata } from "../lib/userTransform";
-import { getDisplayName } from "../lib/userDisplay";
+import { getSupabase } from "../lib/supabase.js";
 import {
+  isDeleted,
+  enrichUserMetadata,
+  getDisplayName,
   getPostTitle,
   getPostSubtitle,
   getPostIncident,
   getLatestModifier,
-} from "../lib/socialMetadata";
-import { getPostGazette } from "../lib/postPredicates";
-import CitizenMap from "../components/map/CitizenMap";
-import IncidentsLayer from "../components/map/layers/IncidentsLayer";
-import LocationContributionModal from "../components/map/LocationContributionModal";
+} from "@inseme/cop-host";
+import { getPostGazette } from "../lib/postPredicates.js";
+import { CitizenMap, IncidentsLayer, LocationContributionModal } from "@inseme/brique-map";
 
 const STATUS_LABELS = {
   open: "Ouvert",

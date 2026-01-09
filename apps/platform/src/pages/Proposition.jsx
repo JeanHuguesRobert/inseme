@@ -2,16 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { MarkdownViewer } from "@inseme/ui";
 import CommentSection from "../components/common/CommentSection";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import VoteButton from "../components/kudocracy/VoteButton";
-import SubscribeButton from "../components/common/SubscribeButton";
-import FacebookShareButton from "../components/common/FacebookShareButton";
-import ShareMenu from "../components/common/ShareMenu";
+import { FacebookShareButton, useCurrentUser, ShareMenu } from "@inseme/cop-host";
 import { PetitionLinkCard } from "../components/common/PetitionLink";
-import { getSupabase } from "../lib/supabase";
+import { getSupabase } from "../lib/supabase.js";
 import SiteFooter from "../components/layout/SiteFooter";
-import { getLatestModifier } from "../lib/socialMetadata";
-import { useVoteRecommendation } from "../hooks/useVoteRecommendation";
+import { getLatestModifier } from "../../../../packages/cop-host/src/lib/socialMetadata.js";
+import { useVoteRecommendation } from "../hooks/useVoteRecommendation.js";
 
 export default function Proposition() {
   // const { supabase } = useSupabase();

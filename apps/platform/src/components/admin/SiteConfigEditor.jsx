@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { getUserRole, ROLE_ADMIN } from "../../lib/permissions";
-import { useCurrentUser } from "../../lib/useCurrentUser";
-import { updateEntityAsAdmin } from "../../lib/adminApi";
+import { getUserRole, ROLE_ADMIN } from "@inseme/cop-host";
+import { useCurrentUser } from "@inseme/cop-host";
+import { updateEntityAsAdmin } from "../../lib/adminApi.js";
 
 export default function SiteConfigEditor() {
   const { currentUser } = useCurrentUser();

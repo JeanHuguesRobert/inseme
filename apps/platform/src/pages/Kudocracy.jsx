@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
-import PropositionList from "../components/kudocracy/PropositionList";
-import CreateProposition from "../components/kudocracy/CreateProposition";
-import DelegationManager from "../components/kudocracy/DelegationManager";
-import GovernanceSettings from "../components/kudocracy/GovernanceSettings";
-import VotingDashboard from "../components/kudocracy/VotingDashboard";
+import { 
+  PropositionList, 
+  CreateProposition, 
+  DelegationManager, 
+  GovernanceSettings, 
+  VotingDashboard 
+} from "@inseme/brique-kudocracy";
 import AuthModal from "../components/common/AuthModal";
 import { Link } from "react-router-dom";
-import { PRIMARY_COLOR, SECONDARY_COLOR } from "../constants";
+import { PRIMARY_COLOR, SECONDARY_COLOR } from "../constants.js";
 import SiteFooter from "../components/layout/SiteFooter";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import { getSupabase } from "../lib/supabase";
+import { useCurrentUser } from "@inseme/cop-host";
+import { getSupabase } from "../lib/supabase.js";
 
 export default function Kudocracy() {
   // const { supabase } = useSupabase();

@@ -5,17 +5,17 @@ export default {
   routes: [
     {
       path: "/groups",
-      component: "./src/pages/GroupList.jsx",
+      component: "./src/pages/PageGroupList",
       protected: true,
     },
     {
       path: "/groups/:id",
-      component: "./src/pages/GroupDetail.jsx",
+      component: "./src/pages/PageGroupDetail",
       protected: false,
     },
     {
       path: "/groups/:id/admin",
-      component: "./src/pages/GroupAdmin.jsx",
+      component: "./src/pages/GroupAdmin",
       protected: true,
     },
   ],

@@ -6,9 +6,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import SiteFooter from "../../components/layout/SiteFooter";
+import { getSupabase, useCurrentUser } from "@inseme/cop-host";
 
 // ============================================================================
 // CONSTANTS
@@ -24,7 +22,10 @@ const PUBLICATION_TYPES = {
 
 const STATUS_BADGES = {
   DRAFT: { label: "Brouillon", class: "bg-slate-100 text-slate-600" },
-  PENDING_REVIEW: { label: "En modération", class: "bg-yellow-100 text-yellow-800" },
+  PENDING_REVIEW: {
+    label: "En modération",
+    class: "bg-yellow-100 text-yellow-800",
+  },
   APPROVED: { label: "Approuvée", class: "bg-green-100 text-green-800" },
   PUBLISHED: { label: "Publiée", class: "bg-blue-100 text-blue-800" },
   REJECTED: { label: "Rejetée", class: "bg-red-100 text-red-800" },
@@ -35,7 +36,10 @@ const STATUS_BADGES = {
 // ============================================================================
 
 const StatusBadge = ({ status }) => {
-  const badge = STATUS_BADGES[status] || { label: status, class: "bg-slate-100" };
+  const badge = STATUS_BADGES[status] || {
+    label: status,
+    class: "bg-slate-100",
+  };
   return (
     <span
       className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${badge.class}`}
@@ -59,7 +63,9 @@ const TypeBadge = ({ type }) => {
 
 const PublicationCard = ({ publication, onApprove, onReject, onEdit }) => {
   const [expanded, setExpanded] = useState(false);
-  const typeInfo = PUBLICATION_TYPES[publication.publication_type] || PUBLICATION_TYPES.COMMENTAIRE;
+  const typeInfo =
+    PUBLICATION_TYPES[publication.publication_type] ||
+    PUBLICATION_TYPES.COMMENTAIRE;
 
   return (
     <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
@@ -73,7 +79,9 @@ const PublicationCard = ({ publication, onApprove, onReject, onEdit }) => {
             </div>
 
             {/* Title */}
-            <h3 className="text-lg font-medium text-slate-800 mb-1">{publication.title}</h3>
+            <h3 className="text-lg font-medium text-slate-800 mb-1">
+              {publication.title}
+            </h3>
 
             {/* Author */}
             <div className="text-sm text-slate-500 mb-2">
@@ -124,7 +132,9 @@ const PublicationCard = ({ publication, onApprove, onReject, onEdit }) => {
             {/* Summary if exists */}
             {publication.summary && (
               <div className="mb-4">
-                <h4 className="text-sm font-medium text-slate-700 mb-1">Résumé:</h4>
+                <h4 className="text-sm font-medium text-slate-700 mb-1">
+                  Résumé:
+                </h4>
                 <p className="text-sm text-slate-600">{publication.summary}</p>
               </div>
             )}
@@ -132,7 +142,9 @@ const PublicationCard = ({ publication, onApprove, onReject, onEdit }) => {
             {/* Sources */}
             {publication.sources && publication.sources.length > 0 && (
               <div className="mb-4">
-                <h4 className="text-sm font-medium text-slate-700 mb-1">Sources citées:</h4>
+                <h4 className="text-sm font-medium text-slate-700 mb-1">
+                  Sources citées:
+                </h4>
                 <ul className="text-sm text-slate-600 list-disc ml-4">
                   {publication.sources.map((source, idx) => (
                     <li key={idx}>{source}</li>
@@ -248,7 +260,11 @@ const ApprovalModal = ({ publication, onClose, onConfirm }) => {
             disabled={loading}
             className="px-4 py-2 text-sm bg-green-600 text-white hover:bg-green-700 rounded-lg disabled:opacity-50"
           >
-            {loading ? "Approbation..." : publishImmediately ? "Approuver et Publier" : "Approuver"}
+            {loading
+              ? "Approbation..."
+              : publishImmediately
+                ? "Approuver et Publier"
+                : "Approuver"}
           </button>
         </div>
       </div>
@@ -366,8 +382,8 @@ const EditRequestModal = ({ publication, onClose, onConfirm }) => {
           </h2>
 
           <p className="text-sm text-slate-600 mb-4">
-            L'auteur recevra une notification avec vos commentaires et pourra modifier sa
-            publication.
+            L'auteur recevra une notification avec vos commentaires et pourra
+            modifier sa publication.
           </p>
 
           <div className="mb-4">
@@ -410,7 +426,7 @@ const EditRequestModal = ({ publication, onClose, onConfirm }) => {
 // ============================================================================
 
 export default function PublicationModeration() {
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -585,12 +601,21 @@ export default function PublicationModeration() {
           <div className="flex items-start gap-3">
             <span className="text-2xl">📢</span>
             <div>
-              <h3 className="font-semibold text-purple-800">Règles de modération</h3>
+              <h3 className="font-semibold text-purple-800">
+                Règles de modération
+              </h3>
               <ul className="text-sm text-purple-700 mt-1 list-disc ml-4">
-                <li>Vérifier que les faits avancés sont sourcés ou vérifiables</li>
+                <li>
+                  Vérifier que les faits avancés sont sourcés ou vérifiables
+                </li>
                 <li>S'assurer que le ton reste respectueux et constructif</li>
-                <li>Refuser tout contenu diffamatoire ou atteinte à la vie privée</li>
-                <li>Privilégier les publications qui apportent une vraie valeur ajoutée</li>
+                <li>
+                  Refuser tout contenu diffamatoire ou atteinte à la vie privée
+                </li>
+                <li>
+                  Privilégier les publications qui apportent une vraie valeur
+                  ajoutée
+                </li>
               </ul>
             </div>
           </div>
@@ -598,7 +623,9 @@ export default function PublicationModeration() {
 
         {/* Filter by type */}
         <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
-          <h3 className="text-sm font-medium text-slate-700 mb-3">Filtrer par type</h3>
+          <h3 className="text-sm font-medium text-slate-700 mb-3">
+            Filtrer par type
+          </h3>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setFilterType("")}
@@ -622,7 +649,9 @@ export default function PublicationModeration() {
               >
                 <span>{info.emoji}</span>
                 <span>{info.label}</span>
-                <span className="text-xs opacity-70">({statsByType[type]})</span>
+                <span className="text-xs opacity-70">
+                  ({statsByType[type]})
+                </span>
               </button>
             ))}
           </div>
@@ -689,8 +718,6 @@ export default function PublicationModeration() {
           onConfirm={handleEditRequest}
         />
       )}
-
-      <SiteFooter />
     </div>
   );
 }

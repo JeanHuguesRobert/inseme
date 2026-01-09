@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { getSupabase } from "../../lib/supabase";
-import { createSubPostMetadata, getPostTitle } from "../../lib/socialMetadata";
-import { getMetadata } from "../../lib/metadata";
-import { getDisplayName } from "../../lib/userDisplay";
+import { getSupabase } from "../../lib/supabase.js";
+import {
+  createSubPostMetadata,
+  getPostTitle,
+  getMetadata,
+} from "@inseme/cop-host";
+import { getDisplayName } from "@inseme/cop-host";
 
 /**
  * Lightweight editor for creating a sub-post (reply to another post)

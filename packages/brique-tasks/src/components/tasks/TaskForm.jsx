@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { TASK_PRIORITIES, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from "../../lib/taskMetadata";
+import { TASK_PRIORITIES, TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from "../../lib/taskMetadata.js";
 
 const PRIORITY_VALUES = Object.values(TASK_PRIORITIES);
 

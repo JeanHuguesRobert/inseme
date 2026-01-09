@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { useCafeSession } from "../../contexts/CafeSessionContext";
-import { User } from "@phosphor-icons/react";
+import { User } from "lucide-react";
 
 const TranscriptFeed = () => {
   const { utterances, participants } = useCafeSession();

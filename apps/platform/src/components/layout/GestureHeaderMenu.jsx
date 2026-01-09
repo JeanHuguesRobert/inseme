@@ -3,12 +3,12 @@
 import React, { useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { MOVEMENT_NAME, PARTY_NAME, CITY_NAME } from "../../constants";
-import { useCurrentUser } from "../../lib/useCurrentUser";
-import { getSupabase } from "../../lib/supabase";
-import { isFeatureEnabled, FEATURES } from "../../lib/features";
+import { MOVEMENT_NAME, PARTY_NAME, CITY_NAME } from "../../constants.js";
+import { useCurrentUser } from "@inseme/cop-host";
+import { getSupabase } from "../../lib/supabase.js";
+import { isFeatureEnabled, FEATURES } from "../../lib/features.js";
 import FacebookPagePlugin from "../common/FacebookPagePlugin";
-import { BRIQUES } from "../../brique-registry.gen";
+import { BRIQUES } from "../../generated/brique-registry.js";
 
 // This component replaces the modal hamburger menu with a gesture-revealed header menu
 // On mobile: disabled auto-trigger, shows a small hamburger button instead

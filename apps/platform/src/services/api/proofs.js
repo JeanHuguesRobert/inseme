@@ -1,4 +1,4 @@
-import { wrapFetch } from "../wrapFetch";
+import { wrapFetch } from "../wrapFetch.js";
 
 export async function createProof(payload, { token } = {}) {
   // payload: { type, storage_url, original_filename, hash_sha256, date_emission?, date_reception? }

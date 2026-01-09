@@ -6,10 +6,8 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import SiteFooter from "../../components/layout/SiteFooter";
-import { CITY_NAME, HASHTAG } from "../../constants";
+import { getSupabase, useCurrentUser } from "@inseme/cop-host";
+import { CITY_NAME, HASHTAG } from "@inseme/cop-host";
 
 // ============================================================================
 // HELPER COMPONENTS
@@ -66,7 +64,9 @@ const DeadlineCard = ({ deadline }) => {
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="font-medium text-sm">
-            {deadline.template?.label_fr || deadline.template?.code || "Échéance"}
+            {deadline.template?.label_fr ||
+              deadline.template?.code ||
+              "Échéance"}
           </p>
           <p className="text-xs opacity-75 mt-1">
             {deadline.entity_type} — {deadline.due_date}
@@ -81,7 +81,9 @@ const DeadlineCard = ({ deadline }) => {
         </div>
       </div>
       {deadline.consequence_if_missed && (
-        <p className="text-xs mt-2 font-medium">⚠️ {deadline.consequence_if_missed}</p>
+        <p className="text-xs mt-2 font-medium">
+          ⚠️ {deadline.consequence_if_missed}
+        </p>
       )}
     </div>
   );
@@ -91,12 +93,23 @@ const ActeRow = ({ acte }) => {
   const statusBadge = (status) => {
     const badges = {
       EXECUTOIRE: { class: "bg-green-100 text-green-800", label: "Exécutoire" },
-      EN_ATTENTE_CONTROLE: { class: "bg-blue-100 text-blue-800", label: "En attente" },
+      EN_ATTENTE_CONTROLE: {
+        class: "bg-blue-100 text-blue-800",
+        label: "En attente",
+      },
       SUSPENDU: { class: "bg-orange-100 text-orange-800", label: "Suspendu" },
       ANNULE: { class: "bg-red-100 text-red-800", label: "Annulé" },
-      NON_TRANSMIS: { class: "bg-slate-100 text-slate-800", label: "Non transmis" },
+      NON_TRANSMIS: {
+        class: "bg-slate-100 text-slate-800",
+        label: "Non transmis",
+      },
     };
-    return badges[status] || { class: "bg-slate-100 text-slate-600", label: status || "N/A" };
+    return (
+      badges[status] || {
+        class: "bg-slate-100 text-slate-600",
+        label: status || "N/A",
+      }
+    );
   };
 
   const badge = statusBadge(acte.statut_juridique);
@@ -104,31 +117,47 @@ const ActeRow = ({ acte }) => {
   return (
     <tr className="hover:bg-slate-50 border-b border-slate-100">
       <td className="px-4 py-3">
-        <Link to={`/actes/${acte.id}`} className="text-blue-600 hover:text-blue-800 font-medium">
+        <Link
+          to={`/actes/${acte.id}`}
+          className="text-blue-600 hover:text-blue-800 font-medium"
+        >
           {acte.numero_interne || acte.numero_actes || "N/A"}
         </Link>
       </td>
-      <td className="px-4 py-3 text-sm text-slate-600">{acte.date_acte || "—"}</td>
+      <td className="px-4 py-3 text-sm text-slate-600">
+        {acte.date_acte || "—"}
+      </td>
       <td className="px-4 py-3">
         <span className="text-xs font-medium px-2 py-1 rounded bg-slate-100 text-slate-700">
           {acte.type_acte || "ACTE"}
         </span>
       </td>
-      <td className="px-4 py-3 text-sm text-slate-700 max-w-xs truncate" title={acte.objet_court}>
+      <td
+        className="px-4 py-3 text-sm text-slate-700 max-w-xs truncate"
+        title={acte.objet_court}
+      >
         {acte.objet_court || "Sans objet"}
       </td>
       <td className="px-4 py-3">
-        <span className={`text-xs font-medium px-2 py-1 rounded ${badge.class}`}>
+        <span
+          className={`text-xs font-medium px-2 py-1 rounded ${badge.class}`}
+        >
           {badge.label}
         </span>
       </td>
       <td className="px-4 py-3 text-center">
         {acte.transmission_confirmed ? (
-          <span className="text-green-600" title={`Transmis le ${acte.transmission_confirmed}`}>
+          <span
+            className="text-green-600"
+            title={`Transmis le ${acte.transmission_confirmed}`}
+          >
             ✅
           </span>
         ) : acte.transmission_declared ? (
-          <span className="text-orange-500" title={`Déclaré le ${acte.transmission_declared}`}>
+          <span
+            className="text-orange-500"
+            title={`Déclaré le ${acte.transmission_declared}`}
+          >
             ⏳
           </span>
         ) : (
@@ -156,7 +185,7 @@ const ActeRow = ({ acte }) => {
 // ============================================================================
 
 export default function ActesDashboard() {
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -194,7 +223,9 @@ export default function ActesDashboard() {
         if (collData) {
           setCollectivites(collData);
           // Default to first or Corte
-          const corte = collData.find((c) => c.nom_officiel?.toLowerCase().includes("corte"));
+          const corte = collData.find((c) =>
+            c.nom_officiel?.toLowerCase().includes("corte")
+          );
           if (corte) setCollectiviteFilter(corte.id);
           else if (collData.length > 0) setCollectiviteFilter(collData[0].id);
         }
@@ -247,7 +278,9 @@ export default function ActesDashboard() {
         // 7. Fetch pending demandes
         const { data: demandesData } = await getSupabase()
           .from("demande_admin")
-          .select("id, type_demande, reference_interne, objet, date_envoi, status")
+          .select(
+            "id, type_demande, reference_interne, objet, date_envoi, status"
+          )
           .eq("status", "EN_ATTENTE")
           .order("date_envoi")
           .limit(5);
@@ -266,14 +299,17 @@ export default function ActesDashboard() {
 
   // Calculate derived stats
   const scoreGlobal = transparencyScore?.score_global || 0;
-  const scoreColor = scoreGlobal >= 70 ? "green" : scoreGlobal >= 40 ? "orange" : "red";
+  const scoreColor =
+    scoreGlobal >= 70 ? "green" : scoreGlobal >= 40 ? "orange" : "red";
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-slate-600">Chargement du tableau de bord...</p>
+          <p className="mt-4 text-slate-600">
+            Chargement du tableau de bord...
+          </p>
         </div>
       </div>
     );
@@ -293,7 +329,8 @@ export default function ActesDashboard() {
                 Tableau de Bord des Actes Municipaux
               </h1>
               <p className="text-slate-600 mt-2">
-                Suivi de la transparence et des délais légaux — {CITY_NAME || "Collectivité"}
+                Suivi de la transparence et des délais légaux —{" "}
+                {CITY_NAME || "Collectivité"}
               </p>
             </div>
             <div className="flex gap-3">
@@ -325,7 +362,9 @@ export default function ActesDashboard() {
 
         {/* Score de transparence */}
         <section>
-          <h2 className="text-xl font-semibold text-slate-800 mb-4">🏛️ Score de Transparence</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mb-4">
+            🏛️ Score de Transparence
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard
               title="Score Global"
@@ -339,21 +378,27 @@ export default function ActesDashboard() {
               value={`${transparencyScore?.score_transmission || 0}%`}
               subtitle={`${stats?.transmis_confirmes || 0}/${stats?.total_actes || 0} actes`}
               icon="📡"
-              color={transparencyScore?.score_transmission >= 80 ? "green" : "orange"}
+              color={
+                transparencyScore?.score_transmission >= 80 ? "green" : "orange"
+              }
             />
             <StatCard
               title="Réponse CRPA"
               value={`${transparencyScore?.score_reponse_crpa || 0}%`}
               subtitle={`${transparencyScore?.total_demandes || 0} demandes`}
               icon="📩"
-              color={transparencyScore?.score_reponse_crpa >= 80 ? "green" : "orange"}
+              color={
+                transparencyScore?.score_reponse_crpa >= 80 ? "green" : "orange"
+              }
             />
             <StatCard
               title="Non-Silence"
               value={`${transparencyScore?.score_non_silence || 0}%`}
               subtitle="Pénalité refus implicites"
               icon="🤫"
-              color={transparencyScore?.score_non_silence >= 80 ? "green" : "red"}
+              color={
+                transparencyScore?.score_non_silence >= 80 ? "green" : "red"
+              }
             />
             <StatCard
               title="Recours"
@@ -368,7 +413,9 @@ export default function ActesDashboard() {
         {/* Alertes échéances */}
         {(overdueDeadlines.length > 0 || upcomingDeadlines.length > 0) && (
           <section>
-            <h2 className="text-xl font-semibold text-slate-800 mb-4">⏰ Échéances Juridiques</h2>
+            <h2 className="text-xl font-semibold text-slate-800 mb-4">
+              ⏰ Échéances Juridiques
+            </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Overdue */}
               {overdueDeadlines.length > 0 && (
@@ -405,7 +452,9 @@ export default function ActesDashboard() {
         {pendingDemandes.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-slate-800">📩 Demandes en Attente</h2>
+              <h2 className="text-xl font-semibold text-slate-800">
+                📩 Demandes en Attente
+              </h2>
               <Link
                 to="/demandes"
                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -417,15 +466,26 @@ export default function ActesDashboard() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Référence</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Type</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Objet</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Envoi</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      Référence
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      Objet
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      Envoi
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {pendingDemandes.map((d) => (
-                    <tr key={d.id} className="hover:bg-slate-50 border-b border-slate-100">
+                    <tr
+                      key={d.id}
+                      className="hover:bg-slate-50 border-b border-slate-100"
+                    >
                       <td className="px-4 py-3 font-medium text-blue-600">
                         <Link to={`/demandes/${d.id}`}>
                           {d.reference_interne || d.id.slice(0, 8)}
@@ -439,7 +499,9 @@ export default function ActesDashboard() {
                       <td className="px-4 py-3 text-slate-700 max-w-xs truncate">
                         {d.objet || "—"}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{d.date_envoi || "—"}</td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {d.date_envoi || "—"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -451,7 +513,9 @@ export default function ActesDashboard() {
         {/* Actes récents */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-slate-800">📋 Actes Récents</h2>
+            <h2 className="text-xl font-semibold text-slate-800">
+              📋 Actes Récents
+            </h2>
             <Link
               to="/actes/liste"
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -464,24 +528,44 @@ export default function ActesDashboard() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">N°</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Date</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Type</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Objet</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Statut</th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600">Transmis</th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600">Délais</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      N°
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      Date
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      Objet
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      Statut
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600">
+                      Transmis
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600">
+                      Délais
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentActes.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                        Aucun acte enregistré. Commencez par ajouter un acte municipal.
+                      <td
+                        colSpan={7}
+                        className="px-4 py-8 text-center text-slate-500"
+                      >
+                        Aucun acte enregistré. Commencez par ajouter un acte
+                        municipal.
                       </td>
                     </tr>
                   ) : (
-                    recentActes.map((acte) => <ActeRow key={acte.id} acte={acte} />)
+                    recentActes.map((acte) => (
+                      <ActeRow key={acte.id} acte={acte} />
+                    ))
                   )}
                 </tbody>
               </table>
@@ -491,7 +575,9 @@ export default function ActesDashboard() {
 
         {/* Actions rapides */}
         <section>
-          <h2 className="text-xl font-semibold text-slate-800 mb-4">🚀 Actions Rapides</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mb-4">
+            🚀 Actions Rapides
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
               to="/demandes/nouvelle"
@@ -499,7 +585,9 @@ export default function ActesDashboard() {
             >
               <span className="text-3xl">📝</span>
               <div>
-                <p className="font-semibold text-slate-800">Nouvelle demande CRPA</p>
+                <p className="font-semibold text-slate-800">
+                  Nouvelle demande CRPA
+                </p>
                 <p className="text-sm text-slate-500">Demander un document</p>
               </div>
             </Link>
@@ -509,7 +597,9 @@ export default function ActesDashboard() {
             >
               <span className="text-3xl">🤖</span>
               <div>
-                <p className="font-semibold text-slate-800">Consulter Ophélia</p>
+                <p className="font-semibold text-slate-800">
+                  Consulter Ophélia
+                </p>
                 <p className="text-sm text-slate-500">Assistant juridique IA</p>
               </div>
             </Link>
@@ -519,7 +609,9 @@ export default function ActesDashboard() {
             >
               <span className="text-3xl">⚖️</span>
               <div>
-                <p className="font-semibold text-slate-800">Suivre mes recours</p>
+                <p className="font-semibold text-slate-800">
+                  Suivre mes recours
+                </p>
                 <p className="text-sm text-slate-500">CADA, TA, gracieux</p>
               </div>
             </Link>
@@ -535,10 +627,6 @@ export default function ActesDashboard() {
             </Link>
           </div>
         </section>
-      </div>
-
-      <div className="mt-8">
-        <SiteFooter />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../../lib/supabase";
-import { getDisplayName } from "../../lib/userDisplay";
+import { getSupabase } from "../../lib/supabase.js";
+import { getDisplayName } from "@inseme/cop-host";
 
 export default function TopCuratorsLeaderboard({ limit = 10 }) {
   const [curators, setCurators] = useState([]);

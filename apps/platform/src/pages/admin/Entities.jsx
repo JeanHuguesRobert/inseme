@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useCurrentUser } from "../../lib/useCurrentUser";
-import { getUserRole, ROLE_ADMIN } from "../../lib/permissions";
+import { useCurrentUser } from "@inseme/cop-host";
+import { getUserRole, ROLE_ADMIN } from "@inseme/cop-host";
 import EntityList from "../../components/admin/EntityList";
 import EntityEditor from "../../components/admin/EntityEditor";
 

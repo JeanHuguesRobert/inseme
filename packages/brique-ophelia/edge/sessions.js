@@ -4,8 +4,9 @@ export const config = {
   path: "/api/sessions",
 };
 
-export default defineEdgeFunction(async (request, runtime, context) => {
+export default async (request, runtime, context) => {
   const { getSupabase, json, error } = runtime;
+  console.log("[Sessions] Request received:", request.url);
 
   try {
     let body = {};
@@ -134,6 +135,6 @@ export default defineEdgeFunction(async (request, runtime, context) => {
     return json({ sessions: uniqueSessions });
   } catch (err) {
     console.error("[Sessions] Error:", err);
-    return error(err.message);
+    return error(err.message, 500);
   }
-});
+};

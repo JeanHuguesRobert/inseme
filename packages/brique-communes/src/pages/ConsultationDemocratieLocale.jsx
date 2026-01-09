@@ -25,7 +25,7 @@ import {
   loadDraft,
   clearDraft,
   formatDraftDate,
-} from "../lib/consultations";
+} from "../lib/Communesconsultations.js";
 
 const CONSULTATION_SLUG = "democratie-locale-2024";
 

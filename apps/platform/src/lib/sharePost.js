@@ -1,6 +1,6 @@
-import { getSupabase } from "./supabase";
-import { createSharePostMetadata } from "./socialMetadata";
-import { isShare, getPostShareInfo } from "./postPredicates";
+import { getSupabase } from "./supabase.js";
+import { createSharePostMetadata } from "@inseme/cop-host";
+import { isShare, getPostShareInfo } from "./postPredicates.js";
 
 /**
  * Resolves to the original post by following the share chain.

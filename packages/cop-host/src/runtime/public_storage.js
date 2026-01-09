@@ -66,10 +66,20 @@ export class PublicStorageService {
     const names = await fs.readdir(resolvedTarget, { withFileTypes: true });
     const items = names
       .map((d) => {
-        const isDir = d.isDirectory();
+        const itemPath = path.join(resolvedTarget, d.name);
+        let isDir = d.isDirectory();
+
+        // Si c'est un lien symbolique, on vérifie si la cible est un dossier
+        if (d.isSymbolicLink()) {
+          try {
+            isDir = fsSync.statSync(itemPath).isDirectory();
+          } catch (e) {
+            // Lien cassé ou inaccessible
+          }
+        }
+
         const href =
           path.posix.join("/", relativePath || "", d.name) + (isDir ? "/" : "");
-        const itemPath = path.join(resolvedTarget, d.name);
 
         let size = 0;
         try {

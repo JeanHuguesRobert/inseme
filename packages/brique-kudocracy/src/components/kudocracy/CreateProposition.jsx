@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getSupabase, getDisplayName } from "@inseme/cop-host";
-import { createPropositionWithTags } from "../../lib/propositions";
-import { validatePetitionUrl } from "../../lib/petitions";
+import { createPropositionWithTags } from "@inseme/cop-host";
+import { validatePetitionUrl } from "../../lib/petitions.js";
 import { PetitionUrlField } from "../common/PetitionLink";
 
 export default function CreateProposition({ user }) {

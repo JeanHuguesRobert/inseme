@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useSocialAvatar } from "../hooks/useSocialAvatar";
+import { useSocialAvatar } from "../hooks/useSocialAvatar.js";
 
 export default function SocialAvatarButton({ provider, label, userId, onAvatarSuccess }) {
   const { avatarUrl, loading, error, start, completeIfCallback } = useSocialAvatar(provider);

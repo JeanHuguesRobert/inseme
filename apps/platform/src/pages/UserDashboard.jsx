@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
-import { getTaskTitleFromPost } from "../lib/taskHelpers";
-import { TASK_STATUS_LABELS } from "../lib/taskMetadata";
+import { getSupabase } from "../lib/supabase.js";
+import { getTaskTitleFromPost, TASK_STATUS_LABELS } from "@inseme/brique-tasks";
 import {
   BarChart,
   Bar,

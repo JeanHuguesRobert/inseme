@@ -1,5 +1,5 @@
 import React from "react";
-import { FacebookLogo } from "@phosphor-icons/react";
+import { Facebook } from "lucide-react";
 
 export default function FacebookShareButton({ url, quote, className = "" }) {
   const handleShare = (e) => {
@@ -27,7 +27,7 @@ export default function FacebookShareButton({ url, quote, className = "" }) {
       className={`flex items-center gap-2 px-4 py-2 bg-[#1877F2] text-white font-bold border-2 border-bauhaus-black shadow-[4px_4px_0px_0px_#000000] hover:shadow-[2px_2px_0px_0px_#000000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all ${className}`}
       aria-label="Partager sur Facebook"
     >
-      <FacebookLogo size={24} weight="fill" />
+      <Icon name="facebook" size={24} />
       <span>Partager</span>
     </button>
   );

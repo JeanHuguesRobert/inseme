@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../../lib/supabase";
+import { getSupabase } from "../../lib/supabase.js";
 
 /**
  * Reusable checkbox for publishing content to Le Fil.

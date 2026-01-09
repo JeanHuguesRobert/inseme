@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import { isDeleted } from "../lib/metadata";
-import { isAdmin } from "../lib/permissions";
+import { getSupabase } from "../lib/supabase.js";
+import { useCurrentUser } from "@inseme/cop-host";
+import { isDeleted, isAdmin } from "@inseme/cop-host";
 import GroupForm from "../components/social/GroupForm";
 
 /**

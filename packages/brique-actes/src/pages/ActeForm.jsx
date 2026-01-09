@@ -6,19 +6,33 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import SiteFooter from "../../components/layout/SiteFooter";
+import { getSupabase, useCurrentUser } from "@inseme/cop-host";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
 const TYPES_ACTE = [
-  { value: "DELIBERATION", label: "Délibération", description: "Décision du conseil municipal" },
-  { value: "ARRETE", label: "Arrêté", description: "Décision individuelle du maire" },
-  { value: "DECISION", label: "Décision", description: "Décision administrative" },
-  { value: "PV", label: "Procès-verbal", description: "Compte-rendu de séance" },
+  {
+    value: "DELIBERATION",
+    label: "Délibération",
+    description: "Décision du conseil municipal",
+  },
+  {
+    value: "ARRETE",
+    label: "Arrêté",
+    description: "Décision individuelle du maire",
+  },
+  {
+    value: "DECISION",
+    label: "Décision",
+    description: "Décision administrative",
+  },
+  {
+    value: "PV",
+    label: "Procès-verbal",
+    description: "Compte-rendu de séance",
+  },
   { value: "AUTRE", label: "Autre", description: "Autre type d'acte" },
 ];
 
@@ -33,9 +47,21 @@ const STATUTS_JURIDIQUES = [
     label: "En attente de contrôle",
     description: "Transmis, en attente d'avis",
   },
-  { value: "EXECUTOIRE", label: "Exécutoire", description: "Validé et en vigueur" },
-  { value: "SUSPENDU", label: "Suspendu", description: "Suspendu suite à un recours" },
-  { value: "ANNULE", label: "Annulé", description: "Annulé par le TA ou le maire" },
+  {
+    value: "EXECUTOIRE",
+    label: "Exécutoire",
+    description: "Validé et en vigueur",
+  },
+  {
+    value: "SUSPENDU",
+    label: "Suspendu",
+    description: "Suspendu suite à un recours",
+  },
+  {
+    value: "ANNULE",
+    label: "Annulé",
+    description: "Annulé par le TA ou le maire",
+  },
 ];
 
 // ============================================================================
@@ -53,7 +79,14 @@ const FormField = ({ label, required, help, error, children }) => (
   </div>
 );
 
-const RadioOption = ({ name, value, currentValue, label, description, onChange }) => (
+const RadioOption = ({
+  name,
+  value,
+  currentValue,
+  label,
+  description,
+  onChange,
+}) => (
   <label
     className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
       currentValue === value
@@ -71,7 +104,9 @@ const RadioOption = ({ name, value, currentValue, label, description, onChange }
     />
     <div>
       <div className="font-medium text-slate-800">{label}</div>
-      {description && <div className="text-xs text-slate-500">{description}</div>}
+      {description && (
+        <div className="text-xs text-slate-500">{description}</div>
+      )}
     </div>
   </label>
 );
@@ -83,7 +118,7 @@ const RadioOption = ({ name, value, currentValue, label, description, onChange }
 export default function ActeForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
   const isEditing = Boolean(id);
 
   const [loading, setLoading] = useState(false);
@@ -260,12 +295,15 @@ export default function ActeForm() {
           return;
         }
 
-        const { error: updateError } = await getSupabase().rpc("update_acte_versioned", {
-          p_acte_id: id,
-          p_user_id: user.id,
-          p_change_reason: formData.notes,
-          p_changes: changes,
-        });
+        const { error: updateError } = await getSupabase().rpc(
+          "update_acte_versioned",
+          {
+            p_acte_id: id,
+            p_user_id: user.id,
+            p_change_reason: formData.notes,
+            p_changes: changes,
+          }
+        );
 
         if (updateError) throw updateError;
 
@@ -349,14 +387,17 @@ export default function ActeForm() {
               Actes
             </Link>
             <span>/</span>
-            <span className="text-slate-700">{isEditing ? "Modifier" : "Nouveau"}</span>
+            <span className="text-slate-700">
+              {isEditing ? "Modifier" : "Nouveau"}
+            </span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900">
             {isEditing ? "✏️ Modifier l'acte" : "➕ Nouvel acte municipal"}
           </h1>
           {isEditing && (
             <p className="text-slate-500 mt-1">
-              ⚠️ Chaque modification crée une nouvelle version (traçabilité totale)
+              ⚠️ Chaque modification crée une nouvelle version (traçabilité
+              totale)
             </p>
           )}
         </div>
@@ -367,7 +408,8 @@ export default function ActeForm() {
           {/* Success message */}
           {success && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-700 flex items-center gap-2">
-              ✅ Acte {isEditing ? "modifié" : "créé"} avec succès ! Redirection...
+              ✅ Acte {isEditing ? "modifié" : "créé"} avec succès !
+              Redirection...
             </div>
           )}
 
@@ -380,13 +422,21 @@ export default function ActeForm() {
 
           {/* Basic info */}
           <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">📋 Informations générales</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              📋 Informations générales
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField label="Collectivité" required error={errors.collectivite_id}>
+              <FormField
+                label="Collectivité"
+                required
+                error={errors.collectivite_id}
+              >
                 <select
                   value={formData.collectivite_id}
-                  onChange={(e) => handleChange("collectivite_id", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("collectivite_id", e.target.value)
+                  }
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   disabled={isEditing}
                 >
@@ -417,7 +467,11 @@ export default function ActeForm() {
                 </select>
               </FormField>
 
-              <FormField label="Date de l'acte" required error={errors.date_acte}>
+              <FormField
+                label="Date de l'acte"
+                required
+                error={errors.date_acte}
+              >
                 <input
                   type="date"
                   value={formData.date_acte}
@@ -426,17 +480,25 @@ export default function ActeForm() {
                 />
               </FormField>
 
-              <FormField label="Numéro interne" help="Numéro de référence interne">
+              <FormField
+                label="Numéro interne"
+                help="Numéro de référence interne"
+              >
                 <input
                   type="text"
                   value={formData.numero_interne}
-                  onChange={(e) => handleChange("numero_interne", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("numero_interne", e.target.value)
+                  }
                   placeholder="DEL-2024-001"
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </FormField>
 
-              <FormField label="Numéro @CTES" help="Numéro officiel de télétransmission">
+              <FormField
+                label="Numéro @CTES"
+                help="Numéro officiel de télétransmission"
+              >
                 <input
                   type="text"
                   value={formData.numero_actes}
@@ -450,7 +512,9 @@ export default function ActeForm() {
 
           {/* Type */}
           <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">📂 Type d'acte</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              📂 Type d'acte
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {TYPES_ACTE.map((type) => (
@@ -465,12 +529,16 @@ export default function ActeForm() {
                 />
               ))}
             </div>
-            {errors.type_acte && <p className="text-xs text-red-600 mt-2">{errors.type_acte}</p>}
+            {errors.type_acte && (
+              <p className="text-xs text-red-600 mt-2">{errors.type_acte}</p>
+            )}
           </div>
 
           {/* Object */}
           <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">📝 Objet de l'acte</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              📝 Objet de l'acte
+            </h2>
 
             <FormField
               label="Objet court"
@@ -491,7 +559,10 @@ export default function ActeForm() {
               </div>
             </FormField>
 
-            <FormField label="Objet complet" help="Description détaillée (optionnel)">
+            <FormField
+              label="Objet complet"
+              help="Description détaillée (optionnel)"
+            >
               <textarea
                 value={formData.objet_complet}
                 onChange={(e) => handleChange("objet_complet", e.target.value)}
@@ -504,7 +575,9 @@ export default function ActeForm() {
 
           {/* Status */}
           <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">⚖️ Statut juridique</h2>
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              ⚖️ Statut juridique
+            </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {STATUTS_JURIDIQUES.map((statut) => (
@@ -528,34 +601,52 @@ export default function ActeForm() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField label="Transmission déclarée" help="Date déclarée par la mairie">
+              <FormField
+                label="Transmission déclarée"
+                help="Date déclarée par la mairie"
+              >
                 <input
                   type="date"
                   value={formData.transmission_declared}
-                  onChange={(e) => handleChange("transmission_declared", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("transmission_declared", e.target.value)
+                  }
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </FormField>
 
-              <FormField label="Transmission confirmée" help="Date confirmée par accusé réception">
+              <FormField
+                label="Transmission confirmée"
+                help="Date confirmée par accusé réception"
+              >
                 <input
                   type="date"
                   value={formData.transmission_confirmed}
-                  onChange={(e) => handleChange("transmission_confirmed", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("transmission_confirmed", e.target.value)
+                  }
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </FormField>
 
-              <FormField label="Date de publication" help="Date de publication officielle">
+              <FormField
+                label="Date de publication"
+                help="Date de publication officielle"
+              >
                 <input
                   type="date"
                   value={formData.date_publication}
-                  onChange={(e) => handleChange("date_publication", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("date_publication", e.target.value)
+                  }
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </FormField>
 
-              <FormField label="Lien vers le document" help="URL du document officiel">
+              <FormField
+                label="Lien vers le document"
+                help="URL du document officiel"
+              >
                 <input
                   type="url"
                   value={formData.url_document}
@@ -596,10 +687,15 @@ export default function ActeForm() {
                   </div>
                   <ul className="text-sm text-yellow-700 space-y-1">
                     {Object.keys(formData).map((key) => {
-                      if (key === "notes" || formData[key] === originalData?.[key]) return null;
+                      if (
+                        key === "notes" ||
+                        formData[key] === originalData?.[key]
+                      )
+                        return null;
                       return (
                         <li key={key}>
-                          • <strong>{key}</strong>: {String(originalData?.[key] || "vide")} →{" "}
+                          • <strong>{key}</strong>:{" "}
+                          {String(originalData?.[key] || "vide")} →{" "}
                           {String(formData[key] || "vide")}
                         </li>
                       );
@@ -641,8 +737,6 @@ export default function ActeForm() {
           </div>
         </form>
       </div>
-
-      <SiteFooter />
     </div>
   );
 }

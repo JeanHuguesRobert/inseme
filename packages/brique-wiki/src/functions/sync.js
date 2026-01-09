@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import OpenAI from "openai";
-import { loadInstanceConfig, getConfig } from "@inseme/cop-host/backend";
+import OpenAI from "https://esm.sh/openai@4";
+import { loadInstanceConfig, getConfig } from "@inseme/cop-host/backend.js";
 
 // Supabase client initialisé de façon lazy
 let _supabase = null;
@@ -143,12 +143,9 @@ export default async (req, context) => {
 
     // 3. Préparer le contenu Markdown avec frontmatter
     // Include federation metadata: origin_hub_id and global_id if possible
-    const subdomain =
-      typeof window !== "undefined"
-        ? window.location.hostname.split(".")[0]
-        : process.env.VITE_COMMUNITY_NAME || "local";
-    const hubType = process.env.VITE_HUB_TYPE || "commune";
-    const isGlobalRoot = hubType === "national" || process.env.VITE_IS_HUB === "true";
+    const subdomain = getConfig("community_name") || "local";
+    const hubType = getConfig("hub_type") || "commune";
+    const isGlobalRoot = hubType === "national" || getConfig("is_hub") === "true" || getConfig("is_hub") === true;
     const globalId = isGlobalRoot ? `global:${page.slug}` : `instance:${subdomain}:${page.slug}`;
     const frontmatter = `---
   title: ${page.title}

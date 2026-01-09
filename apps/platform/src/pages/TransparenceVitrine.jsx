@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import SiteFooter from "../components/layout/SiteFooter";
-import { getSupabase } from "../lib/supabase";
+import { getSupabase } from "../lib/supabase.js";
 
 // Couleurs par niveau de maturité
 const MATURITY_COLORS = {

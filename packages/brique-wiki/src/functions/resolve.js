@@ -7,7 +7,7 @@
 //   - page: The resolved wiki page object.
 //   - metadata: The metadata for the resolved page.
 
-import { loadInstanceConfig, getConfig } from "@inseme/cop-host/backend";
+import { loadInstanceConfig, getConfig } from "@inseme/cop-host/backend.js";
 import * as wikiFederation from "../lib/wikiFederation.js";
 
 export default async (req, context) => {

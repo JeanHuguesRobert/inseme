@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
-import { parseLocationInput } from "../../lib/locationParser";
+import { parseLocationInput } from "../lib/locationParser.js";
 import { getConfig } from "@inseme/cop-host";
 
 export default function AddressSearchControl({ onLocationSelect }) {

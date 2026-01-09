@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../../lib/supabase";
+import { getSupabase } from "../../lib/supabase.js";
 
 export default function ShareDialog({ post, onShare, onCancel }) {
   const [gazettes, setGazettes] = useState([]);

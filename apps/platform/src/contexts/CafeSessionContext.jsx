@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { getSupabase } from "../lib/supabase"; // Correct path
-import cafeApi from "../services/cafe-api";
+import { getSupabase } from "../lib/supabase.js"; // Correct path
+import cafeApi from "../services/cafe-api.js";
 
 const CafeSessionContext = createContext();
 

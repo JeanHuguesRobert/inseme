@@ -1,7 +1,7 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import { useSocialAvatar } from "../hooks/useSocialAvatar";
+import { useCurrentUser } from "@inseme/cop-host";
+import { useSocialAvatar } from "../hooks/useSocialAvatar.js";
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);

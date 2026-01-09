@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getSupabase } from "../lib/supabase";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import { isDeleted, getMetadata } from "../lib/metadata";
-import { enrichUserMetadata } from "../lib/userTransform";
-import { getDisplayName } from "../lib/userDisplay";
-import { useSubscriptionNotifications } from "../lib/useSubscriptionNotifications";
+import { getSupabase } from "../lib/supabase.js";
+import { useCurrentUser } from "@inseme/cop-host";
+import {
+  isDeleted,
+  getMetadata,
+  enrichUserMetadata,
+  getDisplayName,
+} from "@inseme/cop-host";
+import { useSubscriptionNotifications } from "../lib/useSubscriptionNotifications.js";
 import SiteFooter from "../components/layout/SiteFooter";
 
 /**

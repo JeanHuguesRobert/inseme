@@ -1,0 +1,27 @@
+{
+  "name": "@inseme/room",
+  "version": "1.0.0",
+  "description": "Direct and Liquid Democracy Assembly Room Components",
+  "type": "module",
+  "main": "index.jsx",
+  "exports": {
+    ".": "./index.jsx",
+    "./components/*": "./components/*.jsx",
+    "./hooks/*": "./hooks/*.js",
+    "./utils/*": "./utils/*.js"
+  },
+  "dependencies": {
+    "lucide-react": "^0.562.0",
+    "@jitsi/react-sdk": "^1.0.0",
+    "@inseme/ophelia": "workspace:*",
+    "@inseme/kudocracy": "workspace:*",
+    "@inseme/cop-host": "workspace:*",
+    "react-router-dom": "^6.20.0"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "@supabase/supabase-js": ">=2.0.0"
+  },
+  "license": "MIT"
+}

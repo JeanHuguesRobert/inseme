@@ -4,7 +4,9 @@
   "deno.enablePaths": [
     "apps/inseme/src/netlify/edge-functions",
     "apps/platform/src/netlify/edge-functions",
-    "src/netlify/edge-functions"
+    "src/netlify/edge-functions",
+    "apps/cyrnea/src/netlify/edge-functions",
+    "apps/cyrnea/netlify/edge-functions"
   ],
   "deno.enable": true,
   "deno.unstable": true,

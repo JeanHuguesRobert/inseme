@@ -1,10 +1,10 @@
-import termsOfUse from "./legal/terms-of-use.md?raw";
-import privacyPolicy from "./legal/privacy-policy.md?raw";
+export * from "@inseme/brique-kudocracy";
+export * from "@inseme/cop-kernel";
 
-export * from "./governance.js";
-export * from "./tasks.js";
-
-export const LEGAL_CONTENT = {
-  TERMS_OF_USE: termsOfUse,
-  PRIVACY_POLICY: privacyPolicy,
+/**
+ * Chemins vers les fichiers légaux (servis via /public/generated/kudocracy/)
+ */
+export const LEGAL_PATHS = {
+  TERMS_OF_USE: "/generated/kudocracy/legal/terms-of-use.md",
+  PRIVACY_POLICY: "/generated/kudocracy/legal/privacy-policy.md",
 };

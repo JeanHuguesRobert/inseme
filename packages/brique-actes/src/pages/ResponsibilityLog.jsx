@@ -6,9 +6,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import SiteFooter from "../../components/layout/SiteFooter";
+import { getSupabase, useCurrentUser } from "@inseme/cop-host";
 
 // ============================================================================
 // CONSTANTS
@@ -72,7 +70,11 @@ const ENTITY_TYPES = {
 // ============================================================================
 
 const TypeBadge = ({ type }) => {
-  const info = RESPONSIBILITY_TYPES[type] || { label: type, emoji: "📋", color: "slate" };
+  const info = RESPONSIBILITY_TYPES[type] || {
+    label: type,
+    emoji: "📋",
+    color: "slate",
+  };
   const colorClasses = {
     blue: "bg-blue-100 text-blue-700",
     green: "bg-green-100 text-green-700",
@@ -95,7 +97,11 @@ const TypeBadge = ({ type }) => {
 };
 
 const EntityLink = ({ entityType, entityId }) => {
-  const info = ENTITY_TYPES[entityType] || { label: entityType, emoji: "📋", path: null };
+  const info = ENTITY_TYPES[entityType] || {
+    label: entityType,
+    emoji: "📋",
+    path: null,
+  };
 
   if (info.path && entityId) {
     return (
@@ -114,7 +120,9 @@ const EntityLink = ({ entityType, entityId }) => {
     <span className="inline-flex items-center gap-1 text-sm text-slate-600">
       <span>{info.emoji}</span>
       <span>{info.label}</span>
-      {entityId && <span className="text-xs text-slate-400">#{entityId.slice(0, 8)}</span>}
+      {entityId && (
+        <span className="text-xs text-slate-400">#{entityId.slice(0, 8)}</span>
+      )}
     </span>
   );
 };
@@ -149,7 +157,9 @@ const LogEntry = ({ entry }) => {
             {/* User */}
             <div className="text-sm text-slate-600 mb-2">
               👤{" "}
-              <span className="font-medium">{entry.user_email || entry.user_id?.slice(0, 8)}</span>
+              <span className="font-medium">
+                {entry.user_email || entry.user_id?.slice(0, 8)}
+              </span>
             </div>
 
             {/* Summary */}
@@ -158,7 +168,10 @@ const LogEntry = ({ entry }) => {
             {/* Entity link */}
             {entry.entity_type && (
               <div className="mb-2">
-                <EntityLink entityType={entry.entity_type} entityId={entry.entity_id} />
+                <EntityLink
+                  entityType={entry.entity_type}
+                  entityId={entry.entity_id}
+                />
               </div>
             )}
 
@@ -166,10 +179,14 @@ const LogEntry = ({ entry }) => {
             {/* Note: IP et User-Agent stockés pour audit mais non affichés publiquement */}
             <div className="flex items-center gap-4 text-xs text-slate-400">
               {entry.ip_address && (
-                <span title="Adresse IP masquée pour la vie privée">🌐 IP: ***.***.***</span>
+                <span title="Adresse IP masquée pour la vie privée">
+                  🌐 IP: ***.***.***
+                </span>
               )}
               {entry.user_agent && (
-                <span title="User-Agent masqué pour la vie privée">💻 Navigateur enregistré</span>
+                <span title="User-Agent masqué pour la vie privée">
+                  💻 Navigateur enregistré
+                </span>
               )}
             </div>
 
@@ -186,7 +203,9 @@ const LogEntry = ({ entry }) => {
             {/* Expanded metadata */}
             {expanded && entry.metadata && (
               <div className="mt-3 bg-slate-50 rounded-lg p-3">
-                <h4 className="text-xs font-medium text-slate-500 mb-2">Métadonnées:</h4>
+                <h4 className="text-xs font-medium text-slate-500 mb-2">
+                  Métadonnées:
+                </h4>
                 <pre className="text-xs text-slate-600 overflow-x-auto">
                   {JSON.stringify(entry.metadata, null, 2)}
                 </pre>
@@ -228,7 +247,7 @@ const Pagination = ({ page, totalPages, onPageChange }) => {
 // ============================================================================
 
 export default function ResponsibilityLog() {
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
@@ -268,7 +287,9 @@ export default function ResponsibilityLog() {
       setLoading(true);
 
       try {
-        let query = getSupabase().from("responsibility_log").select("*", { count: "exact" });
+        let query = getSupabase()
+          .from("responsibility_log")
+          .select("*", { count: "exact" });
 
         if (filterType) {
           query = query.eq("responsibility_type", filterType);
@@ -309,7 +330,14 @@ export default function ResponsibilityLog() {
     };
 
     fetchEntries();
-  }, [page, filterType, filterUser, filterEntity, filterDateFrom, filterDateTo]);
+  }, [
+    page,
+    filterType,
+    filterUser,
+    filterEntity,
+    filterDateFrom,
+    filterDateTo,
+  ]);
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
@@ -333,7 +361,9 @@ export default function ResponsibilityLog() {
             <span>/</span>
             <span className="text-slate-700">Journal des responsabilités</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">📜 Journal des responsabilités</h1>
+          <h1 className="text-2xl font-bold text-slate-900">
+            📜 Journal des responsabilités
+          </h1>
           <p className="text-slate-500 mt-1">
             Audit trail complet des actions avec engagement juridique
           </p>
@@ -348,9 +378,10 @@ export default function ResponsibilityLog() {
             <div>
               <h3 className="font-semibold text-amber-800">Valeur juridique</h3>
               <p className="text-sm text-amber-700 mt-1">
-                Ce journal constitue une trace d'audit à valeur probatoire. Chaque entrée est
-                horodatée, signée et liée à l'adresse IP de l'utilisateur. Il peut être produit en
-                cas de contentieux devant le Tribunal Administratif ou la CADA.
+                Ce journal constitue une trace d'audit à valeur probatoire.
+                Chaque entrée est horodatée, signée et liée à l'adresse IP de
+                l'utilisateur. Il peut être produit en cas de contentieux devant
+                le Tribunal Administratif ou la CADA.
               </p>
             </div>
           </div>
@@ -366,19 +397,25 @@ export default function ResponsibilityLog() {
           </div>
 
           <div className="p-4 rounded-lg border border-slate-200 bg-white">
-            <div className="text-2xl font-bold text-blue-600">{stats.today}</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.today}
+            </div>
             <div className="text-sm text-slate-500">📅 Entrées aujourd'hui</div>
           </div>
         </div>
 
         {/* Filters */}
         <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
-          <h3 className="text-sm font-medium text-slate-700 mb-3">🔍 Filtres</h3>
+          <h3 className="text-sm font-medium text-slate-700 mb-3">
+            🔍 Filtres
+          </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Type filter */}
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Type d'action</label>
+              <label className="block text-xs text-slate-500 mb-1">
+                Type d'action
+              </label>
               <select
                 value={filterType}
                 onChange={(e) => updateFilter("type", e.target.value)}
@@ -395,7 +432,9 @@ export default function ResponsibilityLog() {
 
             {/* Entity filter */}
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Type d'entité</label>
+              <label className="block text-xs text-slate-500 mb-1">
+                Type d'entité
+              </label>
               <select
                 value={filterEntity}
                 onChange={(e) => updateFilter("entity", e.target.value)}
@@ -412,7 +451,9 @@ export default function ResponsibilityLog() {
 
             {/* Date from */}
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Date début</label>
+              <label className="block text-xs text-slate-500 mb-1">
+                Date début
+              </label>
               <input
                 type="date"
                 value={filterDateFrom}
@@ -423,7 +464,9 @@ export default function ResponsibilityLog() {
 
             {/* Date to */}
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Date fin</label>
+              <label className="block text-xs text-slate-500 mb-1">
+                Date fin
+              </label>
               <input
                 type="date"
                 value={filterDateTo}
@@ -434,7 +477,11 @@ export default function ResponsibilityLog() {
           </div>
 
           {/* Clear filters */}
-          {(filterType || filterUser || filterEntity || filterDateFrom || filterDateTo) && (
+          {(filterType ||
+            filterUser ||
+            filterEntity ||
+            filterDateFrom ||
+            filterDateTo) && (
             <button
               onClick={() => setSearchParams({ page: "1" })}
               className="mt-4 text-sm text-blue-600 hover:text-blue-800"
@@ -474,7 +521,9 @@ export default function ResponsibilityLog() {
               <Pagination
                 page={page}
                 totalPages={totalPages}
-                onPageChange={(newPage) => updateFilter("page", String(newPage))}
+                onPageChange={(newPage) =>
+                  updateFilter("page", String(newPage))
+                }
               />
             )}
           </>
@@ -500,8 +549,6 @@ export default function ResponsibilityLog() {
           </button>
         </div>
       </div>
-
-      <SiteFooter />
     </div>
   );
 }

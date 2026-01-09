@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useSupabase } from "../../contexts/SupabaseContext.jsx";
-import { useCurrentUser } from "../../lib/useCurrentUser.js";
+import { useSupabase } from "../../contexts/SupabaseContext";
+import { useCurrentUser } from "../../../../../packages/cop-host/src/lib/useCurrentUser.js";
 import { Link } from "react-router-dom";
-import { getTaskTitleFromPost } from "../../lib/taskHelpers.js";
-import { TASK_STATUS_LABELS } from "../../lib/taskMetadata.js";
+import { getTaskTitleFromPost, TASK_STATUS_LABELS } from "@inseme/brique-tasks";
 import { getSupabase } from "../../lib/supabase.js";
 import {
   BarChart,

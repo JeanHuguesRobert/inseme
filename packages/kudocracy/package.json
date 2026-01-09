@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Governance models and collective logic for Inseme",
   "type": "module",
-  "main": "src/governance.js",
+  "main": "src/index.js",
   "keywords": [
     "governance",
     "democracy",
@@ -11,5 +11,8 @@
     "kudocracy"
   ],
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "@inseme/brique-kudocracy": "workspace:*",
+    "@inseme/cop-kernel": "workspace:*"
+  }
 }

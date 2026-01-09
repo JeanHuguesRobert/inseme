@@ -7,7 +7,7 @@ import {
   PETITION_SCOPES,
   validatePetitionUrl,
   getRecommendedPlatforms,
-} from "../../lib/petitions";
+} from "@inseme/brique-kudocracy";
 
 /**
  * Icône clipboard/pétition en SVG (réutilisée dans plusieurs variantes)

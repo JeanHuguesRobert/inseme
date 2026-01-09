@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../lib/supabase";
+import { getSupabase } from "../lib/supabase.js";
 
 /**
  * Hook to find if a user has delegates who have voted on a specific proposition.

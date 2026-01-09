@@ -4,7 +4,11 @@
  * Gère l'accès aux variables d'environnement côté client et l'initialisation du client Supabase.
  */
 
-import { inited, initializeInstanceCore, loadConfigTable as loadInstanceConfigCore } from "./instanceConfig.core.js";
+import {
+  inited,
+  initializeInstanceCore,
+  loadConfigTable as loadInstanceConfigCore,
+} from "./instanceConfig.core.js";
 import { createClient } from "@supabase/supabase-js";
 
 // Fonction pour récupérer les variables d'environnement côté client (React)
@@ -36,15 +40,30 @@ export function newSupabase(admin = false, options = {}) {
 }
 
 // Initialiser le module de configuration core avec les fonctions spécifiques au client
-export async function initializeInstance(supabase, admin = false, options = {}) {
+export async function initializeInstance(
+  supabase,
+  admin = false,
+  options = {}
+) {
   if (admin) {
     console.warn("Initializing admin Supabase client.");
-    throw new Error("Admin Supabase client initialization is not supported on the client side.");
+    throw new Error(
+      "Admin Supabase client initialization is not supported on the client side."
+    );
   }
-  return await initializeInstanceCore(supabase, getenv, newSupabase, admin, options);
+  return await initializeInstanceCore(
+    supabase,
+    getenv,
+    newSupabase,
+    admin,
+    options
+  );
 }
 
-export async function loadInstanceConfig(force = false, supabase_config = null) {
+export async function loadInstanceConfig(
+  force = false,
+  supabase_config = null
+) {
   if (!inited()) {
     console.warn("loadInstanceConfig: calling initializeInstance()");
     // On utilise le client supabase par défaut si non fourni

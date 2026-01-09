@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { getMetadata } from "../../lib/metadata";
-import { getGroupType } from "../../lib/socialMetadata";
+import { getMetadata } from "../../../../../packages/cop-host/src/lib/metadata.js";
+import { getGroupType } from "../../../../../packages/cop-host/src/lib/socialMetadata.js";
 
 /**
  * Carte d'affichage d'un groupe

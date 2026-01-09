@@ -1,6 +1,6 @@
 import React from "react";
 import { useCafeSession } from "../../contexts/CafeSessionContext";
-import { Users, Microphone, FastForward, StopCircle, Key } from "@phosphor-icons/react";
+import { Icon } from "@inseme/cop-host";
 
 const HostControls = () => {
   const { session, participants, controlPhase, grantMic, hostSecret } = useCafeSession();
@@ -29,7 +29,7 @@ const HostControls = () => {
               : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
           }`}
         >
-          <FastForward weight="bold" />
+          <FastForward size={18} />
           <span className="text-xs font-bold">Lancer Discussion</span>
         </button>
         <button
@@ -40,7 +40,7 @@ const HostControls = () => {
               : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
           }`}
         >
-          <StopCircle weight="bold" />
+          <CircleStop size={18} />
           <span className="text-xs font-bold">Conclusions</span>
         </button>
       </div>
@@ -63,7 +63,7 @@ const HostControls = () => {
                 </div>
                 <span className="text-sm font-medium text-gray-200">{p.display_handle}</span>
               </div>
-              
+
               <button
                 onClick={() => grantMic(p.id)}
                 className={`p-2 rounded-lg transition-all ${
@@ -73,7 +73,7 @@ const HostControls = () => {
                 }`}
                 title={p.mic_state === "on" ? "Couper le micro" : "Donner la parole"}
               >
-                <Microphone weight={p.mic_state === "on" ? "fill" : "bold"} size={18} />
+                <Mic size={18} fill={p.mic_state === "on" ? "currentColor" : "none"} />
               </button>
             </div>
           ))}

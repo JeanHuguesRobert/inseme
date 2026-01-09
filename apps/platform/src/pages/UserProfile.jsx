@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { CurrentUserContext } from "../contexts/CurrentUserContext";
-import { canWrite, getUserRole, ROLE_ADMIN } from "../lib/permissions";
+import { CurrentUserContext } from "../contexts/CurrentUserContext.proxy";
+import { canWrite, getUserRole, ROLE_ADMIN } from "@inseme/cop-host";
 import SiteFooter from "../components/layout/SiteFooter";
 import SocialAvatarButton from "../components/SocialAvatarButton";
 import RGPDSettings from "../components/rgpd/RGPDSettings";

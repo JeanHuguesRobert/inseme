@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSupabase } from "../../lib/supabase";
-import { useCurrentUser } from "../../lib/useCurrentUser";
-import { isAdmin } from "../../lib/permissions";
+import { getSupabase } from "../../lib/supabase.js";
+import { useCurrentUser } from "@inseme/cop-host";
+import { isAdmin } from "@inseme/cop-host";
 import { getFederationConfig } from "../../common/config/instanceConfig.client.js";
 import AuthModal from "../common/AuthModal";
 import SiteFooter from "../layout/SiteFooter";

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getSupabase } from "./supabase";
+import { getSupabase } from "@inseme/cop-host";
 
 /**
  * Hook pour gérer les notifications temps réel des abonnements

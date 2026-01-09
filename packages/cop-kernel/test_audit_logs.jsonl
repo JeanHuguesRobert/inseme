@@ -1,2 +1,0 @@
-{"eventType":"StepUpserted","entityType":"step","entityId":"step2","payload":{"id":"step2","task_id":"task2","name":"Step Two","status":"created"},"timestamp":"2025-12-13T19:17:15.668Z"}
-{"eventType":"StepUpdated","entityType":"step","entityId":"step2","payload":{"patch":{"status":"running"},"newStep":{"id":"step2","task_id":"task2","name":"Step Two","status":"running"}},"timestamp":"2025-12-13T19:17:15.683Z"}

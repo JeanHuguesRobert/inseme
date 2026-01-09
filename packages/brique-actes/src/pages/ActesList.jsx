@@ -5,10 +5,8 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getSupabase } from "@inseme/cop-host";
-import { useSupabase } from "../../contexts/SupabaseContext";
-import SiteFooter from "../../components/layout/SiteFooter";
-import { CITY_NAME, HASHTAG } from "../../constants";
+import { getSupabase, useCurrentUser } from "@inseme/cop-host";
+import { CITY_NAME, HASHTAG } from "@inseme/cop-host";
 
 // ============================================================================
 // CONSTANTS
@@ -41,28 +39,45 @@ const PAGE_SIZE = 20;
 const StatusBadge = ({ status }) => {
   const badges = {
     EXECUTOIRE: { class: "bg-green-100 text-green-800", label: "Exécutoire" },
-    EN_ATTENTE_CONTROLE: { class: "bg-blue-100 text-blue-800", label: "En attente" },
+    EN_ATTENTE_CONTROLE: {
+      class: "bg-blue-100 text-blue-800",
+      label: "En attente",
+    },
     SUSPENDU: { class: "bg-orange-100 text-orange-800", label: "Suspendu" },
     ANNULE: { class: "bg-red-100 text-red-800", label: "Annulé" },
-    NON_TRANSMIS: { class: "bg-slate-100 text-slate-800", label: "Non transmis" },
+    NON_TRANSMIS: {
+      class: "bg-slate-100 text-slate-800",
+      label: "Non transmis",
+    },
   };
-  const badge = badges[status] || { class: "bg-slate-100 text-slate-600", label: status || "N/A" };
+  const badge = badges[status] || {
+    class: "bg-slate-100 text-slate-600",
+    label: status || "N/A",
+  };
   return (
-    <span className={`text-xs font-medium px-2 py-1 rounded ${badge.class}`}>{badge.label}</span>
+    <span className={`text-xs font-medium px-2 py-1 rounded ${badge.class}`}>
+      {badge.label}
+    </span>
   );
 };
 
 const TransmissionIcon = ({ acte }) => {
   if (acte.transmission_confirmed) {
     return (
-      <span className="text-green-600" title={`Confirmé le ${acte.transmission_confirmed}`}>
+      <span
+        className="text-green-600"
+        title={`Confirmé le ${acte.transmission_confirmed}`}
+      >
         ✅
       </span>
     );
   }
   if (acte.transmission_declared) {
     return (
-      <span className="text-orange-500" title={`Déclaré le ${acte.transmission_declared}`}>
+      <span
+        className="text-orange-500"
+        title={`Déclaré le ${acte.transmission_declared}`}
+      >
         ⏳
       </span>
     );
@@ -87,7 +102,11 @@ const Pagination = ({ page, totalPages, onPageChange }) => {
     if (page > 3) pages.push("...");
 
     // Show pages around current
-    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) {
+    for (
+      let i = Math.max(2, page - 1);
+      i <= Math.min(totalPages - 1, page + 1);
+      i++
+    ) {
       pages.push(i);
     }
 
@@ -144,7 +163,7 @@ const Pagination = ({ page, totalPages, onPageChange }) => {
 // ============================================================================
 
 export default function ActesList() {
-  const { user } = useSupabase();
+  const { currentUser: user } = useCurrentUser();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
@@ -192,7 +211,9 @@ export default function ActesList() {
       setError(null);
 
       try {
-        let query = getSupabase().from("v_actes_synthetiques").select("*", { count: "exact" });
+        let query = getSupabase()
+          .from("v_actes_synthetiques")
+          .select("*", { count: "exact" });
 
         // Apply filters
         if (search) {
@@ -253,7 +274,9 @@ export default function ActesList() {
                 <span>/</span>
                 <span className="text-slate-700">Liste des actes</span>
               </div>
-              <h1 className="text-2xl font-bold text-slate-900">📋 Actes Municipaux</h1>
+              <h1 className="text-2xl font-bold text-slate-900">
+                📋 Actes Municipaux
+              </h1>
               <p className="text-slate-600 mt-1">
                 {totalCount} acte{totalCount !== 1 ? "s" : ""} enregistré
                 {totalCount !== 1 ? "s" : ""}
@@ -277,7 +300,9 @@ export default function ActesList() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             {/* Search */}
             <div className="lg:col-span-2">
-              <label className="block text-xs font-medium text-slate-500 mb-1">Recherche</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">
+                Recherche
+              </label>
               <input
                 type="text"
                 placeholder="Numéro, objet..."
@@ -289,7 +314,9 @@ export default function ActesList() {
 
             {/* Type */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Type</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">
+                Type
+              </label>
               <select
                 value={typeActe}
                 onChange={(e) => updateFilters({ type: e.target.value })}
@@ -305,7 +332,9 @@ export default function ActesList() {
 
             {/* Status */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Statut</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">
+                Statut
+              </label>
               <select
                 value={statut}
                 onChange={(e) => updateFilters({ statut: e.target.value })}
@@ -321,7 +350,9 @@ export default function ActesList() {
 
             {/* Date from */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Du</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">
+                Du
+              </label>
               <input
                 type="date"
                 value={dateFrom}
@@ -332,7 +363,9 @@ export default function ActesList() {
 
             {/* Date to */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Au</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">
+                Au
+              </label>
               <input
                 type="date"
                 value={dateTo}
@@ -349,7 +382,10 @@ export default function ActesList() {
               {search && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
                   Recherche: {search}
-                  <button onClick={() => updateFilters({ q: "" })} className="hover:text-blue-900">
+                  <button
+                    onClick={() => updateFilters({ q: "" })}
+                    className="hover:text-blue-900"
+                  >
                     ×
                   </button>
                 </span>
@@ -409,32 +445,53 @@ export default function ActesList() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">N°</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      N°
+                    </th>
                     <th className="px-4 py-3 text-left font-semibold text-slate-600">
                       <button
                         onClick={() =>
                           updateFilters({
                             sort: "date_acte",
-                            order: sortBy === "date_acte" && sortOrder === "desc" ? "asc" : "desc",
+                            order:
+                              sortBy === "date_acte" && sortOrder === "desc"
+                                ? "asc"
+                                : "desc",
                           })
                         }
                         className="flex items-center gap-1 hover:text-blue-600"
                       >
                         Date
-                        {sortBy === "date_acte" && (sortOrder === "desc" ? "↓" : "↑")}
+                        {sortBy === "date_acte" &&
+                          (sortOrder === "desc" ? "↓" : "↑")}
                       </button>
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Type</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Objet</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Statut</th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600">Transmis</th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600">Délais</th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600">Demandes</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      Objet
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
+                      Statut
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600">
+                      Transmis
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600">
+                      Délais
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600">
+                      Demandes
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {actes.map((acte) => (
-                    <tr key={acte.id} className="hover:bg-slate-50 border-b border-slate-100">
+                    <tr
+                      key={acte.id}
+                      className="hover:bg-slate-50 border-b border-slate-100"
+                    >
                       <td className="px-4 py-3">
                         <Link
                           to={`/actes/${acte.id}`}
@@ -443,7 +500,9 @@ export default function ActesList() {
                           {acte.numero_interne || acte.numero_actes || "N/A"}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{acte.date_acte || "—"}</td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {acte.date_acte || "—"}
+                      </td>
                       <td className="px-4 py-3">
                         <span className="text-xs font-medium px-2 py-1 rounded bg-slate-100 text-slate-700">
                           {acte.type_acte || "ACTE"}
@@ -474,7 +533,9 @@ export default function ActesList() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         {acte.nb_demandes > 0 ? (
-                          <span className="font-medium text-slate-700">{acte.nb_demandes}</span>
+                          <span className="font-medium text-slate-700">
+                            {acte.nb_demandes}
+                          </span>
                         ) : (
                           <span className="text-slate-400">—</span>
                         )}
@@ -507,8 +568,6 @@ export default function ActesList() {
           </button>
         </div>
       </div>
-
-      <SiteFooter />
     </div>
   );
 }

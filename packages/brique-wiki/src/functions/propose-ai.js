@@ -1,4 +1,4 @@
-import { loadInstanceConfig, newSupabase } from "@inseme/cop-host/backend";
+import { loadInstanceConfig, newSupabase } from "@inseme/cop-host/backend.js";
 
 export default async (req, context) => {
   await loadInstanceConfig();
@@ -21,39 +21,23 @@ export default async (req, context) => {
 
     const supabase = await newSupabase();
 
-    // On génère les tokens FTS côté JS (en appelant une fonction utilitaire SQL simple ou en préparant la chaîne)
-    // Ici, on demande à Postgres de calculer le vecteur pour nous lors de l'insertion,
-    // mais sans trigger caché, ce qui rend l'opération explicite dans le code JS.
-    const ftsCalculation = `
-      setweight(to_tsvector('french', ${JSON.stringify(title)}), 'A') ||
-      setweight(to_tsvector('french', ${JSON.stringify(summary || "")}), 'B') ||
-      setweight(to_tsvector('french', ${JSON.stringify(content)}), 'C')
-    `;
-
-    const { data, error } = await supabase.rpc("execute_sql", {
-      sql_query: `
-        INSERT INTO wiki_pages (slug, title, content, summary, metadata, fts_tokens)
-        VALUES (
-          ${JSON.stringify(slug)}, 
-          ${JSON.stringify(title)}, 
-          ${JSON.stringify(content)}, 
-          ${JSON.stringify(summary)}, 
-          ${JSON.stringify({
+    const { data, error } = await supabase
+      .from("wiki_pages")
+      .upsert(
+        {
+          slug,
+          title,
+          content,
+          summary,
+          metadata: {
             is_proposed: true,
             ai_generated: true,
             updated_at: new Date().toISOString(),
-          })},
-          ${ftsCalculation}
-        )
-        ON CONFLICT (slug) DO UPDATE SET
-          title = EXCLUDED.title,
-          content = EXCLUDED.content,
-          summary = EXCLUDED.summary,
-          metadata = EXCLUDED.metadata,
-          fts_tokens = EXCLUDED.fts_tokens
-        RETURNING *;
-      `,
-    });
+          },
+        },
+        { onConflict: "slug" }
+      )
+      .select();
 
     if (error) throw error;
 
@@ -61,8 +45,12 @@ export default async (req, context) => {
       status: 200,
     });
   } catch (err) {
-    console.error("wiki-propose-ai error", err.message || err);
-    return new Response(JSON.stringify({ error: err.message || "internal" }), {
+    const msg = (err.message || String(err)).replace(
+      /postgres:\/\/.*@/,
+      "postgres://***@"
+    );
+    console.error("wiki-propose-ai error", msg);
+    return new Response(JSON.stringify({ error: msg }), {
       status: 500,
     });
   }

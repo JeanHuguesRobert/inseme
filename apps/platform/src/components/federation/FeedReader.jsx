@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { parseFeed } from "../../lib/FeedAdapter";
+import { parseFeed } from "../../lib/FeedAdapter.js";
 
 /**
  * FeedReader Component

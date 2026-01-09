@@ -2,16 +2,16 @@ import React, { useRef, useEffect, useMemo } from "react";
 import "./chat-v2.css";
 import Header from "./Header";
 import Messages from "./Messages";
-import Controls from "./Controls";
-import PropositionForm from "./PropositionForm";
-import ModelSelectionModal from "./ModelSelectionModal";
-import ModelBadge from "./ModelBadge";
-import useChatLogic from "./useChatLogic";
+import Controls from "../../../../../../packages/room/components/chat/Controls";
+import PropositionForm from "../../../../../../packages/room/components/chat/PropositionForm";
+import ModelSelectionModal from "../../../../../../packages/room/components/chat/ModelSelectionModal";
+import ModelBadge from "../../../../../../packages/room/components/chat/ModelBadge";
+import useChatLogic from "./useChatLogic.js";
 import AuthModal from "../../common/AuthModal";
-import { useGlobalStatus as useOpStatus } from "../../../lib/useStatusOperations";
+import { useGlobalStatus as useOpStatus } from "@inseme/cop-host";
 import SiteFooter from "../../layout/SiteFooter";
-import { getSupabase } from "../../../lib/supabase";
-import QUESTION_POOL from "../questions/questionPool";
+import { getSupabase } from "../../../lib/supabase.js";
+import QUESTION_POOL from "../../../../../../packages/room/data/questionPool.js";
 
 /**
  * ChatWindowV2

@@ -3,7 +3,7 @@
 // Permet à l'utilisateur de choisir sa communauté
 
 import { useState, useEffect } from "react";
-import { getInstanceUrl } from "../lib/instanceResolver";
+import { getInstanceUrl } from "../lib/instanceResolver.js";
 
 // ============================================================================
 // COMPOSANT PRINCIPAL

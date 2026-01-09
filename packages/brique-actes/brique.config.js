@@ -5,43 +5,103 @@ export default {
     routes: [
       {
         path: "/actes",
-        component: "./src/pages/ActesHome.jsx",
-        protected: false,
-      },
-      {
-        path: "/actes/dashboard",
-        component: "./src/pages/ActesDashboard.jsx",
+        component: "./src/pages/ActesDashboard",
         protected: true,
       },
       {
-        path: "/actes/list",
-        component: "./src/pages/ActesList.jsx",
+        path: "/actes/accueil",
+        component: "./src/pages/ActesHome",
         protected: false,
       },
       {
-        path: "/actes/new",
-        component: "./src/pages/ActeForm.jsx",
+        path: "/actes/liste",
+        component: "./src/pages/ActesList",
+        protected: false,
+      },
+      {
+        path: "/actes/nouveau",
+        component: "./src/pages/ActeForm",
         protected: true,
       },
       {
         path: "/actes/:id",
-        component: "./src/pages/ActeDetail.jsx",
+        component: "./src/pages/ActeDetail",
         protected: false,
+      },
+      {
+        path: "/actes/:id/modifier",
+        component: "./src/pages/ActeForm",
+        protected: true,
+      },
+      {
+        path: "/actes/:id/chronologie",
+        component: "./src/pages/ActeTimeline",
+        protected: false,
+      },
+      {
+        path: "/actes/chronologie",
+        component: "./src/pages/ActeTimeline",
+        protected: false,
+      },
+      {
+        path: "/actes/stats",
+        component: "./src/pages/StatsDashboard",
+        protected: true,
       },
       {
         path: "/demandes",
-        component: "./src/pages/DemandesList.jsx",
+        component: "./src/pages/DemandesList",
         protected: false,
       },
       {
-        path: "/demandes/new",
-        component: "./src/pages/DemandeForm.jsx",
+        path: "/demandes/nouvelle",
+        component: "./src/pages/DemandeForm",
         protected: true,
       },
       {
         path: "/demandes/:id",
-        component: "./src/pages/DemandeDetail.jsx",
+        component: "./src/pages/DemandeDetail",
         protected: false,
+      },
+      {
+        path: "/demandes/:id/modifier",
+        component: "./src/pages/DemandeForm",
+        protected: true,
+      },
+      {
+        path: "/preuves/ajouter",
+        component: "./src/pages/ProofUpload",
+        protected: true,
+      },
+      {
+        path: "/moderation/actions",
+        component: "./src/pages/OutgoingActionsQueue",
+        protected: true,
+      },
+      {
+        path: "/moderation/preuves",
+        component: "./src/pages/VerificationQueue",
+        protected: true,
+      },
+      {
+        path: "/moderation/publications",
+        component: "./src/pages/PublicationModeration",
+        protected: true,
+      },
+      {
+        path: "/moderation/responsabilites",
+        component: "./src/pages/ResponsibilityLog",
+        protected: true,
+      },
+      {
+        path: "/exports/pdf",
+        component: "./src/pages/ExportPDF",
+        protected: true,
+      },
+      {
+        path: "/exports/csv",
+        component: "./src/pages/ExportCSV",
+        protected: true,
       },
     ],
     menuItems: [
@@ -74,7 +134,8 @@ export default {
                   type: { type: "string" }
                 }
               }
-            }
+            },
+            handler: "./src/edge/tool-search-actes.js"
         },
         {
             type: "function",
@@ -88,7 +149,8 @@ export default {
                 },
                 required: ["demande_id"]
               }
-            }
+            },
+            handler: "./src/edge/tool-get-demande-status.js"
         }
     ],
     configSchema: {

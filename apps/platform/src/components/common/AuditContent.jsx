@@ -1,6 +1,6 @@
 import React from "react";
 import { MarkdownViewer } from "@inseme/ui";
-import { useMarkdownDoc } from "../../hooks/useMarkdownDoc";
+import { useMarkdownDoc } from "../../hooks/useMarkdownDoc.js";
 
 export default function AuditContent() {
   const { content, loading, error } = useMarkdownDoc("audit-ethique.md");

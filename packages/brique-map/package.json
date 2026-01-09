@@ -9,6 +9,8 @@
     "react-router-dom": "^6.20.0",
     "leaflet": "^1.9.4",
     "react-leaflet": "^4.2.1",
+    "swr": "^2.2.5",
+    "geoportal-extensions-leaflet": "^2.4.3",
     "@inseme/ui": "workspace:*",
     "@inseme/cop-host": "workspace:*"
   }

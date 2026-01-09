@@ -5,7 +5,7 @@ export default {
     routes: [
       {
         path: "/map",
-        component: "./src/pages/MapPage.jsx",
+        component: "./src/pages/MapPage",
         protected: false,
       },
     ],
@@ -20,9 +20,10 @@ export default {
     ],
     tools: [
         {
-            type: "function",
-            function: {
-              name: "search_map_places",
+      type: "function",
+      handler: "./src/edge/tool-search-map.js",
+      function: {
+        name: "search_map_places",
               description: "Rechercher des lieux ou des points d'intérêt sur la carte.",
               parameters: {
                 type: "object",

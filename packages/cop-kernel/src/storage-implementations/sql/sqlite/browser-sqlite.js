@@ -1,4 +1,4 @@
-import * as SQLJs from "https://cdn.jsdelivr.net/npm/sql.js/dist/sql-wasm.js";
+import * as SQLJs from "https://cdn.jsdelivr.net/npm/sql.js/dist/sql-wasm";
 
 export class BrowserSqliteConnection {
   constructor(db) {

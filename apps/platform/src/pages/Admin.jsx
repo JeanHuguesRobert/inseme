@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import SiteFooter from "../components/layout/SiteFooter";
-import { useCurrentUser } from "../lib/useCurrentUser";
-import { getUserRole, ROLE_ADMIN } from "../lib/permissions";
+import { useCurrentUser } from "@inseme/cop-host";
+import { getUserRole, ROLE_ADMIN } from "@inseme/cop-host";
 import SiteConfigEditor from "../components/admin/SiteConfigEditor";
 import { getConfig } from "../common/config/instanceConfig.client.js";
 

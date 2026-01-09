@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../../lib/supabase";
-import { parseFeed, detectFeedType } from "../../lib/FeedAdapter";
+import { getSupabase } from "../../lib/supabase.js";
+import { parseFeed, detectFeedType } from "../../lib/FeedAdapter.js";
 
 export default function FeedManager({ userId, onSubscriptionsChanged }) {
   const [url, setUrl] = useState("");

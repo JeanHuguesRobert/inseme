@@ -1,4 +1,5 @@
-import { getSupabase } from "./supabase";
+import { getSupabase } from "./supabase.js";
+import { appendOrMergeLastModifiedBy } from "@inseme/cop-host";
 
 const tableMap = {
   users: "users",

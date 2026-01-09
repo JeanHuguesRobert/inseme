@@ -2,8 +2,8 @@ import React from "react";
 import { MarkdownViewer } from "@inseme/ui";
 import { Link } from "react-router-dom";
 import FacebookEmbed from "../FacebookEmbed";
-import { getSupabase } from "../../lib/supabase";
-import { getPostTitle, getPostSubtitle } from "../../lib/socialMetadata";
+import { getSupabase } from "../../lib/supabase.js";
+import { getPostTitle, getPostSubtitle } from "../../../../../packages/cop-host/src/lib/socialMetadata.js";
 import {
   isFacebookPost,
   getPostSourceUrl,
@@ -11,9 +11,9 @@ import {
   getPostEvent,
   getAuthor,
   isShare,
-} from "../../lib/postPredicates";
-import { getDisplayName } from "../../lib/userDisplay";
-import { markShareDeleted } from "../../lib/sharePost";
+} from "../../lib/postPredicates.js";
+import { getDisplayName } from "@inseme/cop-host";
+import { markShareDeleted } from "../../lib/sharePost.js";
 
 export default function GazettePost({ post, isEditor = false, gazetteName = null }) {
   const { id, content, created_at } = post;

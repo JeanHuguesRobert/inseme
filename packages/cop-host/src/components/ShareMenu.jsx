@@ -1,15 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import {
-  Share,
-  ShareNetwork,
-  Link as LinkIcon,
-  Envelope,
-  X,
-  LinkedinLogo,
-  Brain,
-} from "@phosphor-icons/react";
-// import { sharePost } from "../lib/sharePost"; // Supprimé pour éviter les dépendances circulaires trop lourdes
-import { getConfig } from "../client/supabase";
+import { Icon } from "lucide-react";  
+// import { sharePost } from "../../../../apps/platform/src/lib/sharePost"; // Supprimé pour éviter les dépendances circulaires trop lourdes
+import { getConfig } from "../client/supabase.js";
 
 /**
  * Enhanced ShareMenu - Mobile-first dropdown for sharing content
@@ -127,14 +119,14 @@ export default function ShareMenu({
   const menuItems = [
     // Internal sharing (only for logged-in users)
     currentUserId && {
-      icon: <ShareNetwork size={20} weight="fill" />,
+      icon: <Icon name="share-2" size={20} />,
       label: "Partager à une Gazette",
       onClick: handleShareToGazette,
       color: "text-primary-500",
     },
     // Share with Ophélia (Logged in users only)
     currentUserId && {
-      icon: <Brain size={20} weight="duotone" />,
+      icon: <Icon name="brain" size={20} />,
       label: `Partager avec ${botName}`,
       onClick: () => {
         setShowOpheliaModal(true);
@@ -144,40 +136,40 @@ export default function ShareMenu({
     },
     // Native share (mobile-first)
     navigator.share && {
-      icon: <Share size={20} weight="fill" />,
+      icon: <Icon name="share" size={20} />,
       label: "Partager...",
       onClick: handleNativeShare,
       color: "text-blue-500",
     },
     // Copy link
     {
-      icon: <LinkIcon size={20} weight="bold" />,
+      icon: <Icon name="link" size={20} />,
       label: copiedFeedback ? "✓ Copié!" : "Copier le lien",
       onClick: handleCopyLink,
       color: copiedFeedback ? "text-green-500" : "text-gray-600",
     },
     // Social platforms
     {
-      icon: "📘",
+      icon: <Icon name="facebook" size={20} />,
       label: "Facebook",
       onClick: handleFacebookShare,
       color: "text-[#1877F2]",
     },
     {
-      icon: <X size={20} weight="bold" />,
+      icon: <Icon name="x" size={20} />,
       label: "Twitter / X",
       onClick: handleTwitterShare,
       color: "text-gray-900",
     },
     {
-      icon: <LinkedinLogo size={20} weight="fill" />,
+      icon: <Icon name="linkedin" size={20} />,
       label: "LinkedIn",
       onClick: handleLinkedInShare,
       color: "text-[#0A66C2]",
     },
     // Email
     {
-      icon: <Envelope size={20} weight="fill" />,
+      icon: <Icon name="mail" size={20} />,
       label: "Email",
       onClick: handleEmailShare,
       color: "text-gray-700",
@@ -192,7 +184,7 @@ export default function ShareMenu({
         className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded transition-colors"
         aria-label="Partager"
       >
-        <Share size={20} weight="fill" />
+        <Icon name="share-2" size={20} />
         <span className="hidden sm:inline">Partager</span>
       </button>
 

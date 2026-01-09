@@ -1,15 +1,15 @@
 // src/components/bob/v2/useChatLogic.js
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getSupabase } from "../../../lib/supabase";
-import { canWrite } from "../../../lib/permissions";
+import { getSupabase } from "../../../lib/supabase.js";
+import { canWrite } from "@inseme/cop-host";
 import {
   useDataLoader,
   useApiCaller,
   useDataSaver,
   useSyncOperation,
-} from "../../../lib/useStatusOperations";
-import { createPropositionWithTags } from "../../../lib/propositions";
+} from "@inseme/cop-host";
+import { createPropositionWithTags } from "../../../lib/propositions.js";
 import { useNavigate } from "react-router-dom";
 import { getConfig } from "../../../common/config/instanceConfig.client.js";
 

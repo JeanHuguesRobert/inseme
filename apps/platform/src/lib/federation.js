@@ -10,7 +10,7 @@ import {
   REGION_NAME,
   REGION_CODE,
   IS_NATIONAL_HUB,
-} from "../constants";
+} from "../constants.js";
 
 // ============================================================================
 // CONFIGURATION

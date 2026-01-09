@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { getSupabase } from "../../lib/supabase";
-import { isDeleted } from "../../lib/metadata";
+import { getSupabase } from "../../lib/supabase.js";
+import { isDeleted } from "../../../../../packages/cop-host/src/lib/metadata.js";
 import GroupCard from "./GroupCard";
 
 /**
