@@ -1,17 +1,9 @@
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  createContext,
-  useContext,
-} from "react";
+import React, { useState, useRef, useEffect, createContext, useContext } from "react";
 
 const TabsContext = createContext(null);
 
 export const Card = ({ children, className = "" }) => (
-  <div
-    className={`rounded-xl border border-white/10 bg-slate-900/50 shadow-sm ${className}`}
-  >
+  <div className={`rounded-xl border border-white/10 bg-slate-900/50 shadow-sm ${className}`}>
     {children}
   </div>
 );
@@ -24,11 +16,11 @@ export const Button = ({
   ...props
 }) => {
   const baseStyles =
-    "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer";
+    "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer active:scale-95 hover:shadow-md hover:-translate-y-0.5";
   const variants = {
-    default: "bg-slate-100 text-slate-900 hover:bg-slate-100/90",
-    outline: "border border-white/10 bg-transparent hover:bg-white/5",
-    ghost: "hover:bg-white/5",
+    default: "bg-slate-100 text-slate-900 hover:bg-white",
+    outline: "border border-white/10 bg-transparent hover:bg-white/10 hover:border-white/20",
+    ghost: "hover:bg-white/10 text-slate-400 hover:text-slate-100",
   };
   const sizes = {
     default: "h-10 px-4 py-2",
@@ -61,9 +53,7 @@ export const Badge = ({ children, className = "", variant = "default" }) => {
 };
 
 export const Progress = ({ value = 0, className = "" }) => (
-  <div
-    className={`relative h-2 w-full overflow-hidden rounded-full bg-slate-800 ${className}`}
-  >
+  <div className={`relative h-2 w-full overflow-hidden rounded-full bg-slate-800 ${className}`}>
     <div
       className="h-full w-full flex-1 bg-amber-500 transition-all"
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
@@ -85,12 +75,7 @@ export const Avatar = ({ className = "", fallback = "U", src }) => (
   </div>
 );
 
-export const Tabs = ({
-  defaultValue,
-  children,
-  className = "",
-  onValueChange,
-}) => {
+export const Tabs = ({ defaultValue, children, className = "", onValueChange }) => {
   const [activeTab, setActiveTab] = useState(defaultValue);
 
   const handleValueChange = (value) => {
@@ -99,9 +84,7 @@ export const Tabs = ({
   };
 
   return (
-    <TabsContext.Provider
-      value={{ activeTab, onValueChange: handleValueChange }}
-    >
+    <TabsContext.Provider value={{ activeTab, onValueChange: handleValueChange }}>
       <div className={className}>{children}</div>
     </TabsContext.Provider>
   );
@@ -124,10 +107,10 @@ export const TabsTrigger = ({ value, children, className = "" }) => {
     <button
       onClick={() => onValueChange(value)}
       data-state={activeTab === value ? "active" : "inactive"}
-      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer hover:bg-white/5 active:scale-95 ${
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer hover:bg-white/10 active:scale-95 ${
         activeTab === value
-          ? "bg-amber-500 text-slate-950 shadow-sm"
-          : "hover:text-slate-200"
+          ? "bg-amber-500 text-slate-950 shadow-md scale-105"
+          : "hover:text-slate-100 hover:scale-105"
       } ${className}`}
     >
       {children}
@@ -151,12 +134,7 @@ export const TabsContent = ({ value, children, className = "" }) => {
   );
 };
 
-export const Tooltip = ({
-  children,
-  content,
-  position = "top",
-  delay = 400,
-}) => {
+export const Tooltip = ({ children, content, position = "top", delay = 400 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const timeoutRef = useRef(null);
 

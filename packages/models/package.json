@@ -1,0 +1,23 @@
+{
+  "name": "@inseme/models",
+  "version": "1.0.0",
+  "description": "Registry and manager for Kudocracy AI models",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "sovereign:up": "node src/ai.js --port 8880 --llama-port 8080 --model Qwen2.5-Coder",
+    "sovereign:dev": "node src/ai.js --port 8880 --llama-port 8080 --model Qwen2.5-Coder",
+    "sovereign:down": "node src/ai.js --stop --port 8880",
+    "sovereign:status": "node src/ai.js --status --port 8880",
+    "sovereign:tts": "node ../../scripts/tts.js",
+    "model:pull": "conda run -n inseme python scripts/download.py",
+    "model:list": "node scripts/download.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "kokoro-js": "^1.2.1",
+    "node-fetch": "^3.0.0",
+    "onnxruntime-node": "^1.23.2",
+    "ws": "^8.19.0"
+  }
+}

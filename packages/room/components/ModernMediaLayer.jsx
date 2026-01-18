@@ -4,8 +4,7 @@ import { useInsemeContext } from "../InsemeContext";
 import { Captions, Settings } from "lucide-react";
 
 export function ModernMediaLayer({ media }) {
-  const { messages, transcriptionStatus, roomMetadata, effectiveConfig } =
-    useInsemeContext();
+  const { messages, transcriptionStatus, roomMetadata, effectiveConfig } = useInsemeContext();
   const [showSubtitles, setShowSubtitles] = useState(true);
 
   if (!media) return null;
@@ -13,27 +12,21 @@ export function ModernMediaLayer({ media }) {
   const { type, url } = media;
 
   // Jitsi Configuration from Room Metadata or Global Config
-  const jitsiConfig =
-    roomMetadata?.settings?.jitsi || effectiveConfig?.jitsi || {};
+  const jitsiConfig = roomMetadata?.settings?.jitsi || effectiveConfig?.jitsi || {};
   const jitsiDomain = jitsiConfig.domain || "meet.jit.si";
 
   // Get the latest transcription chunk from anyone
-  const latestGlobalChunk = messages
-    ?.filter((m) => m.type === "transcription_chunk")
-    .slice(-1)[0];
+  const latestGlobalChunk = messages?.filter((m) => m.type === "transcription_chunk").slice(-1)[0];
 
   const displaySubtitle = transcriptionStatus?.isActive
     ? transcriptionStatus.lastTranscript
     : latestGlobalChunk?.message;
 
   // Jitsi Integration
-  if (
-    type === "live" &&
-    (url.includes("meet.jit.si") || url.startsWith("jitsi:"))
-  ) {
+  if (type === "live" && (url.includes("meet.jit.si") || url.startsWith("jitsi:"))) {
     const roomName = url.split("/").pop();
     return (
-      <div className="w-full h-[600px] rounded-xl overflow-hidden shadow-2xl bg-neutral-900 mb-6 relative group">
+      <div className="w-full h-[600px] rounded-xl overflow-hidden shadow-2xl bg-mondrian-black mb-6 relative group">
         <JitsiMeeting
           domain={jitsiDomain}
           roomName={roomName}
@@ -49,8 +42,7 @@ export function ModernMediaLayer({ media }) {
             ...jitsiConfig.interfaceConfigOverwrite,
           }}
           userInfo={{
-            displayName:
-              roomMetadata?.user_display_name || "Inseme Participant",
+            displayName: roomMetadata?.user_display_name || "Inseme Participant",
           }}
           onApiReady={(externalApi) => {
             // Handle Jitsi API
@@ -83,11 +75,7 @@ export function ModernMediaLayer({ media }) {
           <button
             onClick={() => setShowSubtitles(!showSubtitles)}
             className={`p-2 rounded-lg backdrop-blur-md border transition-all ${showSubtitles ? "bg-indigo-500 text-white border-indigo-400" : "bg-black/50 text-white/60 border-white/10 hover:bg-black/70"}`}
-            title={
-              showSubtitles
-                ? "Désactiver les sous-titres"
-                : "Activer les sous-titres"
-            }
+            title={showSubtitles ? "Désactiver les sous-titres" : "Activer les sous-titres"}
           >
             <Captions className="w-4 h-4" />
           </button>
@@ -117,11 +105,12 @@ export function ModernMediaLayer({ media }) {
 
   // Pads (Framapad, etc.)
   if (type === "pad") {
+    const padUrl = url.startsWith("http") ? url : `https://framapad.org/p/${url}`;
     return (
       <div className="w-full h-[600px] rounded-xl overflow-hidden shadow-2xl bg-white mb-6">
         <iframe
           className="w-full h-full"
-          src={url.startsWith("http") ? url : `https://framapad.org/p/${url}`}
+          src={window.wrap ? window.wrap(padUrl) : padUrl}
           title="Collaborative Pad"
         ></iframe>
       </div>
@@ -149,7 +138,7 @@ export function ModernMediaLayer({ media }) {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-blue-400 hover:text-blue-300 underline font-medium"
+        className="text-mondrian-blue hover:text-mondrian-blue/80 underline font-medium"
       >
         {url}
       </a>

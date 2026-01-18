@@ -4,7 +4,7 @@
  * Scans the monorepo to find brique.config.js and generates the necessary entry points.
  */
 
-import { glob } from "glob";
+import { glob, globSync } from "glob";
 import { resolve, dirname, join, relative } from "path";
 import { fileURLToPath } from "url";
 import {
@@ -56,41 +56,48 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  */
 function findRoot(startDir) {
   let current = resolve(startDir);
-  console.log(`🔍 Root search starting at: ${current}`);
+  const isVerbose =
+    process.argv.includes("--verbose") || process.argv.includes("-v") || process.env.DEBUG;
+
+  if (isVerbose) console.log(`🔍 Root search starting at: ${current}`);
 
   while (current !== dirname(current)) {
     const hasWorkspace = existsSync(join(current, "pnpm-workspace.yaml"));
     const hasApps = existsSync(join(current, "apps"));
     const hasPackages = existsSync(join(current, "packages"));
 
-    console.log(
-      `  Checking: ${current} (workspace:${hasWorkspace}, apps:${hasApps}, pkgs:${hasPackages})`
-    );
+    if (isVerbose) {
+      console.log(
+        `  Checking: ${current} (workspace:${hasWorkspace}, apps:${hasApps}, pkgs:${hasPackages})`
+      );
+    }
 
     const pathParts = current.toLowerCase().split(/[\\\/]/);
     const isInsideApps = pathParts.includes("apps");
 
     if (hasWorkspace || (hasApps && hasPackages)) {
-      console.log(`🎯 ROOT FOUND: ${current}`);
+      if (isVerbose) console.log(`🎯 ROOT FOUND: ${current}`);
       return current;
     }
     current = dirname(current);
   }
-  console.warn(
-    "⚠️ Warning: Could not locate monorepo root. Using current directory as fallback."
-  );
+  console.warn("⚠️ Warning: Could not locate monorepo root. Using current directory as fallback.");
   return resolve(".");
 }
 
 const ROOT = findRoot(__dirname);
 const APPS_PATH = join(ROOT, "apps");
 
-console.log(`🚀 Compiler started. CWD: ${process.cwd()} | ROOT: ${ROOT}`);
+const isDebug = process.argv.includes("--debug");
+const isVerbose =
+  process.argv.includes("--verbose") || process.argv.includes("-v") || process.env.DEBUG || isDebug;
+
+if (isVerbose) console.log(`🚀 Compiler started. CWD: ${process.cwd()} | ROOT: ${ROOT}`);
 
 function safeMkdir(path) {
   const absolutePath = resolve(path);
   if (!existsSync(absolutePath)) {
-    console.log(`  📁 Creation dossier: ${relative(ROOT, absolutePath)}`);
+    if (isVerbose) console.log(`  📁 Creation dossier: ${relative(ROOT, absolutePath)}`);
     mkdirSync(absolutePath, { recursive: true });
   }
 }
@@ -99,7 +106,7 @@ function writeIfChanged(filePath, content) {
   if (existsSync(filePath)) {
     const existingContent = readFileSync(filePath, "utf8");
     if (existingContent === content) {
-      console.log(`  ⏭️  Skip (unchanged): ${relative(ROOT, filePath)}`);
+      if (isDebug) console.log(`  ⏭️  Skip (unchanged): ${relative(ROOT, filePath)}`);
       return false; // ON ARRÊTE VRAIMENT ICI
     }
     console.log(`  🔄 Update: ${relative(ROOT, filePath)}`);
@@ -111,7 +118,7 @@ function writeIfChanged(filePath, content) {
 }
 
 async function compile() {
-  console.log("🏗️  Compiling briques (incremental mode)...");
+  if (isVerbose) console.log("🏗️  Compiling briques (incremental mode)...");
 
   const manifests = (
     await glob("**/brique.config.js", {
@@ -120,7 +127,7 @@ async function compile() {
     })
   ).sort();
 
-  console.log(`🔍 ${manifests.length} briques found.`);
+  if (isVerbose) console.log(`🔍 ${manifests.length} briques found.`);
 
   const briques = [];
   const generatedFiles = new Set();
@@ -137,15 +144,13 @@ async function compile() {
     .filter((v, i, a) => a.indexOf(v) === i)
     .filter((appName) => appName.toLowerCase() !== "apps");
 
-  console.log(`🏠 Host applications detected: ${hostApps.join(", ")}`);
+  if (isVerbose) console.log(`🏠 Host applications detected: ${hostApps.join(", ")}`);
 
   for (const manifestPath of manifests) {
     const fullPath = resolve(ROOT, manifestPath);
     const briqueDir = dirname(fullPath);
 
-    const { default: config } = await import(
-      `file://${fullPath}?t=${Date.now()}`
-    );
+    const { default: config } = await import(`file://${fullPath}?t=${Date.now()}`);
 
     briques.push({
       ...config,
@@ -160,21 +165,12 @@ async function compile() {
         const genDir = join(appPath, "netlify/functions");
         safeMkdir(genDir);
 
-        const runtimePath = resolve(
-          ROOT,
-          "packages/cop-host/src/runtime/function.js"
-        );
-        const relRuntimePath = relative(genDir, runtimePath).replace(
-          /\\/g,
-          "/"
-        );
+        const runtimePath = resolve(ROOT, "packages/cop-host/src/runtime/function.js");
+        const relRuntimePath = relative(genDir, runtimePath).replace(/\\/g, "/");
 
         for (const [funcName, funcConfig] of Object.entries(config.functions)) {
           const handlerPath = resolve(briqueDir, funcConfig.handler);
-          const relHandlerPath = relative(genDir, handlerPath).replace(
-            /\\/g,
-            "/"
-          );
+          const relHandlerPath = relative(genDir, handlerPath).replace(/\\/g, "/");
 
           const handlerContent = readFileSync(handlerPath, "utf-8");
           const isAlreadyWrapped = handlerContent.includes("defineFunction(");
@@ -195,28 +191,15 @@ export default ${isAlreadyWrapped ? "handler" : "defineFunction(handler)"};
         const genDir = join(appPath, "netlify/edge-functions");
         safeMkdir(genDir);
 
-        const runtimePath = resolve(
-          ROOT,
-          "packages/cop-host/src/runtime/edge.js"
-        );
-        const relRuntimePath = relative(genDir, runtimePath).replace(
-          /\\/g,
-          "/"
-        );
+        const runtimePath = resolve(ROOT, "packages/cop-host/src/runtime/edge.js");
+        const relRuntimePath = relative(genDir, runtimePath).replace(/\\/g, "/");
 
-        for (const [funcName, funcConfig] of Object.entries(
-          config.edgeFunctions
-        )) {
+        for (const [funcName, funcConfig] of Object.entries(config.edgeFunctions)) {
           const handlerPath = resolve(briqueDir, funcConfig.handler);
-          const relHandlerPath = relative(genDir, handlerPath).replace(
-            /\\/g,
-            "/"
-          );
+          const relHandlerPath = relative(genDir, handlerPath).replace(/\\/g, "/");
 
           const handlerContent = readFileSync(handlerPath, "utf-8");
-          const isAlreadyWrapped = handlerContent.includes(
-            "defineEdgeFunction("
-          );
+          const isAlreadyWrapped = handlerContent.includes("defineEdgeFunction(");
 
           const wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
 import { defineEdgeFunction } from "${relRuntimePath}";
@@ -239,23 +222,14 @@ export const config = {
         const genDir = join(appPath, "netlify/edge-functions");
         safeMkdir(genDir);
 
-        const runtimePath = resolve(
-          ROOT,
-          "packages/cop-host/src/runtime/edge.js"
-        );
-        const relRuntimePath = relative(genDir, runtimePath).replace(
-          /\\/g,
-          "/"
-        );
+        const runtimePath = resolve(ROOT, "packages/cop-host/src/runtime/edge.js");
+        const relRuntimePath = relative(genDir, runtimePath).replace(/\\/g, "/");
 
         for (const tool of config.tools) {
           if (tool.handler) {
             const toolName = tool.function.name;
             const handlerPath = resolve(briqueDir, tool.handler);
-            const relHandlerPath = relative(genDir, handlerPath).replace(
-              /\\/g,
-              "/"
-            );
+            const relHandlerPath = relative(genDir, handlerPath).replace(/\\/g, "/");
 
             const wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
 import { defineEdgeFunction } from "${relRuntimePath}";
@@ -270,10 +244,7 @@ export const config = {
   path: "/api/tools/${config.id}/${toolName}"
 };
 `;
-            const targetFile = join(
-              genDir,
-              `gen-tool-${config.id}-${toolName}.js`
-            );
+            const targetFile = join(genDir, `gen-tool-${config.id}-${toolName}.js`);
             generatedFiles.add(targetFile);
             writeIfChanged(targetFile, wrapperContent);
           }
@@ -288,9 +259,7 @@ export const config = {
         generatedFiles.add(appPublicGenDir);
 
         if (!existsSync(appPublicGenDir)) {
-          console.log(
-            `🔗 Creating link for public assets of ${config.id} to ${appName}`
-          );
+          console.log(`🔗 Creating link for public assets of ${config.id} to ${appName}`);
 
           try {
             const type = platform() === "win32" ? "junction" : "dir";
@@ -339,9 +308,7 @@ export const config = {
             !generatedFiles.has(filePath) &&
             (file.startsWith("gen-") || dir.endsWith("public/briques"))
           ) {
-            console.log(
-              `🗑️  Removing orphan file: ${relative(ROOT, filePath)}`
-            );
+            console.log(`🗑️  Removing orphan file: ${relative(ROOT, filePath)}`);
             rmSync(filePath, { recursive: true, force: true });
           }
         }
@@ -359,9 +326,40 @@ export const config = {
   if (existsSync(opheliaPath)) {
     const toolsRegistryPath = generateToolsRegistry(opheliaPath, briques);
     if (toolsRegistryPath) generatedFiles.add(toolsRegistryPath);
+
+    const promptsRegistryPath = generatePromptsRegistry(opheliaPath, briques);
+    if (promptsRegistryPath) generatedFiles.add(promptsRegistryPath);
   }
 
   console.log("✅ Compilation finished.");
+}
+
+function generatePromptsRegistry(baseDir, briques) {
+  const registryPath = join(baseDir, "gen-all-prompts.js");
+  const prompts = {};
+
+  briques.forEach((b) => {
+    if (b.prompts) {
+      prompts[b.id] = {};
+      for (const [key, relativePath] of Object.entries(b.prompts)) {
+        const fullPath = resolve(b._briqueDir, relativePath);
+        if (existsSync(fullPath)) {
+          prompts[b.id][key] = readFileSync(fullPath, "utf-8");
+        } else {
+          console.warn(`⚠️ Prompt file not found for brique ${b.id}: ${fullPath}`);
+        }
+      }
+    }
+  });
+
+  const content = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
+// Do not modify manually
+
+export const ALL_BRIQUE_PROMPTS = ${JSON.stringify(prompts, null, 2)};
+`;
+
+  writeIfChanged(registryPath, content);
+  return registryPath;
 }
 
 function generateToolsRegistry(baseDir, briques) {
@@ -402,9 +400,7 @@ function updateNetlifyToml(appName, briques) {
         const apiPath = `/api/${b.id}-${funcName}`;
         const functionName = `gen-${b.id}-${funcName}`;
         const target = `/.netlify/functions/${functionName}`;
-        redirects.push(
-          `[[redirects]]\n  from = "${apiPath}"\n  to = "${target}"\n  status = 200`
-        );
+        redirects.push(`[[redirects]]\n  from = "${apiPath}"\n  to = "${target}"\n  status = 200`);
       });
     }
 
@@ -413,9 +409,7 @@ function updateNetlifyToml(appName, briques) {
         const config = b.edgeFunctions[funcName];
         const functionName = `gen-${b.id}-${funcName}`;
         const path = config.path || `/api/edge/${functionName}`;
-        edgeConfigs.push(
-          `[[edge_functions]]\n  function = "${functionName}"\n  path = "${path}"`
-        );
+        edgeConfigs.push(`[[edge_functions]]\n  function = "${functionName}"\n  path = "${path}"`);
       });
     }
 
@@ -442,10 +436,7 @@ function updateNetlifyToml(appName, briques) {
     content = content.replace(re, newSection);
   } else if (redirects.length > 0) {
     if (content.includes("[[redirects]]")) {
-      content = content.replace(
-        "[[redirects]]",
-        `${newSection}\n\n[[redirects]]`
-      );
+      content = content.replace("[[redirects]]", `${newSection}\n\n[[redirects]]`);
     } else {
       content += `\n\n${newSection}`;
     }
@@ -460,10 +451,7 @@ function updateNetlifyToml(appName, briques) {
     content = content.replace(re, newEdgeSection);
   } else if (edgeConfigs.length > 0) {
     if (content.includes("[[edge_functions]]")) {
-      content = content.replace(
-        "[[edge_functions]]",
-        `${newEdgeSection}\n\n[[edge_functions]]`
-      );
+      content = content.replace("[[edge_functions]]", `${newEdgeSection}\n\n[[edge_functions]]`);
     } else {
       content += `\n\n${newEdgeSection}`;
     }
@@ -515,8 +503,61 @@ function generateFrontendRegistry(baseDir, briques) {
   safeMkdir(genDir);
   const registryPath = join(genDir, "brique-registry.js");
 
+  // --- CONSOLIDATE PROMPTS ---
+  const consolidatedPrompts = {};
+
+  // 1. App-local prompts (from public/prompts)
+  const appPublicPromptsDir = join(dirname(baseDir), "public/prompts");
+  if (existsSync(appPublicPromptsDir)) {
+    const localPrompts = globSync("**/*.md", { cwd: appPublicPromptsDir });
+    localPrompts.forEach((p) => {
+      const fullPath = join(appPublicPromptsDir, p);
+      const url = `/prompts/${p.replace(/\\/g, "/")}`;
+      consolidatedPrompts[url] = readFileSync(fullPath, "utf-8");
+    });
+  }
+
+  // 2. Brique prompts (using their public URLs)
+  briques.forEach((b) => {
+    if (b.prompts) {
+      Object.entries(b.prompts).forEach(([key, relPath]) => {
+        const fullPath = resolve(b._briqueDir, relPath);
+        if (existsSync(fullPath)) {
+          // Public URL for brique assets is /briques/[id]/[path_relative_to_brique_public]
+          const briquePublicDir = join(b._briqueDir, "public");
+          if (relPath.startsWith("./public/") || relPath.startsWith("public/")) {
+            const publicPath = relPath.replace(/^(\.\/)?public\//, "");
+            const url = `/briques/${b.id}/${publicPath.replace(/\\/g, "/")}`;
+            consolidatedPrompts[url] = readFileSync(fullPath, "utf-8");
+          }
+          // Also allow brique:key format
+          consolidatedPrompts[`${b.id}:${key}`] = readFileSync(fullPath, "utf-8");
+        }
+      });
+    }
+  });
+
+  // 3. GUARANTEED DEFAULT
+  // Strategy: inseme.md > first local .md > ophelia:identity
+  let defaultPrompt = consolidatedPrompts["/prompts/inseme.md"];
+  if (!defaultPrompt) {
+    const firstLocal = Object.keys(consolidatedPrompts).find(
+      (k) => k.startsWith("/prompts/") && k.endsWith(".md")
+    );
+    if (firstLocal) defaultPrompt = consolidatedPrompts[firstLocal];
+  }
+  if (!defaultPrompt) {
+    defaultPrompt = consolidatedPrompts["ophelia:identity"];
+  }
+
+  if (defaultPrompt) {
+    consolidatedPrompts["__default__"] = defaultPrompt;
+  }
+
   let content = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
 // Do not modify manually
+
+export const CONSOLIDATED_PROMPTS = ${JSON.stringify(consolidatedPrompts, null, 2)};
 
 export const BRIQUES = ${JSON.stringify(
     briques.map((b) => ({
@@ -528,6 +569,14 @@ export const BRIQUES = ${JSON.stringify(
       tools: b.tools?.map((t) => ({ ...t, briqueId: b.id })),
       configSchema: b.configSchema,
       hasPublic: existsSync(join(b._briqueDir, "public")),
+      prompts: b.prompts
+        ? Object.fromEntries(
+            Object.entries(b.prompts).map(([key, relPath]) => {
+              const fullPath = resolve(b._briqueDir, relPath);
+              return [key, existsSync(fullPath) ? readFileSync(fullPath, "utf-8") : null];
+            })
+          )
+        : undefined,
     })),
     null,
     2

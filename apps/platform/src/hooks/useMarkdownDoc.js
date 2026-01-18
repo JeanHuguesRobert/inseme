@@ -20,7 +20,19 @@ export function useMarkdownDoc(docPath, replacements = {}) {
         if (!res.ok) {
           throw new Error(`Document non trouvé (${res.status})`);
         }
+
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.includes("text/html")) {
+          console.warn(`[useMarkdownDoc] Le document /docs/${docPath} a renvoyé du HTML.`);
+          throw new Error("Format de document invalide (HTML)");
+        }
+
         let text = await res.text();
+
+        if (text.trim().startsWith("<!doctype html>")) {
+          console.warn(`[useMarkdownDoc] Le document /docs/${docPath} contient du HTML.`);
+          throw new Error("Contenu de document invalide (fallback HTML)");
+        }
 
         // Appliquer les remplacements de variables {{KEY}}
         text = substituteVariables(text, replacements);

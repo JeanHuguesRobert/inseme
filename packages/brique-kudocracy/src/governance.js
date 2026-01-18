@@ -10,8 +10,7 @@ export const GOVERNANCE_MODELS = [
   {
     id: "democratie_directe",
     name: "Agora (Démocratie Directe)",
-    description:
-      "Un modèle où chaque individu participe directement aux décisions.",
+    description: "Un modèle où chaque individu participe directement aux décisions.",
     icon: "Users",
     votingType: "opov",
     weightLabel: "Voix",
@@ -216,8 +215,7 @@ export const GOVERNANCE_MODELS = [
   {
     id: "entreprise_sa",
     name: "Assemblée d'Actionnaires",
-    description:
-      "Modèle centré sur l'actionnariat et les droits de vote proportionnels.",
+    description: "Modèle centré sur l'actionnariat et les droits de vote proportionnels.",
     icon: "Briefcase",
     votingType: "weighted",
     weightLabel: "Actions",
@@ -536,6 +534,93 @@ export const GOVERNANCE_MODELS = [
       show_weight_badge: true,
     },
   },
+  {
+    id: "bar",
+    name: "Bar / Café (Convivialité)",
+    description: "Un modèle fluide pour les lieux de rencontre et de discussion.",
+    icon: "Coffee",
+    votingType: "opov",
+    weightLabel: "Soutien",
+    resultsLabel: "Ambiance",
+    terminology: {
+      member: "Client",
+      members: "Clients",
+      assembly: "Le Bar",
+      session: "Soirée",
+      instance: "Comptoir",
+      decision: "Rituel",
+      representative: "Barman",
+      dashboard: "Tableau de Bord",
+      proposition: "Sujet",
+      vote: "Like",
+    },
+    roles: [
+      {
+        id: "r_barman",
+        technical_name: "admin",
+        friendly_name: "Barman",
+        properties: { can_vote: true, is_representative: true },
+      },
+      {
+        id: "r_client",
+        technical_name: "member",
+        friendly_name: "Client",
+        properties: { can_vote: true, is_representative: false },
+      },
+    ],
+    rules: {
+      can_delegate: false,
+      requires_consensus: false,
+      vote_weight: "1_person_1_vote",
+      show_weight_badge: false,
+      can_guests_interact: true,
+      is_ephemeral: true,
+    },
+  },
+  {
+    id: "after",
+    name: "After (Nuit)",
+    description: "Modèle éphémère et anonymisé pour les fins de soirée.",
+    icon: "Moon",
+    votingType: "opov",
+    weightLabel: "Vibe",
+    resultsLabel: "Énergie",
+    terminology: {
+      member: "Noctambule",
+      members: "Noctambules",
+      assembly: "L'After",
+      session: "Nuit",
+      instance: "Cercle de nuit",
+      decision: "Vibration",
+      representative: "Hôte",
+      dashboard: "État de la nuit",
+      proposition: "Pensée",
+      vote: "Vibe",
+    },
+    roles: [
+      {
+        id: "r_hote",
+        technical_name: "admin",
+        friendly_name: "Hôte",
+        properties: { can_vote: true, is_representative: true },
+      },
+      {
+        id: "r_noctambule",
+        technical_name: "member",
+        friendly_name: "Noctambule",
+        properties: { can_vote: true, is_representative: false },
+      },
+    ],
+    rules: {
+      can_delegate: false,
+      requires_consensus: false,
+      vote_weight: "1_person_1_vote",
+      show_weight_badge: false,
+      can_guests_interact: true,
+      is_ephemeral: true,
+      anonymized: true,
+    },
+  },
 ];
 
 /**
@@ -575,8 +660,7 @@ export function calculateResults(votes, modelId, options = {}) {
 
   Object.entries(votes).forEach(([userId, v]) => {
     // Si c'est un vote de type "delegate" ou "parole", on ne compte pas dans les résultats de vote
-    if (v.type === "delegate" || v.type === "parole" || v.type === "technical")
-      return;
+    if (v.type === "delegate" || v.type === "parole" || v.type === "technical") return;
 
     // Si le votant est ostracisé (passé via options), son vote ne compte pas
     if (options.ostracized && options.ostracized[userId]) {
@@ -590,8 +674,7 @@ export function calculateResults(votes, modelId, options = {}) {
     if (options.userRoles && options.userRoles[userId]) {
       const role = options.userRoles[userId];
       const college = role === "member" ? "member" : "other";
-      collegeResults[college][v.type] =
-        (collegeResults[college][v.type] || 0) + weight;
+      collegeResults[college][v.type] = (collegeResults[college][v.type] || 0) + weight;
     }
   });
 
@@ -646,9 +729,7 @@ export function addRole(model, role) {
 export function updateRole(model, roleId, updates) {
   return {
     ...model,
-    roles: (model.roles || []).map((r) =>
-      r.id === roleId ? { ...r, ...updates } : r
-    ),
+    roles: (model.roles || []).map((r) => (r.id === roleId ? { ...r, ...updates } : r)),
   };
 }
 
@@ -684,9 +765,7 @@ export function toPrologFacts() {
 
   GOVERNANCE_MODELS.forEach((m) => {
     // Fait pour le modèle
-    facts.push(
-      `governance_model("${m.id}", "${m.name}", "${m.rules.vote_weight}").`
-    );
+    facts.push(`governance_model("${m.id}", "${m.name}", "${m.rules.vote_weight}").`);
 
     // Faits pour la terminologie
     Object.entries(m.terminology).forEach(([key, term]) => {

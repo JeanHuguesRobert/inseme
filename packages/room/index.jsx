@@ -2,8 +2,14 @@
 export { InsemeRoom } from "./components/InsemeRoom";
 export { InsemeProvider, useInsemeContext } from "./InsemeContext";
 export { useInseme, OPHELIA_ID } from "./hooks/useInseme.js";
+export { useVoiceInterface } from "./hooks/useVoiceInterface.js";
 export { default as useOpheliaChat } from "./hooks/chat/useOpheliaChat.js";
-export { default as useAIProviders } from "./hooks/chat/useAIProviders.js";
+export {
+  default as useAIProviders,
+  MODEL_MODES,
+  MODEL_MODE_LABELS,
+  DEFAULT_MODEL_MODE,
+} from "./hooks/chat/useAIProviders.js";
 export { default as useAITools } from "./hooks/chat/useAITools.js";
 export * from "./lib/ai/aiUtils.js";
 
@@ -16,6 +22,22 @@ export { ModernMediaLayer } from "./components/ModernMediaLayer";
 export { MobileControls } from "./components/MobileControls";
 export { AgendaPanel } from "./components/AgendaPanel";
 export { TalkButton } from "./components/TalkButton";
+export { CameraModal } from "./components/CameraModal";
+export {
+  MondrianBlock,
+  MondrianUI,
+  MONDRIAN_COLORS,
+  MONDRIAN_PALETTE,
+} from "./components/MondrianUI";
 export { AuthModal } from "./components/AuthModal";
 export { default as Header } from "./components/Header";
 export { default as Login } from "./components/Login";
+
+// Smart Audio System
+export {
+  AudioQueue,
+  HostAudioIO,
+  MediaLayer,
+  MockAdapter,
+  MediaManager,
+} from "./lib/media/SmartAudio";

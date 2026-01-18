@@ -1,11 +1,13 @@
-import React from "react";
-import { Mic, Square, Loader2, Volume2, Bot, Sparkles } from "lucide-react";
+import React, { useRef } from "react";
+import { Mic, Square, Loader2, Volume2, Bot, Sparkles, AlertCircle } from "lucide-react";
 import { Tooltip } from "../../ui/src/index.js";
 
 export function TalkButton({
   vocalState,
   isRecording,
   isTranscribing,
+  vocalError,
+  transcriptionPreview,
   duration = 0,
   startRecording,
   stopRecording,
@@ -13,6 +15,9 @@ export function TalkButton({
   className = "",
   size = "md", // sm, md, lg
   showLabel = true,
+  disabled = false,
+  microMode = "OFF",
+  onMicroModeChange,
 }) {
   // Determine current visual state
   let state = "idle";
@@ -34,19 +39,31 @@ export function TalkButton({
   };
 
   const getStyles = () => {
+    if (vocalError) return "bg-mondrian-red text-white border-black";
     switch (state) {
       case "recording":
-        return "bg-[#E10600] text-white border-black";
+        return "bg-mondrian-red text-white border-black";
       case "thinking":
-        return "bg-[#0055A4] text-white border-black";
+        return "bg-mondrian-blue text-white border-black";
       case "speaking":
-        return "bg-[#FFD500] text-black border-black";
-      default:
+        return "bg-mondrian-yellow text-black border-black";
+      default: {
+        if (!onMicroModeChange || microMode === "OFF") {
+          return "bg-white text-black border-black hover:bg-black hover:text-white";
+        }
+        if (microMode === "AMBIANCE") {
+          return "bg-mondrian-blue/10 text-mondrian-blue border-black hover:bg-mondrian-blue/20";
+        }
+        if (microMode === "DICTATION") {
+          return "bg-purple-600 text-white border-black hover:bg-purple-700";
+        }
         return "bg-white text-black border-black hover:bg-black hover:text-white";
+      }
     }
   };
 
   const getLabel = () => {
+    if (vocalError) return "Réessayer";
     switch (state) {
       case "recording":
         const minutes = Math.floor(duration / 60);
@@ -54,34 +71,135 @@ export function TalkButton({
         const timeStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
         return timeStr;
       case "thinking":
-        return "Analysing";
+        return "Ophélia réfléchit...";
       case "speaking":
-        return "Ophélia";
+        return "Ophélia parle";
       default:
-        return isHandsFree ? "Auto" : "Talk";
+        return isHandsFree ? "Mode Auto" : "Parler";
+    }
+  };
+
+  const LONG_PRESS_MS = 300;
+  const pressStartRef = useRef(null);
+  const longPressTimeoutRef = useRef(null);
+
+  const tooltipContent = vocalError
+    ? `Error: ${vocalError}`
+    : isHandsFree
+      ? isRecording
+        ? "Stop listening"
+        : "Click to talk"
+      : onMicroModeChange
+        ? microMode === "OFF"
+          ? "Clic: ambiance, appui long: dicter"
+          : microMode === "AMBIANCE"
+            ? "Clic: couper micro, appui long: dicter"
+            : "Relâcher pour revenir en ambiance"
+        : "Appuyer pour parler";
+
+  const handlePointerDown = () => {
+    if (disabled) return;
+    if (isHandsFree) return;
+    if (!onMicroModeChange) return;
+    pressStartRef.current = Date.now();
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+    }
+    longPressTimeoutRef.current = setTimeout(() => {
+      if (microMode !== "DICTATION") {
+        if (onMicroModeChange) {
+          onMicroModeChange("DICTATION");
+        }
+        if (!isRecording && startRecording) {
+          startRecording();
+        }
+      }
+    }, LONG_PRESS_MS);
+  };
+
+  const handlePointerUp = () => {
+    if (disabled) return;
+    if (isHandsFree) return;
+    if (!onMicroModeChange) return;
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+    const start = pressStartRef.current;
+    const duration = typeof start === "number" ? Date.now() - start : LONG_PRESS_MS + 1;
+
+    if (microMode === "DICTATION") {
+      if (isRecording && stopRecording) {
+        stopRecording();
+      }
+      if (onMicroModeChange) {
+        onMicroModeChange("AMBIANCE");
+      }
+      return;
+    }
+
+    if (duration < LONG_PRESS_MS) {
+      if (microMode === "OFF") {
+        if (onMicroModeChange) {
+          onMicroModeChange("AMBIANCE");
+        }
+      } else if (microMode === "AMBIANCE") {
+        if (onMicroModeChange) {
+          onMicroModeChange("OFF");
+        }
+      }
+    }
+  };
+
+  const handlePointerLeave = () => {
+    if (disabled) return;
+    if (isHandsFree) return;
+    if (!onMicroModeChange) return;
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+    if (microMode === "DICTATION") {
+      if (isRecording && stopRecording) {
+        stopRecording();
+      }
+      if (onMicroModeChange) {
+        onMicroModeChange("AMBIANCE");
+      }
+    }
+  };
+
+  const handleClick = () => {
+    if (disabled) return;
+    if (onMicroModeChange && !isHandsFree) return;
+    if (isRecording) {
+      if (stopRecording) stopRecording();
+    } else {
+      if (startRecording) startRecording();
     }
   };
 
   return (
     <div className={`flex flex-row items-center gap-4 ${className}`}>
-      <Tooltip
-        content={isRecording ? "Stop listening" : "Click to talk"}
-      >
+      <Tooltip content={tooltipContent}>
         <button
           type="button"
-          onClick={() => (isRecording ? stopRecording() : startRecording())}
-          className={`${sizeClasses[size]} rounded-none flex items-center justify-center transition-all active:translate-x-1 active:translate-y-1 border-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group relative cursor-pointer ${getStyles()}`}
+          disabled={disabled}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
+          onClick={handleClick}
+          className={`${sizeClasses[size]} rounded-none flex items-center justify-center transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 active:shadow-none border-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group relative cursor-pointer ${getStyles()} ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
         >
-          {/* Outer Ring Animation for active states */}
-          {(state === "recording" || state === "speaking") && (
+          {(state === "recording" ||
+            state === "speaking" ||
+            (state === "idle" && onMicroModeChange && microMode === "AMBIANCE")) && (
             <div className="absolute inset-0 bg-current opacity-10 animate-ping" />
           )}
 
           <div className="relative z-10">
             {state === "idle" && <Mic size={32} strokeWidth={3} />}
-            {state === "recording" && (
-              <Square size={32} strokeWidth={3} className="fill-current" />
-            )}
+            {state === "recording" && <Square size={32} strokeWidth={3} className="fill-current" />}
             {state === "thinking" && (
               <Sparkles size={32} strokeWidth={3} className="animate-pulse" />
             )}
@@ -89,18 +207,16 @@ export function TalkButton({
           </div>
         </button>
       </Tooltip>
+
       {showLabel && (
-        <div className="flex flex-row items-center gap-2 bg-black text-white px-3 py-1 border-2 border-black">
-          <span className="text-[12px] font-black uppercase tracking-[0.2em] leading-none">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-black uppercase tracking-widest text-black/40">
             {getLabel()}
           </span>
-          {state === "recording" && (
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-[#E10600] rounded-full animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#E10600]">
-                Live
-              </span>
-            </div>
+          {isRecording && transcriptionPreview && (
+            <span className="text-[9px] font-bold text-black/60 italic leading-none max-w-[120px] truncate animate-pulse">
+              "{transcriptionPreview}"
+            </span>
           )}
         </div>
       )}

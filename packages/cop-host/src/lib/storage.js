@@ -9,109 +9,175 @@ import { getConfig } from "../config/instanceConfig.client.js";
 
 export const storage = {
   /**
-   * Uploads a file (Blob/File) to the configured storage.
-   * Defaults to Supabase Storage if R2 is not configured.
+   * General upload method.
+   * Options:
+   * - contentType: MIME type
+   * - bucketType: 'supabase' | 'media' | 'proof' | 'tmp'
    */
   async upload(bucket, path, file, options = {}) {
-    const useR2 = getConfig("USE_R2") === "true";
+    let bucketType = options.bucketType;
+    let useR2 = false;
+
+    if (bucketType === "media" || bucketType === "proof" || bucketType === "tmp") {
+      let prefix = "R2_MEDIA";
+      if (bucketType === "proof") prefix = "R2_PROOF";
+      if (bucketType === "tmp") prefix = "R2_TMP";
+
+      useR2 = !!(getConfig(`${prefix}_BUCKET`) || getConfig("R2_BUCKET"));
+    }
 
     // Detect environment to handle FormData differences
     const isBrowser = typeof window !== "undefined";
 
     if (useR2) {
       try {
-        let body;
-        if (isBrowser) {
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("bucket", bucket);
-          formData.append("key", path);
-          formData.append("contentType", options.contentType || file.type);
-          body = formData;
-        } else {
-          // For Node.js/CLI, we might need to handle FormData differently or use direct R2 client
-          // For now, let's keep it simple as Inseme/Platform are mainly browser-based
-          throw new Error(
-            "R2 upload not yet supported in Node.js environment via this helper"
-          );
+        // Use Edge Function proxy to R2/S3
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("key", path);
+        formData.append("bucketType", bucketType);
+
+        if (options.contentType) {
+          formData.append("contentType", options.contentType);
         }
 
-        const response = await fetch("/api/upload", {
+        const res = await fetch("/api/upload", {
           method: "POST",
-          body,
+          body: formData,
         });
 
-        const data = await response.json();
-        if (data.error) throw new Error(data.error);
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Upload Failed: ${errText}`);
+        }
 
-        return { path: data.path, url: data.url };
-      } catch (err) {
-        console.warn("R2 upload failed, falling back to Supabase:", err);
+        return await res.json();
+      } catch (error) {
+        console.error("R2 upload failed, falling back to Supabase:", error);
+        // Fallback to Supabase if R2 upload fails
+        const supabase = getSupabase();
+        if (!supabase) throw new Error("Supabase client not initialized");
+
+        const { data, error: sbError } = await supabase.storage.from(bucket).upload(path, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: options.contentType,
+        });
+
+        if (sbError) throw sbError;
+
+        const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(path);
+
+        return {
+          path: data.path,
+          url: publicUrlData.publicUrl,
+          type: "supabase",
+        };
       }
-    }
+    } else {
+      // Fallback: Supabase Storage
+      const supabase = getSupabase();
+      if (!supabase) throw new Error("Supabase client not initialized");
 
-    // Fallback to Supabase Storage
-    const supabase = getSupabase();
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(path, file, {
+      const { data, error } = await supabase.storage.from(bucket).upload(path, file, {
         cacheControl: "3600",
-        upsert: true,
-        ...options,
+        upsert: false,
+        contentType: options.contentType,
       });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Get Public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(bucket).getPublicUrl(path);
+      const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(path);
 
-    return { path: data.path, url: publicUrl };
+      return {
+        path: data.path,
+        url: publicUrlData.publicUrl,
+        type: "supabase",
+      };
+    }
   },
 
-  /**
-   * Helper to get public URL for an existing file
-   */
-  getPublicUrl(bucket, path) {
+  async getPublicUrl(bucket, path) {
     const supabase = getSupabase();
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(bucket).getPublicUrl(path);
-    return publicUrl;
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+    return data.publicUrl;
   },
 
-  /**
-   * Helper to remove files
-   */
   async remove(bucket, paths) {
     const supabase = getSupabase();
-    const { data, error } = await supabase.storage.from(bucket).remove(paths);
-    if (error) throw error;
-    return data;
+    return await supabase.storage.from(bucket).remove(paths);
   },
 
-  /**
-   * Specialized function for archiving session snapshots (JSON)
-   */
-  async archiveSession(roomId, sessionId, snapshot, ephemeral = true) {
-    const folder = ephemeral ? "temp" : "sessions";
-    const fileName = `${folder}/${roomId}/${sessionId}.json`;
-    const blob = new Blob([JSON.stringify(snapshot)], {
-      type: "application/json",
+  async archiveSession(roomId, sessionData) {
+    const jsonStr = JSON.stringify(sessionData, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const fileName = `sessions/${roomId}/${new Date().toISOString()}_session.json`;
+
+    // Archives are PROOFS -> R2 Proofs (if avail) or Supabase
+    return await this.upload("public-documents", fileName, blob, {
+      contentType: "application/json",
+      bucketType: "proof",
     });
-
-    return this.upload("public-documents", fileName, blob);
   },
 
-  /**
-   * Uploads a vocal message to temporary storage.
-   */
   async uploadVocal(roomId, blob, customFileName = null) {
-    const fileName =
-      customFileName || `temp/${roomId}/vocal_${Date.now()}.webm`;
+    const fileName = customFileName || `temp/${roomId}/vocal_${Date.now()}.webm`;
+
+    // Vocals are MEDIA (Ephemeral)
     const { url } = await this.upload("public-documents", fileName, blob, {
       contentType: "audio/webm",
+      bucketType: "media",
+    });
+    return url;
+  },
+
+  /**
+   * Uploads an ephemeral media (image/video) to temporary storage.
+   * Target path: ephemeral/{roomId}/{timestamp}_{random}.ext
+   */
+  async uploadEphemeral(roomId, file, options = {}) {
+    const ext = file.name.split(".").pop() || "jpg";
+    const fileName = `ephemeral/${roomId}/${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${ext}`;
+
+    // Ephemeral -> MEDIA
+    const { url } = await this.upload("public-documents", fileName, file, {
+      contentType: file.type || "image/jpeg",
+      bucketType: "media",
+      ...options,
+    });
+    return url;
+  },
+
+  /**
+   * Uploads a working file (scratchpad).
+   * Target path: tmp/{roomId}/{random}.ext
+   */
+  async uploadTemp(roomId, file, options = {}) {
+    const ext = file.name.split(".").pop() || "tmp";
+    const fileName = `tmp/${roomId}/${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${ext}`;
+
+    // Tmp -> TMP
+    const { url } = await this.upload("public-documents", fileName, file, {
+      contentType: file.type || "application/octet-stream",
+      bucketType: "tmp",
+      ...options,
+    });
+    return url;
+  },
+
+  /**
+   * Uploads a proof/legal document.
+   * Target path: proofs/{roomId}/{date}_{filename}
+   */
+  async uploadProof(roomId, file, options = {}) {
+    const datePrefix = new Date().toISOString().split("T")[0];
+    const fileName = `proofs/${roomId}/${datePrefix}_${file.name}`;
+
+    // Proof -> PROOF
+    const { url } = await this.upload("public-documents", fileName, file, {
+      contentType: file.type || "application/pdf",
+      bucketType: "proof",
+      ...options,
     });
     return url;
   },

@@ -2,10 +2,12 @@
   "name": "@inseme/brique-group",
   "version": "1.0.0",
   "type": "module",
+  "main": "src/index.js",
   "dependencies": {
     "react": "^18.3.1",
     "react-router-dom": "^6.26.1",
     "@inseme/ui": "workspace:*",
-    "@inseme/cop-host": "workspace:*"
+    "@inseme/cop-host": "workspace:*",
+    "lucide-react": "^0.562.0"
   }
 }

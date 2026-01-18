@@ -23,8 +23,7 @@ import { Contract } from "../lib/contract.js";
 
 export const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "Content-Type, Authorization, X-Ophelia-Instance",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Ophelia-Instance",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE",
   "Access-Control-Expose-Headers":
     "X-Ophelia-Instance, X-Ophelia-Instance-Name, X-Ophelia-Supabase-URL, X-Ophelia-Supabase-Anon-Key, X-Ophelia-Instance-Error",
@@ -32,15 +31,7 @@ export const CORS_HEADERS = {
 
 // --- Multi-instance resolution constants ---
 const BASE_DOMAINS = ["lepp.fr", "kudocracy.org", "inseme.org"];
-const IGNORED_SUBDOMAINS = [
-  "www",
-  "app",
-  "api",
-  "admin",
-  "staging",
-  "preview",
-  "platform",
-];
+const IGNORED_SUBDOMAINS = ["www", "app", "api", "admin", "staging", "preview", "platform"];
 
 /**
  * Extracts the subdomain from the request host.
@@ -95,9 +86,7 @@ async function lookupInstanceInRegistry(subdomain) {
     if (error.code === "42883") {
       const { data: directData } = await supabase
         .from("instance_registry")
-        .select(
-          "subdomain, display_name, supabase_url, supabase_anon_key, instance_type, metadata"
-        )
+        .select("subdomain, display_name, supabase_url, supabase_anon_key, instance_type, metadata")
         .eq("subdomain", subdomain)
         .eq("status", "active")
         .single();
@@ -133,7 +122,7 @@ export async function handleInstanceResolution(request, context) {
   }
 
   if (!subdomain) {
-    console.log(`[cop-host] No subdomain detected for host: ${host}`);
+    // console.log(`[cop-host] No subdomain detected for host: ${host}`);
     return undefined; // Continue with default instance
   }
 
@@ -149,9 +138,7 @@ export async function handleInstanceResolution(request, context) {
       return undefined;
     }
 
-    console.log(
-      `[cop-host] Instance resolved: ${instance.display_name} (${instance.subdomain})`
-    );
+    console.log(`[cop-host] Instance resolved: ${instance.display_name} (${instance.subdomain})`);
 
     // 3. Reload configuration with target instance credentials
     await loadInstanceConfig(true, {
@@ -189,8 +176,7 @@ export function defineEdgeFunction(handler) {
     const env = {
       get: (key) => {
         try {
-          if (typeof Netlify !== "undefined" && Netlify.env)
-            return Netlify.env.get(key);
+          if (typeof Netlify !== "undefined" && Netlify.env) return Netlify.env.get(key);
         } catch (_e) {}
         try {
           if (typeof Deno !== "undefined" && Deno.env) return Deno.env.get(key);
@@ -264,8 +250,7 @@ export function defineEdgeFunction(handler) {
         template: {
           substitute: (text, vars) => substituteVariables(text, vars),
           commonVars: () => getCommonVariables(),
-          substituteWithConfig: (text, extraVars) =>
-            substituteWithInstanceConfig(text, extraVars),
+          substituteWithConfig: (text, extraVars) => substituteWithInstanceConfig(text, extraVars),
         },
       };
 
@@ -275,10 +260,7 @@ export function defineEdgeFunction(handler) {
       debug.stopTimer("handler");
 
       // POST-CONDITION: Response check
-      Contract.ensure(
-        response instanceof Response,
-        "Edge handler must return a Response object"
-      );
+      Contract.ensure(response instanceof Response, "Edge handler must return a Response object");
 
       return response;
     } catch (error) {

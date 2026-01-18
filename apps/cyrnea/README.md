@@ -1,61 +1,107 @@
-# 🍷 Cyrnea - L'Expérience Sociale & Gamifiée
- 
-**Cyrnea** est une application légère de l'écosystème Inseme dédiée à l'animation sociale dans les lieux de convivialité (bars, cafés citoyens, tiers-lieux). Elle permet de créer une interaction dynamique entre le "Barman" (organisateur) et les "Clients" (participants) à travers des jeux, des playlists collaboratives et un suivi de l'ambiance ("Vibe").
+# 🍷 Cyrnea - L'IA au Comptoir
 
-> Pour une vue d'ensemble de l'écosystème (Plateforme, Agora, IA), consultez le [README global du dépôt](../../README.md).
+**Cyrnea** est l'application mobile de l'écosystème **Inseme**, conçue pour réenchanter les lieux de
+convivialité (bars, cafés de village). Elle transforme le comptoir en un espace d'interaction
+sociale augmenté par l'intelligence artificielle locale, **Ophélia**.
 
----
-
-## 🎯 À quoi ça sert ?
-
-Cyrnea transforme un lieu physique en un espace interactif et ludique :
-
-### 1. 🍹 Dashboard Barman
-Un outil de pilotage pour l'organisateur :
-- **Gestion de la Vibe** : Suivi en temps réel de l'humeur de la salle.
-- **Contrôle des Jeux** : Lancement de quiz, défis ou votes rapides.
-- **Animation** : Diffusion de messages et gestion des rôles.
-
-### 2. 📱 Mini-App Client
-Une interface ultra-légère pour les participants (sans installation) :
-- **Participation aux Jeux** : Répondez aux quiz et participez aux défis.
-- **Vibe Monitor** : Partagez votre ressenti sur l'ambiance actuelle.
-- **Playlist Collaborative** : Suggérez et votez pour les prochains morceaux.
+> Pour une vue d'ensemble de l'écosystème (Plateforme, Agora, IA), consultez le
+> [README global du dépôt](../../README.md).
 
 ---
 
-## 🚀 Technologie (Light Stack)
+## 🎯 Fonctionnalités Clés
 
-- **Frontend** : React 18 + Vite + Tailwind CSS.
-- **Briques** : Utilise `@inseme/brique-cyrnea` pour la logique métier partagée.
-- **Temps Réel** : Supabase Realtime pour la synchronisation Barman/Clients.
-- **Iconographie** : Lucide React.
+### 1. 🤖 Ophélia, l'IA du Bar
+
+Ophélia est une intelligence artificielle contextuelle qui "habite" le bar :
+
+- **Conversation Vocale** : Discutez avec elle de la vie du village, des actualités locales ou de
+  philosophie.
+- **Médiation** : Elle facilite les échanges et propose des sujets de discussion.
+- **Mémoire Locale** : Elle apprend des interactions pour enrichir la culture commune du lieu.
+
+### 2. 📰 La Gazette (Le Fil)
+
+Un journal local généré et alimenté par la communauté :
+
+- **Actualités Locales** : Informations hyper-locales (village, vallée).
+- **Contributions** : Les clients peuvent poster des brèves ou des annonces.
+- **Génération IA** : Ophélia aide à rédiger et synthétiser les nouvelles.
+
+### 3. 📱 Expérience Client (PWA)
+
+Une application installable (PWA) sans friction :
+
+- **Profil Public** : Carte de visite numérique (liens réseaux sociaux, bio).
+- **Messagerie de Salle** : Chat public éphémère pour interagir avec les personnes présentes.
+- **Jeux & Vibe** : Quiz, sondages et météo de l'ambiance.
+
+### 4. 🍹 Dashboard Barman
+
+L'outil de pilotage pour le tenancier :
+
+- **Gestion de l'Ambiance** : Contrôle de la musique et des animations.
+- **Modération** : Supervision des échanges et de la Gazette.
+- **Pilotage d'Ophélia** : Configuration du comportement de l'IA.
+
+---
+
+## 🏗️ Architecture Technique
+
+Cyrnea est une **Progressive Web App (PWA)** moderne construite sur une architecture modulaire :
+
+- **Frontend** : React 18 + Vite + Tailwind CSS (v4).
+- **IA & Backend** :
+  - **@inseme/cop-host** : Cœur du système multi-tenant (gestion des instances/bars).
+  - **@inseme/brique-ophelia** : Moteur d'IA (LLM, RAG, TTS/STT).
+  - **Supabase** : Base de données temps réel et authentification.
+  - **Netlify Edge Functions** : Backend serverless pour les interactions IA rapides.
+- **Briques Métier** :
+  - `brique-cyrnea` : Logique spécifique au bar.
+  - `brique-fil` : Moteur de la Gazette.
+  - `brique-democracy` : Outils de vote et de gouvernance (en arrière-plan).
 
 ---
 
 ## 🛠️ Installation et Développement
 
+### Pré-requis
+
+- Node.js 20+
+- Pnpm
+- Un compte Supabase et Netlify (pour le déploiement)
+- Clés API pour les modèles IA (OpenAI, Anthropic, etc.) configurées dans le Vault.
+
 ### Setup Rapide
 
-1.  **Installez les dépendances** :
+1.  **Installez les dépendances (racine du monorepo)** :
+
     ```bash
-    npm install
+    pnpm install
     ```
 
 2.  **Lancez le serveur de développement** :
+
     ```bash
-    npm run dev
+    pnpm run netlify:dev
     ```
 
-3.  **Accédez aux interfaces** :
-    - **Interface Client** : `http://localhost:5173/`
-    - **Dashboard Barman** : `http://localhost:5173/bar`
+    _Note : Utilisez `netlify:dev` plutôt que `vite` seul pour activer les Edge Functions (IA)._
+
+3.  **Accédez à l'application** :
+    - **URL** : `http://localhost:8888` (Port Netlify)
+    - **Bar de démo** : `http://localhost:8888/bar/cyrnea`
+    - **Client** : `http://localhost:8888/app/cyrnea`
 
 ---
 
-## ⚖️ Neutralité & Engagement
+## 🌍 Déploiement Multi-Bars
 
-Comme tous les outils du projet Inseme, **Cyrnea** est une infrastructure **neutre** et **open source**. Elle vise à renforcer le lien social et la convivialité locale sans aucune finalité commerciale ou politique partisane.
+Cyrnea est conçue pour être déployée une seule fois et servir plusieurs lieux (Multi-tenant). L'URL
+détermine le contexte :
+
+- `/bar/:id` -> Charge la configuration et la mémoire du bar `:id`.
+- Le système **Cop-Host** adapte dynamiquement le SEO, le thème et la personnalité d'Ophélia.
 
 ---
 
@@ -63,11 +109,9 @@ Comme tous les outils du projet Inseme, **Cyrnea** est une infrastructure **neut
 
 Ce projet est sous licence **MIT**.
 
-**Auteur : Jean Hugues Noël Robert**
-
-- Projet porté par l'association **C.O.R.S.I.C.A.**
-- Communauté [LePP.fr](https://lepp.fr).
-- Fait avec ❤️ à Corte, Corse.
+- **Porté par** : L'association **C.O.R.S.I.C.A.** et la communauté [Inseme](https://inseme.app).
+- **Philosophie** : Technologie conviviale, souveraine et ancrée dans le territoire.
+- **Fait avec ❤️ à Corte, Corse.**
 
 ---
 

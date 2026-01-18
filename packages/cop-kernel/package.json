@@ -9,7 +9,7 @@
     ".": "./src/index.js"
   },
   "scripts": {
-    "lint": "eslint src || echo \"no eslint configured\"",
+    "lint": "eslint src --config .eslintrc.json || echo \"cop-kernel lint failed (see above)\"",
     "test": "node --test src/storage-implementations/__tests__/*.test.js test/*.test.js",
     "build": "echo \"cop-kernel: no build step (pure JS ES modules).\""
   },
@@ -24,7 +24,7 @@
   "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.0.0",
-    "cop-core": "file:../cop-core",
+    "@inseme/cop-core": "workspace:*",
     "mysql2": "^3.15.3",
     "sqlite3": "^5.1.7",
     "sqlite": "^5.1.1"

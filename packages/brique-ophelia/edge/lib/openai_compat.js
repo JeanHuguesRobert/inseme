@@ -3,7 +3,7 @@
  * Couche de compatibilité pour exposer Ophélia comme une API OpenAI.
  */
 
-import { runOperator } from "./operator_v2.js";
+import { runOperator } from "./operator.js";
 import { createAIClient, resolveModel } from "./providers.js";
 import { resolveIdentity } from "../identity.js";
 import { getRole } from "../roles/registry.js";
@@ -45,9 +45,6 @@ export async function handleOpenAIRequest(request, runtime) {
     });
   } else {
     // Non-streaming handling (TODO)
-    return error(
-      "Non-streaming mode not yet implemented for compatibility layer",
-      501
-    );
+    return error("Non-streaming mode not yet implemented for compatibility layer", 501);
   }
 }

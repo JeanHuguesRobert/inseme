@@ -36,11 +36,26 @@ export default async (request, runtime, context) => {
     const supabase = getSupabase();
 
     // 1. Fetch room metadata to handle UUID/Slug mapping
-    const { data: room } = await supabase
-      .from("inseme_rooms")
-      .select("id, slug")
-      .or(`slug.eq.${targetRoomId},id.eq.${targetRoomId}`)
-      .maybeSingle();
+    let room;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      targetRoomId
+    );
+
+    if (isUUID) {
+      const { data } = await supabase
+        .from("inseme_rooms")
+        .select("id, slug")
+        .eq("id", targetRoomId)
+        .maybeSingle();
+      room = data;
+    } else {
+      const { data } = await supabase
+        .from("inseme_rooms")
+        .select("id, slug")
+        .eq("slug", targetRoomId)
+        .maybeSingle();
+      room = data;
+    }
 
     const finalRoomId = room?.id || targetRoomId;
 
@@ -66,8 +81,7 @@ export default async (request, runtime, context) => {
       const msgTime = new Date(m.created_at).getTime();
       const isStartSignal = m.message?.toLowerCase().includes("inseme open");
       const isEndSignal =
-        m.message?.toLowerCase().includes("inseme close") ||
-        m.metadata?.type === "report";
+        m.message?.toLowerCase().includes("inseme close") || m.metadata?.type === "report";
 
       if (!currentSession) {
         // Start a new session
@@ -84,8 +98,7 @@ export default async (request, runtime, context) => {
 
         if (gap > INACTIVITY_GAP || isStartSignal) {
           // Close current session and start a new one
-          const lastMsg =
-            currentSession.messages[currentSession.messages.length - 1];
+          const lastMsg = currentSession.messages[currentSession.messages.length - 1];
           sessions.push({
             id: currentSession.id,
             start: currentSession.start,

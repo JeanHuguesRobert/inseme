@@ -113,7 +113,12 @@ export default function Controls({
             {isLoading && (
               <>
                 <span
-                  style={{ fontSize: "14px", color: "#666", minWidth: "30px", textAlign: "center" }}
+                  style={{
+                    fontSize: "14px",
+                    color: "var(--color-content-secondary)",
+                    minWidth: "30px",
+                    textAlign: "center",
+                  }}
                 >
                   {Math.floor(elapsedMs / 1000)}s
                 </span>

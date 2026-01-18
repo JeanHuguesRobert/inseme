@@ -40,7 +40,19 @@ export default function MarkdownDoc({
         if (!res.ok) {
           throw new Error(`Document non trouvé (${res.status})`);
         }
+
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.includes("text/html")) {
+          console.warn(`[MarkdownDoc] Le document /docs/${docPath} a renvoyé du HTML.`);
+          throw new Error("Format de document invalide (HTML)");
+        }
+
         let text = await res.text();
+
+        if (text.trim().startsWith("<!doctype html>")) {
+          console.warn(`[MarkdownDoc] Le document /docs/${docPath} contient du HTML.`);
+          throw new Error("Contenu de document invalide (fallback HTML)");
+        }
 
         // Appliquer les remplacements de variables {{KEY}}
         text = substituteVariables(text, replacements);
@@ -57,8 +69,7 @@ export default function MarkdownDoc({
   }, [docPath, replacements]);
 
   // Extraire le titre du H1 si non fourni
-  const extractedTitle =
-    title || content.match(/^#\s+(.+)$/m)?.[1] || "Documentation";
+  const extractedTitle = title || content.match(/^#\s+(.+)$/m)?.[1] || "Documentation";
 
   if (loading) {
     return (
@@ -77,10 +88,7 @@ export default function MarkdownDoc({
           <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
             <h2 className="text-red-700 font-bold">Document non disponible</h2>
             <p className="text-red-600 mt-2">{error}</p>
-            <Link
-              to={backLink}
-              className="text-blue-600 hover:underline mt-4 inline-block"
-            >
+            <Link to={backLink} className="text-blue-600 hover:underline mt-4 inline-block">
               ← {backLabel}
             </Link>
           </div>
@@ -94,10 +102,7 @@ export default function MarkdownDoc({
     <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 shadow-md">
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link
-            to={backLink}
-            className="text-white/80 hover:text-white transition-colors"
-          >
+          <Link to={backLink} className="text-white/80 hover:text-white transition-colors">
             ← {backLabel}
           </Link>
           <span className="text-white/40">|</span>

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { getSupabase, useCurrentUser } from "@inseme/cop-host";
-import { useCurrentUser } from "../../../cop-host/src/lib/useCurrentUser.js";
 import { getDisplayName } from "../../../cop-host/src/lib/userDisplay.js";
 import CitizenMap from "./CitizenMap";
 import LocationPicker from "./LocationPicker";

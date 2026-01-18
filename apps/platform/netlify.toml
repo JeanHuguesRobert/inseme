@@ -6,7 +6,7 @@
   edge_functions = "netlify/edge-functions"
 
 [dev]
-  command = "npm run dev:vite"
+  command = "pnpm vite"
   port = 8888
   targetPort = 5173
   publish = "dist"
@@ -134,12 +134,20 @@
   path = "/api/translate"
 
 [[edge_functions]]
+  function = "gen-ophelia-summarize"
+  path = "/api/summarize"
+
+[[edge_functions]]
   function = "gen-ophelia-sessions"
   path = "/api/sessions"
 
 [[edge_functions]]
   function = "gen-ophelia-health"
   path = "/api/health"
+
+[[edge_functions]]
+  function = "gen-ophelia-prolog-executor"
+  path = "/api/prolog-executor"
 
 [[edge_functions]]
   function = "gen-tool-tasks-list_projects"

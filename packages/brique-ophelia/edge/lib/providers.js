@@ -1,11 +1,11 @@
 /**
  * packages/brique-ophelia/edge/lib/providers.js
  * Gestionnaire des fournisseurs d'IA (OpenAI, Anthropic, Mistral, Google, HuggingFace, Groq).
- * Restauration de la parité avec rag_chatbotv3.js (shuffling, metrics skipping).
  */
 
 import OpenAI from "https://esm.sh/openai@4";
 import { SOVEREIGN_MODELS, REMOTE_MODELS } from "../../../models/registry.js";
+import { providerMetrics } from "./provider-metrics.js";
 
 export const PROVIDERS = [
   "openai",
@@ -14,7 +14,7 @@ export const PROVIDERS = [
   "google",
   "huggingface",
   "groq",
-  "sovereign",
+  "grok",
 ];
 
 export const PROVIDER_ENDPOINTS = {
@@ -23,6 +23,7 @@ export const PROVIDER_ENDPOINTS = {
   mistral: "https://api.mistral.ai/v1",
   google: "https://generativelanguage.googleapis.com/v1beta/openai/",
   groq: "https://api.groq.com/openai/v1",
+  grok: "https://api.x.ai/v1",
   huggingface: "https://router.huggingface.co/v1",
   sovereign: "http://localhost:8080/v1",
 };
@@ -62,6 +63,12 @@ export const MODEL_MODES = {
     strong: REMOTE_MODELS.advanced.groq,
     reasoning: REMOTE_MODELS.advanced.groq,
   },
+  grok: {
+    main: "grok-beta",
+    fast: "grok-beta",
+    strong: "grok-beta",
+    reasoning: "grok-beta",
+  },
   sovereign: {
     main: SOVEREIGN_MODELS["qwen-2.5-coder-1.5b"].filename,
     fast: SOVEREIGN_MODELS["qwen-2.5-coder-1.5b"].filename,
@@ -77,6 +84,7 @@ export const DEFAULT_MODEL_MODES = {
   google: "fast",
   huggingface: "main",
   groq: "main",
+  grok: "main",
   sovereign: "main",
 };
 
@@ -94,7 +102,6 @@ export function shuffleProviders(providers) {
 
 /**
  * Décide si un fournisseur doit être sauté (metrics, quotas).
- * (Simplified version of the legacy BOT metrics)
  */
 export function shouldSkipProvider(runtime, provider) {
   const { getConfig } = runtime;
@@ -105,8 +112,8 @@ export function shouldSkipProvider(runtime, provider) {
     provider === "sovereign"; // Local LLM doesn't need API key
   if (!apiKey) return true;
 
-  // In a full implementation, we would check a global metrics store here
-  return false;
+  // Check in-memory metrics
+  return providerMetrics.shouldSkip(provider, null);
 }
 
 /**
@@ -124,8 +131,11 @@ export function buildProviderOrder(runtime, enforcedProvider = null) {
   // Filter & Randomize remaining
   const available = order.filter((p) => !shouldSkipProvider(runtime, p));
   if (!enforcedProvider) {
-    // Keep the first one, shuffle the rest? Or shuffle all?
-    // Legacy bot shuffles all if no enforced provider.
+    // If OpenAI is available and first, keep it first and shuffle the rest
+    if (available[0] === "openai") {
+      const [first, ...rest] = available;
+      return [first, ...shuffleProviders(rest)];
+    }
     return shuffleProviders(available);
   }
   return available;
@@ -160,8 +170,7 @@ export function createAIClient(runtime, provider) {
     apiKey = getConfig("MISTRAL_API_KEY");
     baseURL = "https://api.mistral.ai/v1";
   } else if (provider === "google") {
-    apiKey =
-      getConfig("GEMINI_API_KEY") || getConfig("GOOGLE_GENERATIVE_AI_API_KEY");
+    apiKey = getConfig("GEMINI_API_KEY") || getConfig("GOOGLE_GENERATIVE_AI_API_KEY");
     baseURL = "https://generativelanguage.googleapis.com/v1beta/openai/";
   } else if (provider === "huggingface") {
     apiKey = getConfig("HUGGINGFACE_API_KEY");
@@ -169,6 +178,9 @@ export function createAIClient(runtime, provider) {
   } else if (provider === "groq") {
     apiKey = getConfig("GROQ_API_KEY") || getConfig("groq_api_key");
     baseURL = "https://api.groq.com/openai/v1";
+  } else if (provider === "grok") {
+    apiKey = getConfig("GROK_API_KEY") || getConfig("grok_api_key");
+    baseURL = "https://api.x.ai/v1";
   } else if (provider === "sovereign") {
     apiKey = "sovereign-key"; // Placeholder
     baseURL = "http://localhost:8080/v1";
@@ -185,9 +197,6 @@ export function createAIClient(runtime, provider) {
     // For Anthropic, we'd normally need a special header or a proxy,
     // but many services now offer OpenAI-compatible endpoints.
     // If native Anthropic is needed, we'd use the '@anthropic-ai/sdk'.
-    defaultHeaders:
-      provider === "anthropic"
-        ? { "anthropic-version": "2023-06-01" }
-        : undefined,
+    defaultHeaders: provider === "anthropic" ? { "anthropic-version": "2023-06-01" } : undefined,
   });
 }

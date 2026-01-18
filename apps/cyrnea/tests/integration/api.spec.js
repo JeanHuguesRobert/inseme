@@ -8,9 +8,7 @@ test.describe("Cyrnea Backend Integration Tests", () => {
 
       if (response.status() !== 200) {
         const body = await response.text();
-        throw new Error(
-          `Backend is NOT healthy (Status: ${response.status()}): ${body}`
-        );
+        throw new Error(`Backend is NOT healthy (Status: ${response.status()}): ${body}`);
       }
 
       const data = await response.json();
@@ -22,9 +20,7 @@ test.describe("Cyrnea Backend Integration Tests", () => {
     });
   });
 
-  test("POST /api/ophelia should handle a chat request with tools", async ({
-    request,
-  }) => {
+  test("POST /api/ophelia should handle a chat request with tools", async ({ request }) => {
     const payload = {
       action: "chat",
       content: [{ role: "user", content: "Quelle est la météo ?" }],
@@ -54,9 +50,7 @@ test.describe("Cyrnea Backend Integration Tests", () => {
     expect([200, 500, 401]).toContain(response.status());
   });
 
-  test("POST /api/sessions should return sessions for a valid room_id", async ({
-    request,
-  }) => {
+  test("POST /api/sessions should return sessions for a valid room_id", async ({ request }) => {
     const response = await request.post("/api/sessions", {
       data: { room_id: "cyrnea-general" },
     });
@@ -68,9 +62,7 @@ test.describe("Cyrnea Backend Integration Tests", () => {
     }
   });
 
-  test("POST /api/translate should return translated text", async ({
-    request,
-  }) => {
+  test("POST /api/translate should return translated text", async ({ request }) => {
     const response = await request.post("/api/translate", {
       data: { text: "Hello", target_lang: "fr" },
     });
@@ -82,9 +74,7 @@ test.describe("Cyrnea Backend Integration Tests", () => {
     }
   });
 
-  test("POST /api/vector-search should handle search action", async ({
-    request,
-  }) => {
+  test("POST /api/vector-search should handle search action", async ({ request }) => {
     const response = await request.post("/api/vector-search", {
       data: { action: "search", text: "test", room_id: "cyrnea-general" },
     });
@@ -99,12 +89,55 @@ test.describe("Cyrnea Backend Integration Tests", () => {
     expect(response.status()).toBe(400);
   });
 
-  test("POST /api/wiki-search with query should return 200", async ({
-    request,
-  }) => {
+  test("POST /api/wiki-search with query should return 200", async ({ request }) => {
     const response = await request.post("/api/wiki-search", {
       data: { query: "test" },
     });
     expect([200, 404]).toContain(response.status());
+  });
+
+  test("Wiki Node Functions: /api/wiki-sync, /api/wiki-resolve, /api/wiki-propose", async ({
+    request,
+  }) => {
+    // Test wiki-sync
+    const syncRes = await request.post("/api/wiki-sync", {
+      data: { room_id: "cyrnea-general" },
+    });
+    expect([200, 401, 500]).toContain(syncRes.status());
+
+    // Test wiki-resolve
+    const resolveRes = await request.post("/api/wiki-resolve", {
+      data: { query: "test", room_id: "cyrnea-general" },
+    });
+    expect([200, 400, 401, 500]).toContain(resolveRes.status());
+
+    // Test wiki-propose
+    const proposeRes = await request.post("/api/wiki-propose", {
+      data: { content: "test", room_id: "cyrnea-general" },
+    });
+    expect([200, 400, 401, 500]).toContain(proposeRes.status());
+  });
+
+  test("Fil Edge Functions: /api/fil/items and /api/fil/vote", async ({ request }) => {
+    // Test fil items (list)
+    const listRes = await request.get("/api/fil/items?room_id=cyrnea-general");
+    expect([200, 401, 404, 500]).toContain(listRes.status());
+
+    // Test fil vote
+    const voteRes = await request.post("/api/fil/vote", {
+      data: { item_id: "test", vote: 1, room_id: "cyrnea-general" },
+    });
+    expect([200, 400, 401, 404, 500]).toContain(voteRes.status());
+  });
+
+  test("Edge Function: /api/chat-stream", async ({ request }) => {
+    const response = await request.post("/api/chat-stream", {
+      data: {
+        content: [{ role: "user", content: "test" }],
+        room_id: "cyrnea-general",
+      },
+    });
+    // Stream might return 200 or errors if keys missing
+    expect([200, 401, 500]).toContain(response.status());
   });
 });

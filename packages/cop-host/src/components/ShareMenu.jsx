@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Icon } from "lucide-react";  
+import { Icon } from "./Cop-hostIcon.jsx";
 // import { sharePost } from "../../../../apps/platform/src/lib/sharePost"; // Supprimé pour éviter les dépendances circulaires trop lourdes
 import { getConfig } from "../client/supabase.js";
 
@@ -31,8 +31,7 @@ export default function ShareMenu({
     }
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen]);
 
@@ -45,9 +44,7 @@ export default function ShareMenu({
   const shareText = description || `Découvrez "${title}" sur LePP.fr`;
 
   async function handleShareToGazette() {
-    alert(
-      "Fonctionnalité de partage interne désactivée dans ce module autonome."
-    );
+    alert("Fonctionnalité de partage interne désactivée dans ce module autonome.");
     setIsOpen(false);
   }
 
@@ -205,9 +202,7 @@ export default function ShareMenu({
                     item.icon
                   )}
                 </span>
-                <span className="text-sm font-medium text-gray-900">
-                  {item.label}
-                </span>
+                <span className="text-sm font-medium text-gray-900">{item.label}</span>
               </button>
             ))}
           </div>

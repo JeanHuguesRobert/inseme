@@ -1,6 +1,6 @@
 // src/components/SaaS/SaaSDashboard.jsx
-
-import React, { useState, useEffect } from "react";
+//
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../lib/supabase.js";
 import {
   Plus,
@@ -12,7 +12,6 @@ import {
   Globe,
   ArrowLeft,
   Save,
-  Sparkles,
   Users,
   CheckCircle2,
   Loader2,
@@ -34,14 +33,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
   const [newRoom, setNewRoom] = useState({ name: "", slug: "" });
   const [editingRoom, setEditingRoom] = useState(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchRooms();
-      fetchParticipatedRooms();
-    }
-  }, [user]);
-
-  const fetchRooms = async () => {
+  const fetchRooms = useCallback(async () => {
     const { data, error } = await supabase
       .from("inseme_rooms")
       .select("*")
@@ -49,9 +41,9 @@ export function SaaSDashboard({ user, onSelectRoom }) {
       .order("created_at", { ascending: false });
 
     if (!error) setRooms(data);
-  };
+  }, [user?.id]);
 
-  const fetchParticipatedRooms = async () => {
+  const fetchParticipatedRooms = useCallback(async () => {
     // Find rooms where user has sent messages, but doesn't own
     const { data: messages, error: msgError } = await supabase
       .from("inseme_messages")
@@ -76,7 +68,14 @@ export function SaaSDashboard({ user, onSelectRoom }) {
     if (!roomsError && foundRooms) {
       setParticipatedRooms(foundRooms);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user) {
+      fetchRooms();
+      fetchParticipatedRooms();
+    }
+  }, [user, fetchRooms, fetchParticipatedRooms]);
 
   const handleJoin = async (e) => {
     e.preventDefault();
@@ -193,10 +192,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
         );
       }
     } else {
-      alert(
-        "Erreur lors de la création de la salle : " +
-          (error?.message || "Erreur inconnue")
-      );
+      alert("Erreur lors de la création de la salle : " + (error?.message || "Erreur inconnue"));
     }
   };
 
@@ -239,9 +235,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
               <h2 className="text-3xl font-black text-white tracking-tighter mb-2">
                 Réglages de l'Espace
               </h2>
-              <p className="text-xs text-white/30 font-mono italic">
-                ID: {editingRoom.slug}
-              </p>
+              <p className="text-xs text-white/30 font-mono italic">ID: {editingRoom.slug}</p>
             </div>
 
             <div className="space-y-6">
@@ -254,9 +248,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                   <input
                     type="text"
                     value={editingRoom.name}
-                    onChange={(e) =>
-                      setEditingRoom({ ...editingRoom, name: e.target.value })
-                    }
+                    onChange={(e) => setEditingRoom({ ...editingRoom, name: e.target.value })}
                     className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
                   />
                 </div>
@@ -280,8 +272,8 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                     className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
                   />
                   <p className="text-[9px] text-white/20 italic">
-                    Définir un parent transforme cette salle en Commission. Les
-                    PV pourront être remontés à la plénière.
+                    Définir un parent transforme cette salle en Commission. Les PV pourront être
+                    remontés à la plénière.
                   </p>
                 </div>
                 <div className="space-y-3">
@@ -290,10 +282,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                     Modèle de Gouvernance
                   </label>
                   <select
-                    value={
-                      editingRoom.settings?.governance_model ||
-                      "democratie_directe"
-                    }
+                    value={editingRoom.settings?.governance_model || "democratie_directe"}
                     onChange={(e) =>
                       setEditingRoom({
                         ...editingRoom,
@@ -319,9 +308,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                     {(() => {
                       const model = GOVERNANCE_MODELS.find(
                         (m) =>
-                          m.id ===
-                          (editingRoom.settings?.governance_model ||
-                            "democratie_directe")
+                          m.id === (editingRoom.settings?.governance_model || "democratie_directe")
                       );
                       return model
                         ? `${model.terminology.member}, ${model.terminology.session}, ${model.terminology.dashboard}`
@@ -346,8 +333,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                           GOVERNANCE_MODELS.find(
                             (m) =>
                               m.id ===
-                              (editingRoom.settings?.governance_model ||
-                                "democratie_directe")
+                              (editingRoom.settings?.governance_model || "democratie_directe")
                           )?.terminology.member
                         }
                         value={editingRoom.settings?.labels?.member || ""}
@@ -376,8 +362,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                           GOVERNANCE_MODELS.find(
                             (m) =>
                               m.id ===
-                              (editingRoom.settings?.governance_model ||
-                                "democratie_directe")
+                              (editingRoom.settings?.governance_model || "democratie_directe")
                           )?.terminology.session
                         }
                         value={editingRoom.settings?.labels?.session || ""}
@@ -406,8 +391,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                           GOVERNANCE_MODELS.find(
                             (m) =>
                               m.id ===
-                              (editingRoom.settings?.governance_model ||
-                                "democratie_directe")
+                              (editingRoom.settings?.governance_model || "democratie_directe")
                           )?.terminology.dashboard
                         }
                         value={editingRoom.settings?.labels?.dashboard || ""}
@@ -434,9 +418,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                   </label>
                   <input
                     type="text"
-                    value={
-                      editingRoom.settings?.storage_bucket || "public-documents"
-                    }
+                    value={editingRoom.settings?.storage_bucket || "public-documents"}
                     onChange={(e) =>
                       setEditingRoom({
                         ...editingRoom,
@@ -450,8 +432,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                     className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all font-mono text-sm"
                   />
                   <p className="text-[9px] text-white/20 italic">
-                    Nom du bucket Supabase pour l'archivage des PV (défaut:
-                    public-documents).
+                    Nom du bucket Supabase pour l'archivage des PV (défaut: public-documents).
                   </p>
                 </div>
               </div>
@@ -520,9 +501,8 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                     className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all font-mono text-sm"
                   />
                   <p className="text-[9px] text-white/20 italic">
-                    Si défini, ce fichier sera chargé comme prompt prioritaire.
-                    Permet de gérer les règles de la salle via GitHub ou un
-                    Drive.
+                    Si défini, ce fichier sera chargé comme prompt prioritaire. Permet de gérer les
+                    règles de la salle via GitHub ou un Drive.
                   </p>
                 </div>
 
@@ -550,8 +530,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                     className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all font-mono"
                   />
                   <p className="text-[9px] text-white/20 italic">
-                    Note: Le prompt définit les règles de médiation et le ton
-                    d'Ophélia.
+                    Note: Le prompt définit les règles de médiation et le ton d'Ophélia.
                   </p>
                 </div>
               </div>
@@ -584,10 +563,9 @@ export function SaaSDashboard({ user, onSelectRoom }) {
             Gestion des Assemblées Synchrones (Inseme)
           </p>
           <div className="max-w-2xl text-white/50 text-sm leading-relaxed">
-            Bienvenue dans votre espace de gestion. Ici, vous pouvez **organiser
-            vos assemblées**, inviter des décideurs et personnaliser
-            l'intervention de la Médiatrice pour faciliter vos débats. Chaque
-            assemblée est un lieu de délibération unique, prêt à accueillir la
+            Bienvenue dans votre espace de gestion. Ici, vous pouvez **organiser vos assemblées**,
+            inviter des décideurs et personnaliser l'intervention de la Médiatrice pour faciliter
+            vos débats. Chaque assemblée est un lieu de délibération unique, prêt à accueillir la
             parole de chacun.
           </div>
         </div>
@@ -626,10 +604,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
       {/* Creation Modal/Form */}
       {isCreating && (
         <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl animate-in slide-in-from-top-4 duration-300">
-          <form
-            onSubmit={handleCreate}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
-          >
+          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-white/40 uppercase tracking-widest px-1">
                 Nom de l'Assemblée
@@ -638,9 +613,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                 type="text"
                 required
                 value={newRoom.name}
-                onChange={(e) =>
-                  setNewRoom({ ...newRoom, name: e.target.value })
-                }
+                onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })}
                 placeholder="ex: Coopérative Bastiaise"
                 className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/10 focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
               />
@@ -652,9 +625,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
               <input
                 type="text"
                 value={newRoom.slug}
-                onChange={(e) =>
-                  setNewRoom({ ...newRoom, slug: e.target.value })
-                }
+                onChange={(e) => setNewRoom({ ...newRoom, slug: e.target.value })}
                 placeholder="ex: coop-bastia"
                 className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/10 focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
               />
@@ -699,15 +670,8 @@ export function SaaSDashboard({ user, onSelectRoom }) {
                   setView("edit");
                 }}
                 onDelete={async (id) => {
-                  if (
-                    confirm(
-                      "Supprimer cette assemblée ? Toutes les données seront perdues."
-                    )
-                  ) {
-                    const { error } = await supabase
-                      .from("inseme_rooms")
-                      .delete()
-                      .eq("id", id);
+                  if (confirm("Supprimer cette assemblée ? Toutes les données seront perdues.")) {
+                    const { error } = await supabase.from("inseme_rooms").delete().eq("id", id);
                     if (!error) setRooms(rooms.filter((r) => r.id !== id));
                   }
                 }}
@@ -735,12 +699,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
           {participatedRooms.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {participatedRooms.map((room) => (
-                <RoomCard
-                  key={room.id}
-                  room={room}
-                  onSelect={onSelectRoom}
-                  isOwner={false}
-                />
+                <RoomCard key={room.id} room={room} onSelect={onSelectRoom} isOwner={false} />
               ))}
             </div>
           ) : (
@@ -761,8 +720,7 @@ export function SaaSDashboard({ user, onSelectRoom }) {
 
 function RoomCard({ room, onSelect, onEdit, onDelete, isOwner }) {
   const modelId = room.settings?.governance_model || "democratie_directe";
-  const model =
-    GOVERNANCE_MODELS.find((m) => m.id === modelId) || GOVERNANCE_MODELS[0];
+  const model = GOVERNANCE_MODELS.find((m) => m.id === modelId) || GOVERNANCE_MODELS[0];
   const ostracizedCount = room.settings?.ostracized
     ? Object.keys(room.settings.ostracized).length
     : 0;
@@ -797,9 +755,7 @@ function RoomCard({ room, onSelect, onEdit, onDelete, isOwner }) {
       </div>
 
       <div className="flex-grow">
-        <h3 className="text-xl font-bold text-white mb-1 leading-tight">
-          {room.name}
-        </h3>
+        <h3 className="text-xl font-bold text-white mb-1 leading-tight">{room.name}</h3>
         <p className="text-[10px] text-white/30 font-mono mb-4 uppercase tracking-wider">
           /{room.slug}
         </p>

@@ -1,7 +1,7 @@
 // src/netlify/functions/config.js
 // Return a cacheable public view of the config (Node.js version)
 
-import { loadInstanceConfig } from "../../common/config/instanceConfig.backend.js";
+import { loadInstanceConfig } from "../../src/common/config/instanceConfig.backend.js";
 
 function pickEffectiveValue(row) {
   if (row.value_json !== null && row.value_json !== undefined) return row.value_json;
@@ -22,7 +22,7 @@ function computeEtagFromRows(rowsByKey) {
   return `W/"cfg-${count}-${max}"`;
 }
 
-export async function handler(event, context) {
+export async function handler(event, _context) {
   // CORS
   const headers = {
     "Content-Type": "application/json; charset=utf-8",
@@ -41,7 +41,7 @@ export async function handler(event, context) {
 
   try {
     const table = await loadInstanceConfig();
-    
+
     const out = Object.create(null);
     for (const [k, row] of Object.entries(table)) {
       if (!row) continue;
@@ -85,7 +85,10 @@ export async function handler(event, context) {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: "Internal server error", details: error.message }),
+      body: JSON.stringify({
+        error: "Internal server error",
+        details: error.message,
+      }),
     };
   }
 }

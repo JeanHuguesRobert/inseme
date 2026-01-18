@@ -51,14 +51,17 @@ function getTrackedFiles() {
       .trim()
       .split("\n")
       .map((f) => path.join(projectRoot, f))
-      .filter((f) => fs.existsSync(f) && fs.statSync(f).isFile());
+      .filter((f) => {
+        // Exclude archive files from LOC count
+        if (f.includes(path.join("apps", "inseme", "archive"))) return false;
+        // Exclude generated files from LOC count
+        if (f.includes(path.join("generated")) || path.basename(f).startsWith("gen-")) return false;
+        // Exclude node_modules (sometimes tracked in sub-packages or symlinked)
+        if (f.includes("node_modules")) return false;
+        return fs.existsSync(f) && fs.statSync(f).isFile();
+      });
   } catch (error) {
-    console.error(
-      colorize(
-        "Error running git ls-files. Falling back to manual crawl...",
-        "red"
-      )
-    );
+    console.error(colorize("Error running git ls-files. Falling back to manual crawl...", "red"));
     return [];
   }
 }
@@ -92,7 +95,7 @@ if (trackedFiles.length === 0) {
 const results = trackedFiles
   .filter((file) => {
     const ext = path.extname(file).toLowerCase();
-    return ext !== ".pdf" && ext !== ".md" && ext !== ".png" && ext !== ".json";
+    return ext !== ".pdf" && ext !== ".md" && ext !== ".png" && ext !== ".json" && ext !== ".yaml";
   })
   .map((file) => {
     const ext = path.extname(file).toLowerCase() || "(no ext)";
@@ -130,14 +133,8 @@ console.log(colorize("Summary by File Type:", "yellow"));
 console.log("");
 
 const typeWidth = Math.max(10, ...summary.map((s) => s.type.length));
-const filesWidth = Math.max(
-  8,
-  ...summary.map((s) => s.files.toString().length)
-);
-const linesWidth = Math.max(
-  10,
-  ...summary.map((s) => formatNumber(s.lines).length)
-);
+const filesWidth = Math.max(8, ...summary.map((s) => s.files.toString().length));
+const linesWidth = Math.max(10, ...summary.map((s) => formatNumber(s.lines).length));
 
 console.log(
   "Type".padEnd(typeWidth) +
@@ -169,15 +166,38 @@ const jsjsxLinesCount = jsjsxFiles.reduce((sum, r) => sum + r.lines, 0);
 
 console.log(colorize("========================================", "cyan"));
 console.log(colorize(`Total Tracked Files: ${totalFiles}`, "green"));
-console.log(
-  colorize(`Total Project Lines: ${formatNumber(totalLines)}`, "green")
-);
+console.log(colorize(`Total Project Lines: ${formatNumber(totalLines)}`, "green"));
 console.log(
   colorize(
     `Total JS + JSX Lines: ${formatNumber(jsjsxLinesCount)} (${jsjsxFilesCount} files)`,
     "magenta"
   )
 );
+
+// Velocity calculation
+try {
+  // The Survey project officially started with the creation of the GitHub repository
+  // Date: 2025-10-20
+  const surveyStartDateStr = "2025-10-20";
+
+  if (surveyStartDateStr) {
+    const firstDate = new Date(surveyStartDateStr);
+    const today = new Date();
+    const diffTime = Math.abs(today - firstDate);
+    const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    const velocity = totalLines / diffDays;
+
+    console.log(colorize("Vitesse du projet Survey (Velocity):", "yellow"));
+    console.log(`Projet Survey démarré le: ${colorize(surveyStartDateStr, "cyan")}`);
+    console.log(`Âge du projet Survey: ${colorize(formatNumber(diffDays), "cyan")} jours`);
+    console.log(
+      `Vélocité moyenne: ${colorize(formatNumber(Math.round(velocity)), "green")} lignes / jour`
+    );
+  }
+} catch (e) {
+  // Silent fail
+}
+
 console.log(colorize("========================================", "cyan"));
 console.log("");
 
@@ -188,13 +208,7 @@ console.log("");
 const top10 = results.sort((a, b) => b.lines - a.lines).slice(0, 10);
 const fileWidth = Math.max(20, ...top10.map((f) => f.file.length));
 
-console.log(
-  "File".padEnd(fileWidth) +
-    "  " +
-    "Type".padEnd(10) +
-    "  " +
-    "Lines".padStart(10)
-);
+console.log("File".padEnd(fileWidth) + "  " + "Type".padEnd(10) + "  " + "Lines".padStart(10));
 
 top10.forEach((row) => {
   console.log(

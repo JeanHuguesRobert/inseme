@@ -1,6 +1,6 @@
 //
-
-import React, { useState, useEffect } from "react";
+//
+import { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase.js";
 import { AuthModal } from "@inseme/room";
 import { InsemeRoom, InsemeProvider } from "@inseme/room";
@@ -8,11 +8,11 @@ import { SaaSDashboard } from "./components/SaaS/SaaSDashboard";
 import { LandingPage } from "./components/SaaS/LandingPage";
 import { LegalPage } from "@inseme/ui";
 import { LEGAL_PATHS } from "@inseme/brique-kudocracy";
-import { Layout, Play, LogOut, UserCheck } from "lucide-react";
+import { LogOut, UserCheck } from "lucide-react";
 import { CurrentUserProvider, useCurrentUser } from "@inseme/cop-host";
 
 function AppContent() {
-  const { currentUser: user, loading, userStatus } = useCurrentUser();
+  const { currentUser: user, loading } = useCurrentUser();
   const [roomName, setRoomName] = useState("Général");
   const [showAuth, setShowAuth] = useState(false);
   const [view, setView] = useState("landing"); // 'landing', 'dashboard', 'participation', 'terms', 'privacy'
@@ -53,10 +53,7 @@ function AppContent() {
 
     return () => {
       window.removeEventListener("inseme-open-auth", handleOpenAuth);
-      window.removeEventListener(
-        "inseme-stop-spectating",
-        handleStopSpectating
-      );
+      window.removeEventListener("inseme-stop-spectating", handleStopSpectating);
     };
   }, [user, loading]);
 
@@ -75,7 +72,7 @@ function AppContent() {
       setView("landing");
       setIsSpectator(false);
     }
-  }, [user, loading]);
+  }, [user, loading, view]);
 
   if (loading) return null;
 
@@ -84,12 +81,7 @@ function AppContent() {
   };
 
   return (
-    <InsemeProvider
-      roomName={roomName}
-      user={user}
-      supabase={supabase}
-      isSpectator={isSpectator}
-    >
+    <InsemeProvider roomName={roomName} user={user} supabase={supabase} isSpectator={isSpectator}>
       <div className="min-h-screen bg-[#0A0A0B] text-white selection:bg-emerald-500/30">
         {/* Navigation */}
         <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0B]/80 backdrop-blur-md border-b border-white/5">
@@ -186,15 +178,9 @@ function AppContent() {
               </button>
               <LegalPage
                 title={
-                  view === "terms"
-                    ? "Conditions d'utilisation"
-                    : "Politique de confidentialité"
+                  view === "terms" ? "Conditions d'utilisation" : "Politique de confidentialité"
                 }
-                url={
-                  view === "terms"
-                    ? LEGAL_PATHS.TERMS_OF_USE
-                    : LEGAL_PATHS.PRIVACY_POLICY
-                }
+                url={view === "terms" ? LEGAL_PATHS.TERMS_OF_USE : LEGAL_PATHS.PRIVACY_POLICY}
               />
             </div>
           )}
@@ -218,9 +204,7 @@ function AppContent() {
                 </div>
                 <div>
                   <h4 className="font-bold text-sm">Bon retour !</h4>
-                  <p className="text-xs text-white/40">
-                    Session invité détectée
-                  </p>
+                  <p className="text-xs text-white/40">Session invité détectée</p>
                 </div>
               </div>
               <button

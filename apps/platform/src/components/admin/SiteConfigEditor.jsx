@@ -54,7 +54,7 @@ export default function SiteConfigEditor() {
               checked={!!cfg.redirect_enabled}
               onChange={(e) => setCfg({ ...cfg, redirect_enabled: e.target.checked })}
             />
-            <span>Activer la redirection vers l'URL de développement (ngrok)</span>
+            <span>Activer la redirection vers l'URL de développement (tunnel)</span>
           </label>
 
           <div>
@@ -63,7 +63,7 @@ export default function SiteConfigEditor() {
               className="w-full border px-2 py-1"
               value={cfg.redirect_url || ""}
               onChange={(e) => setCfg({ ...cfg, redirect_url: e.target.value })}
-              placeholder="https://abcd.ngrok.io"
+              placeholder="https://abcd.tunnel-url.io"
             />
           </div>
 
@@ -82,12 +82,12 @@ export default function SiteConfigEditor() {
             </button>
             <button
               onClick={() => {
-                sessionStorage.setItem("site_redirect_override", "ngrok");
-                alert("Session will use ngrok URL");
+                sessionStorage.setItem("site_redirect_override", "tunnel");
+                alert("Session will use tunnel URL");
               }}
               className="px-3 py-1 border "
             >
-              Use ngrok this session
+              Use tunnel this session
             </button>
           </div>
         </div>

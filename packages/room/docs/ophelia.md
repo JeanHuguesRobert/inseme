@@ -1,29 +1,42 @@
 # Ophélia v3.0 : Documentation de l'Agente Inseme
 
-Ophélia est une intelligence artificielle agentique intégrée à Inseme pour agir comme médiatrice ("Monsieur Loyal") et participante active lors des assemblées.
+Ophélia est une intelligence artificielle agentique intégrée à Inseme pour agir comme médiatrice
+("Monsieur Loyal") et participante active lors des assemblées.
 
 ## 1. Architecture
-Ophélia repose sur une architecture **stateless et événementielle** utilisant les Netlify Edge Functions :
-- **Déclenchement** : Elle est "réveillée" par le hook frontend `useInseme` lors d'événements clés (nouveaux messages, minuteurs).
-- **Contexte** : À chaque appel, elle reçoit un instantané complet de la salle (historique des messages, proposition actuelle, file d'attente des orateurs).
+
+Ophélia repose sur une architecture **stateless et événementielle** utilisant les Netlify Edge
+Functions :
+
+- **Déclenchement** : Elle est "réveillée" par le hook frontend `useInseme` lors d'événements clés
+  (nouveaux messages, minuteurs).
+- **Contexte** : À chaque appel, elle reçoit un instantané complet de la salle (historique des
+  messages, proposition actuelle, file d'attente des orateurs).
 - **Actions** : Elle utilise le "Tool Calling" d'OpenAI pour agir sur l'état de la salle.
 
 ## 2. Configuration de la Personnalité
+
 Vous pouvez modifier son comportement sans toucher au code en éditant le fichier :
 `public/prompts/inseme.md`
 
-Ce fichier définit sa mission, son ton et ses priorités (ex: favoriser le consensus, limiter le temps de parole).
+Ce fichier définit sa mission, son ton et ses priorités (ex: favoriser le consensus, limiter le
+temps de parole).
 
 ## 3. Configuration de la Voix (TTS)
-La voix d'Ophélia est définie par le paramètre `VOICE` tout au début du fichier `public/prompts/inseme.md`.
+
+La voix d'Ophélia est définie par le paramètre `VOICE` tout au début du fichier
+`public/prompts/inseme.md`.
 
 **Exemple :**
+
 ```markdown
 VOICE: shimmer
+
 # Mission d'Ophélia...
 ```
 
 **Options disponibles :**
+
 - `nova` : Énergique et professionnelle (Haut-parleur par défaut).
 - `shimmer` : Douce et posée.
 - `alloy` : Neutre et équilibrée.
@@ -32,10 +45,14 @@ VOICE: shimmer
 - `onyx` : Masculine et autoritaire.
 
 ## 4. Configuration Multi-Provider (LLM & TTS)
-Ophélia est compatible avec tout fournisseur respectant le standard OpenAI (Groq, Mistral, Anthropic via proxy, Ollama, etc.). La configuration peut se faire à deux niveaux :
+
+Ophélia est compatible avec tout fournisseur respectant le standard OpenAI (Groq, Mistral, Anthropic
+via proxy, Ollama, etc.). La configuration peut se faire à deux niveaux :
 
 ### A. Configuration via le Hook (Code)
-Lors de l'instanciation de `useInseme`, vous pouvez passer un objet `ophelia` dans la configuration :
+
+Lors de l'instanciation de `useInseme`, vous pouvez passer un objet `ophelia` dans la configuration
+:
 
 ```javascript
 const { ... } = useInseme(roomName, user, supabase, {
@@ -50,12 +67,16 @@ const { ... } = useInseme(roomName, user, supabase, {
 ```
 
 ### B. Configuration via Room Settings (SaaS/DB)
-Si vous utilisez la table `inseme_rooms`, les paramètres dans `settings.ophelia` priment sur les défauts.
+
+Si vous utilisez la table `inseme_rooms`, les paramètres dans `settings.ophelia` priment sur les
+défauts.
 
 ---
 
 ## 5. Capacités et Outils
+
 Ophélia dispose d'une palette d'outils pour animer l'assemblée :
+
 - `send_message` : Participer au chat textuel.
 - `speak` : Intervenir oralement via synthèse vocale (TTS).
 - `set_proposition` : Reformuler et figer une proposition pour le vote suite à un consensus.
@@ -63,10 +84,41 @@ Ophélia dispose d'une palette d'outils pour animer l'assemblée :
 - `consult_archives` : Rechercher des faits dans l'historique exact (Qui a dit quoi ?).
 
 ## 6. Médiation et Équité de Parole
+
 Ophélia reçoit désormais des statistiques en temps réel sur le temps de parole des participants :
+
 - **Capture** : Le frontend mesure la durée réelle de chaque intervention vocale.
 - **Analyse** : Ophélia reçoit un récapitulatif (ex: `Alice: 45s, Bob: 120s`).
-- **Médiation** : Elle est instruite pour identifier les monopoles de parole et solliciter les participants les plus discrets afin de garantir un débat équilibré.
+- **Médiation** : Elle est instruite pour identifier les monopoles de parole et solliciter les
+  participants les plus discrets afin de garantir un débat équilibré.
 
 ---
-*Note technique : Par défaut, Ophélia utilise `gpt-4o` pour sa réflexion et `tts-1` pour sa voix via l'API OpenAI officielle.*
+
+_Note technique : Par défaut, Ophélia utilise `gpt-4o` pour sa réflexion et `tts-1` pour sa voix via
+l'API OpenAI officielle._
+
+---
+
+## 7. Événements audio et callbacks
+
+Plusieurs événements peuvent être écoutés pour réagir au comportement audio dans Inseme/Cyrnea :
+
+- **MediaManager (SmartAudio)** :
+  - `on("onSemanticState", cb)` : reçoit périodiquement l’état sémantique local (voir
+    `SemanticCaptor`).
+  - `on("onSnapshot", cb)` : reçoit les captures vidéo utilisées comme signal visuel.
+  - `on("onPlaybackStart", cb)` : appelé à chaque début de lecture audio (message vocal local ou
+    distant).
+  - `on("onPlaybackEnd", cb)` : appelé à la fin de chaque lecture audio.
+
+- **Hook `useInseme` (côté app Inseme/Cyrnea)** :
+  - `config.onVocalStateChange(vocalState)` : appelé à chaque changement de `vocalState` (`idle`,
+    `listening`, `speaking`, `thinking`).
+  - `config.onPlaybackStart()` : appelé quand une lecture audio commence (via la SmartAudio queue).
+  - `config.onPlaybackEnd()` : appelé quand une lecture audio se termine.
+
+Ces callbacks permettent par exemple :
+
+- de synchroniser des animations avec la voix d’Ophélia ou des participants,
+- de tracer les phases d’écoute/parole dans un journal,
+- ou de connecter d’autres systèmes temps réel (observabilité, télémétrie, etc.).

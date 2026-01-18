@@ -1,14 +1,17 @@
 # 🗳️ Inseme Monorepo - Citizen Ecosystem & Liquid Democracy
 
-Welcome to the **Inseme** repository, an **open-source** and **neutral** digital infrastructure dedicated to citizen participation, augmented deliberation, and democratic transparency.
+Welcome to the **Inseme** repository, an **open-source** and **neutral** digital infrastructure
+dedicated to citizen participation, augmented deliberation, and democratic transparency.
 
-This project brings together the tools of the **#PERTITELLU** citizen movement (Corte, Corsica) and aims to provide free solutions to empower citizens.
+This project brings together the tools of the **#PERTITELLU** citizen movement (Corte, Corsica) and
+aims to provide free solutions to empower citizens.
 
 ---
 
 ## 🏗️ Modular Architecture
 
-Inseme is designed as a modular ecosystem of "Bricks" orchestrated by a central protocol. This ensures flexibility, sovereignty, and collective intelligence.
+Inseme is designed as a modular ecosystem of "Bricks" orchestrated by a central protocol. This
+ensures flexibility, sovereignty, and collective intelligence.
 
 > **[Read the Detailed Modular System Documentation](docs/MODULAR_SYSTEM.md)**
 
@@ -16,7 +19,8 @@ Inseme is designed as a modular ecosystem of "Bricks" orchestrated by a central 
 
 ## 🏛️ Repository Structure
 
-The project is organized as a monorepo (Turbo) to facilitate code sharing between the different components of the ecosystem:
+The project is organized as a monorepo (Turbo) to facilitate code sharing between the different
+components of the ecosystem:
 
 ### 📱 Applications (`/apps`)
 
@@ -26,8 +30,9 @@ The project is organized as a monorepo (Turbo) to facilitate code sharing betwee
 - **`apps/inseme` (The Agora)**: Direct and liquid democracy tool.
   - **Focus**: Physical/remote assemblies, instant voting, digital gestures.
   - **AI**: Ophélia (AI Mediator) integrated via Edge Functions.
-- **`apps/cyrnea` (Cyrnea)**: Social and gamified experience for community spaces.
-  - **Focus**: Bar animation, quizzes, collaborative playlists, Vibe Monitor.
+- **`apps/cyrnea` (Cyrnea)**: Social and gamified experience for community spaces (Bars, Cafés).
+  - **Focus**: Bar animation, local AI assistant (Ophélia), Citizen Gazette, PWA for clients.
+  - **Tech**: React + Vite + Netlify Edge Functions (AI).
 
 ### 📦 Key Packages (`/packages`)
 
@@ -44,13 +49,19 @@ The ecosystem is composed of several specialized packages:
 ## 🎯 Key Features
 
 ### 1. 💬 Ophélia — The AI Mediator
-Ophélia is the platform's AI. She answers questions, helps formulate ideas, guides users through processes, and facilitates consensus during debates without ever imposing herself.
+
+Ophélia is the platform's AI. She answers questions, helps formulate ideas, guides users through
+processes, and facilitates consensus during debates without ever imposing herself.
 
 ### 2. 🗳️ Liquid Democracy (Kudocracy)
-Allows users to submit proposals, vote, and delegate their voice to a trusted person on a specific topic. The Agora (`apps/inseme`) pushes this concept further with real-time digital gestures.
+
+Allows users to submit proposals, vote, and delegate their voice to a trusted person on a specific
+topic. The Agora (`apps/inseme`) pushes this concept further with real-time digital gestures.
 
 ### 3. 🛡️ Digital Sovereignty
-Built-in support for local LLMs via `@kudocracy/models`, ensuring that sensitive data and democratic deliberations stay within your infrastructure.
+
+Built-in support for local LLMs via `@kudocracy/models`, ensuring that sensitive data and democratic
+deliberations stay within your infrastructure.
 
 ---
 
@@ -59,43 +70,56 @@ Built-in support for local LLMs via `@kudocracy/models`, ensuring that sensitive
 - **Frontend**: React (v18/v19) + Vite + Tailwind CSS.
 - **Backend Realtime**: Supabase (PostgreSQL, Realtime, Auth).
 - **AI Orchestration**: Multi-provider support (OpenAI, Local LLMs via GGUF).
-- **Multi-Instance**: Dynamic subdomain-based resolution for per-commune deployment. [See Multi-Instance Doc](packages/cop-host/docs/MULTI_INSTANCE.md).
+- **Multi-Instance**: Dynamic subdomain-based resolution for per-commune deployment.
+  [See Multi-Instance Doc](packages/cop-host/docs/MULTI_INSTANCE.md).
 
 ---
 
 ## 🛠️ Installation & Development
 
 ### Prerequisites
+
 - Node.js (v20+ recommended)
 - Netlify CLI (`npm install netlify-cli -g`)
 
 ### Quick Setup
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/JeanHuguesRobert/inseme.git
    cd inseme
    ```
 
 2. **Install dependencies**:
+
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Launch an application**:
+
    ```bash
    # For the Citizen Platform (Survey)
-   npm run platform:dev
+   pnpm run platform:dev
 
    # For the Inseme Agora
-   npm run inseme:dev
+   pnpm run inseme:dev
    ```
 
 ---
 
-## ⚖️ Neutrality & Commitment
+## ⚖️ Neutrality, Ethics & Legal Framework
 
-Inseme is a **neutral** and **independent** infrastructure. It does not finance, promote, or support any political party, electoral campaign, candidate, or list. It provides digital tools usable by any citizen, collective, or institution wishing to strengthen local democracy.
+Inseme is a **neutral** and **independent** infrastructure. It does not finance, promote, or support
+any political party, electoral campaign, candidate, or list. It provides digital tools usable by any
+citizen, collective, or institution wishing to strengthen local democracy.
+
+The ethical principles, governance of Ophélia, and legal constraints (data protection, democratic
+processes, usage in social spaces like bars) are tracked in the technical roadmap:
+
+- See [ROADMAP-TECH.md](./ROADMAP-TECH.md), section **“Éthique & Gouvernance d’Ophélia (P2)”** and
+  **“Gouvernance applicative via Kudocracy (P3)”**.
 
 ---
 

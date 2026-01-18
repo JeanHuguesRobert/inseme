@@ -1,0 +1,466 @@
+<!doctype html>
+<!-- INSEME INSPECTOR v1.0 -->
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inseme Tunnel Inspector</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23000000'/%3E%3Cpath d='M20 50 L40 30 L40 45 L80 45 L80 55 L40 55 L40 70 Z' fill='%2360A5FA'/%3E%3Ccircle cx='70' cy='50' r='10' fill='none' stroke='%2360A5FA' stroke-width='4'/%3E%3C/svg%3E"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/__inspector/inspector.css" />
+  </head>
+  <body class="bg-gray-50 h-screen flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="bg-black text-white p-4 flex items-center justify-between shadow-lg">
+      <div class="flex items-center gap-3">
+        <i data-lucide="activity" class="text-blue-400"></i>
+        <h1 class="font-bold text-lg tracking-tighter">
+          INSEME <span class="text-blue-400">TUNNEL_INSPECTOR</span>
+        </h1>
+      </div>
+      <div class="flex items-center gap-4 text-xs">
+        <div
+          class="flex items-center gap-2 bg-blue-900/30 text-blue-400 px-2 py-1 rounded border border-blue-800"
+        >
+          <i data-lucide="shield" class="w-3 h-3"></i>
+          <span class="font-bold">PROXY:</span>
+          <span id="proxy-port-text">8001</span>
+          <span class="opacity-40 mx-1">|</span>
+          <i data-lucide="wifi" class="w-3 h-3 opacity-60"></i>
+          <span id="local-ip-text" class="font-mono text-[9px] opacity-80">...</span>
+        </div>
+        <div
+          id="target-badge"
+          class="flex items-center gap-2 bg-gray-200 text-gray-500 px-2 py-1 rounded border border-gray-300"
+        >
+          <span class="font-bold">APP:</span>
+          <span id="target-status-text">CHECKING...</span>
+          <span id="target-port-text" class="opacity-60 text-[10px] ml-1"></span>
+        </div>
+        <a
+          id="target-url-link"
+          href="#"
+          target="_blank"
+          class="hidden flex items-center gap-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-2 py-1 rounded border border-blue-800/50 transition-all"
+        >
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+          <span id="target-url-text" class="max-w-[150px] truncate"></span>
+        </a>
+        <div id="ngrok-links" class="hidden flex items-center gap-2">
+          <a
+            id="ngrok-local-link"
+            href="http://localhost:4040"
+            target="_blank"
+            class="flex items-center gap-1 bg-gray-800 text-gray-400 hover:text-white px-2 py-1 rounded border border-gray-700 transition-all"
+            title="ngrok Local Dashboard"
+          >
+            <i data-lucide="monitor" class="w-3 h-3"></i>
+            <span>NGROK LOCAL</span>
+          </a>
+          <a
+            id="ngrok-cloud-link"
+            href="https://dashboard.ngrok.com/tunnels/agents"
+            target="_blank"
+            class="flex items-center gap-1 bg-gray-800 text-gray-400 hover:text-white px-2 py-1 rounded border border-gray-700 transition-all"
+            title="ngrok Cloud Dashboard"
+          >
+            <i data-lucide="cloud" class="w-3 h-3"></i>
+            <span>NGROK CLOUD</span>
+          </a>
+        </div>
+        <div id="flow-toggles" class="flex items-center gap-1 mr-2 border-r border-gray-700 pr-2">
+          <button
+            onclick="launchProxiedBrowser()"
+            class="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold transition-all border border-gray-700 bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700"
+            title="Lancer une instance isolée de Chrome configurée sur ce proxy"
+          >
+            <i data-lucide="external-link" class="w-3 h-3"></i>
+            <span>OPEN CHROME</span>
+          </button>
+          <button
+            id="toggle-in"
+            onclick="toggleFlow('in')"
+            class="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold transition-all border border-blue-800/50 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40"
+            title="Démarrer/Arrêter le tunnel public (IN)"
+          >
+            <i data-lucide="arrow-down-left" class="w-3 h-3"></i>
+            <span>IN</span>
+          </button>
+          <button
+            id="toggle-out"
+            onclick="toggleFlow('out')"
+            class="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold transition-all border border-purple-800/50 bg-purple-600/20 text-purple-400 hover:bg-purple-600/40"
+            title="Activer/Désactiver le proxy dans .env (OUT)"
+          >
+            <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
+            <span>OUT</span>
+          </button>
+        </div>
+
+        <div
+          id="status-badge"
+          class="flex items-center gap-2 bg-green-900/30 text-green-400 px-2 py-1 rounded border border-green-800"
+        >
+          <span class="relative flex h-2 w-2">
+            <span
+              class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
+            ></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          TUNNEL
+        </div>
+        <button
+          id="restart-btn"
+          onclick="restartTunnel(event)"
+          class="flex items-center gap-1 bg-yellow-600/20 text-yellow-500 hover:bg-yellow-600/40 px-2 py-1 rounded border border-yellow-800/50 transition-all"
+          title="Redémarrer le tunnel"
+        >
+          <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+          <span>RESTART</span>
+          <i
+            id="nodemon-warning"
+            data-lucide="alert-triangle"
+            class="w-3 h-3 text-red-500 hidden"
+            title="Nodemon non détecté : le restart manuel pourrait ne pas relancer le script."
+          ></i>
+        </button>
+        <button
+          onclick="stopTunnel(event)"
+          class="flex items-center gap-1 bg-orange-600/20 text-orange-500 hover:bg-orange-600/40 px-2 py-1 rounded border border-orange-800/50 transition-all"
+          title="Arrêter proprement le tunnel"
+        >
+          <i data-lucide="power" class="w-3 h-3"></i>
+          <span>STOP</span>
+        </button>
+        <button
+          onclick="clearHistory()"
+          class="flex items-center gap-1 bg-red-900/20 text-red-400 hover:bg-red-900/40 px-2 py-1 rounded border border-red-800/50 transition-all"
+        >
+          <i data-lucide="trash-2" class="w-3 h-3"></i>
+          <span>CLEAR</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+      <!-- Sidebar: Aggregators -->
+      <div class="w-64 flex flex-col border-r border-gray-200 bg-gray-50 overflow-hidden">
+        <div class="p-4 space-y-6 overflow-y-auto flex-1">
+          <!-- All Traffic -->
+          <div class="space-y-1">
+            <button
+              onclick="setSidebarFilter('all', 'all')"
+              id="sb-all"
+              class="sidebar-item active w-full text-left px-3 py-2 rounded text-xs flex justify-between items-center transition-all"
+            >
+              <span class="flex items-center gap-2"
+                ><i data-lucide="layers" class="w-3 h-3"></i> TOUT LE TRAFIC</span
+              >
+              <span id="count-all" class="text-[10px] opacity-60">0</span>
+            </button>
+            <button
+              onclick="setSidebarFilter('problems', 'all')"
+              id="sb-problems"
+              class="sidebar-item w-full text-left px-3 py-2 rounded text-xs flex justify-between items-center transition-all text-red-600 hover:bg-red-50"
+            >
+              <span class="flex items-center gap-2"
+                ><i data-lucide="alert-circle" class="w-3 h-3"></i> PROBLÈMES</span
+              >
+              <span id="count-problems" class="text-[10px] font-bold px-1.5 rounded bg-red-100"
+                >0</span
+              >
+            </button>
+            <button
+              id="sb-debug"
+              onclick="showDebugLogs()"
+              class="sidebar-item w-full text-left px-3 py-2 rounded text-xs flex justify-between items-center transition-all text-blue-600 hover:bg-blue-50 hidden"
+            >
+              <span class="flex items-center gap-2"
+                ><i data-lucide="bug" class="w-3 h-3"></i> DEBUG LOGS</span
+              >
+              <span id="count-debug" class="text-[10px] font-bold px-1.5 rounded bg-blue-100"
+                >0</span
+              >
+            </button>
+            <button
+              id="sb-terminal"
+              onclick="showTerminal()"
+              class="sidebar-item w-full text-left px-3 py-2 rounded text-xs flex justify-between items-center transition-all text-gray-600 hover:bg-gray-50"
+            >
+              <span class="flex items-center gap-2"
+                ><i data-lucide="terminal" class="w-3 h-3"></i> TERMINAL</span
+              >
+            </button>
+            <button
+              id="sb-ophelia"
+              onclick="showOphelia()"
+              class="sidebar-item w-full text-left px-3 py-2 rounded text-xs flex justify-between items-center transition-all text-purple-600 hover:bg-purple-50"
+            >
+              <span class="flex items-center gap-2"
+                ><i data-lucide="message-square" class="w-3 h-3"></i> OPHÉLIA</span
+              >
+            </button>
+          </div>
+
+          <!-- Stats -->
+          <div class="bg-white border border-gray-200 rounded p-3 space-y-2 shadow-sm">
+            <h3
+              class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1"
+            >
+              <i data-lucide="bar-chart-3" class="w-3 h-3"></i> Statistiques
+            </h3>
+            <div class="grid grid-cols-2 gap-2 text-[10px]">
+              <div class="bg-blue-50 p-1.5 rounded border border-blue-100">
+                <div class="text-blue-800 font-bold" id="stat-in">0</div>
+                <div class="text-[8px] text-blue-600 uppercase">Entrant</div>
+              </div>
+              <div class="bg-purple-50 p-1.5 rounded border border-purple-100">
+                <div class="text-purple-800 font-bold" id="stat-out">0</div>
+                <div class="text-[8px] text-purple-600 uppercase">Sortant</div>
+              </div>
+              <div class="bg-red-50 p-1.5 rounded border border-red-100">
+                <div class="text-red-800 font-bold" id="stat-errors">0</div>
+                <div class="text-[8px] text-red-600 uppercase">Erreurs</div>
+              </div>
+              <div class="bg-gray-50 p-1.5 rounded border border-gray-200">
+                <div class="text-gray-800 font-bold" id="stat-data">0 B</div>
+                <div class="text-[8px] text-gray-600 uppercase">Données</div>
+              </div>
+            </div>
+            <div class="text-[8px] text-gray-400 italic mt-1" id="stat-since">Depuis : -</div>
+          </div>
+
+          <!-- Sources -->
+          <div>
+            <h3
+              class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-3 flex items-center gap-1"
+            >
+              <i data-lucide="download" class="w-3 h-3"></i> SOURCES (IN)
+            </h3>
+            <div id="sources-list" class="space-y-1">
+              <!-- Sources will appear here -->
+            </div>
+          </div>
+
+          <!-- Destinations -->
+          <div>
+            <h3
+              class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-3 flex items-center gap-1"
+            >
+              <i data-lucide="upload" class="w-3 h-3"></i> DESTINATIONS (OUT)
+            </h3>
+            <div id="destinations-list" class="space-y-1">
+              <!-- Destinations will appear here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle: Request List -->
+      <div
+        id="request-list-container"
+        class="flex-1 flex flex-col border-r border-gray-200 bg-white min-w-0"
+      >
+        <div class="p-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="absolute left-2 top-2 w-4 h-4 text-gray-400"></i>
+            <input
+              type="text"
+              id="search"
+              placeholder="Filtrer par URL ou méthode..."
+              class="w-full pl-8 pr-2 py-1 text-sm border border-gray-200 rounded outline-none focus:border-blue-400"
+            />
+          </div>
+        </div>
+        <div id="request-list" class="flex-1 overflow-y-auto">
+          <!-- Requests will appear here -->
+        </div>
+      </div>
+
+      <!-- Debug Panel -->
+      <div
+        id="debug-panel"
+        class="hidden flex-1 flex flex-col border-r border-gray-200 bg-black min-w-0"
+      >
+        <div class="p-2 border-b border-gray-800 bg-gray-900 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="bug" class="w-4 h-4 text-blue-400"></i>
+            <span class="text-xs font-bold text-gray-300 uppercase tracking-widest"
+              >DEBUG LOGS</span
+            >
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              onclick="clearDebugLogs()"
+              class="text-[10px] text-gray-500 hover:text-gray-300"
+            >
+              EFFACER
+            </button>
+            <button
+              onclick="showTraffic()"
+              class="text-[10px] text-blue-400 hover:text-blue-300 font-bold border border-blue-900/50 px-2 py-0.5 rounded bg-blue-900/10"
+            >
+              FERMER
+            </button>
+          </div>
+        </div>
+        <div id="debug-logs" class="flex-1 overflow-y-auto p-4 font-mono text-[11px] space-y-1">
+          <!-- Debug logs will appear here -->
+        </div>
+      </div>
+
+      <!-- Terminal Panel -->
+      <div
+        id="terminal-panel"
+        class="hidden flex-1 flex flex-col border-r border-gray-200 bg-black min-w-0"
+      >
+        <div class="p-2 border-b border-gray-800 bg-gray-900 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="terminal" class="w-4 h-4 text-green-400"></i>
+            <span class="text-xs font-bold text-gray-300 uppercase tracking-widest">TERMINAL</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[9px] text-gray-500 font-mono">ROOT: /</span>
+            <button onclick="clearTerminal()" class="text-[10px] text-gray-500 hover:text-gray-300">
+              EFFACER
+            </button>
+            <button
+              onclick="showTraffic()"
+              class="text-[10px] text-green-400 hover:text-green-300 font-bold border border-green-900/50 px-2 py-0.5 rounded bg-green-900/10"
+            >
+              FERMER
+            </button>
+          </div>
+        </div>
+        <div
+          id="terminal-output"
+          class="flex-1 overflow-y-auto p-4 font-mono text-[12px] text-green-500 bg-black whitespace-pre-wrap"
+        >
+          <!-- Terminal output will appear here -->
+        </div>
+        <div class="p-2 border-t border-gray-800 bg-gray-900 flex items-center gap-2">
+          <span class="text-green-500 font-mono text-xs ml-2">$</span>
+          <input
+            type="text"
+            id="terminal-input"
+            onkeydown="handleTerminalKey(event)"
+            placeholder="Tapez une commande..."
+            class="flex-1 bg-transparent border-none outline-none text-green-400 font-mono text-xs placeholder-gray-700"
+          />
+        </div>
+      </div>
+
+      <!-- Ophélia Panel (Telnet Style) -->
+      <div
+        id="ophelia-panel"
+        class="hidden flex-1 flex flex-col border-r border-gray-200 bg-black min-w-0"
+      >
+        <div class="p-2 border-b border-gray-800 bg-gray-900 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4 text-indigo-400"></i>
+            <span class="text-xs font-bold text-gray-300 uppercase tracking-widest"
+              >OPHÉLIA TELNET v1.0</span
+            >
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[9px] text-green-500/50 font-mono animate-pulse">CONNECTED</span>
+            <button onclick="clearOphelia()" class="text-[10px] text-gray-500 hover:text-gray-300">
+              RESET
+            </button>
+            <button
+              onclick="showTraffic()"
+              class="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold border border-indigo-900/50 px-2 py-0.5 rounded bg-indigo-900/10"
+            >
+              FERMER
+            </button>
+          </div>
+        </div>
+        <div
+          id="ophelia-output"
+          class="flex-1 overflow-y-auto p-6 font-mono text-[14px] text-green-400 bg-black whitespace-pre-wrap leading-relaxed"
+        >
+          <div class="text-green-600 mb-4 opacity-80">
+            *** OPHÉLIA CIVIC SYSTEM v3.0 *** Connection established via local tunnel. Ready for
+            civic interaction. ---------------------------------
+          </div>
+        </div>
+        <div class="p-4 border-t border-gray-800 bg-gray-900 flex items-center gap-3">
+          <span class="text-green-500 font-mono text-lg font-bold">>></span>
+          <input
+            type="text"
+            id="ophelia-input"
+            onkeydown="handleOpheliaKey(event)"
+            placeholder="Posez votre question à Ophélia..."
+            class="flex-1 bg-transparent border-none outline-none text-green-400 font-mono text-sm placeholder-gray-700"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+
+      <!-- Right: Details -->
+      <div id="details-panel" class="w-1/2 bg-gray-50 p-6 overflow-y-auto hidden">
+        <div class="flex justify-between items-start mb-6">
+          <div class="min-w-0 flex-1">
+            <h2 id="det-url" class="text-lg font-bold break-all text-gray-800"></h2>
+            <div class="flex gap-2 mt-2">
+              <span
+                id="det-method"
+                class="px-2 py-0.5 rounded text-xs font-bold bg-gray-200"
+              ></span>
+              <span id="det-status" class="px-2 py-0.5 rounded text-xs font-bold"></span>
+              <span
+                id="det-duration"
+                class="px-2 py-0.5 rounded text-xs text-gray-500 bg-white border border-gray-200"
+              ></span>
+            </div>
+          </div>
+          <button onclick="closeDetails()" class="ml-4 text-gray-400 hover:text-gray-600 p-1">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div class="space-y-6">
+          <section>
+            <h3
+              class="text-xs font-black uppercase tracking-widest text-gray-400 mb-2 border-b pb-1"
+            >
+              Request Headers
+            </h3>
+            <div
+              id="det-req-headers"
+              class="text-xs space-y-1 font-mono bg-white p-3 rounded border border-gray-200 shadow-sm overflow-x-auto"
+            ></div>
+          </section>
+          <section>
+            <h3
+              class="text-xs font-black uppercase tracking-widest text-gray-400 mb-2 border-b pb-1"
+            >
+              Response Headers
+            </h3>
+            <div
+              id="det-res-headers"
+              class="text-xs space-y-1 font-mono bg-white p-3 rounded border border-gray-200 shadow-sm overflow-x-auto"
+            ></div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div
+        id="empty-details"
+        class="w-1/2 flex flex-col items-center justify-center text-gray-300 p-8 text-center"
+      >
+        <i data-lucide="mouse-pointer-2" class="w-12 h-12 mb-4 opacity-20"></i>
+        <p class="text-sm">Sélectionnez une requête pour voir les détails</p>
+      </div>
+    </main>
+
+    <script src="/__inspector/inspector.js"></script>
+  </body>
+</html>

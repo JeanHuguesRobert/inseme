@@ -1,0 +1,6 @@
+{
+  "watch": ["scripts/tunnel.js", "scripts/inspector.html", "scripts/inspector.js", "scripts/inspector.css", "scripts/lib/"],
+  "ext": "js,html,css,json",
+  "ignore": ["node_modules", ".git", "src", "dist"],
+  "exec": "node scripts/tunnel.js"
+}

@@ -5,7 +5,9 @@ export function useVoiceRecorder(onTranscription, options = {}) {
   const { autoStopDelay = 2000 } = options;
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
+  const [transcriptionPreview, setTranscriptionPreview] = useState("");
   const durationRef = useRef(0);
+  const recognitionRef = useRef(null);
   const startTimeRef = useRef(null);
   const [timeLeft, setTimeLeft] = useState(30);
   const mediaRecorderRef = useRef(null);
@@ -23,10 +25,7 @@ export function useVoiceRecorder(onTranscription, options = {}) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-    if (
-      mediaRecorderRef.current &&
-      mediaRecorderRef.current.state !== "inactive"
-    ) {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       isCancelledRef.current = cancelled;
       mediaRecorderRef.current.stop();
     }
@@ -39,6 +38,11 @@ export function useVoiceRecorder(onTranscription, options = {}) {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
+    }
+
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
     }
 
     // Capture the current duration at the moment stop is called
@@ -72,9 +76,7 @@ export function useVoiceRecorder(onTranscription, options = {}) {
 
       // Silence Detection
       if (!audioContextRef.current) {
-        const audioContext = new (
-          window.AudioContext || window.webkitAudioContext
-        )();
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const analyser = audioContext.createAnalyser();
         const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
@@ -88,11 +90,7 @@ export function useVoiceRecorder(onTranscription, options = {}) {
       const dataArray = new Uint8Array(bufferLength);
 
       const checkSilence = () => {
-        if (
-          !mediaRecorderRef.current ||
-          mediaRecorderRef.current.state !== "recording"
-        )
-          return;
+        if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== "recording") return;
         analyser.getByteFrequencyData(dataArray);
         let sum = 0;
         for (let i = 0; i < bufferLength; i++) {
@@ -125,9 +123,39 @@ export function useVoiceRecorder(onTranscription, options = {}) {
       chunksRef.current = [];
       isCancelledRef.current = false;
       setDuration(0);
+      setTranscriptionPreview("");
       durationRef.current = 0;
       startTimeRef.current = Date.now();
       setTimeLeft(30);
+
+      // Local Transcription Preview (Web Speech API)
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = options.lang || "fr-FR";
+
+        recognition.onresult = (event) => {
+          let interimTranscript = "";
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              // Final results are handled by the cloud transcription (Whisper)
+              // but we keep them in preview until Whisper finishes
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+          setTranscriptionPreview(interimTranscript);
+        };
+
+        recognition.onerror = (err) => {
+          console.warn("[useVoiceRecorder] Local SpeechRecognition error:", err.error);
+        };
+
+        recognition.start();
+        recognitionRef.current = recognition;
+      }
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
@@ -184,7 +212,13 @@ export function useVoiceRecorder(onTranscription, options = {}) {
       }, 1000);
     } catch (err) {
       console.error("Erreur d'accès au microphone:", err);
-      // In a shared hook, we might want to return an error instead of alert
+      if (err.name === "NotAllowedError") {
+        throw new Error(
+          "L'accès au microphone a été refusé. Veuillez vérifier les permissions de votre navigateur."
+        );
+      } else if (err.name === "NotFoundError") {
+        throw new Error("Aucun microphone n'a été trouvé sur cet appareil.");
+      }
       throw err;
     }
   }, [onTranscription, stopRecording, autoStopDelay, options]);
@@ -215,6 +249,7 @@ export function useVoiceRecorder(onTranscription, options = {}) {
     isRecording,
     duration,
     timeLeft,
+    transcriptionPreview,
     startRecording,
     stopRecording: () => stopRecording(false),
     cancelRecording,

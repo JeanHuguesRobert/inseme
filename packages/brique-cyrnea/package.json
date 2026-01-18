@@ -5,11 +5,12 @@
   "main": "index.js",
   "type": "module",
   "dependencies": {
+    "@inseme/cop-host": "workspace:*",
+    "@inseme/room": "workspace:*",
+    "@inseme/ui": "workspace:*",
+    "lucide-react": "^0.562.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "lucide-react": "^0.562.0",
-    "@inseme/ui": "workspace:*",
-    "@inseme/cop-host": "workspace:*",
-    "@inseme/room": "workspace:*"
+    "tau-prolog": "^0.3.4"
   }
 }

@@ -1,16 +1,8 @@
 // src/components/SaaS/LandingPage.jsx
-
-import React, { useState } from "react";
+//
+import { useState } from "react";
 import { submitLead } from "../../lib/leads.js";
-import {
-  ArrowRight,
-  Bot,
-  Users,
-  Vote,
-  Shield,
-  MessageSquare,
-  Sparkles,
-} from "lucide-react";
+import { ArrowRight, Bot, Users, MessageSquare } from "lucide-react";
 
 export function LandingPage({ onLogin, onViewTerms, onViewPrivacy }) {
   const [email, setEmail] = useState("");
@@ -63,8 +55,8 @@ export function LandingPage({ onLogin, onViewTerms, onViewPrivacy }) {
           </h1>
 
           <p className="text-xl md:text-2xl text-white/50 max-w-2xl mx-auto font-medium leading-relaxed">
-            Le pouvoir aux citoyens. Une assemblée liquide guidée par Ophélia,
-            votre IA médiatrice qui facilite le consensus sans jamais s'imposer.
+            Le pouvoir aux citoyens. Une assemblée liquide guidée par Ophélia, votre IA médiatrice
+            qui facilite le consensus sans jamais s'imposer.
           </p>
 
           <div className="flex flex-col md:flex-row items-center justify-center gap-4 pt-8">
@@ -131,13 +123,10 @@ export function LandingPage({ onLogin, onViewTerms, onViewPrivacy }) {
           <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-center group-hover:border-rose-500/50 group-hover:bg-rose-500/10 transition-all duration-500">
             <Bot className="w-8 h-8 text-rose-300" />
           </div>
-          <h3 className="text-2xl font-black tracking-tight">
-            Ophélia Médiatrice
-          </h3>
+          <h3 className="text-2xl font-black tracking-tight">Ophélia Médiatrice</h3>
           <p className="text-white/40 leading-relaxed font-medium">
-            Ni police, ni juge. Ophélia facilite les débats, détecte les
-            conflits et documente l'histoire. Elle rationalise vos échanges sans
-            jamais imposer sa loi.
+            Ni police, ni juge. Ophélia facilite les débats, détecte les conflits et documente
+            l'histoire. Elle rationalise vos échanges sans jamais imposer sa loi.
           </p>
         </div>
         <div className="space-y-6 group">
@@ -146,22 +135,18 @@ export function LandingPage({ onLogin, onViewTerms, onViewPrivacy }) {
           </div>
           <h3 className="text-2xl font-black tracking-tight">Rôles Liquides</h3>
           <p className="text-white/40 leading-relaxed font-medium">
-            Oubliez les permissions rigides. Chacun peut ouvrir la séance ou
-            proposer un vote. Le système s'adapte à votre confiance, du Conseil
-            Municipal à la réunion de quartier.
+            Oubliez les permissions rigides. Chacun peut ouvrir la séance ou proposer un vote. Le
+            système s'adapte à votre confiance, du Conseil Municipal à la réunion de quartier.
           </p>
         </div>
         <div className="space-y-6 group">
           <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-center group-hover:border-rose-500/50 group-hover:bg-rose-500/10 transition-all duration-500">
             <MessageSquare className="w-8 h-8 text-rose-300" />
           </div>
-          <h3 className="text-2xl font-black tracking-tight">
-            Mémoire Vivante
-          </h3>
+          <h3 className="text-2xl font-black tracking-tight">Mémoire Vivante</h3>
           <p className="text-white/40 leading-relaxed font-medium">
-            Tout est archivé, rien n'est perdu. Reprenez une séance exactement
-            là où elle s'est arrêtée, avec un contexte parfait et des décisions
-            traçables.
+            Tout est archivé, rien n'est perdu. Reprenez une séance exactement là où elle s'est
+            arrêtée, avec un contexte parfait et des décisions traçables.
           </p>
         </div>
       </div>

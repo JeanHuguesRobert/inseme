@@ -20,6 +20,14 @@ import {
   Info,
   Plus,
   Minus,
+  Share2,
+  Brain,
+  Share,
+  Link,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Mail,
 } from "lucide-react";
 
 const iconMap = {
@@ -30,6 +38,9 @@ const iconMap = {
   close: X,
   plus: Plus,
   minus: Minus,
+  "share-2": Share2,
+  share: Share,
+  link: Link,
 
   // Status
   sparkle: Sparkles,
@@ -41,10 +52,18 @@ const iconMap = {
   // Entities
   user: User,
   bot: Bot,
+  brain: Brain,
 
   // Navigation
   "caret-down": ChevronDown,
   "caret-up": ChevronUp,
+
+  // Social
+  facebook: Facebook,
+  twitter: Twitter,
+  linkedin: Linkedin,
+  mail: Mail,
+  x: X,
 };
 
 /**
@@ -59,10 +78,7 @@ export const Icon = ({ name, size = 24, className = "", ...props }) => {
   const IconComponent = iconMap[name];
 
   if (!IconComponent) {
-    console.warn(
-      `Icon "${name}" not found in iconMap. Available icons:`,
-      Object.keys(iconMap)
-    );
+    console.warn(`Icon "${name}" not found in iconMap. Available icons:`, Object.keys(iconMap));
     return null;
   }
 

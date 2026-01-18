@@ -32,6 +32,16 @@ CREATE TABLE public.acte (
   CONSTRAINT acte_exec_proof_fkey FOREIGN KEY (exec_proof_id) REFERENCES public.proof(id),
   CONSTRAINT acte_supersedes_id_fkey FOREIGN KEY (supersedes_id) REFERENCES public.acte(id)
 );
+CREATE TABLE public.ai_provider_status (
+  provider text NOT NULL,
+  model text NOT NULL,
+  status text NOT NULL DEFAULT 'available'::text,
+  last_checked_at timestamp with time zone DEFAULT now(),
+  last_error jsonb,
+  metrics jsonb DEFAULT '{}'::jsonb,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  CONSTRAINT ai_provider_status_pkey PRIMARY KEY (provider, model)
+);
 CREATE TABLE public.cafe_reflection_tasks (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   session_id uuid,
@@ -1277,7 +1287,7 @@ CREATE TABLE public.users (
   rgpd_consent_date timestamp with time zone,
   updated_at timestamp with time zone DEFAULT now(),
   metadata jsonb NOT NULL DEFAULT '{"schemaVersion": 1}'::jsonb,
-  role text NOT NULL DEFAULT 'user'::text CHECK (role = ANY (ARRAY['user'::text, 'moderator'::text, 'admin'::text, 'ai'::text, 'represented'::text])),
+  role text NOT NULL DEFAULT 'user'::text CHECK (role = ANY (ARRAY['user'::text, 'moderator'::text, 'admin'::text, 'ai'::text])),
   public_profile boolean NOT NULL DEFAULT true,
   avatar_url text,
   CONSTRAINT users_pkey PRIMARY KEY (id)

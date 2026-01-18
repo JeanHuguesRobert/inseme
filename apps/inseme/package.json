@@ -1,5 +1,5 @@
 {
-  "name": "inseme",
+  "name": "@inseme/app-inseme",
   "private": false,
   "version": "2.0.0",
   "type": "module",
@@ -11,9 +11,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "netlify:dev": "netlify dev",
+    "netlify:dev": "pnpm run compile:briques && netlify dev",
     "build": "vite build",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,css,scss,md,json,html}\"",
     "compile:briques": "node ../../packages/cop-host/scripts/compile-briques.js"
@@ -35,13 +35,15 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "leaflet": "^1.9.4",
-    "lucide-react": "^0.294.0",
+    "lucide-react": "^0.562.0",
+    "openai": "^4.52.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.20.0",
     "recharts": "^2.10.3",
-    "swr": "^2.2.5"
+    "swr": "^2.2.5",
+    "tau-prolog": "^0.3.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.17",

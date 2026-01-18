@@ -26,7 +26,7 @@ function findDotEnv(startPath) {
   let current = startPath;
   for (let i = 0; i < 6; i++) {
     const p = path.join(current, ".env");
-    // We can't easily check file existence here without 'fs', 
+    // We can't easily check file existence here without 'fs',
     // but dotenv.config will just fail silently if file not found.
     // So we try the most likely places.
     current = path.join(current, "..");
@@ -86,9 +86,21 @@ const ENV_KEY_MAPPING = {
   facebook_client_secret: ["FACEBOOK_CLIENT_SECRET"],
   facebook_token: ["FACEBOOK_TOKEN"],
 
+  // Tunnels
+  cloudflare_tunnel_token: ["CLOUDFLARE_TUNNEL_TOKEN"],
+  cloudflare_domain: ["CLOUDFLARE_DOMAIN"],
+  tunnel_url: ["TUNNEL_URL"],
+  tunnel_control_secret: ["TUNNEL_CONTROL_SECRET", "NGROK_CONTROL_SECRET"],
+
   // Ngrok
   ngrok_auth_token: ["NGROK_AUTH_TOKEN"],
-  ngrok_control_secret: ["NGROK_CONTROL_SECRET"],
+
+  // Ports
+  platform_port: ["PLATFORM_PORT", "PORT"],
+  proxy_port: ["PROXY_PORT"],
+
+  // Rooms
+  bar_room_slug: ["BAR_ROOM_SLUG", "ROOM_SLUG", "VITE_ROOM_SLUG"],
 
   // Divers (selon votre .env)
   mairie_corte_google_maps_key: ["MAIRIE_CORTE_GOOGLE_MAPS_KEY"],

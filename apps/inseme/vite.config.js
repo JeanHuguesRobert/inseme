@@ -14,14 +14,16 @@ export default defineConfig(({ mode }) => ({
   ],
   resolve: {
     alias: {
-      "@inseme/room": path.resolve(__dirname, "../../packages/room"),
-      "@inseme/ui": path.resolve(__dirname, "../../packages/ui"),
-      "@inseme/cop-host": path.resolve(__dirname, "../../packages/cop-host"),
-      "@inseme/kudocracy": path.resolve(__dirname, "../../packages/kudocracy"),
-      "@inseme/ophelia": path.resolve(
-        __dirname,
-        "../../packages/ophelia/index.js"
-      ),
+      "@inseme/brique-kudocracy": path.resolve(__dirname, "../../packages/brique-kudocracy/src"),
+      "@inseme/brique-wiki": path.resolve(__dirname, "../../packages/brique-wiki/src"),
+      "@inseme/brique-communes": path.resolve(__dirname, "../../packages/brique-communes/src"),
+      "@inseme/room": path.resolve(__dirname, "../../packages/room/index.jsx"),
+      "@inseme/ui/style.css": path.resolve(__dirname, "../../packages/ui/src/index.css"),
+      "@inseme/ui": path.resolve(__dirname, "../../packages/ui/src/index.js"),
+      "@inseme/cop-host": path.resolve(__dirname, "../../packages/cop-host/src/index.js"),
+      "@inseme/kudocracy": path.resolve(__dirname, "../../packages/kudocracy/src/index.js"),
+      "@inseme/ophelia": path.resolve(__dirname, "../../packages/ophelia/index.js"),
+      "@inseme/brique-ophelia": path.resolve(__dirname, "../../packages/brique-ophelia/index.jsx"),
     },
   },
   define: {

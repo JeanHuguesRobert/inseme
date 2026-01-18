@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Inseme AI Control</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='%230f172a'/%3E%3Ctext%20x='50%25'%20y='50%25'%20dy='.35em'%20text-anchor='middle'%20font-size='28'%20fill='%2322c55e'%20font-family='system-ui%2C%20-apple-system%2C%20BlinkMacSystemFont%2C%20Segoe%20UI%2C%20sans-serif'%3EAI%3C/text%3E%3C/svg%3E"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+    <header
+      class="border-b border-slate-800 bg-black/80 backdrop-blur flex items-center justify-between px-4 py-3"
+    >
+      <div class="flex items-center gap-2">
+        <div
+          class="h-7 w-7 rounded bg-emerald-500 flex items-center justify-center text-black font-bold text-xs"
+        >
+          AI
+        </div>
+        <div>
+          <div
+            class="text-xs font-semibold tracking-tight text-slate-300"
+          >
+            INSEME
+          </div>
+          <div class="text-xs text-slate-500">
+            Local Sovereign AI + Kokoro
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 text-xs">
+        <div
+          id="status-pill"
+          class="flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 py-1"
+        >
+          <span class="relative flex h-2 w-2">
+            <span
+              id="status-ping"
+              class="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-50 animate-ping"
+            ></span>
+            <span
+              id="status-dot"
+              class="relative inline-flex h-2 w-2 rounded-full bg-amber-400"
+            ></span>
+          </span>
+          <span
+            id="status-text"
+            class="font-medium text-amber-300"
+            >Checking...</span
+          >
+        </div>
+        <button
+          id="stop-btn"
+          class="flex items-center gap-1 rounded-full border border-red-500/60 bg-red-500/10 px-3 py-1 text-[11px] font-semibold text-red-300 hover:bg-red-500/20 transition-colors"
+        >
+          <span>Stop server</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 px-4 py-4 grid gap-4 md:grid-cols-3">
+      <section class="md:col-span-1 space-y-3">
+        <div
+          class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3"
+        >
+          <h2
+            class="text-xs font-semibold uppercase tracking-wide text-slate-400"
+          >
+            Status
+          </h2>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="space-y-1">
+              <div class="text-slate-500">Server</div>
+              <div
+                id="status-summary"
+                class="text-sm font-semibold text-slate-100"
+              >
+                -
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="text-slate-500">Port</div>
+              <div
+                id="status-port"
+                class="text-sm font-mono text-slate-200"
+              >
+                -
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="text-slate-500">LLM backend</div>
+              <div
+                id="status-llm"
+                class="text-sm font-mono text-slate-200"
+              >
+                -
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="text-slate-500">TTS</div>
+              <div
+                id="status-tts"
+                class="text-sm font-mono text-slate-200"
+              >
+                -
+              </div>
+            </div>
+          </div>
+          <button
+            id="refresh-btn"
+            class="mt-1 inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-200 hover:bg-slate-800 transition-colors"
+          >
+            <span>Refresh status</span>
+          </button>
+          <a
+            href="http://127.0.0.1:8080/"
+            target="_blank"
+            rel="noreferrer"
+            class="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-sky-400 hover:text-sky-300"
+          >
+            Open llama Web UI (8080)
+          </a>
+        </div>
+      </section>
+
+      <section class="space-y-4 md:col-span-2">
+        <div
+          class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <h2
+              class="text-xs font-semibold uppercase tracking-wide text-slate-400"
+            >
+              Quick LLM check
+            </h2>
+            <button
+              id="run-llm-btn"
+              class="inline-flex items-center gap-1 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+            >
+              <span>Ask</span>
+            </button>
+          </div>
+          <textarea
+            id="llm-input"
+            class="mt-1 w-full rounded-md border border-slate-700 bg-black/40 px-2 py-2 text-xs text-slate-100 outline-none focus:ring-1 focus:ring-emerald-500"
+            rows="3"
+          >
+Explain in one sentence what this local AI service does.</textarea
+          >
+          <pre
+            id="llm-output"
+            class="mt-2 h-32 overflow-auto rounded-md border border-slate-800 bg-black/60 p-2 text-[11px] text-slate-100"
+          ></pre>
+        </div>
+
+        <div
+          class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <h2
+              class="text-xs font-semibold uppercase tracking-wide text-slate-400"
+            >
+              Talk
+            </h2>
+            <div class="flex items-center gap-2">
+              <select
+                id="voice-select"
+                class="h-6 rounded border border-slate-700 bg-black/40 px-2 text-[10px] text-slate-300 outline-none focus:border-slate-500"
+              >
+                <option value="af_bella">af_bella</option>
+                <option value="af_sarah">af_sarah</option>
+                <option value="am_adam">am_adam</option>
+                <option value="am_michael">am_michael</option>
+                <option value="bf_emma">bf_emma</option>
+                <option value="bf_isabella">bf_isabella</option>
+                <option value="bm_george">bm_george</option>
+                <option value="bm_lewis">bm_lewis</option>
+              </select>
+              <button
+                id="stop-stream-btn"
+                class="hidden inline-flex items-center gap-1 rounded-md border border-red-500/60 bg-red-500/10 px-3 py-1 text-[11px] font-semibold text-red-300 hover:bg-red-500/20 transition-colors"
+              >
+                <span>Stop</span>
+              </button>
+              <button
+                id="run-llm2tts-btn"
+                class="inline-flex items-center gap-1 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+              >
+                <span>Ask &amp; Speak</span>
+              </button>
+              <button
+                id="run-tts-btn"
+                class="inline-flex items-center gap-1 rounded-md border border-sky-500/60 bg-sky-500/10 px-3 py-1 text-[11px] font-semibold text-sky-300 hover:bg-sky-500/20 transition-colors"
+              >
+                <span>Speak</span>
+              </button>
+            </div>
+          </div>
+          <div
+            id="tts-status"
+            class="text-[11px] text-slate-400"
+          ></div>
+          <div class="mt-2 flex items-center gap-2">
+            <audio
+              id="tts-audio"
+              class="w-full"
+              controls
+            ></audio>
+            <a
+              id="tts-download"
+              href="#"
+              class="text-[11px] font-medium text-sky-400 opacity-40 pointer-events-none"
+            >
+              Download
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const KOKORO_VOICES = [
+        { id: "af_heart", label: "Heart" },
+        { id: "af_alloy", label: "Alloy" },
+        { id: "af_aoede", label: "Aoede" },
+        { id: "af_bella", label: "Bella" },
+        { id: "af_jessica", label: "Jessica" },
+        { id: "af_kore", label: "Kore" },
+        { id: "af_nicole", label: "Nicole" },
+        { id: "af_nova", label: "Nova" },
+        { id: "af_river", label: "River" },
+        { id: "af_sarah", label: "Sarah" },
+        { id: "af_sky", label: "Sky" },
+        { id: "am_adam", label: "Adam" },
+        { id: "am_echo", label: "Echo" },
+        { id: "am_eric", label: "Eric" },
+        { id: "am_fenrir", label: "Fenrir" },
+        { id: "am_liam", label: "Liam" },
+        { id: "am_michael", label: "Michael" },
+        { id: "am_onyx", label: "Onyx" },
+        { id: "am_puck", label: "Puck" },
+        { id: "am_santa", label: "Santa" },
+        { id: "bf_emma", label: "Emma" },
+        { id: "bf_isabella", label: "Isabella" },
+        { id: "bm_george", label: "George" },
+        { id: "bm_lewis", label: "Lewis" },
+        { id: "bf_alice", label: "Alice" },
+        { id: "bf_lily", label: "Lily" },
+        { id: "bm_daniel", label: "Daniel" },
+        { id: "bm_fable", label: "Fable" },
+      ];
+
+      let browserVoices = [];
+      let browserUtterance = null;
+
+      function populateVoiceSelect() {
+        const select = document.getElementById("voice-select");
+        if (!select) return;
+        select.innerHTML = "";
+        const kokoroGroup = document.createElement("optgroup");
+        kokoroGroup.label = "Kokoro";
+        KOKORO_VOICES.forEach((v, index) => {
+          const opt = document.createElement("option");
+          opt.value = "kokoro:" + v.id;
+          opt.textContent = v.label;
+          kokoroGroup.appendChild(opt);
+        });
+        select.appendChild(kokoroGroup);
+        populateBrowserVoices();
+      }
+
+      function populateBrowserVoices() {
+        const select = document.getElementById("voice-select");
+        if (!select || !window.speechSynthesis) return;
+        browserVoices = window.speechSynthesis.getVoices() || [];
+        const existing = select.querySelector('optgroup[label="Browser"]');
+        if (existing) existing.remove();
+        if (!browserVoices.length) return;
+        const browserGroup = document.createElement("optgroup");
+        browserGroup.label = "Browser";
+        browserVoices
+          .filter((v) => v.lang === "fr-FR")
+          .forEach((v) => {
+            const opt = document.createElement("option");
+            opt.value = "browser:" + v.name;
+            opt.textContent = v.name;
+            browserGroup.appendChild(opt);
+          });
+        if (browserGroup.children.length > 0) {
+          select.appendChild(browserGroup);
+        }
+      }
+
+      function getSelectedVoice() {
+        const select = document.getElementById("voice-select");
+        if (!select || !select.value) {
+          const fallback = KOKORO_VOICES[0]?.id || "af_bella";
+          return { type: "kokoro", id: fallback };
+        }
+        const value = select.value;
+        const parts = value.split(":");
+        if (parts.length === 2) {
+          return { type: parts[0], id: parts[1] };
+        }
+        return { type: "kokoro", id: value };
+      }
+
+      function speakWithBrowserTts(text, voiceId, statusEl, onEnd) {
+        if (!window.speechSynthesis) {
+          if (statusEl) statusEl.textContent = "Browser TTS not available";
+          if (onEnd) onEnd();
+          return;
+        }
+        if (!text) {
+          if (onEnd) onEnd();
+          return;
+        }
+        browserUtterance = new SpeechSynthesisUtterance(text);
+        const voices =
+          window.speechSynthesis.getVoices() || browserVoices || [];
+        const voice = voices.find((v) => v.name === voiceId);
+        if (voice) {
+          browserUtterance.voice = voice;
+        }
+        browserUtterance.onend = function () {
+          if (statusEl) statusEl.textContent = "Done";
+          if (onEnd) onEnd();
+        };
+        browserUtterance.onerror = function () {
+          if (statusEl) statusEl.textContent = "TTS error";
+          if (onEnd) onEnd();
+        };
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(browserUtterance);
+      }
+
+      async function fetchJSON(path) {
+        try {
+          const res = await fetch(path);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return await res.json();
+        } catch (e) {
+          console.error(e);
+          return null;
+        }
+      }
+
+      function updateStatusView(data) {
+        const pill = document.getElementById("status-pill");
+        const ping = document.getElementById("status-ping");
+        const dot = document.getElementById("status-dot");
+        const text = document.getElementById("status-text");
+        const summary = document.getElementById("status-summary");
+        const port = document.getElementById("status-port");
+        const llm = document.getElementById("status-llm");
+        const tts = document.getElementById("status-tts");
+
+        if (!data) {
+          pill.className =
+            "flex items-center gap-2 rounded-full border border-red-600/70 bg-red-950 px-3 py-1";
+          ping.className = "";
+          dot.className =
+            "relative inline-flex h-2 w-2 rounded-full bg-red-400";
+          text.textContent = "Offline";
+          summary.textContent = "Server not responding";
+          port.textContent = "-";
+          llm.textContent = "-";
+          tts.textContent = "-";
+          return;
+        }
+
+        const isOk = data.status === "ok" || data.status === "active";
+        pill.className =
+          "flex items-center gap-2 rounded-full border " +
+          (isOk
+            ? "border-emerald-500/70 bg-emerald-950"
+            : "border-amber-500/70 bg-amber-950") +
+          " px-3 py-1";
+
+        ping.className =
+          "absolute inline-flex h-full w-full rounded-full " +
+          (isOk ? "bg-emerald-400" : "bg-amber-300") +
+          " opacity-50 animate-ping";
+        dot.className =
+          "relative inline-flex h-2 w-2 rounded-full " +
+          (isOk ? "bg-emerald-400" : "bg-amber-300");
+
+        text.textContent = isOk ? "Online" : "Degraded";
+        summary.textContent = data.status || "-";
+        port.textContent = data.port || "-";
+        llm.textContent = data.llm_loaded ? "ready" : "not ready";
+        tts.textContent = data.tts_loaded ? "ready" : "not ready";
+      }
+
+      async function refreshStatus() {
+        const data = await fetchJSON("/status");
+        updateStatusView(data);
+      }
+
+      async function runLLMTest() {
+        const input = document.getElementById("llm-input");
+        const output = document.getElementById("llm-output");
+        const prompt = input.value.trim();
+        if (!prompt) return;
+        output.textContent = "";
+        try {
+          const res = await fetch("/v1/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt,
+              max_tokens: 128,
+              temperature: 0.4,
+              stream: true,
+            }),
+          });
+
+          if (!res.ok) {
+            output.textContent = "Error: HTTP " + res.status;
+            return;
+          }
+
+          const reader = res.body && res.body.getReader ? res.body.getReader() : null;
+
+          if (!reader) {
+            const text = await res.text();
+            output.textContent = text;
+            return;
+          }
+
+          const decoder = new TextDecoder("utf-8");
+          let buffer = "";
+          let assembled = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            if (!chunk) continue;
+            buffer += chunk;
+            const parts = buffer.split("\n\n");
+            buffer = parts.pop();
+            for (const part of parts) {
+              const frame = part.trim();
+              if (!frame) continue;
+              const lines = frame.split("\n");
+              const dataLines = lines.filter((l) => l.startsWith("data: "));
+              for (const dataLine of dataLines) {
+                const dataStr = dataLine.slice(6).trim();
+                if (!dataStr || dataStr === "[DONE]") continue;
+                try {
+                  const json = JSON.parse(dataStr);
+                  const token =
+                    (json.choices &&
+                      json.choices[0] &&
+                      (json.choices[0].text ||
+                        (json.choices[0].delta &&
+                          json.choices[0].delta.content))) ||
+                    "";
+                  if (token) {
+                    assembled += token;
+                    output.textContent = assembled;
+                    output.scrollTop = output.scrollHeight;
+                  }
+                } catch (e) {
+                }
+              }
+            }
+          }
+        } catch (e) {
+          output.textContent = "Error: " + e.message;
+        }
+      }
+
+      async function runTTSTest() {
+        const textArea = document.getElementById("llm-input");
+        const statusEl = document.getElementById("tts-status");
+        const audioEl = document.getElementById("tts-audio");
+        const downloadEl = document.getElementById("tts-download");
+        const voiceInfo = getSelectedVoice();
+        const text = textArea.value.trim();
+        const voice = voiceInfo.id;
+        if (!text) return;
+        if (voiceInfo.type === "browser") {
+          statusEl.textContent = "Speaking (" + voice + ")...";
+          audioEl.src = "";
+          if (downloadEl) {
+            downloadEl.href = "#";
+            downloadEl.classList.add("opacity-40", "pointer-events-none");
+          }
+          speakWithBrowserTts(text, voice, statusEl, function () {});
+          return;
+        }
+        statusEl.textContent = "Generating audio (" + voice + ")...";
+        try {
+          const res = await fetch("/v1/audio/speech", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ input: text, voice }),
+          });
+          if (!res.ok) {
+            statusEl.textContent = "Error: HTTP " + res.status;
+            return;
+          }
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          audioEl.src = url;
+          await audioEl.play().catch(function () {});
+          statusEl.textContent = "Audio ready";
+          if (downloadEl) {
+            downloadEl.href = url;
+            downloadEl.setAttribute("download", "tts.wav");
+            downloadEl.classList.remove("opacity-40", "pointer-events-none");
+          }
+        } catch (e) {
+          statusEl.textContent = "Error: " + e.message;
+        }
+      }
+
+      let aiAudioContext;
+      let llm2ttsSocket = null;
+      let llm2ttsNextStart = 0;
+
+      function ensureAudioContext() {
+        if (!aiAudioContext || aiAudioContext.state === "closed") {
+          aiAudioContext = new (window.AudioContext ||
+            window.webkitAudioContext)();
+          llm2ttsNextStart = aiAudioContext.currentTime;
+        }
+      }
+
+      function updateStopButton(show) {
+        const btn = document.getElementById("stop-stream-btn");
+        const answerBtn = document.getElementById("run-llm2tts-btn");
+        if (show) {
+          btn.classList.remove("hidden");
+          answerBtn.classList.add("hidden");
+        } else {
+          btn.classList.add("hidden");
+          answerBtn.classList.remove("hidden");
+        }
+      }
+
+      function stopLLM2TTSStream() {
+        if (llm2ttsSocket) {
+          llm2ttsSocket.close();
+          llm2ttsSocket = null;
+        }
+        updateStopButton(false);
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+      }
+
+      async function runLLM2TTSTest() {
+        const textArea = document.getElementById("llm-input");
+        const statusEl = document.getElementById("tts-status");
+        const textOut = document.getElementById("llm-output");
+        const voiceInfo = getSelectedVoice();
+        const text = textArea.value.trim();
+        const voice = voiceInfo.id;
+
+        if (!text) return;
+        if (textOut) textOut.textContent = "";
+        if (voiceInfo.type === "browser") {
+          stopLLM2TTSStream();
+          statusEl.textContent = "Generating answer (" + voice + ")...";
+          updateStopButton(true);
+          try {
+            const res = await fetch("/v1/llm", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                prompt: text,
+                max_tokens: 256,
+                temperature: 0.4,
+              }),
+            });
+            if (!res.ok) {
+              statusEl.textContent = "Error: HTTP " + res.status;
+              updateStopButton(false);
+              return;
+            }
+            const data = await res.json();
+            const answer =
+              data.choices?.[0]?.text ||
+              data.choices?.[0]?.message?.content ||
+              JSON.stringify(data, null, 2);
+            if (textOut) {
+              textOut.textContent = answer;
+              textOut.scrollTop = textOut.scrollHeight;
+            }
+            statusEl.textContent = "Speaking answer (" + voice + ")...";
+            speakWithBrowserTts(answer, voice, statusEl, function () {
+              updateStopButton(false);
+            });
+          } catch (e) {
+            statusEl.textContent = "Error: " + e.message;
+            updateStopButton(false);
+          }
+          return;
+        }
+        statusEl.textContent = "Streaming answer (" + voice + ")...";
+        stopLLM2TTSStream();
+        ensureAudioContext();
+        updateStopButton(true);
+
+        const proto = window.location.protocol === "https:" ? "wss://" : "ws://";
+        const wsUrl = proto + window.location.host + "/ws/llm_tts";
+        const localCtx = aiAudioContext;
+        let localNextStart = Math.max(
+          llm2ttsNextStart,
+          localCtx.currentTime
+        );
+
+        const ws = new WebSocket(wsUrl);
+        llm2ttsSocket = ws;
+
+        ws.onopen = () => {
+          ws.send(JSON.stringify({ prompt: text, voice }));
+        };
+
+        ws.onmessage = async (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.text && textOut) {
+              textOut.textContent += msg.text;
+              textOut.scrollTop = textOut.scrollHeight;
+            }
+            if (!msg.audio_chunk) return;
+
+            const binary = atob(msg.audio_chunk);
+            const len = binary.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+              bytes[i] = binary.charCodeAt(i);
+            }
+
+            const buffer = await localCtx.decodeAudioData(bytes.buffer);
+            const source = localCtx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(localCtx.destination);
+
+            const startAt = Math.max(localNextStart, localCtx.currentTime);
+            source.start(startAt);
+            localNextStart = startAt + buffer.duration;
+            llm2ttsNextStart = localNextStart;
+          } catch (e) {
+            statusEl.textContent = "Error during stream: " + e.message;
+          }
+        };
+
+        ws.onerror = () => {
+          statusEl.textContent = "WebSocket error for LLM2TTS";
+          updateStopButton(false);
+        };
+
+        ws.onclose = () => {
+          llm2ttsSocket = null;
+          statusEl.textContent = "Stream ended";
+          updateStopButton(false);
+        };
+      }
+
+      async function stopServer() {
+        try {
+          await fetch("/__exit");
+        } catch (e) {}
+        setTimeout(refreshStatus, 1000);
+      }
+
+      document
+        .getElementById("refresh-btn")
+        .addEventListener("click", refreshStatus);
+      document
+        .getElementById("run-llm-btn")
+        .addEventListener("click", runLLMTest);
+      document
+        .getElementById("run-tts-btn")
+        .addEventListener("click", runTTSTest);
+      document
+        .getElementById("run-llm2tts-btn")
+        .addEventListener("click", runLLM2TTSTest);
+      document
+        .getElementById("stop-stream-btn")
+        .addEventListener("click", stopLLM2TTSStream);
+      document
+        .getElementById("stop-btn")
+        .addEventListener("click", stopServer);
+
+      populateVoiceSelect();
+      if (window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = populateBrowserVoices;
+      }
+      refreshStatus();
+      setInterval(refreshStatus, 8000);
+    </script>
+  </body>
+</html>
+

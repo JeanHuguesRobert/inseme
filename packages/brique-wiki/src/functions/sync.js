@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
-import OpenAI from "https://esm.sh/openai@4";
+import OpenAI from "openai";
 import { loadInstanceConfig, getConfig } from "@inseme/cop-host/backend.js";
+import { ALL_BRIQUE_PROMPTS } from "../../../brique-ophelia/edge/lib/gen-all-prompts.js";
 
 // Supabase client initialisé de façon lazy
 let _supabase = null;
@@ -24,8 +25,9 @@ async function generatePageSummary(pageContent, pageTitle) {
   }
 
   const client = new OpenAI({ apiKey });
-
-  const systemPrompt = `Tu es un assistant expert en résumé. Ton rôle est de créer un résumé informatif d'une page wiki. Le résumé doit capturer les points clés et l'essence du contenu, être autonome et adapté à un agent conversationnel.`;
+  const systemPrompt =
+    ALL_BRIQUE_PROMPTS.wiki?.["summarize-page"] ||
+    `Tu es un assistant expert en résumé. Ton rôle est de créer un résumé informatif d'une page wiki. Le résumé doit capturer les points clés et l'essence du contenu, être autonome et adapté à un agent conversationnel.`;
   const userQuestion = `Résume la page wiki suivante intitulée "${pageTitle}":\n\n${pageContent}`;
 
   try {
@@ -145,7 +147,8 @@ export default async (req, context) => {
     // Include federation metadata: origin_hub_id and global_id if possible
     const subdomain = getConfig("community_name") || "local";
     const hubType = getConfig("hub_type") || "commune";
-    const isGlobalRoot = hubType === "national" || getConfig("is_hub") === "true" || getConfig("is_hub") === true;
+    const isGlobalRoot =
+      hubType === "national" || getConfig("is_hub") === "true" || getConfig("is_hub") === true;
     const globalId = isGlobalRoot ? `global:${page.slug}` : `instance:${subdomain}:${page.slug}`;
     const frontmatter = `---
   title: ${page.title}

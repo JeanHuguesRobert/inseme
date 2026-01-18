@@ -1,17 +1,4 @@
 {
-  /* --- CONFIGURATION DENO (Ciblée) --- */
-  // On active Deno uniquement dans les dossiers qui contiennent des Edge Functions
-  "deno.enablePaths": [
-    "apps/inseme/src/netlify/edge-functions",
-    "apps/platform/src/netlify/edge-functions",
-    "src/netlify/edge-functions",
-    "apps/cyrnea/src/netlify/edge-functions",
-    "apps/cyrnea/netlify/edge-functions"
-  ],
-  "deno.enable": true,
-  "deno.unstable": true,
-  // On pointe vers les import maps générées par Netlify pour l'autocomplétion
-  "deno.importMap": ".netlify/edge-functions-import-map.json",
   /* --- CONFIGURATION NODE / ESLINT --- */
   // Indispensable pour que ESLint comprenne la structure Monorepo
   "eslint.workingDirectories": [
@@ -25,8 +12,21 @@
   /* --- QUALITÉ DE CODE (Commune) --- */
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // Active la correction automatique d'ESLint à la sauvegarde
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  // Nettoyage automatique des espaces inutiles et fin de fichier
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
   // On s'assure que Prettier ignore les fichiers de lock pour ne pas ralentir l'éditeur
   "prettier.ignorePath": ".gitignore",
+  
+  /* --- REFACTORING INTELLIGENT --- */
+  // Met à jour les imports automatiquement quand on déplace un fichier
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+
   /* --- RECHERCHE --- */
   // On exclut les dossiers de build et les logs de la recherche globale pour plus de clarté
   "search.exclude": {
@@ -34,6 +34,23 @@
     "**/dist": true,
     "**/build": true,
     "**/.netlify": true,
-    "**/*.log": true
+    "**/*.log": true,
+    "**/.turbo": true,
+    "**/.cache": true,
+    "**/generated": true,
+    "**/playwright-report": true,
+    "**/test-results": true,
+    "**/coverage": true,
+    "**/.temp": true
+  },
+  /* --- PERFORMANCE --- */
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.netlify/**": true,
+    "**/.git/objects/**": true,
+    "**/.turbo/**": true,
+    "**/coverage/**": true,
+    "**/test-results/**": true
   }
 }

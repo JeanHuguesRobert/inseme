@@ -1,5 +1,5 @@
 {
-  "name": "cop-cli",
+  "name": "@inseme/cop-cli",
   "version": "0.2.0",
   "description": "Command-line interface for COP (Cognitive Orchestration Protocol)",
   "type": "module",

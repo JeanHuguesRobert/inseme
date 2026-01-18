@@ -1,0 +1,24 @@
+#!/bin/sh
+# Husky pre-commit hook (monorepo root): exécute lint-staged si disponible.
+# Inspiré du hook de l'app Platform, mais adapté au monorepo.
+
+# Si node ou pnpm ne sont pas disponibles (ex: environnement GUI limité), on ne bloque pas les commits.
+if ! command -v node >/dev/null 2>&1 || ! command -v pnpm >/dev/null 2>&1; then
+  echo "Warning: 'node' ou 'pnpm' introuvable dans PATH. Hook pre-commit ignoré."
+  exit 0
+fi
+
+# Si lint-staged est installé à la racine, on l'exécute via pnpm.
+if [ -x "./node_modules/.bin/lint-staged" ]; then
+  pnpm lint-staged
+  exit $?
+fi
+
+# Fallback: vérifier la présence de lint-staged via pnpm; si absent, on ne bloque pas.
+if ! pnpm list --depth=0 lint-staged >/dev/null 2>&1; then
+  echo "Warning: 'lint-staged' non installé à la racine. Exécute 'pnpm install' pour activer le hook."
+  exit 0
+fi
+
+# Dernier recours: exécuter lint-staged via pnpm (si pour une raison quelconque le binaire direct n'est pas exécutable).
+pnpm lint-staged

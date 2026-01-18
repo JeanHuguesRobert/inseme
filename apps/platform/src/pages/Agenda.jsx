@@ -33,7 +33,27 @@ export default function Agenda() {
   const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialGazette = searchParams.get("gazette") || "all";
-  const [selectedGazette, setSelectedGazette] = useState(initialGazette);
+  const [notification, setNotification] = useState(null);
+
+  useEffect(() => {
+    const handleCelebrate = (e) => {
+      const { level } = e.detail;
+      setNotification({ type: "celebrate", level });
+      setTimeout(() => setNotification(null), level === "imperial" ? 5000 : 2000);
+    };
+
+    const handleBell = () => {
+      setNotification({ type: "bell" });
+      setTimeout(() => setNotification(null), 3000);
+    };
+
+    window.addEventListener("inseme:celebrate", handleCelebrate);
+    window.addEventListener("inseme:bell_ring", handleBell);
+    return () => {
+      window.removeEventListener("inseme:celebrate", handleCelebrate);
+      window.removeEventListener("inseme:bell_ring", handleBell);
+    };
+  }, []);
   const [viewMode, setViewMode] = useState("list"); // "list" or "map"
   const [mapCenter, setMapCenter] = useState(null);
   const [mapZoom, setMapZoom] = useState(13);

@@ -28,6 +28,8 @@ packages/**/package-lock.json
 
 # --- Logs & Debug ---
 *.log
+*.pid
+logs/
 npm-debug.log*
 yarn-debug.log*
 vite.config.*.timestamp-*
@@ -70,6 +72,7 @@ esbuild
 
 # --- Large Files & Models ---
 models/
+!packages/models/
 *.gguf
 *.bin
 *.onnx
@@ -89,4 +92,15 @@ models/
 **/src/netlify/edge-functions/generated/
 **/src/generated/
 **/public/generated/
+**/generated/
 src/brique-registry.gen.js
++
+# Nettoyage des résidus de storage de tests (vu dans packages/cop-kernel/)
+test_file_storage_data_*/
+# Supabase local logs & temp
+.supabase/functions/.temp/
+.supabase/functions/.logs/
+
+# Cache HuggingFace et modèles (Couverture plus large)
+.cache/huggingface/
+**/.cache/huggingface/

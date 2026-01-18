@@ -2,8 +2,8 @@
 import { defineEdgeFunction } from "../../../../packages/cop-host/src/runtime/edge.js";
 import handler from "../../../../packages/brique-ophelia/edge/health.js";
 
-export default defineEdgeFunction(handler);
+export default handler;
 
 export const config = {
-  path: "/api/health"
+  path: "/api/health",
 };

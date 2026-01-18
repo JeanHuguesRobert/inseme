@@ -3,13 +3,13 @@
   publish = "dist"
 
 [dev]
-  command = "npm run dev:vite"
+  command = "pnpm vite"
   publish = "dist"
 
 [functions]
   node_bundler = "esbuild"
 
-# ============================================================================  
+# ============================================================================
 # EDGE FUNCTIONS
 # ============================================================================
 
@@ -100,12 +100,20 @@
   path = "/api/translate"
 
 [[edge_functions]]
+  function = "gen-ophelia-summarize"
+  path = "/api/summarize"
+
+[[edge_functions]]
   function = "gen-ophelia-sessions"
   path = "/api/sessions"
 
 [[edge_functions]]
   function = "gen-ophelia-health"
   path = "/api/health"
+
+[[edge_functions]]
+  function = "gen-ophelia-prolog-executor"
+  path = "/api/prolog-executor"
 
 [[edge_functions]]
   function = "gen-tool-tasks-list_projects"
@@ -128,7 +136,11 @@
 [[edge_functions]]
   function = "instance-resolver"
   path = "/*"
-  excludedPath = ["/assets/*", "/images/*", "/fonts/*"]
+  excludedPath = ["/assets/*", "/images/*", "/fonts/*", "/api/*"]
+
+[[edge_functions]]
+  function = "custom-semantic"
+  path = "/api/semantic/*"
 
 
 # --- GENERATED BRIQUE REDIRECTS START ---

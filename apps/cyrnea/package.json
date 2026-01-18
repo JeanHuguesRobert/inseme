@@ -1,14 +1,16 @@
 {
-  "name": "cyrnea",
+  "name": "@inseme/app-cyrnea",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "netlify dev",
-    "dev:vite": "pnpm run compile:briques && vite",
-    "build": "pnpm run compile:briques && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
+    "dev": "pnpm run compile:briques && pnpm vite",
+    "netlify:dev": "pnpm run compile:briques && netlify dev",
+    "dev:vite": "pnpm run compile:briques && pnpm vite",
+    "build": "pnpm run compile:briques && pnpm vite build",
+    "lint": "pnpm eslint .",
+    "preview": "pnpm vite preview",
+    "serve:dist": "npx serve dist",
     "test": "pnpm run test:unit && pnpm run test:integration",
     "test:unit": "vitest run",
     "test:integration": "playwright test",
@@ -30,8 +32,10 @@
     "jspdf": "^2.5.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",
+    "openai": "^4.52.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-helmet-async": "^2.0.4",
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.20.0",
     "recharts": "^2.10.3",
@@ -52,6 +56,7 @@
     "jsdom": "^27.4.0",
     "tailwindcss": "^4.1.17",
     "vite": "^7.2.7",
+    "vite-plugin-pwa": "^1.2.0",
     "vitest": "^2.1.9"
   }
 }

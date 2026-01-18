@@ -41,6 +41,9 @@ export default {
       path: "/api/fil/vote",
     },
   },
+  prompts: {
+    system: "./public/prompts/fil-system.md",
+  },
   tools: [
     {
       type: "function",

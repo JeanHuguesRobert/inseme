@@ -59,6 +59,10 @@ export default {
       handler: "./src/functions/search.js",
     },
   },
+  prompts: {
+    "optimize-title": "./public/prompts/optimize-title.md",
+    "summarize-page": "./public/prompts/summarize-page.md",
+  },
   tools: [
     {
       type: "function",
@@ -104,13 +108,11 @@ export default {
             },
             summary: {
               type: "string",
-              description:
-                "Un bref résumé (1-2 phrases) de l'objectif de la page.",
+              description: "Un bref résumé (1-2 phrases) de l'objectif de la page.",
             },
             is_room_specific: {
               type: "boolean",
-              description:
-                "Si vrai, la page sera liée uniquement à cette salle.",
+              description: "Si vrai, la page sera liée uniquement à cette salle.",
             },
           },
           required: ["title", "content"],

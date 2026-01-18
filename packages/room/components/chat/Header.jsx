@@ -26,7 +26,7 @@ export default function Header({
             href={facebookPageUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#1877f2] text-white hover:bg-[#166fe5] transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             title="Visitez notre page Facebook"
           >
             <svg

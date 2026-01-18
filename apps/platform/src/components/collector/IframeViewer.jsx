@@ -19,7 +19,7 @@ export function IframeViewer({ url }) {
   return (
     <div className="flex-1 relative bg-white">
       <iframe
-        src={url}
+        src={window.wrap ? window.wrap(url) : url}
         className="w-full h-full border-0"
         title="Site Web à analyser"
         sandbox="allow-same-origin allow-scripts allow-popups allow-forms"

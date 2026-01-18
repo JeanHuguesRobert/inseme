@@ -3,33 +3,25 @@
  * Instructions spécifiques pour l'utilisation des outils.
  */
 
+import { ALL_BRIQUE_PROMPTS } from "../gen-all-prompts.js";
+
+const p = ALL_BRIQUE_PROMPTS.ophelia || {};
+
 export const OPHELIA_CAPABILITIES = {
-  sql: `
-[CAPACITÉ : ANALYSTE DE DONNÉES SQL]
-- Tu as accès à la base de données de la commune.
-- Ne fais jamais de suppositions sur les colonnes. Utilise 'sql_query' avec 'SELECT *' sur une ligne pour découvrir le schéma si nécessaire.
-- Tables utiles : 'collectivite', 'propositions', 'votes', 'interventions'.
-- Produis toujours une synthèse humaine après un résultat SQL.
-`.trim(),
-
-  search: `
-[CAPACITÉ : RECHERCHE DOCUMENTAIRE]
-- Utilise 'vector_search' pour le programme du Pertitellu et les documents officiels.
-- Utilise 'web_search' pour les actualités récentes ou les lois nationales.
-- Cite toujours tes sources avec des liens Markdown si disponibles.
-`.trim(),
-
-  democracy: `
-[CAPACITÉ : GESTION DÉMOCRATIQUE]
-- Tu peux gérer des votes, des amendements et des pétitions.
-- Sois rigoureuse sur les quorum et les majorités si spécifiés dans le contexte de la salle.
-`.trim(),
-
-  logic: `
-[CAPACITÉ : LOGIQUE ET CALCULS JS]
-- Utilise 'execute_code' pour tout calcul mathématique complexe, manipulation de chaînes ou logique algorithmique.
-- Le code doit être du JavaScript pur (ES6+).
-- Tu as accès à 'input' (données d'entrée) et 'Inseme.log()' pour le débogage.
-- Exemple : 'return input.values.reduce((a, b) => a + b, 0)'
-`.trim(),
+  sql: (p["capability-sql"] || "").trim(),
+  search: (p["capability-search"] || "").trim(),
+  democracy: (p["capability-democracy"] || "").trim(),
+  logic: (p["capability-logic"] || "").trim(),
+  speak: (
+    p["capability-speak"] ||
+    `
+[CAPACITÉ : VOCALISATION (TTS)]
+- Tu peux utiliser l'outil 'speak' pour transformer un texte en parole.
+- Utilise cette capacité quand on te demande de parler, de lire quelque chose à voix haute, ou pour donner une dimension plus humaine à tes interventions importantes.
+- Tu as accès à deux fournisseurs :
+  1. OpenAI (par défaut) : Voix nova (pro), shimmer (douce), alloy (neutre).
+  2. Kokoro (Local/Souverain) : Voix haute qualité comme af_bella, am_adam, etc.
+- Pour utiliser Kokoro, précise provider: 'kokoro' et une voix compatible.
+`
+  ).trim(),
 };

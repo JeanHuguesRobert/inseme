@@ -11,12 +11,12 @@
     "./utils/*": "./utils/*.js"
   },
   "dependencies": {
-    "lucide-react": "^0.562.0",
     "@jitsi/react-sdk": "^1.0.0",
     "@inseme/ophelia": "workspace:*",
     "@inseme/kudocracy": "workspace:*",
     "@inseme/cop-host": "workspace:*",
-    "react-router-dom": "^6.20.0"
+    "react-router-dom": "^6.20.0",
+    "lucide-react": "^0.562.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

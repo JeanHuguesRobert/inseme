@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useCafeSession } from "../../contexts/CafeSessionContext";
-import { useVoiceInterface } from "../../hooks/useVoiceInterface.js";
+import { useVoiceInterface } from "@inseme/room";
 import { Icon } from "@inseme/cop-host";
 
 const MicrophoneControl = () => {
@@ -43,7 +43,7 @@ const MicrophoneControl = () => {
         {isListening ? (
           <Icon name="square" size={32} fill="currentColor" />
         ) : (
-          <Icon name="mic" size={32} fill="currentColor" /> 
+          <Icon name="mic" size={32} fill="currentColor" />
         )}
       </button>
 

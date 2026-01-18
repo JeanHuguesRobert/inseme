@@ -1,4 +1,28 @@
 @import "tailwindcss";
+@source "../../../packages/brique-cyrnea";
+@source "../../../packages/room";
+@source "../../../packages/ui";
+
+:root {
+  /* Mondrian Palette (True Primaries) */
+  --mondrian-red: #e10600;
+  --mondrian-blue: #0055a4;
+  --mondrian-yellow: #ffd500;
+  --mondrian-black: #000000;
+  --mondrian-white: #ffffff;
+
+  /* Grayscale Palette */
+  --palette-gray-50: rgb(26 24 22 / 90%);
+  --palette-gray-100: rgb(40 36 32 / 90%);
+  --palette-gray-200: rgb(60 56 52 / 90%);
+  --palette-gray-300: rgb(84 78 72 / 90%);
+  --palette-gray-400: rgb(112 104 96 / 92%);
+  --palette-gray-500: rgb(140 130 120 / 94%);
+  --palette-gray-600: rgb(170 158 144 / 95%);
+  --palette-gray-700: rgb(198 186 168 / 96%);
+  --palette-gray-800: rgb(224 214 192 / 97%);
+  --palette-gray-900: rgb(248 242 230 / 99%);
+}
 
 @theme {
   --color-primary-50: #fff7ed;
@@ -12,11 +36,17 @@
   --color-primary-800: #9a3412;
   --color-primary-900: #7c2d12;
   --color-primary-950: #431407;
+
+  /* Mondrian Colors for Tailwind */
+  --color-mondrian-red: var(--mondrian-red);
+  --color-mondrian-blue: var(--mondrian-blue);
+  --color-mondrian-yellow: var(--mondrian-yellow);
+  --color-mondrian-black: var(--mondrian-black);
+  --color-mondrian-white: var(--mondrian-white);
 }
 
 @layer base {
   body {
     background-color: var(--color-slate-950);
-    color: var(--color-slate-100);
   }
 }

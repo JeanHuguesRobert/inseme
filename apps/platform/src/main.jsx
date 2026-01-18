@@ -5,7 +5,7 @@
 // - Paramètre URL : localhost:5173?instance=corte → instance Corte (dev)
 
 import React from "react";
-import ReactDOM from "./common/db/client.js";
+import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { ErrorBoundary } from "@inseme/ui";
@@ -24,6 +24,80 @@ import {
   getConfig,
 } from "./common/config/instanceConfig.client.js";
 import { updatePageMeta } from "./lib/meta.js";
+import { wrap, unwrap } from "./constants.js";
+
+// Export global pour utilisation partout sans import
+window.wrap = wrap;
+window.unwrap = unwrap;
+
+/**
+ * Patch global pour intercepter toutes les requêtes sortantes (fetch & XHR)
+ * et les faire passer par le proxy si nécessaire.
+ */
+(function applyGlobalProxyPatches() {
+  const isLocal =
+    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  const forceProxy = window.location.search.includes("proxy=1");
+
+  // On n'applique les patches que si on est en local ou si c'est forcé via l'URL
+  if (!isLocal && !forceProxy) return;
+
+  // 1. Patch FETCH
+  const originalFetch = window.fetch;
+  window.fetch = function (input, init = {}) {
+    let url =
+      typeof input === "string" ? input : input instanceof Request ? input.url : input.toString();
+    const wrappedUrl = window.wrap(url);
+
+    // Si l'URL a été wrappée, on injecte le header ngrok pour éviter l'écran d'avertissement
+    if (wrappedUrl !== url) {
+      const headers = new Headers(init.headers || (input instanceof Request ? input.headers : {}));
+      headers.set("ngrok-skip-browser-warning", "true");
+
+      if (input instanceof Request) {
+        input = new Request(wrappedUrl, {
+          method: input.method,
+          headers: headers,
+          body: input.body,
+          mode: input.mode,
+          credentials: input.credentials,
+          cache: input.cache,
+          redirect: input.redirect,
+          referrer: input.referrer,
+          integrity: input.integrity,
+        });
+      } else {
+        input = wrappedUrl;
+        init = { ...init, headers };
+      }
+    }
+
+    return originalFetch(input, init);
+  };
+
+  // 2. Patch XMLHttpRequest (XHR)
+  const originalOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+    if (url) {
+      const wrappedUrl = window.wrap(url.toString());
+      if (wrappedUrl !== url.toString()) {
+        this._isWrapped = true;
+        url = wrappedUrl;
+      }
+    }
+    return originalOpen.apply(this, [method, url, ...rest]);
+  };
+
+  const originalSend = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.send = function (body) {
+    if (this._isWrapped) {
+      this.setRequestHeader("ngrok-skip-browser-warning", "true");
+    }
+    return originalSend.apply(this, [body]);
+  };
+
+  console.log("🛠️ Global Proxy Patches applied (fetch & XHR)");
+})();
 
 // ============================================================================
 // LOADER PENDANT L'INIT

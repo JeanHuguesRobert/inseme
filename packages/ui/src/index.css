@@ -33,6 +33,13 @@
 
   /* Compatibility with existing animate-in utility pattern if needed */
   --animate-in: fade-in 0.2s ease-out;
+
+  /* Mondrian Colors for Tailwind */
+  --color-mondrian-red: var(--mondrian-red, #e10600);
+  --color-mondrian-blue: var(--mondrian-blue, #0055a4);
+  --color-mondrian-yellow: var(--mondrian-yellow, #ffd500);
+  --color-mondrian-black: var(--mondrian-black, #000000);
+  --color-mondrian-white: var(--mondrian-white, #ffffff);
 }
 
 /* Utilities for compatibility with existing classes */

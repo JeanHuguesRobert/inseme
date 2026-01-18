@@ -21,7 +21,6 @@ export default defineConfig({
     command: "pnpm dev",
     url: "http://localhost:8888/api/health",
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
     stdout: "pipe",
     stderr: "pipe",
     timeout: 120 * 1000,

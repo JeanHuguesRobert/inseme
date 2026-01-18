@@ -20,10 +20,12 @@ export default defineConfig(({ mode }) => ({
       "@inseme/brique-tasks": path.resolve(__dirname, "../../packages/brique-tasks/src"),
       "@inseme/brique-map": path.resolve(__dirname, "../../packages/brique-map/src"),
       "@inseme/brique-actes": path.resolve(__dirname, "../../packages/brique-actes/src"),
+      "@inseme/brique-group": path.resolve(__dirname, "../../packages/brique-group/src"),
+      "@inseme/brique-ophelia": path.resolve(__dirname, "../../packages/brique-ophelia/index.jsx"),
     },
   },
   optimizeDeps: {
-    include: ["remark-gfm"],
+    include: [],
   },
   build: {
     sourcemap: true,

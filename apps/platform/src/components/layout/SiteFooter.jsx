@@ -526,9 +526,13 @@ export default function SiteFooter({
     })();
 
   const originHostname = typeof window !== "undefined" ? window.location.origin || "" : "";
-  const isNgrokOrigin =
+  const isTunnelOrigin =
     originHostname &&
-    (originHostname.includes("ngrok") || originHostname.includes("ngrok-free.app"));
+    (originHostname.includes("ngrok") ||
+      originHostname.includes("ngrok-free.app") ||
+      originHostname.includes("trycloudflare.com") ||
+      (siteConfig?.redirect_url &&
+        originHostname.includes(siteConfig.redirect_url.replace(/^https?:\/\//, ""))));
   const isAdmin = currentUser ? getUserRole(currentUser) === ROLE_ADMIN : false;
 
   return (
@@ -558,7 +562,7 @@ export default function SiteFooter({
           style={{ ...styles.localBadge, background: "#7C4DFF" }}
           title={`Dev redirect: ${siteConfig.redirect_url}`}
         >
-          NGROK
+          TUNNEL
           <div style={{ fontSize: "0.6rem", fontWeight: 600, marginLeft: 6 }}>
             {siteConfig.redirect_url.replace(/^https?:\/\//, "")}
           </div>
@@ -567,9 +571,9 @@ export default function SiteFooter({
         <div style={styles.localBadge} title="Local development build">
           LOCAL
         </div>
-      ) : isNgrokOrigin ? (
-        <div style={{ ...styles.localBadge, background: "#7C4DFF" }} title="Ngrok public URL">
-          NGROK
+      ) : isTunnelOrigin ? (
+        <div style={{ ...styles.localBadge, background: "#7C4DFF" }} title="Tunnel public URL">
+          TUNNEL
         </div>
       ) : null}
 

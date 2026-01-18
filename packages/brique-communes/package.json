@@ -2,12 +2,11 @@
   "name": "@inseme/brique-communes",
   "version": "1.0.0",
   "description": "Brique pour la gestion des 36 000 communes de France et consultations nationales",
-  "main": "index.js",
+  "main": "src/index.js",
   "type": "module",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "lucide-react": "^0.294.0",
     "@inseme/ui": "workspace:*",
     "@inseme/cop-host": "workspace:*"
   }

@@ -1,5 +1,5 @@
 {
-  "name": "cop-core",
+  "name": "@inseme/cop-core",
   "version": "0.2.0",
   "description": "Cognitive Orchestration Protocol core types and scheduler",
   "type": "module",

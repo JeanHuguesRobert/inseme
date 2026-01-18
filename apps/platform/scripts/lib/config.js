@@ -71,9 +71,21 @@ const ENV_KEY_MAPPING = {
   facebook_client_secret: ["FACEBOOK_CLIENT_SECRET"],
   facebook_token: ["FACEBOOK_TOKEN"],
 
+  // Tunnels
+  cloudflare_tunnel_token: ["CLOUDFLARE_TUNNEL_TOKEN"],
+  cloudflare_domain: ["CLOUDFLARE_DOMAIN"],
+  tunnel_url: ["TUNNEL_URL"],
+  tunnel_control_secret: ["TUNNEL_CONTROL_SECRET", "NGROK_CONTROL_SECRET"],
+
   // Ngrok
   ngrok_auth_token: ["NGROK_AUTH_TOKEN"],
-  ngrok_control_secret: ["NGROK_CONTROL_SECRET"],
+
+  // Ports
+  platform_port: ["PLATFORM_PORT", "PORT"],
+  proxy_port: ["PROXY_PORT"],
+
+  // Rooms
+  bar_room_slug: ["BAR_ROOM_SLUG", "ROOM_SLUG", "VITE_ROOM_SLUG"],
 
   // Divers (selon votre .env)
   mairie_corte_google_maps_key: ["MAIRIE_CORTE_GOOGLE_MAPS_KEY"],
@@ -106,6 +118,8 @@ const AUTO_ENV_PREFIXES = [
   "GITHUB_",
   "FACEBOOK_",
   "NGROK_",
+  "CLOUDFLARE_",
+  "TUNNEL_",
   "BRAVE_",
   "HUGGINGFACE_",
   "GROK_",

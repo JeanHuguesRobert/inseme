@@ -1,5 +1,6 @@
 import OpenAI from "https://esm.sh/openai@4";
 import { defineEdgeFunction } from "../../../../packages/cop-host/src/runtime/edge.js";
+import { ALL_BRIQUE_PROMPTS } from "../../../../packages/brique-ophelia/edge/lib/gen-all-prompts.js";
 
 export const config = {
   path: "/api/report",
@@ -17,7 +18,7 @@ export default defineEdgeFunction(async (request, runtime, context) => {
       console.warn("[Report] Malformed JSON or empty body");
     }
 
-    const { messages } = body;
+    const { messages, is_ephemeral } = body;
 
     if (!messages || !Array.isArray(messages)) {
       return error("Messages array required", 400);
@@ -30,14 +31,42 @@ export default defineEdgeFunction(async (request, runtime, context) => {
 
     const openai = new OpenAI({ apiKey });
 
-    const systemPrompt = `
+    const systemPromptTemplate = is_ephemeral
+      ? `
+        Tu es l'Observateur d'une soirée conviviale (Bar/After).
+        Ton rôle est de générer un RÉSUMÉ DE SOIRÉE chaleureux, synthétique et vivant.
+        Les noms des participants ont été anonymisés par des descriptions comportementales (ex: "Un noctambule curieux"). 
+        Tu DOIS utiliser ces descriptions pour désigner les personnes sans jamais chercher à deviner leur identité réelle.
+        
+        FORMAT DE SORTIE (Markdown strict):
+        # RÉSUMÉ DE LA SOIRÉE
+        **LIEU**: Le Bar Inseme
+        **DATE**: \${date}
+        
+        ---
+
+        ## L'AMBIANCE GÉNÉRALE
+        - Résumé de l'atmosphère et des thèmes globaux.
+
+        ## FIL DES ÉCHANGES & MOMENTS FORTS
+        - Synthèse des discussions marquantes.
+        - Utilise les identités floues fournies (ex: "Un participant discret a soulevé que...").
+
+        ## RÉSUMÉ DES DÉCISIONS (SI APPLICABLE)
+        - Propositions ou consensus dégagés (ex: "Il a été convenu de remettre ça demain").
+
+        ---
+        *Ce résumé est une trace éphémère destinée à garder l'esprit de la soirée tout en protégeant l'anonymat des participants.*
+        `
+      : ALL_BRIQUE_PROMPTS.ophelia?.["task-report"] ||
+        `
         Tu es le Secrétaire de Séance d'une assemblée démocratique (Inseme).
         Ton rôle est de générer un Procès-Verbal (PV) formel, synthétique et juridiquement clair.
         
         FORMAT DE SORTIE (Markdown strict):
         # PROCÈS-VERBAL D'ASSEMBLÉE
-        **RÉFÉRENCE**: INSEME-SESSION-${Date.now()}
-        **DATE**: ${new Date().toLocaleDateString("fr-FR")}
+        **RÉFÉRENCE**: INSEME-SESSION-\${session_id}
+        **DATE**: \${date}
         **LIEU**: Assemblée Numérique Inseme
         
         ---
@@ -69,6 +98,10 @@ export default defineEdgeFunction(async (request, runtime, context) => {
         ---
         *Ce document est généré automatiquement par Ophélia, médiatrice d'Inseme, et fait foi de l'historique des échanges.*
         `;
+
+    const systemPrompt = systemPromptTemplate
+      .replace("${session_id}", Date.now())
+      .replace("${date}", new Date().toLocaleDateString("fr-FR"));
 
     // Format history for the LLM
     const conversation = messages

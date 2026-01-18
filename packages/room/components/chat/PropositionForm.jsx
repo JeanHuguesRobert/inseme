@@ -59,9 +59,11 @@ export default function PropositionForm({
                 }}
                 style={{
                   padding: "4px 8px",
-                  border: "1px solid #ccc",
-                  background: selectedTags.includes(tag) ? "#007bff" : "#f0f0f0",
-                  color: selectedTags.includes(tag) ? "white" : "black",
+                  border: "1px solid var(--color-border-subtle)",
+                  background: selectedTags.includes(tag)
+                    ? "var(--mondrian-blue)"
+                    : "var(--palette-gray-100)",
+                  color: selectedTags.includes(tag) ? "white" : "inherit",
                   cursor: "pointer",
                   fontSize: "0.9em",
                 }}
@@ -70,7 +72,7 @@ export default function PropositionForm({
               </button>
             ))}
             {suggestedTags.length === 0 && (
-              <span style={{ color: "#888", fontStyle: "italic" }}>
+              <span style={{ color: "var(--color-content-secondary)", fontStyle: "italic" }}>
                 Aucune suggestion pour le moment
               </span>
             )}

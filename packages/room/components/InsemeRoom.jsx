@@ -10,26 +10,16 @@ import { BRIQUES, BRIQUE_COMPONENTS } from "../generated/brique-registry.js";
 // Lazy loading du WikiPage s'il est disponible
 const WikiPage = React.lazy(() => {
   const wikiComponent = BRIQUE_COMPONENTS["wiki:/wiki/:slug"];
-  return wikiComponent
-    ? wikiComponent()
-    : Promise.resolve({ default: () => null });
+  return wikiComponent ? wikiComponent() : Promise.resolve({ default: () => null });
 });
 
 // Lazy loading du GroupDetail s'il est disponible
 const GroupPage = React.lazy(() => {
   const groupComponent = BRIQUE_COMPONENTS["group:/groups/:id"];
-  return groupComponent
-    ? groupComponent()
-    : Promise.resolve({ default: () => null });
+  return groupComponent ? groupComponent() : Promise.resolve({ default: () => null });
 });
 
-function RoomLayout({
-  slots = {},
-  onToggleBoard,
-  isBoardOpen,
-  isSpectator,
-  roomName,
-}) {
+function RoomLayout({ slots = {}, onToggleBoard, isBoardOpen, isSpectator, roomName }) {
   const { terminology, group, roomData } = useInsemeContext();
   const [activeTab, setActiveTab] = useState("participation"); // 'participation', 'wiki' or 'group'
 
@@ -43,7 +33,7 @@ function RoomLayout({
   const MediaLayerComponent = slots.MediaLayer || ModernMediaLayer;
 
   return (
-    <div className="h-full bg-[#0a0a0c] text-white selection:bg-indigo-500/30 overflow-x-hidden">
+    <div className="h-full bg-mondrian-black text-white selection:bg-mondrian-blue/30 overflow-x-hidden">
       <div className="max-w-[1600px] mx-auto p-2 md:p-6 lg:p-8 flex flex-col h-full">
         {/* Media Layer (Fixed ratio or collapsed) */}
         {roomData?.media && (
@@ -57,17 +47,14 @@ function RoomLayout({
           <div
             className={`flex-1 flex flex-col min-h-0 transition-all duration-500 ease-in-out ${isBoardOpen ? "lg:w-2/3" : "lg:w-full"}`}
           >
-            <ChatComponent
-              onToggleBoard={onToggleBoard}
-              isBoardOpen={isBoardOpen}
-            />
+            <ChatComponent onToggleBoard={onToggleBoard} isBoardOpen={isBoardOpen} />
           </div>
 
           {/* Interactive Board (Collapsible) */}
           <div
             className={`
                             fixed inset-y-0 right-0 z-40 w-full sm:w-[450px] lg:relative lg:w-[450px] lg:z-0
-                            transform transition-all duration-500 ease-in-out bg-[#0f0f12]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none
+                            transform transition-all duration-500 ease-in-out bg-mondrian-black/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none
                             ${isBoardOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 lg:hidden"}
                         `}
           >
@@ -78,7 +65,7 @@ function RoomLayout({
                     onClick={() => setActiveTab("participation")}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
                       activeTab === "participation"
-                        ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20"
+                        ? "bg-mondrian-blue text-white shadow-lg shadow-mondrian-blue/20"
                         : "text-white/40 hover:text-white/60"
                     }`}
                   >
@@ -90,7 +77,7 @@ function RoomLayout({
                       onClick={() => setActiveTab("wiki")}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
                         activeTab === "wiki"
-                          ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20"
+                          ? "bg-mondrian-red text-white shadow-lg shadow-mondrian-red/20"
                           : "text-white/40 hover:text-white/60"
                       }`}
                     >
@@ -103,7 +90,7 @@ function RoomLayout({
                       onClick={() => setActiveTab("group")}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
                         activeTab === "group"
-                          ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20"
+                          ? "bg-mondrian-yellow text-black shadow-lg shadow-mondrian-yellow/20"
                           : "text-white/40 hover:text-white/60"
                       }`}
                     >
@@ -129,9 +116,7 @@ function RoomLayout({
                 ) : activeTab === "wiki" ? (
                   <div className="wiki-embedded-container">
                     <React.Suspense
-                      fallback={
-                        <div className="text-center py-12">Chargement...</div>
-                      }
+                      fallback={<div className="text-center py-12">Chargement...</div>}
                     >
                       <WikiPage slug={`room:${roomName}`} isEmbedded={true} />
                     </React.Suspense>
@@ -139,9 +124,7 @@ function RoomLayout({
                 ) : (
                   <div className="group-embedded-container">
                     <React.Suspense
-                      fallback={
-                        <div className="text-center py-12">Chargement...</div>
-                      }
+                      fallback={<div className="text-center py-12">Chargement...</div>}
                     >
                       <GroupPage id={group.id} isEmbedded={true} />
                     </React.Suspense>
@@ -155,7 +138,7 @@ function RoomLayout({
           {!isBoardOpen && (
             <button
               onClick={() => onToggleBoard(true)}
-              className="fixed bottom-24 right-6 z-50 p-4 rounded-full bg-indigo-500 shadow-2xl shadow-indigo-500/50 text-white lg:flex hidden items-center gap-2 animate-in fade-in slide-in-from-right-4"
+              className="fixed bottom-24 right-6 z-50 p-4 rounded-full bg-mondrian-yellow shadow-2xl shadow-mondrian-yellow/50 text-black lg:flex hidden items-center gap-2 animate-in fade-in slide-in-from-right-4"
             >
               <BarChart3 className="w-5 h-5" />
               <span className="text-xs font-black uppercase tracking-widest">
@@ -178,14 +161,7 @@ function RoomLayout({
  * @param {object} config - Configuration object (jitsi, ophelia, prompts).
  * @param {object} slots - Custom component overrides { Chat, Results, VoteButtons, MediaLayer }.
  */
-export function InsemeRoom({
-  roomName,
-  user,
-  supabase,
-  isSpectator,
-  onBack,
-  slots = {},
-}) {
+export function InsemeRoom({ roomName, user, supabase, isSpectator, onBack, slots = {} }) {
   const [isBoardOpen, setIsBoardOpen] = useState(true);
 
   return (

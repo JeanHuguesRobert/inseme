@@ -51,13 +51,13 @@ export * from "./lib/postPredicates.js";
 export * from "./lib/postActions.js";
 
 // Contexts
-export * from "./contexts/Cop-hostCurrentUserContext";
+export * from "./contexts/Cop-hostCurrentUserContext.jsx";
 
 // Components
-export { default as CommentSection } from "./components/Cop-hostCommentSection";
-export { default as AuthModal } from "./components/Cop-hostAuthModal";
-export { default as FacebookShareButton } from "./components/FacebookShareButton";
-export { default as ShareMenu } from "./components/ShareMenu";
-export { Icon as default, Icon } from "./components/Cop-hostIcon";
-export { default as CommentForm } from "./components/CommentForm";
-export { default as ReactionPicker } from "./components/ReactionPicker";
+export { default as CommentSection } from "./components/Cop-hostCommentSection.jsx";
+export { default as AuthModal } from "./components/Cop-hostAuthModal.jsx";
+export { default as FacebookShareButton } from "./components/FacebookShareButton.jsx";
+export { default as ShareMenu } from "./components/ShareMenu.jsx";
+export { Icon as default, Icon } from "./components/Cop-hostIcon.jsx";
+export { default as CommentForm } from "./components/CommentForm.jsx";
+export { default as ReactionPicker } from "./components/ReactionPicker.jsx";

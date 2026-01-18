@@ -1,47 +1,67 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss()],
-  envDir: "../../",
-  server: {
-    // Le proxy vers localhost:8888 est géré par Netlify Dev (targetPort: 5173)
-    // Ajouter un proxy ici peut créer une boucle de redirection ENOBUFS
-  },
-  resolve: {
-    alias: {
-      "@inseme/room": path.resolve(__dirname, "../../packages/room"),
-      "@inseme/ui": path.resolve(__dirname, "../../packages/ui"),
-      "@inseme/cop-host": path.resolve(
-        __dirname,
-        "../../packages/cop-host/src"
-      ),
-      "@inseme/ophelia": path.resolve(
-        __dirname,
-        "../../packages/ophelia/index.js"
-      ),
-      "@inseme/kudocracy": path.resolve(__dirname, "../../packages/kudocracy"),
-      "@inseme/brique-cyrnea": path.resolve(
-        __dirname,
-        "../../packages/brique-cyrnea/src"
-      ),
-      "@inseme/brique-kudocracy": path.resolve(
-        __dirname,
-        "../../packages/brique-kudocracy/src"
-      ),
+export default defineConfig(({ mode }) => {
+  return {
+    plugins: [
+      react(),
+      tailwindcss(),
+      VitePWA({
+        registerType: "autoUpdate",
+        includeAssets: ["favicon.ico", "apple-touch-icon.png", "cyrnea.svg"],
+        manifest: {
+          name: "Cyrnea - L'IA au Comptoir",
+          short_name: "Cyrnea",
+          description: "Application PWA pour Inseme Cyrnea",
+          theme_color: "#ffffff",
+          icons: [
+            {
+              src: "cyrnea.svg",
+              sizes: "192x192",
+              type: "image/svg+xml",
+            },
+            {
+              src: "cyrnea.svg",
+              sizes: "512x512",
+              type: "image/svg+xml",
+            },
+          ],
+        },
+      }),
+    ],
+    envDir: "../../",
+    server: {
+      port: 5173,
+      strictPort: true, // Évite que Vite ne change de port silencieusement, ce qui casserait Netlify Dev
+      // Le proxy vers localhost:8888 est géré par Netlify Dev (qui écoute sur 8888 et proxy vers 5173)
+      // NE PAS ajouter de proxy ici vers 8888 sous peine de boucle infinie (ENOBUFS)
     },
-  },
-  define: {
-    "process.env": {},
-  },
-  build: {
-    sourcemap: true,
-    minify: mode === "production" ? "esbuild" : false,
-  },
-}));
+    resolve: {
+      alias: {
+        "@inseme/room": path.resolve(__dirname, "../../packages/room"),
+        "@inseme/ui": path.resolve(__dirname, "../../packages/ui"),
+        "@inseme/cop-host": path.resolve(__dirname, "../../packages/cop-host/src"),
+        "@inseme/ophelia": path.resolve(__dirname, "../../packages/ophelia/index.js"),
+        "@inseme/kudocracy": path.resolve(__dirname, "../../packages/kudocracy"),
+        "@inseme/brique-cyrnea": path.resolve(__dirname, "../../packages/brique-cyrnea/src"),
+        "@inseme/brique-kudocracy": path.resolve(__dirname, "../../packages/brique-kudocracy/src"),
+      },
+    },
+    define: {
+      // Permet d'injecter des variables globales si nécessaire,
+      // mais import.meta.env est généralement suffisant
+      "process.env": {},
+    },
+    build: {
+      sourcemap: true,
+      minify: mode === "production" ? "esbuild" : false,
+    },
+  };
+});

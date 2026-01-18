@@ -14,7 +14,7 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
-    "lucide-react": "^0.469.0",
+    "lucide-react": "^0.562.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "marked": "^17.0.1",

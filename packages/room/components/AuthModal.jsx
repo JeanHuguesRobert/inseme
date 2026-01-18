@@ -59,9 +59,7 @@ export function AuthModal({
     } catch (err) {
       console.error("Sign In Error:", err.message);
       setError(
-        err.message === "Invalid login credentials"
-          ? "Identifiants incorrects"
-          : err.message
+        err.message === "Invalid login credentials" ? "Identifiants incorrects" : err.message
       );
     } finally {
       setLoading(false);
@@ -120,7 +118,7 @@ export function AuthModal({
   };
 
   const sidebar = (
-    <div className="w-full bg-indigo-600 p-12 flex flex-col justify-between text-white relative overflow-hidden">
+    <div className="w-full bg-mondrian-blue p-12 flex flex-col justify-between text-white relative overflow-hidden">
       <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
 
@@ -131,8 +129,8 @@ export function AuthModal({
           Augmentée.
         </h3>
         <p className="text-white/80 font-medium leading-relaxed">
-          Rejoignez un espace de délibération nouvelle génération. Votez,
-          débattez et construisez le consensus avec l'aide d'Ophélia.
+          Rejoignez un espace de délibération nouvelle génération. Votez, débattez et construisez le
+          consensus avec l'aide d'Ophélia.
         </p>
       </div>
 

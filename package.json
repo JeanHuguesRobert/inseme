@@ -4,23 +4,28 @@
   "version": "1.0.0",
   "description": "Monorepo for Inseme and Platform Citoyenne",
   "type": "module",
+  "packageManager": "pnpm@10.28.0",
   "engines": {
     "node": ">=24"
   },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "inseme:dev": "npm run dev -w inseme",
+    "prepare": "husky",
+    "lint": "pnpm -r --if-present lint",
+    "inseme:dev": "pnpm --filter @inseme/app-inseme run dev",
     "inseme:backend": "netlify dev --cwd apps/inseme --port 8888",
-    "platform:dev": "npm run dev -w platform",
+    "platform:dev": "pnpm run dev --filter platform",
     "platform:backend": "netlify dev --cwd apps/platform",
-    "cyrnea:dev": "npm run dev -w cyrnea",
+    "cyrnea:dev": "pnpm --filter @inseme/app-cyrnea run dev",
+    "cyrnea:all": "turbo run @inseme/app-cyrnea#dev @inseme/models#sovereign:dev platform#tunnel",
+    "cyrnea:tunnel": "pnpm --filter platform run tunnel",
     "cyrnea:backend": "netlify dev --cwd apps/cyrnea",
+    "sovereign:up": "pnpm --filter @inseme/models run sovereign:up",
+    "sovereign:down": "pnpm --filter @inseme/models run sovereign:down",
+    "sovereign:status": "pnpm --filter @inseme/models run sovereign:status",
     "compile:briques": "node packages/cop-host/scripts/compile-briques.js",
-    "inseme:build": "npm run build -w inseme",
-    "platform:build": "npm run build -w platform"
+    "inseme:build": "pnpm --filter @inseme/app-inseme run build",
+    "platform:build": "pnpm run build --filter platform",
+    "cyrnea:build": "pnpm --filter @inseme/app-cyrnea run build"
   },
   "devDependencies": {
     "glob": "^11.0.1",
@@ -29,10 +34,12 @@
     "prettier": "^3.7.4",
     "turbo": "^2.7.3"
   },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "*"
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,css,md}": "prettier --write"
   },
   "dependencies": {
-    "lucide-react": "^0.562.0"
+    "@supabase/supabase-js": "^2.90.1",
+    "dotenv": "^17.2.3",
+    "node-fetch": "^3.0.0"
   }
 }

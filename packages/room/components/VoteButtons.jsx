@@ -70,18 +70,13 @@ export function VoteButtons(props) {
     color: `bg-${opt.color}-500/10 text-${opt.color}-400 border-${opt.color}-500/20 hover:bg-${opt.color}-500/20`,
   }));
 
-  const interactionButtons = (template?.interactionActions || []).map(
-    (act) => ({
-      ...act,
-      type: "interaction",
-      color: `bg-${act.color}-500/10 text-${act.color}-400 border-${act.color}-500/20 hover:bg-${act.color}-500/20`,
-    })
-  );
+  const interactionButtons = (template?.interactionActions || []).map((act) => ({
+    ...act,
+    type: "interaction",
+    color: `bg-${act.color}-500/10 text-${act.color}-400 border-${act.color}-500/20 hover:bg-${act.color}-500/20`,
+  }));
 
-  const mainButtons = [
-    ...(canVote ? voteButtons : []),
-    ...(canInteract ? interactionButtons : []),
-  ];
+  const mainButtons = [...(canVote ? voteButtons : []), ...(canInteract ? interactionButtons : [])];
 
   // Fallback si le template n'a pas d'options définies
   if (mainButtons.length === 0 && (canVote || canInteract)) {
@@ -91,21 +86,21 @@ export function VoteButtons(props) {
           id: "ok",
           label: "D'accord",
           color:
-            "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20",
+            "bg-mondrian-blue/10 text-mondrian-blue border-mondrian-blue/20 hover:bg-mondrian-blue/20",
           icon: "CheckCircle2",
         },
         {
           id: "no",
           label: "Pas d'accord",
           color:
-            "bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20",
+            "bg-mondrian-red/10 text-mondrian-red border-mondrian-red/20 hover:bg-mondrian-red/20",
           icon: "XCircle",
         },
         {
           id: "off",
           label: "Besoin d'air",
           color:
-            "bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20",
+            "bg-mondrian-yellow/10 text-mondrian-yellow border-mondrian-yellow/20 hover:bg-mondrian-yellow/20",
           icon: "HelpCircle",
         }
       );
@@ -116,14 +111,14 @@ export function VoteButtons(props) {
           id: "parole",
           label: "Demande de parole",
           color:
-            "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20",
+            "bg-mondrian-yellow/10 text-mondrian-yellow border-mondrian-yellow/20 hover:bg-mondrian-yellow/20",
           icon: "MessageSquare",
         },
         {
           id: "technical",
           label: "Point technique",
           color:
-            "bg-orange-600/10 text-orange-400 border-orange-600/20 hover:bg-orange-600/20",
+            "bg-mondrian-red/10 text-mondrian-red border-mondrian-red/20 hover:bg-mondrian-red/20",
           icon: "AlertTriangle",
         }
       );
@@ -131,8 +126,7 @@ export function VoteButtons(props) {
   }
 
   const votingPower = user?.user_metadata?.voting_power || 1;
-  const currentDeclaration =
-    roomData?.userPowers?.[user?.id]?.declarations?.slice(-1)[0];
+  const currentDeclaration = roomData?.userPowers?.[user?.id]?.declarations?.slice(-1)[0];
   const effectiveMultiplier = currentDeclaration?.multiplier || 1;
   const effectivePower = votingPower * effectiveMultiplier;
 
@@ -145,13 +139,13 @@ export function VoteButtons(props) {
               Votre Vote
             </h3>
             <span
-              className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${userRole === "member" ? "bg-indigo-500/20 text-indigo-400" : "bg-white/10 text-white/40"}`}
+              className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${userRole === "member" ? "bg-mondrian-blue/20 text-mondrian-blue" : "bg-white/10 text-white/40"}`}
             >
               {currentRoleLabel}
             </span>
           </div>
           {currentDeclaration && (
-            <span className="text-[8px] text-amber-500/60 font-medium italic truncate max-w-[200px]">
+            <span className="text-[8px] text-mondrian-yellow/60 font-medium italic truncate max-w-[200px]">
               Multiplié par {effectiveMultiplier} : {currentDeclaration.reason}
             </span>
           )}
@@ -159,20 +153,17 @@ export function VoteButtons(props) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
-              const m = prompt(
-                "Multiplicateur (ex: 2 pour voix double) ?",
-                "2"
-              );
+              const m = prompt("Multiplicateur (ex: 2 pour voix double) ?", "2");
               const r = prompt("Motif / Procuration ?", "Procuration de...");
               if (m && r) declarePower?.(parseInt(m), r);
             }}
-            className="px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[9px] font-black text-amber-400 uppercase tracking-widest hover:bg-amber-500/20 transition-all"
+            className="px-2 py-1 rounded-lg bg-mondrian-yellow/10 border border-mondrian-yellow/20 text-[9px] font-black text-mondrian-yellow uppercase tracking-widest hover:bg-mondrian-yellow/20 transition-all"
           >
             Procuration
           </button>
           {(votingPower > 1 || effectiveMultiplier > 1) && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-              <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-mondrian-blue/10 border border-mondrian-blue/20">
+              <span className="text-[10px] font-black text-mondrian-blue uppercase tracking-widest">
                 {template?.weightLabel || "Poids"} : {effectivePower}
               </span>
             </div>
@@ -182,23 +173,23 @@ export function VoteButtons(props) {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {mainButtons.map((btn) => {
           const Icon = ICON_MAP[btn.icon] || HelpCircle;
-          
+
           // Map template colors to Mondrian palette
           let mondrianColor = "bg-white text-black";
-          if (btn.id === "ok" || btn.id === "yes") mondrianColor = "bg-[#0055A4] text-white";
-          else if (btn.id === "no" || btn.id === "cancel") mondrianColor = "bg-[#E10600] text-white";
-          else if (btn.id === "off" || btn.id === "help" || btn.id === "parole") mondrianColor = "bg-[#FFD500] text-black";
+          if (btn.id === "ok" || btn.id === "yes") mondrianColor = "bg-mondrian-blue text-white";
+          else if (btn.id === "no" || btn.id === "cancel")
+            mondrianColor = "bg-mondrian-red text-white";
+          else if (btn.id === "off" || btn.id === "help" || btn.id === "parole")
+            mondrianColor = "bg-mondrian-yellow text-black";
 
           return (
             <button
               key={btn.id}
               onClick={() => castVote?.(btn.id)}
-              className={`flex flex-row items-center justify-center gap-3 p-4 rounded-none border-4 border-black transition-all active:translate-x-1 active:translate-y-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group ${mondrianColor}`}
+              className={`flex flex-row items-center justify-center gap-3 p-4 rounded-none border-4 border-black transition-all hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] active:translate-x-0 active:translate-y-0 active:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group cursor-pointer ${mondrianColor}`}
             >
               <Icon className="w-5 h-5" strokeWidth={3} />
-              <span className="text-[10px] font-black uppercase tracking-widest">
-                {btn.label}
-              </span>
+              <span className="text-[10px] font-black uppercase tracking-widest">{btn.label}</span>
             </button>
           );
         })}
@@ -210,9 +201,7 @@ export function VoteButtons(props) {
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="flex items-center gap-2 text-[10px] font-black text-white/20 uppercase tracking-[0.2em] hover:text-white/40 transition-colors px-2 py-1"
         >
-          <Settings
-            className={`w-3 h-3 transition-transform ${isMenuOpen ? "rotate-90" : ""}`}
-          />
+          <Settings className={`w-3 h-3 transition-transform ${isMenuOpen ? "rotate-90" : ""}`} />
           Actions Relais
         </button>
 
@@ -229,23 +218,15 @@ export function VoteButtons(props) {
                     onClick={() => setTemplate?.(t.id)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold border transition-all ${
                       template?.id === t.id
-                        ? "bg-indigo-500 border-indigo-500 text-white"
+                        ? "bg-mondrian-blue border-black text-white"
                         : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10"
                     }`}
                   >
-                    {t.id === "democratie_directe" && (
-                      <Users className="w-3 h-3" />
-                    )}
-                    {t.id === "palabre" && (
-                      <MessageCircle className="w-3 h-3" />
-                    )}
+                    {t.id === "democratie_directe" && <Users className="w-3 h-3" />}
+                    {t.id === "palabre" && <MessageCircle className="w-3 h-3" />}
                     {t.id === "copropriete" && <Home className="w-3 h-3" />}
-                    {t.id === "conseil_municipal" && (
-                      <Landmark className="w-3 h-3" />
-                    )}
-                    {t.id === "entreprise_sa" && (
-                      <Briefcase className="w-3 h-3" />
-                    )}
+                    {t.id === "conseil_municipal" && <Landmark className="w-3 h-3" />}
+                    {t.id === "entreprise_sa" && <Briefcase className="w-3 h-3" />}
                     {t.id === "tribunal" && <Gavel className="w-3 h-3" />}
                     {t.id === "chapitre" && <BookOpen className="w-3 h-3" />}
                     {t.id === "dao" && <Cpu className="w-3 h-3" />}
@@ -263,7 +244,7 @@ export function VoteButtons(props) {
                   const p = prompt("Nouvelle proposition ?");
                   if (p) setProposition?.(p);
                 }}
-                className="px-4 py-2 bg-indigo-500/20 text-indigo-300 rounded-xl text-[10px] font-bold border border-indigo-500/30 hover:bg-indigo-500/30 transition-all"
+                className="px-4 py-2 bg-mondrian-blue/20 text-mondrian-blue rounded-xl text-[10px] font-bold border border-mondrian-blue/30 hover:bg-mondrian-blue/30 transition-all"
               >
                 NOUVELLE PROPOSITION
               </button>
@@ -271,7 +252,7 @@ export function VoteButtons(props) {
                 onClick={() => {
                   if (confirm("Réinitialiser tous les votes ?")) resetVotes?.();
                 }}
-                className="px-4 py-2 bg-rose-500/10 text-rose-400 rounded-xl text-[10px] font-bold border border-rose-500/20 hover:bg-rose-500/20 transition-all"
+                className="px-4 py-2 bg-mondrian-red/10 text-mondrian-red rounded-xl text-[10px] font-bold border border-mondrian-red/20 hover:bg-mondrian-red/20 transition-all"
               >
                 RESET VOTES
               </button>

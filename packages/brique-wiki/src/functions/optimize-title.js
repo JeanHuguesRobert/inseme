@@ -1,12 +1,12 @@
-import OpenAI from "https://esm.sh/openai@4";
+import OpenAI from "openai";
 import { loadInstanceConfig, getConfig } from "@inseme/cop-host/backend.js";
+import { ALL_BRIQUE_PROMPTS } from "../../../brique-ophelia/edge/lib/gen-all-prompts.js";
 
 export default async (req, context) => {
   if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Méthode non autorisée. Utilisez POST." }),
-      { status: 405 }
-    );
+    return new Response(JSON.stringify({ error: "Méthode non autorisée. Utilisez POST." }), {
+      status: 405,
+    });
   }
 
   try {
@@ -34,7 +34,10 @@ export default async (req, context) => {
 
     const client = new OpenAI({ apiKey: openaiApiKey });
 
-    const systemPrompt = `Tu es un assistant expert en optimisation de titres et de slugs pour des pages wiki. Ton rôle est de prendre un titre par défaut et le contenu d'une page, et de générer un nouveau titre plus concis et un slug correspondant. Le titre doit être court, informatif et ne pas dépasser 10 mots. Le slug doit être une version kebab-case du titre optimisé, en minuscules, sans caractères spéciaux (sauf les tirets) et sans accents.`;
+    const systemPrompt =
+      ALL_BRIQUE_PROMPTS.wiki?.["optimize-title"] ||
+      `Tu es un assistant expert en optimisation de titres et de slugs pour des pages wiki. Ton rôle est de prendre un titre par défaut et le contenu d'une page, et de générer un nouveau titre plus concis et un slug correspondant. Le titre doit être court, informatif et ne pas dépasser 10 mots. Le slug doit être une version kebab-case du titre optimisé, en minuscules, sans caractères spéciaux (sauf les tirets) et sans accents.`;
+
     const userQuestion = `Optimise le titre et génère un slug pour la page wiki suivante. Titre par défaut: "${defaultTitle}". Contenu: "${pageContent.substring(0, 1000)}...". Réponds uniquement avec un objet JSON au format { "optimizedTitle": "Nouveau Titre", "optimizedSlug": "nouveau-titre" }.`;
 
     const response = await client.chat.completions.create({

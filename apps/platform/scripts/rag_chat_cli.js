@@ -198,7 +198,7 @@ async function runSqlWorkflow(options) {
   });
 
   const text = await resp.text();
-  console.log("DEBUG: Raw server response:", text);
+  // console.log("DEBUG: Raw server response:", text);
   if (!resp.ok) {
     let detail = text;
     try {

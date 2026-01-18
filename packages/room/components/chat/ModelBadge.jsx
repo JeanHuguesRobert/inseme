@@ -47,7 +47,10 @@ export default function ModelBadge({ provider, mode, providersStatus }) {
       {modelData.consecutiveErrors > 0 && (
         <span
           className="metric-badge"
-          style={{ background: "rgba(239, 83, 80, 0.2)", color: "#ef5350" }}
+          style={{
+            background: "color-mix(in srgb, var(--palette-error), transparent 80%)",
+            color: "var(--palette-error)",
+          }}
         >
           ⚠️ {modelData.consecutiveErrors} erreur(s)
         </span>

@@ -1,0 +1,30 @@
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap");
+
+body {
+  font-family: "JetBrains+Mono", monospace;
+}
+
+.req-row:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.selected {
+  background-color: #f0f7ff !important;
+  border-left: 4px solid #3b82f6;
+}
+
+.qf-btn.active {
+  border-color: #3b82f6;
+  background-color: #3b82f6;
+  color: white;
+}
+
+.sidebar-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-item.active {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  font-weight: bold;
+}

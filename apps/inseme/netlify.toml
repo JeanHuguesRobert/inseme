@@ -1,16 +1,11 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  functions = "netlify/functions"
-  edge_functions = "netlify/edge-functions"
 
 [dev]
   command = "npm run dev"
-  functions = "netlify/functions"
-  edge_functions = "netlify/edge-functions"
 
 [functions]
-  directory = "netlify/functions"
   node_bundler = "esbuild"
 
 
@@ -105,12 +100,20 @@
   path = "/api/translate"
 
 [[edge_functions]]
+  function = "gen-ophelia-summarize"
+  path = "/api/summarize"
+
+[[edge_functions]]
   function = "gen-ophelia-sessions"
   path = "/api/sessions"
 
 [[edge_functions]]
   function = "gen-ophelia-health"
   path = "/api/health"
+
+[[edge_functions]]
+  function = "gen-ophelia-prolog-executor"
+  path = "/api/prolog-executor"
 
 [[edge_functions]]
   function = "gen-tool-tasks-list_projects"

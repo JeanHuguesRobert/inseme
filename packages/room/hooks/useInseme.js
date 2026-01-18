@@ -13,21 +13,77 @@ import {
   useGroupMembers,
   storage,
 } from "@inseme/cop-host";
-import {
-  GOVERNANCE_MODELS,
-  getGovernanceModel,
-  calculateResults,
-} from "@inseme/kudocracy";
+import { GOVERNANCE_MODELS, getGovernanceModel, calculateResults } from "@inseme/kudocracy";
 
 export const OPHELIA_ID = "00000000-0000-0000-0000-000000000001";
 
-export function useInseme(
-  roomName,
-  user,
-  supabase,
-  config = {},
-  isSpectator = false
-) {
+/**
+ * Applique une anonymisation comportementale aux messages d'une salle éphémère.
+ * Remplace les pseudos par des identités floues basées sur l'activité observée.
+ */
+export function applyBehavioralAnonymization(messages, baseName = "Participant") {
+  const userMap = {};
+  const uniqueNames = [
+    ...new Set(
+      messages.filter((m) => m.name && !m.metadata?.is_ai && m.type !== "report").map((m) => m.name)
+    ),
+  ];
+
+  uniqueNames.forEach((name, index) => {
+    const userMsgs = messages.filter((m) => m.name === name);
+    const msgCount = userMsgs.length;
+    const totalLen = userMsgs.reduce((acc, m) => acc + (m.message?.length || 0), 0);
+    const questionCount = userMsgs.filter((m) => m.message?.includes("?")).length;
+
+    let traits = [];
+    if (msgCount > 10) traits.push("très présent");
+    else if (msgCount > 3) traits.push("actif");
+    else traits.push("discret");
+
+    if (totalLen / msgCount > 100) traits.push("éloquent");
+    if (questionCount > msgCount / 2) traits.push("curieux");
+
+    // On génère une identité "floue" mais descriptive (ex: Noctambule, Client, Participant)
+    userMap[name] = `Un ${baseName} ${traits.join(", ")} (#${index + 1})`;
+  });
+
+  return messages.map((m) => {
+    const anonymizedName = m.metadata?.is_ai ? m.name : userMap[m.name] || "Un participant anonyme";
+
+    // On anonymise le contenu du message (qu'il vienne d'un humain ou d'une IA)
+    let anonymizedContent = m.message;
+    if (typeof anonymizedContent === "string") {
+      Object.keys(userMap).forEach((realName) => {
+        // On remplace le nom réel par le nom anonyme dans le texte du message
+        // Utilisation d'une regex avec frontières de mots pour éviter les remplacements partiels
+        const escapedName = realName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(`\\b${escapedName}\\b`, "g");
+        anonymizedContent = anonymizedContent.replace(regex, userMap[realName]);
+      });
+    }
+
+    return {
+      ...m,
+      name: anonymizedName,
+      message: anonymizedContent,
+      // On anonymise aussi les métadonnées si elles contiennent le nom
+      metadata: m.metadata
+        ? {
+            ...m.metadata,
+            name: m.metadata.name ? userMap[m.metadata.name] || m.metadata.name : m.metadata.name,
+            user_name: m.metadata.user_name
+              ? userMap[m.metadata.user_name] || m.metadata.user_name
+              : m.metadata.user_name,
+          }
+        : m.metadata,
+    };
+  });
+}
+
+import { MediaManager, MockAdapter } from "../index"; // Import SmartAudio components
+import { BRIQUES, CONSOLIDATED_PROMPTS } from "../generated/brique-registry.js";
+
+export function useInseme(roomName, user, supabase, config = {}, isSpectator = false) {
   // 0. Stabilize Configuration
   const effectiveConfig = useMemo(() => {
     const vaultConfig = {
@@ -56,16 +112,20 @@ export function useInseme(
     media: null,
     speechQueue: [],
     moderators: [],
-    sessionStatus: "closed", // 'open' | 'closed'
+    sessionStatus: effectiveConfig.defaultSessionStatus || "closed", // 'open' | 'closed'
     connectedUsers: [],
     agenda: [],
     userPowers: {}, // { userId: { totalPower: number, declarations: [{ reason, multiplier }] } }
   });
   const [presenceState, setPresenceState] = useState({});
+  const [presenceMetadata, setPresenceMetadata] = useState({});
   const [ephemeralThoughts, setEphemeralThoughts] = useState([]);
   const [isOphéliaThinking, setIsOphéliaThinking] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [vocalState, setVocalState] = useState("idle"); // idle, listening, thinking, speaking
+  const [vocalState, setVocalState] = useState("idle");
+  const [microMode, setMicroMode] = useState("OFF");
+  const [vocalError, setVocalError] = useState(null);
+  const [semanticWindow, setSemanticWindow] = useState(null);
   const [isHandsFree, setIsHandsFree] = useState(() => {
     // Default to closed for privacy and browser compatibility
     // but allow persistence if the user explicitly enabled it
@@ -74,14 +134,30 @@ export function useInseme(
     }
     return false;
   });
-  const [nativeLang, setNativeLang] = useState(
-    localStorage.getItem("inseme_native_lang") || "fr"
-  );
+  const [nativeLang, setNativeLang] = useState(localStorage.getItem("inseme_native_lang") || "fr");
   const [isSilent, setIsSilent] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("inseme_silent") === "true";
     }
     return false;
+  });
+  const [gabrielConfig, setGabrielConfig] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("inseme_gabriel_config");
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          console.error("Failed to parse gabriel config", e);
+        }
+      }
+    }
+    return {
+      enabled: false,
+      url: "",
+      key: "",
+      provider: "openai", // fallback to ophelia if not configured
+    };
   });
   const [governanceMode, setGovernanceMode] = useState(() => {
     if (typeof window !== "undefined") {
@@ -91,24 +167,28 @@ export function useInseme(
   });
   const [systemPrompt, setSystemPrompt] = useState("");
   const [roomMetadata, setRoomMetadata] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
 
   // 0.2 Group & Voting Rights
   const groupId = roomMetadata?.settings?.group_id;
   const { isMember, loading: groupLoading } = useGroup(groupId, user?.id);
-  const { members: groupMembers, loading: membersLoading } =
-    useGroupMembers(groupId);
+  const { members: groupMembers, loading: membersLoading } = useGroupMembers(groupId);
 
   const memberIdsSet = useMemo(() => {
     if (!groupMembers) return new Set();
     return new Set(groupMembers.map((m) => m.user_id));
   }, [groupMembers]);
 
-  const roomType = roomMetadata?.settings?.type || "democratie_directe"; // 'democratie_directe' (free/community) or 'entreprise_sa' (paid/certified)
-  const templateId = roomMetadata?.settings?.template || roomType;
+  const roomType = roomMetadata?.settings?.type || "democratie_directe";
+  const templateId = useMemo(() => {
+    if (roomMetadata?.settings?.template) return roomMetadata.settings.template;
+    if (roomName?.includes("-after-")) return "after";
+    if (roomName?.toLowerCase().includes("bar")) return "bar";
+    return roomType;
+  }, [roomMetadata, roomName, roomType]);
+
   const template = useMemo(
-    () =>
-      getGovernanceModel(templateId) ||
-      getGovernanceModel("democratie_directe"),
+    () => getGovernanceModel(templateId) || getGovernanceModel("democratie_directe"),
     [templateId]
   );
 
@@ -127,52 +207,21 @@ export function useInseme(
     return "member"; // Si pas de groupe, tout user authentifié est considéré comme membre de la session
   }, [isSpectator, user, groupId, isMember]);
 
-  // canVote depends on:
-  // 1. Template rules
-  // 2. Being at least 'member' (or 'guest'/'authenticated' if allowed by template)
-  const canVote = useMemo(() => {
-    if (userRole === "spectator" || userRole === "represented") return false; // Les 'represented' ne votent pas eux-mêmes
-    if (userRole === "member") return true;
+  const isAfter = useMemo(() => {
+    return templateId === "after" || roomName?.includes("-after-");
+  }, [templateId, roomName]);
 
-    // Si on n'est pas membre, on vérifie si le template autorise les autres à voter
-    if (userRole === "guest") return !!template?.rules?.can_guests_vote;
-    if (userRole === "authenticated")
-      return template?.rules?.can_authenticated_vote ?? true; // Par défaut on laisse voter les connectés
+  const isBar = useMemo(() => {
+    return (
+      templateId === "bar" ||
+      roomName?.toLowerCase().includes("bar") ||
+      roomMetadata?.settings?.type === "bar"
+    );
+  }, [templateId, roomName, roomMetadata]);
 
-    return false;
-  }, [userRole, template]);
-
-  // canInteract (chat, parole) depends on:
-  // 1. Template rules
-  // 2. Being at least 'guest' or 'authenticated'
-  const canInteract = useMemo(() => {
-    if (userRole === "spectator" || userRole === "represented") return false; // Les 'represented' n'interagissent pas eux-mêmes
-    if (userRole === "member") return true;
-
-    // Par défaut, guest et au-dessus peuvent interagir (chat)
-    // Sauf si la room est restreinte aux membres uniquement pour tout
-    const restrictedInteraction =
-      roomMetadata?.settings?.restricted_interaction;
-    if (restrictedInteraction && userRole !== "member") return false;
-
-    // Vérification spécifique au template pour les invités
-    if (userRole === "guest" && template?.rules?.can_guests_interact === false)
-      return false;
-
-    // Si on est authentifié mais pas membre, on vérifie si le template autorise
-    if (
-      userRole === "authenticated" &&
-      template?.rules?.can_authenticated_vote === false &&
-      !template?.rules?.can_guests_interact
-    )
-      return false;
-
-    return true;
-  }, [userRole, roomMetadata?.settings?.restricted_interaction, template]);
-  const isEnterprise = roomType === "enterprise";
-
-  const [functionLibrary, setFunctionLibrary] = useState({});
-  const functionLibraryRef = useRef({});
+  const isEphemeral = useMemo(() => {
+    return template?.rules?.is_ephemeral || isAfter || isBar;
+  }, [template, isAfter, isBar]);
 
   const terminology = useMemo(() => {
     // Fusionner la terminologie du modèle avec d'éventuels labels personnalisés
@@ -181,6 +230,96 @@ export function useInseme(
       ...roomMetadata?.settings?.labels,
     };
   }, [template, roomMetadata]);
+
+  const baseAnonymPseudo = useMemo(() => {
+    if (isAfter) return "Noctambule";
+    if (isBar) return "Client";
+    return terminology.member || "Participant";
+  }, [isAfter, isBar, terminology.member]);
+
+  // Nouveau modèle unifié "currentUser"
+  const currentUser = useMemo(() => {
+    const isGuest = userRole === "guest" || isAfter;
+    const isSpectatorRole = userRole === "spectator";
+    const isRepresented = userRole === "represented";
+    const isAgent = user?.id === OPHELIA_ID || user?.is_ai;
+
+    let type = "INDIVIDUAL";
+    if (isSpectatorRole) type = "SPECTATOR";
+    else if (isAgent) type = "AGENT";
+    else if (userProfile?.type === "collective" || user?.metadata?.type === "COLLECTIVE")
+      type = "COLLECTIVE";
+
+    return {
+      id: user?.id || "guest-" + Math.random().toString(36).substr(2, 9),
+      type,
+      role: isAfter ? "guest" : userRole,
+      pseudo: isEphemeral
+        ? userProfile?.display_name ||
+          userProfile?.pseudo ||
+          (isAfter ? "Noctambule" : "Participant")
+        : userProfile?.display_name ||
+          userProfile?.pseudo ||
+          user?.email ||
+          (isGuest ? "Invité" : "Anonyme"),
+      avatar: userProfile?.avatar_url || user?.avatar_url,
+      is_ai: isAgent,
+      is_collective: type === "COLLECTIVE",
+      is_guest: isGuest,
+      is_spectator: isSpectatorRole,
+      is_after: isAfter,
+      can: {
+        vote:
+          !isSpectatorRole &&
+          !isRepresented &&
+          (isAfter ||
+            userRole === "member" ||
+            (userRole === "guest" && template?.rules?.can_guests_vote) ||
+            (userRole === "authenticated" && (template?.rules?.can_authenticated_vote ?? true))),
+        speak:
+          !isSpectatorRole &&
+          !isRepresented &&
+          (isAfter ||
+            userRole === "member" ||
+            (userRole === "guest" && template?.rules?.can_guests_interact !== false) ||
+            (userRole === "authenticated" &&
+              !(
+                template?.rules?.can_authenticated_vote === false &&
+                !template?.rules?.can_guests_interact
+              ))),
+        moderate:
+          (isAfter || userRole === "member") &&
+          (userProfile?.is_admin || userProfile?.role === "barman"),
+        configure:
+          (isAfter || userRole === "member") &&
+          (userProfile?.is_admin || userProfile?.role === "barman"),
+      },
+      metadata: {
+        ...user?.metadata,
+        ...userProfile,
+        is_after: isAfter,
+      },
+      summary: isAfter
+        ? "MODE AFTER | COOL & INFORMEL"
+        : `${type} | ${userRole.toUpperCase()} | ${
+            isAgent ? "Agent IA" : isGuest ? "Invité" : isSpectatorRole ? "Spectateur" : "Citoyen"
+          }`,
+    };
+  }, [user, userRole, userProfile, template, OPHELIA_ID, isAfter]);
+
+  // canVote depends on:
+  // 1. Template rules
+  // 2. Being at least 'member' (or 'guest'/'authenticated' if allowed by template)
+  const canVote = currentUser.can.vote;
+
+  // canInteract (chat, parole) depends on:
+  // 1. Template rules
+  // 2. Being at least 'guest' or 'authenticated'
+  const canInteract = currentUser.can.speak;
+  const isEnterprise = roomType === "enterprise";
+
+  const [functionLibrary, setFunctionLibrary] = useState({});
+  const functionLibraryRef = useRef({});
 
   const [transcriptionStatus, setTranscriptionStatus] = useState({
     isActive: false,
@@ -208,10 +347,7 @@ export function useInseme(
     if (!systemPrompt) return "";
 
     const libContent = Object.entries(functionLibrary)
-      .map(
-        ([name, func]) =>
-          `- \`${name}(${func.args || "input"})\`: ${func.description}`
-      )
+      .map(([name, func]) => `- \`${name}(${func.args || "input"})\`: ${func.description}`)
       .join("\n");
 
     const codeToolDesc = `
@@ -250,6 +386,10 @@ RÈGLES D'EXÉCUTION :
 
   const [sessions, setSessions] = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
+  const currentSessionIdRef = useRef(null);
+  useEffect(() => {
+    currentSessionIdRef.current = currentSessionId;
+  }, [currentSessionId]);
   const timersRef = useRef({});
   const recognitionRef = useRef(null);
   const localStreamRef = useRef(null);
@@ -262,49 +402,159 @@ RÈGLES D'EXÉCUTION :
   const triggerOphéliaRef = useRef();
   const setPropositionRef = useRef();
   const generateReportRef = useRef();
+  const cleanupEphemeralLogsRef = useRef();
   const promoteToPlenaryRef = useRef();
   const searchMemoryRef = useRef();
   const castVoteRef = useRef();
 
-  const stopVocal = useCallback(() => {
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
+  // Smart Audio Manager
+  const mediaManagerRef = useRef(null);
+
+  useEffect(() => {
+    // Initialize Media Manager with MockAdapter for now (or choose based on config)
+    // In production this might be WebRTCAdapter
+    const adapter = new MockAdapter();
+    const manager = new MediaManager(adapter);
+
+    // Initialize HostIO with VAD options
+    manager.initHostIO({
+      vadThreshold: 0.01,
+      silenceTimeout: 1000,
+      enableSemantic: config.enableSemantic || false,
+      roomId: roomName,
+      userId: user?.id,
+    });
+
+    manager.on("onSemanticState", (state) => {
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: "broadcast",
+          event: "semantic_state",
+          payload: state,
+        });
+      }
+
+      // Also push to the Edge Function for semantic fusion
+      const opheliaUrl = effectiveConfig.opheliaUrl || "/api/ophelia";
+      fetch(`${opheliaUrl}/api/semantic/state`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...state,
+          roomId: roomName,
+          timestamp: Date.now(),
+        }),
+      }).catch((err) => console.warn("Failed to push semantic state:", err));
+    });
+
+    manager.on("onPlaybackStart", () => {
+      if (typeof config.onPlaybackStart === "function") {
+        config.onPlaybackStart();
+      }
+    });
+
+    manager.on("onPlaybackEnd", () => {
+      if (typeof config.onPlaybackEnd === "function") {
+        config.onPlaybackEnd();
+      }
+    });
+
+    mediaManagerRef.current = manager;
+
+    return () => {
+      manager.stopSession();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof config.onVocalStateChange === "function") {
+      config.onVocalStateChange(vocalState);
     }
+  }, [vocalState, config.onVocalStateChange]);
+
+  useEffect(() => {
+    if (!effectiveConfig.enableSemantic || !roomName) return;
+
+    const fetchWindow = async () => {
+      try {
+        const opheliaUrl = effectiveConfig.opheliaUrl || "/api/ophelia";
+        const response = await fetch(`${opheliaUrl}/api/semantic/window?room_id=${roomName}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSemanticWindow(data);
+        }
+      } catch (e) {
+        console.warn("[useInseme] Failed to fetch semantic window:", e);
+      }
+    };
+
+    fetchWindow();
+    const interval = setInterval(fetchWindow, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
+  }, [roomName, effectiveConfig.enableSemantic, effectiveConfig.opheliaUrl]);
+
+  const stopVocal = useCallback(() => {
+    mediaManagerRef.current?.AudioQueue.clear();
     setVocalState("idle");
   }, []);
 
-  const playVocal = (payload) => {
+  const changeMicroMode = useCallback(
+    (nextMode) => {
+      setMicroMode((prev) => {
+        if (prev === nextMode) return prev;
+        if (channelRef.current) {
+          channelRef.current.send({
+            type: "broadcast",
+            event: "mic_mode",
+            payload: {
+              user_id: user?.id || null,
+              room_id: roomMetadata?.id || roomName,
+              mode: nextMode,
+              ts: Date.now(),
+            },
+          });
+        }
+        return nextMode;
+      });
+    },
+    [roomName, roomMetadata?.id, user?.id]
+  );
+
+  const playVocal = async (payload) => {
     if (isSilent || !payload) return;
 
     // Stop current vocal if any (barge-in support)
-    stopVocal();
+    // stopVocal(); // SmartQueue handles this better, maybe we don't clear?
+    // Actually user said "Stop Ophelia when user speaks". Barge-in is handled by VAD -> Stop Playback
 
-    let audio;
-    if (payload.startsWith("http")) {
-      audio = new Audio(payload);
-    } else {
-      audio = new Audio(`data:audio/mp3;base64,${payload}`);
+    try {
+      let arrayBuffer;
+      if (payload.startsWith("http")) {
+        const resp = await fetch(payload);
+        arrayBuffer = await resp.arrayBuffer();
+      } else {
+        // Base64 to ArrayBuffer
+        const binaryString = window.atob(payload);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        arrayBuffer = bytes.buffer;
+      }
+
+      if (mediaManagerRef.current) {
+        setVocalState("speaking");
+        // We enqueue. Note: SmartAudio.playChunk is async.
+        // We don't easily know when it ends in this fire-and-forget flow without keeping track of the promise queue.
+        // For now, assume "speaking" state is managed by the queue's isPlaying flag if we exposed it,
+        // or we just trust the audio system.
+        mediaManagerRef.current.AudioQueue.enqueue(arrayBuffer);
+      }
+    } catch (e) {
+      console.error("Audio Playback Error:", e);
+      setVocalState("idle");
     }
-
-    currentAudioRef.current = audio;
-    setVocalState("speaking");
-
-    audio.onended = () => {
-      setVocalState("idle");
-      currentAudioRef.current = null;
-    };
-
-    audio.onerror = () => {
-      setVocalState("idle");
-      currentAudioRef.current = null;
-    };
-
-    audio.play().catch((e) => {
-      console.warn("Auto-play bloqué par le navigateur:", e);
-      setVocalState("idle");
-      currentAudioRef.current = null;
-    });
   };
 
   const updateStateWithMsg = useCallback(
@@ -364,11 +614,7 @@ RÈGLES D'EXÉCUTION :
         state.votes = {};
         state.results = {};
         state.proposition = "Pas de proposition active.";
-      } else if (
-        ["live", "image", "pad", "wiki", "twitter", "facebook"].includes(
-          command
-        )
-      ) {
+      } else if (["live", "image", "pad", "wiki", "twitter", "facebook"].includes(command)) {
         if (!payload || payload === "off" || payload === "-") {
           state.media = null;
         } else {
@@ -429,9 +675,7 @@ RÈGLES D'EXÉCUTION :
 
           if (template?.rules?.speech_priority_by_role && isUserMember) {
             // Insérer avant le premier non-membre
-            const firstNonMemberIndex = state.speechQueue.findIndex(
-              (s) => !s.isMember
-            );
+            const firstNonMemberIndex = state.speechQueue.findIndex((s) => !s.isMember);
             if (firstNonMemberIndex !== -1) {
               state.speechQueue.splice(firstNonMemberIndex, 0, speechRequest);
             } else {
@@ -448,8 +692,7 @@ RÈGLES D'EXÉCUTION :
         } else {
           const baseWeight = msg.metadata?.voting_power || 1;
           const dynamicMultiplier =
-            (state.userPowers[userId]?.declarations || []).slice(-1)[0]
-              ?.multiplier || 1;
+            (state.userPowers[userId]?.declarations || []).slice(-1)[0]?.multiplier || 1;
 
           state.votes[userId] = {
             type: voteType,
@@ -458,9 +701,7 @@ RÈGLES D'EXÉCUTION :
             baseWeight: baseWeight,
             weight: baseWeight * dynamicMultiplier,
             role: memberIdsSet.has(userId) ? "member" : "other",
-            declaration: (state.userPowers[userId]?.declarations || []).slice(
-              -1
-            )[0],
+            declaration: (state.userPowers[userId]?.declarations || []).slice(-1)[0],
           };
         }
       }
@@ -494,44 +735,148 @@ RÈGLES D'EXÉCUTION :
 
     const loadConfig = async () => {
       // Try to find SaaS room metadata
-      const { data: room, error } = await supabase
+      const { data: fetchedRoom, error } = await supabase
         .from("inseme_rooms")
         .select("*")
         .eq("slug", roomName)
         .maybeSingle();
 
+      let room = fetchedRoom;
+
+      if (!room && !error) {
+        // Auto-create room if it doesn't exist
+        console.log(`[Inseme] Room "${roomName}" not found. Auto-creating...`);
+        const isBarName =
+          roomName.toLowerCase().includes("bar") || roomName.toLowerCase().includes("cyrnea");
+        const { data: newRoom, error: createError } = await supabase
+          .from("inseme_rooms")
+          .insert([
+            {
+              slug: roomName,
+              name: roomName.charAt(0).toUpperCase() + roomName.slice(1),
+              settings: {
+                template: isBarName ? "cyrnea" : config.template || "democratie_directe",
+                type: isBarName ? "bar" : undefined,
+                ophelia: {
+                  voice: "nova",
+                },
+              },
+            },
+          ])
+          .select()
+          .single();
+
+        if (createError) {
+          console.error("[Inseme] Failed to auto-create room:", createError);
+        } else {
+          room = newRoom;
+        }
+      }
+
       if (room) {
         setRoomMetadata(room);
 
-        // Always load base prompt AND append custom local prompt if present
-        const promptUrl = config.promptUrl || "/prompts/inseme.md";
-        fetch(promptUrl)
-          .then((res) => res.text())
-          .then((basePrompt) => {
-            const customPrompt = room.settings?.ophelia?.prompt || "";
-            if (customPrompt) {
-              setSystemPrompt(
-                `${basePrompt}\n\n### CONSIGNES COMPLÉMENTAIRES (LOCALES)\n${customPrompt}`
-              );
-            } else {
-              setSystemPrompt(basePrompt);
-            }
-          })
-          .catch((err) => {
-            console.error("Failed to load base prompt:", err);
-            if (room.settings?.ophelia?.prompt) {
-              setSystemPrompt(room.settings.ophelia.prompt);
-            }
-          });
+        // Resolve prompt strategy:
+        // 1. config.promptUrl (prop)
+        // 2. getConfig("OPHELIA_PROMPT_URL") (env/vault)
+        // 3. DEFAULT: "__default__" (consolidated)
+        const promptUrl = config.promptUrl || getConfig("OPHELIA_PROMPT_URL");
+
+        // Try to find in consolidated registry
+        let basePrompt =
+          (promptUrl ? CONSOLIDATED_PROMPTS?.[promptUrl] || null : null) ||
+          CONSOLIDATED_PROMPTS?.__default__;
+
+        // Fallback for brique:key format
+        if (!basePrompt && promptUrl?.includes(":")) {
+          const [bId, pKey] = promptUrl.split(":");
+          const brique = BRIQUES.find((b) => b.id === bId);
+          if (brique?.prompts?.[pKey]) {
+            basePrompt = brique.prompts[pKey];
+          }
+        }
+
+        if (basePrompt) {
+          const customPrompt = room.settings?.ophelia?.prompt || "";
+          if (customPrompt) {
+            setSystemPrompt(
+              `${basePrompt}\n\n### CONSIGNES COMPLÉMENTAIRES (LOCALES)\n${customPrompt}`
+            );
+          } else {
+            setSystemPrompt(basePrompt);
+          }
+        } else if (promptUrl && (promptUrl.startsWith("http") || promptUrl.includes("/"))) {
+          // Only fallback to fetch if an explicit URL was provided and it's not in the registry
+          fetch(promptUrl)
+            .then(async (res) => {
+              if (!res.ok) throw new Error("Prompt not found");
+              const contentType = res.headers.get("content-type") || "";
+              if (contentType.includes("text/html")) {
+                console.warn(
+                  `[Inseme] Le prompt ${promptUrl} a renvoyé du HTML au lieu de Markdown.`
+                );
+                throw new Error("Invalid prompt format (HTML)");
+              }
+              const text = await res.text();
+              if (text.trim().startsWith("<!doctype html>")) {
+                console.warn(`[Inseme] Le prompt ${promptUrl} contient du HTML (fallback SPA).`);
+                throw new Error("Invalid prompt content (HTML fallback)");
+              }
+              return text;
+            })
+            .then((text) => {
+              const customPrompt = room.settings?.ophelia?.prompt || "";
+              if (customPrompt) {
+                setSystemPrompt(
+                  `${text}\n\n### CONSIGNES COMPLÉMENTAIRES (LOCALES)\n${customPrompt}`
+                );
+              } else {
+                setSystemPrompt(text);
+              }
+            })
+            .catch((err) => {
+              console.error("Failed to load base prompt:", err);
+              if (room.settings?.ophelia?.prompt) {
+                setSystemPrompt(room.settings.ophelia.prompt);
+              }
+            });
+        }
       } else {
         // Fallback to static prompt file
-        const promptUrl = config.promptUrl || "/prompts/inseme.md";
-        fetch(promptUrl)
-          .then((res) => res.text())
-          .then(setSystemPrompt)
-          .catch((err) =>
-            console.error("Erreur de chargement du prompt Ophélia:", err)
-          );
+        const promptUrl = config.promptUrl || getConfig("OPHELIA_PROMPT_URL");
+        let basePrompt =
+          (promptUrl ? CONSOLIDATED_PROMPTS?.[promptUrl] || null : null) ||
+          CONSOLIDATED_PROMPTS?.__default__;
+
+        if (!basePrompt && promptUrl?.includes(":")) {
+          const [bId, pKey] = promptUrl.split(":");
+          const brique = BRIQUES.find((b) => b.id === bId);
+          if (brique?.prompts?.[pKey]) {
+            basePrompt = brique.prompts[pKey];
+          }
+        }
+
+        if (basePrompt) {
+          setSystemPrompt(basePrompt);
+        } else if (promptUrl && (promptUrl.startsWith("http") || promptUrl.includes("/"))) {
+          fetch(promptUrl)
+            .then(async (res) => {
+              if (!res.ok) throw new Error("Prompt not found");
+              const contentType = res.headers.get("content-type") || "";
+              if (contentType.includes("text/html")) {
+                console.warn(`[Inseme] Le prompt statique ${promptUrl} a renvoyé du HTML.`);
+                throw new Error("Invalid prompt format (HTML)");
+              }
+              const text = await res.text();
+              if (text.trim().startsWith("<!doctype html>")) {
+                console.warn(`[Inseme] Le prompt statique ${promptUrl} contient du HTML.`);
+                throw new Error("Invalid prompt content (HTML fallback)");
+              }
+              return text;
+            })
+            .then(setSystemPrompt)
+            .catch((err) => console.error("Erreur de chargement du prompt Ophélia:", err));
+        }
       }
 
       // Add sessions discovery
@@ -569,9 +914,7 @@ RÈGLES D'EXÉCUTION :
           // We could store this in state if we want dynamic names/avatars
         }
       } catch (err) {
-        console.warn(
-          `Could not fetch Ophélia from ${PROFILE_TABLE}. Using default.`
-        );
+        console.warn(`Could not fetch Ophélia from ${PROFILE_TABLE}. Using default.`);
       }
     };
 
@@ -632,12 +975,17 @@ RÈGLES D'EXÉCUTION :
       const { data, error } = await dbQuery;
 
       if (!error) {
-        setMessages(data);
-        processMessages(data);
-        messageCountRef.current = data.length;
+        let processedData = data;
+        // Anonymisation en temps différé (si on consulte une session passée)
+        if (isEphemeral && dateFrom) {
+          processedData = applyBehavioralAnonymization(data, baseAnonymPseudo);
+        }
+        setMessages(processedData);
+        processMessages(processedData);
+        messageCountRef.current = processedData.length;
       }
     },
-    [roomName, supabase, roomMetadata?.id]
+    [roomName, supabase, roomMetadata?.id, isEphemeral, isAfter, baseAnonymPseudo, processMessages]
   );
 
   const selectSession = (session) => {
@@ -659,10 +1007,7 @@ RÈGLES D'EXÉCUTION :
     // PRESENCE LOGGING (JOIN)
     const logJoin = async () => {
       if (!user) return;
-      const userName =
-        user?.user_metadata?.full_name ||
-        user?.email?.split("@")[0] ||
-        "Anonyme";
+      const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Anonyme";
       await supabase.from("inseme_messages").insert([
         {
           room_id: targetRoomId,
@@ -685,8 +1030,7 @@ RÈGLES D'EXÉCUTION :
     const channel = supabase.channel(`room:${roomName}`, {
       config: {
         presence: {
-          key:
-            user?.id || "spectator-" + Math.random().toString(36).substr(2, 9),
+          key: user?.id || "spectator-" + Math.random().toString(36).substr(2, 9),
         },
       },
     });
@@ -720,6 +1064,10 @@ RÈGLES D'EXÉCUTION :
       setIsOphéliaThinking(payload.status);
     });
 
+    channel.on("broadcast", { event: "celebrate" }, ({ payload }) => {
+      window.dispatchEvent(new CustomEvent("inseme:celebrate", { detail: payload }));
+    });
+
     channel.on(
       "postgres_changes",
       {
@@ -730,7 +1078,10 @@ RÈGLES D'EXÉCUTION :
       },
       (payload) => {
         const newMsg = payload.new;
-        setMessages((prev) => [...prev, newMsg]);
+        // N'ajouter les messages en direct que si on n'est pas en train de consulter une session passée
+        if (!currentSessionIdRef.current) {
+          setMessages((prev) => [...prev, newMsg]);
+        }
         processMessage(newMsg);
 
         // 3. Proactive Trigger: Wake up Ophélia every 15 messages (more subtle)
@@ -742,6 +1093,22 @@ RÈGLES D'EXÉCUTION :
         }
       }
     );
+
+    if (roomMetadata?.id) {
+      channel.on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "inseme_rooms",
+          filter: `id=eq.${roomMetadata.id}`,
+        },
+        (payload) => {
+          console.log("[Inseme] Room metadata updated via realtime:", payload.new);
+          setRoomMetadata(payload.new);
+        }
+      );
+    }
 
     if (user) {
       channel
@@ -755,6 +1122,7 @@ RÈGLES D'EXÉCUTION :
               id: p.user_id,
               name: p.name,
               status: p.status || "online",
+              ...p, // Spread all presence properties (zone, etc.)
             }));
           setRoomData((prev) => ({ ...prev, connectedUsers: connected }));
         })
@@ -786,15 +1154,13 @@ RÈGLES D'EXÉCUTION :
 
     channel.subscribe(async (status) => {
       if (status === "SUBSCRIBED" && user) {
-        const userName =
-          user?.user_metadata?.full_name ||
-          user?.email?.split("@")[0] ||
-          "Anonyme";
+        const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Anonyme";
         await channel.track({
           user_id: user?.id,
           name: userName,
           status: "online",
           joined_at: new Date().toISOString(),
+          ...presenceMetadata,
         });
       }
     });
@@ -805,6 +1171,20 @@ RÈGLES D'EXÉCUTION :
       Object.values(timersRef.current).forEach(clearTimeout);
     };
   }, [roomName, supabase, fetchMessages, roomMetadata?.id, user]);
+
+  // Sync presence metadata updates
+  useEffect(() => {
+    if (channelRef.current && user) {
+      const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Anonyme";
+      channelRef.current.track({
+        user_id: user?.id,
+        name: userName,
+        status: "online",
+        joined_at: new Date().toISOString(),
+        ...presenceMetadata,
+      });
+    }
+  }, [presenceMetadata, user]);
 
   // 3. Proactive & Inactivity Trigger
   useEffect(() => {
@@ -849,8 +1229,7 @@ RÈGLES D'EXÉCUTION :
 
     return () => {
       if (inactivityTimerRef.current) clearInterval(inactivityTimerRef.current);
-      if (keepAliveTimeoutRef.current)
-        clearTimeout(keepAliveTimeoutRef.current);
+      if (keepAliveTimeoutRef.current) clearTimeout(keepAliveTimeoutRef.current);
     };
   }, [
     messages,
@@ -893,6 +1272,7 @@ RÈGLES D'EXÉCUTION :
   // --- TRANSCRIPTION LOGIC ---
 
   const stopLocalTranscription = useCallback(() => {
+    mediaManagerRef.current?.stopSession();
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       recognitionRef.current = null;
@@ -906,6 +1286,35 @@ RÈGLES D'EXÉCUTION :
 
   const startLocalTranscription = useCallback(() => {
     if (typeof window === "undefined") return;
+
+    // Use MediaManager (Smart Audio)
+    if (mediaManagerRef.current) {
+      mediaManagerRef.current
+        .startSession(
+          () => {
+            // onSpeechStart
+            setVocalState("listening");
+            console.log("[SmartAudio] Speech Started");
+          },
+          () => {
+            // onSpeechEnd (Silence Detected)
+            setVocalState("idle");
+            console.log("[SmartAudio] Silence Detected");
+            // Here we could trigger "EndOfSpeech" logic or "Send Buffer"
+          }
+        )
+        .catch((err) => console.error("SmartAudio Start Error:", err));
+
+      setTranscriptionStatus((prev) => ({
+        ...prev,
+        isActive: true,
+        mode: "local", // or 'smart'
+      }));
+    }
+
+    // Legacy SpeechRecognition logic (kept for fallback/reference, disabled by default if SmartAudio is active)
+    // To enable parallel run, uncomment or use a config flag.
+    /*
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -919,115 +1328,13 @@ RÈGLES D'EXÉCUTION :
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = nativeLang === "fr" ? "fr-FR" : "en-US";
-
-    recognition.onstart = () => {
-      window._transcriptionRetryCount = 0; // Reset retries on success
-      setTranscriptionStatus((prev) => ({
-        ...prev,
-        isActive: true,
-        mode: "local",
-      }));
-    };
-
-    recognition.onresult = (event) => {
-      let interimTranscript = "";
-      let finalTranscript = "";
-
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        } else {
-          interimTranscript += event.results[i][0].transcript;
-        }
-      }
-
-      const currentText = finalTranscript || interimTranscript;
-      setTranscriptionStatus((prev) => ({
-        ...prev,
-        lastTranscript: currentText,
-      }));
-
-      // If final, send to refinery (Ophélia)
-      if (finalTranscript) {
-        // Envoi du chunk de transcription vers la base de données pour Ophélia
-        const targetRoomId = roomMetadata?.id || roomName;
-        const userName =
-          user?.user_metadata?.full_name ||
-          user?.email?.split("@")[0] ||
-          "Anonyme";
-
-        supabase
-          .from("inseme_messages")
-          .insert([
-            {
-              room_id: targetRoomId,
-              user_id: user?.id,
-              name: userName,
-              message: finalTranscript,
-              type: "transcription_chunk",
-              metadata: {
-                mode: "local_speech_api",
-                lang: nativeLang,
-                is_final: true,
-                certified: governanceMode,
-                audit_id: governanceMode ? crypto.randomUUID() : null,
-                role: userRole,
-              },
-            },
-          ])
-          .then(({ error }) => {
-            if (error)
-              console.error("Erreur envoi transcription chunk:", error);
-          });
-
-        console.log("Final Transcription Chunk Sent:", finalTranscript);
-      }
-    };
-
-    recognition.onerror = (event) => {
-      // Don't spam network errors if we are already retrying
-      if (event.error === "network") {
-        const MAX_RETRIES = 3;
-        if (!window._transcriptionRetryCount)
-          window._transcriptionRetryCount = 0;
-
-        if (window._transcriptionRetryCount < MAX_RETRIES) {
-          window._transcriptionRetryCount++;
-          console.warn(
-            `[Transcription] Network error, retrying (${window._transcriptionRetryCount}/${MAX_RETRIES})...`
-          );
-
-          setTimeout(() => {
-            const isFloorHolder =
-              window._lastSpeechQueue?.[0]?.userId === user?.id;
-            if (isFloorHolder) {
-              startLocalTranscription();
-            }
-          }, 3000); // Increased delay for network recovery
-          return;
-        }
-      }
-
-      console.error("Transcription Error:", event.error);
-      stopLocalTranscription();
-    };
-
-    recognition.onend = () => {
-      setTranscriptionStatus((prev) => ({ ...prev, isActive: false }));
-      // Auto-restart if we still have the floor and it wasn't a fatal error
-      const isFloorHolder = window._lastSpeechQueue?.[0]?.userId === user?.id;
-      if (isFloorHolder && !recognitionRef.current) {
-        setTimeout(startLocalTranscription, 1000);
-      }
-    };
-
-    recognitionRef.current = recognition;
+    // ... rest of legacy logic ...
     recognition.start();
+    */
   }, [
     nativeLang,
     stopLocalTranscription,
     userRole,
-    // roomData.speechQueue, // REMOVED: cause of infinite loop as speechQueue changes often
     user?.id,
     roomMetadata?.id,
     roomName,
@@ -1043,9 +1350,7 @@ RÈGLES D'EXÉCUTION :
     // Only auto-start transcription if Hands-Free is enabled
     // This prevents the microphone from activating automatically on launch
     if (isFloorHolder && isHandsFree && !transcriptionStatus.isActive) {
-      console.log(
-        "Vous avez la parole (Mains-libres) : Démarrage de la transcription locale."
-      );
+      console.log("Vous avez la parole (Mains-libres) : Démarrage de la transcription locale.");
       startLocalTranscription();
     } else if (
       (!isFloorHolder || !isHandsFree) &&
@@ -1075,8 +1380,7 @@ RÈGLES D'EXÉCUTION :
           }),
         });
         const { documents } = await res.json();
-        if (!documents || documents.length === 0)
-          return "Aucun résultat pertinent trouvé.";
+        if (!documents || documents.length === 0) return "Aucun résultat pertinent trouvé.";
 
         return documents
           .map(
@@ -1093,7 +1397,28 @@ RÈGLES D'EXÉCUTION :
   );
 
   const sendMessage = useCallback(
-    async (text, metadata = {}) => {
+    async (text, metadata = {}, image = null) => {
+      if (image) {
+        try {
+          const roomId = roomMetadata?.id || roomName;
+          let url;
+          if (metadata.type === "proof") {
+            url = await storage.uploadProof(roomId, image);
+          } else {
+            url = await storage.uploadEphemeral(roomId, image);
+          }
+
+          metadata = {
+            ...metadata,
+            image_url: url,
+            image_type: metadata.image_type || "visual_signal",
+            type: metadata.type || "visual_signal",
+          };
+          if (!text) text = "📸 Signal Visuel";
+        } catch (err) {
+          console.error("Image Upload Failed:", err);
+        }
+      }
       if (!metadata.is_ai && !canInteract) return; // Seuls les rôles avec canInteract peuvent envoyer des messages
       if (!text?.trim() && !metadata.type) return;
       if (!supabase) return;
@@ -1106,13 +1431,10 @@ RÈGLES D'EXÉCUTION :
           const enabled = mode === "on";
           setIsHandsFree(enabled);
           localStorage.setItem("inseme_hands_free", enabled ? "true" : "false");
-          sendMessageRef.current?.(
-            `Mode mains-libres ${enabled ? "activé" : "désactivé"}.`,
-            {
-              is_ai: true,
-              type: "system_summary",
-            }
-          );
+          sendMessageRef.current?.(`Mode mains-libres ${enabled ? "activé" : "désactivé"}.`, {
+            is_ai: true,
+            type: "system_summary",
+          });
           return;
         }
       }
@@ -1170,10 +1492,7 @@ RÈGLES D'EXÉCUTION :
             {
               room_id: roomMetadata?.id || roomName,
               user_id: user?.id,
-              name:
-                user?.user_metadata?.full_name ||
-                user?.email?.split("@")[0] ||
-                "Anonyme",
+              name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Anonyme",
               message: `[DÉCLARATION] : ${targetId} est ostracisé pour ${duration} minutes. Raison : ${reason}`,
               type: "ostracism_event",
               metadata: {
@@ -1212,10 +1531,7 @@ RÈGLES D'EXÉCUTION :
             {
               room_id: roomMetadata?.id || roomName,
               user_id: user?.id,
-              name:
-                user?.user_metadata?.full_name ||
-                user?.email?.split("@")[0] ||
-                "Anonyme",
+              name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Anonyme",
               message: `[DÉCLARATION] : Les droits de ${targetId} sont rétablis.`,
               type: "ostracism_event",
               metadata: {
@@ -1257,6 +1573,7 @@ RÈGLES D'EXÉCUTION :
 
       // Strip large binary data from metadata before DB insertion
       const dbMetadata = {
+        zone: presenceMetadata?.zone,
         ...metadata,
         role: metadata.is_ai ? "system" : userRole,
       };
@@ -1265,27 +1582,15 @@ RÈGLES D'EXÉCUTION :
 
       let contentObj = {
         room_id: roomMetadata?.id || roomName,
-        user_id: metadata.is_ai ? null : user?.id || null, // Fix: Use null for AI to bypass strict RLS (auth.uid() check)
-        name: metadata.is_ai
-          ? "Ophélia"
-          : user?.user_metadata?.full_name ||
-            user?.email?.split("@")[0] ||
-            (userRole === "guest"
-              ? "Invité"
-              : userRole === "member"
-                ? terminology.member || "Membre"
-                : "Anonyme"),
+        user_id: metadata.is_ai || isEphemeral ? null : user?.id || null, // Anonymisation des logs pour Bars/Afters
+        name: metadata.is_ai ? "Ophélia" : metadata.pseudonym || currentUser.pseudo || "Anonyme",
         message: text,
         type: metadata.type || "chat",
         metadata: dbMetadata,
       };
 
       // Translation Logic (Translate-on-Write)
-      if (
-        !metadata.is_ai &&
-        nativeLang !== pivotLang &&
-        !text.toLowerCase().startsWith("inseme")
-      ) {
+      if (!metadata.is_ai && nativeLang !== pivotLang && !text.toLowerCase().startsWith("inseme")) {
         try {
           const response = await fetch("/api/translate", {
             method: "POST",
@@ -1326,6 +1631,16 @@ RÈGLES D'EXÉCUTION :
         console.error("Erreur lors de l'envoi du message:", error);
       }
 
+      // Emit local event for components to listen (trust-based system)
+      // This allows barmen to track their own session "memory" via localStorage
+      if (metadata.type === "tip" || metadata.type === "funding") {
+        window.dispatchEvent(
+          new CustomEvent("inseme:event", {
+            detail: { type: "tip", message: text, metadata: metadata },
+          })
+        );
+      }
+
       // Broadcast vocal payload separately (it's too large for Postgres changes payload)
       if (localVocalPayload && !error) {
         if (!isSilent) playVocal(localVocalPayload);
@@ -1355,10 +1670,7 @@ RÈGLES D'EXÉCUTION :
         triggerOphéliaRef.current?.(text);
       }
 
-      if (
-        text.startsWith("inseme parole") ||
-        text.startsWith("inseme technical")
-      ) {
+      if (text.startsWith("inseme parole") || text.startsWith("inseme technical")) {
         const userId = user?.id || "Anonyme";
         if (timersRef.current[userId]) clearTimeout(timersRef.current[userId]);
         timersRef.current[userId] = setTimeout(() => {
@@ -1446,27 +1758,30 @@ RÈGLES D'EXÉCUTION :
   const generateReport = useCallback(async () => {
     setIsOphéliaThinking(true);
     try {
-      await sendMessageRef.current?.(
-        "**Édition du Procès-Verbal en cours...**",
-        {
-          is_ai: true,
-        }
-      );
+      await sendMessageRef.current?.("**Édition du Procès-Verbal en cours...**", {
+        is_ai: true,
+      });
+
+      // --- ANONYMISATION COMPORTEMENTALE POUR LES SALLES ÉPHÉMÈRES ---
+      let messagesForReport = messages;
+      if (isEphemeral) {
+        messagesForReport = applyBehavioralAnonymization(messages, baseAnonymPseudo);
+      }
+      // -----------------------------------------------------------
 
       const response = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: messages,
+          messages: messagesForReport,
           room_settings: roomMetadata?.settings,
+          is_ephemeral: isEphemeral,
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(
-          `Report API Error (${response.status}): ${errorText || "Unknown error"}`
-        );
+        throw new Error(`Report API Error (${response.status}): ${errorText || "Unknown error"}`);
       }
 
       const responseText = await response.text();
@@ -1474,9 +1789,7 @@ RÈGLES D'EXÉCUTION :
       try {
         data = JSON.parse(responseText);
       } catch (e) {
-        throw new Error(
-          `Invalid JSON from report API: ${responseText.substring(0, 100)}`
-        );
+        throw new Error(`Invalid JSON from report API: ${responseText.substring(0, 100)}`);
       }
       const { report, error } = data || {};
 
@@ -1491,7 +1804,7 @@ RÈGLES D'EXÉCUTION :
               user_id: null,
               name: "Ophélia",
               message: report,
-              type: "chat", // Should be 'chat' or custom type? 'chat' ensures visibility.
+              type: "report", // Type spécifique pour préservation
               metadata: { type: "report", generated: true },
             },
           ])
@@ -1514,21 +1827,15 @@ RÈGLES D'EXÉCUTION :
           // Checkpoint Update (Optional: could notify room settings)
         }
 
-        await sendMessageRef.current?.(
-          "📜 Le Procès-Verbal a été généré et archivé.",
-          {
-            is_ai: true,
-          }
-        );
+        await sendMessageRef.current?.("📜 Le Procès-Verbal a été généré et archivé.", {
+          is_ai: true,
+        });
       }
     } catch (error) {
       console.error("Erreur Report:", error);
-      await sendMessageRef.current?.(
-        "[Erreur] Génération du rapport échouée.",
-        {
-          is_ai: true,
-        }
-      );
+      await sendMessageRef.current?.("[Erreur] Génération du rapport échouée.", {
+        is_ai: true,
+      });
     } finally {
       setIsOphéliaThinking(false);
     }
@@ -1547,12 +1854,9 @@ RÈGLES D'EXÉCUTION :
 
       setIsOphéliaThinking(true);
       try {
-        await sendMessageRef.current?.(
-          `**Transmission à la Plénière (${parentSlug})...**`,
-          {
-            is_ai: true,
-          }
-        );
+        await sendMessageRef.current?.(`**Transmission à la Plénière (${parentSlug})...**`, {
+          is_ai: true,
+        });
 
         // In a real SaaS, we would use the Edge Function to securely post to another room.
         // For this implementation, we will simulate it or use a direct Supabase call if we have permissions.
@@ -1603,21 +1907,17 @@ RÈGLES D'EXÉCUTION :
             });
           }
 
-          await sendMessageRef.current?.(
-            `✅ Transmis avec succès à la plénière.`,
-            {
-              is_ai: true,
-            }
-          );
+          await sendMessageRef.current?.(`✅ Transmis avec succès à la plénière.`, {
+            is_ai: true,
+          });
         } else {
           throw new Error("Salle parente introuvable.");
         }
       } catch (error) {
         console.error("Erreur Promotion:", error);
-        await sendMessageRef.current?.(
-          `[Erreur] Échec de la transmission : ${error.message}`,
-          { is_ai: true }
-        );
+        await sendMessageRef.current?.(`[Erreur] Échec de la transmission : ${error.message}`, {
+          is_ai: true,
+        });
       } finally {
         setIsOphéliaThinking(false);
       }
@@ -1633,11 +1933,7 @@ RÈGLES D'EXÉCUTION :
         const fileName = `reports/${roomName}/${sessionId}.md`;
         const blob = new Blob([reportText], { type: "text/markdown" });
 
-        const { url } = await storage.upload(
-          "public-documents",
-          fileName,
-          blob
-        );
+        const { url } = await storage.upload("public-documents", fileName, blob);
 
         await sendMessageRef.current?.(
           `📄 **PV Archivé dans le Cloud**\nLien : [Consulter le document](${url})`,
@@ -1659,6 +1955,43 @@ RÈGLES D'EXÉCUTION :
     [roomMetadata?.id, currentSessionId, roomName]
   );
 
+  const cleanupEphemeralLogs = useCallback(
+    async (days = 3) => {
+      if (!isEphemeral || !supabase || !roomMetadata) return;
+
+      const roomId = roomMetadata.id || roomName;
+      const thresholdDate = new Date();
+      thresholdDate.setDate(thresholdDate.getDate() - days);
+
+      console.log(`[CLEANUP] Tentative de nettoyage pour ${roomName} (seuil: ${days} jours)`);
+
+      const { error } = await supabase
+        .from("inseme_messages")
+        .delete()
+        .eq("room_id", roomId)
+        .lt("created_at", thresholdDate.toISOString())
+        .neq("type", "report"); // On préserve les résumés (PV)
+
+      if (error) {
+        console.error("[CLEANUP] Erreur:", error);
+      } else {
+        console.log(`[CLEANUP] Nettoyage réussi pour ${roomName}`);
+      }
+    },
+    [isEphemeral, supabase, roomMetadata, roomName]
+  );
+
+  // Trigger automatique de nettoyage pour les salles éphémères (1 fois par chargement si besoin)
+  useEffect(() => {
+    if (isEphemeral && roomMetadata) {
+      // On attend un peu après le chargement pour ne pas surcharger
+      const timer = setTimeout(() => {
+        cleanupEphemeralLogs(3); // Garde 3 jours par défaut
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isEphemeral, roomMetadata, cleanupEphemeralLogs]);
+
   const uploadVocal = useCallback(
     async (blob, customFileName = null) => {
       if (!roomMetadata?.id) return null;
@@ -1673,31 +2006,55 @@ RÈGLES D'EXÉCUTION :
     isRecording,
     duration,
     timeLeft,
-    startRecording,
+    transcriptionPreview,
+    startRecording: rawStartRecording,
     stopRecording,
     cancelRecording,
     addTime,
-  } = useVoiceRecorder(
-    (blob, finalDuration) => handleTranscription(blob, finalDuration),
-    {
-      autoStopDelay: 2000,
-      onSilence: () => {
-        if (isHandsFree) {
-          stopRecording();
-        }
-      },
+  } = useVoiceRecorder((blob, finalDuration) => handleTranscription(blob, finalDuration), {
+    autoStopDelay: 2000,
+    lang: nativeLang === "fr" ? "fr-FR" : "en-US",
+    onSilence: () => {
+      if (isHandsFree) {
+        stopRecording();
+      }
+    },
+  });
+
+  const startRecording = useCallback(async () => {
+    setVocalError(null);
+    try {
+      await rawStartRecording();
+    } catch (err) {
+      console.error("[useInseme] Failed to start recording:", err);
+      setVocalError(err.message || "Impossible d'accéder au microphone");
+
+      // Log l'erreur de permission/micro en base
+      sendMessage(`[MIC ERROR] : ${err.message || "Permission denied"}`, {
+        type: "mic_error",
+        error_details: err.message,
+      });
     }
-  );
+  }, [rawStartRecording, sendMessage]);
 
   const handleTranscription = useCallback(
     async (blob, finalDuration) => {
+      console.log("[useInseme] handleTranscription called", {
+        blobSize: blob.size,
+        blobType: blob.type,
+        finalDuration,
+      });
       setIsTranscribing(true);
       setVocalState("thinking");
+      setVocalError(null);
       try {
         const rawRoomName = roomMetadata?.id || roomName || "unknown";
         const safeRoomName = String(rawRoomName).replace(/[^a-z0-9]/gi, "_");
         const fileName = `temp/${safeRoomName}_${Date.now()}_${Math.random().toString(36).substring(7)}.webm`;
+
+        console.log("[useInseme] Uploading vocal to storage...");
         const vocalUrl = await uploadVocal(blob, fileName);
+        console.log("[useInseme] Vocal uploaded:", vocalUrl);
 
         const formData = new FormData();
         formData.append("file", blob, "audio.webm");
@@ -1714,6 +2071,7 @@ RÈGLES D'EXÉCUTION :
           }
         }
 
+        console.log("[useInseme] Calling transcription API:", transcribeUrl);
         const response = await fetch(transcribeUrl, {
           method: "POST",
           body: formData,
@@ -1721,12 +2079,16 @@ RÈGLES D'EXÉCUTION :
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(
-            `Transcription API error (${response.status}): ${errorText}`
-          );
+          console.error("[useInseme] Transcription API error:", {
+            status: response.status,
+            errorText,
+          });
+          throw new Error(`Transcription API error (${response.status}): ${errorText}`);
         }
 
         const text = await response.text();
+        console.log("[useInseme] Transcription raw response:", text);
+
         if (!text || text.trim() === "") {
           console.warn("Transcription API returned an empty response.");
           return;
@@ -1736,21 +2098,45 @@ RÈGLES D'EXÉCUTION :
         try {
           data = JSON.parse(text);
         } catch (e) {
-          throw new Error(
-            `Invalid JSON from transcription API: ${text.substring(0, 100)}`
-          );
+          console.error("[useInseme] Failed to parse transcription JSON:", text);
+          throw new Error(`Invalid JSON from transcription API: ${text.substring(0, 100)}`);
         }
 
         if (data.text) {
-          await sendMessage(data.text, {
+          const trimmed = String(data.text).trim();
+          if (!trimmed) {
+            console.warn("[useInseme] Transcription text is empty after trim:", data);
+            return;
+          }
+          if (finalDuration && finalDuration > 3 && trimmed.length < 10) {
+            console.warn("[useInseme] Transcription too short for duration:", {
+              finalDuration,
+              length: trimmed.length,
+              text: trimmed,
+            });
+            return;
+          }
+          console.log("[useInseme] Transcription success:", trimmed);
+          await sendMessage(trimmed, {
             type: "transcription",
             vocal_url: vocalUrl,
             vocal_transcription: true,
             voice_duration: finalDuration,
           });
+        } else {
+          console.warn("[useInseme] No text in transcription data:", data);
         }
       } catch (err) {
         console.error("Erreur de transcription:", err);
+        setVocalError(err.message);
+
+        // Log l'erreur en base de données pour debug
+        sendMessage(`[TRANSCRIPTION ERROR] : ${err.message}`, {
+          type: "transcription_error",
+          error_details: err.message,
+          blob_size: blob.size,
+          final_duration: finalDuration,
+        });
       } finally {
         setIsTranscribing(false);
         if (!isHandsFree) {
@@ -1758,7 +2144,7 @@ RÈGLES D'EXÉCUTION :
         }
       }
     },
-    [roomMetadata?.id, roomName, isHandsFree, uploadVocal, sendMessage]
+    [roomMetadata?.id, roomName, isHandsFree, uploadVocal, sendMessage, effectiveConfig.opheliaUrl]
   );
 
   // Hands-free Logic: Auto-start recording when idle or transitionally listening
@@ -1775,14 +2161,7 @@ RÈGLES D'EXÉCUTION :
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [
-    isHandsFree,
-    vocalState,
-    isRecording,
-    isTranscribing,
-    isOphéliaThinking,
-    startRecording,
-  ]);
+  }, [isHandsFree, vocalState, isRecording, isTranscribing, isOphéliaThinking, startRecording]);
 
   // Barge-in Logic: Stop Ophélia if user starts speaking
   useEffect(() => {
@@ -1822,10 +2201,7 @@ RÈGLES D'EXÉCUTION :
   const castVote = useCallback(
     async (option) => {
       if (!user || !canVote) return;
-      const userName =
-        user?.user_metadata?.full_name ||
-        user?.email?.split("@")[0] ||
-        "Anonyme";
+      const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Anonyme";
       const votingPower = user?.user_metadata?.voting_power || 1;
 
       // 1. Send as a system message to trigger real-time updates via subscription
@@ -1856,11 +2232,28 @@ RÈGLES D'EXÉCUTION :
     [user]
   );
 
-  const startSession = () => sendMessageRef.current?.("inseme open");
-  const endSession = () => {
-    sendMessageRef.current?.("inseme close");
-    generateReportRef.current?.();
+  const startSession = () => {
+    const sessionName = terminology.session || "Session";
+    sendMessageRef.current?.(`inseme open\n*La ${sessionName} commence.*`, {
+      type: "system_summary",
+    });
   };
+
+  const endSession = useCallback(async () => {
+    const sessionName = terminology.session || "Session";
+    sendMessageRef.current?.(`inseme close\n*La ${sessionName} est désormais close.*`, {
+      type: "system_summary",
+    });
+
+    if (generateReportRef.current) {
+      await generateReportRef.current();
+    }
+
+    if (isEphemeral && cleanupEphemeralLogsRef.current) {
+      // Pour les salles éphémères, on nettoie les logs anciens (plus de 3 jours) à la clôture
+      await cleanupEphemeralLogsRef.current(3);
+    }
+  }, [isEphemeral, terminology.session]);
   const updateAgenda = (newAgenda) => {
     const agendaString = Array.isArray(newAgenda)
       ? newAgenda.map((item, i) => `${i + 1}. ${item.title || item}`).join("\n")
@@ -1880,8 +2273,145 @@ RÈGLES D'EXÉCUTION :
     sendMessageRef.current?.(`inseme bye ${target}`);
   };
 
-  const triggerOphélia = useCallback(
+  const updateRoomSettings = useCallback(
+    async (newSettings) => {
+      if (!roomMetadata?.id || !supabase) return;
+      const { error } = await supabase
+        .from("inseme_rooms")
+        .update({ settings: { ...roomMetadata.settings, ...newSettings } })
+        .eq("id", roomMetadata.id);
+
+      if (error) {
+        console.error("Update Room Settings Error:", error);
+      } else {
+        setRoomMetadata((prev) => ({
+          ...prev,
+          settings: { ...prev.settings, ...newSettings },
+        }));
+      }
+    },
+    [roomMetadata, supabase]
+  );
+
+  useEffect(() => {
+    if (!user?.id || !supabase) return;
+
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from(PROFILE_TABLE)
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (data) setUserProfile(data);
+    };
+
+    fetchProfile();
+  }, [user?.id, supabase, PROFILE_TABLE]);
+
+  const triggerGabriel = useCallback(
     async (userIntent = null, toolResults = []) => {
+      if (isOphéliaThinking && !toolResults.length) return; // Gabriel shares thinking state for UI simplicity or we could add isGabrielThinking
+      if (!roomName || !supabase || isSpectator) return;
+
+      // If Gabriel is not properly configured, fallback to Ophélia but with "Gabriel" persona and personal data
+      const isConfigured = gabrielConfig.enabled && gabrielConfig.url && gabrielConfig.key;
+
+      if (!isConfigured) {
+        // Fallback: trigger Ophélia but with a hint that she should act as Gabriel (Personal Assistant)
+        // and include personal data context if available.
+        const personalContext = currentUser.metadata
+          ? `\n\n[DONNÉES PERSONNELLES UTILISATEUR] : ${JSON.stringify(currentUser.metadata)}`
+          : "";
+        return triggerOphéliaRef.current(
+          userIntent ? `[MODE GABRIEL PERSONNEL] ${userIntent}${personalContext}` : null,
+          toolResults,
+          "Gabriel"
+        );
+      }
+
+      // If configured, call the external provider
+      setIsOphéliaThinking(true);
+      try {
+        const history = messages.slice(-20).map((m) => ({
+          role: m.name === "Gabriel" ? "assistant" : "user",
+          content: `${m.name}: ${m.message}`,
+        }));
+
+        if (userIntent) {
+          const personalContext = currentUser.metadata
+            ? `\n\n[DONNÉES PERSONNELLES UTILISATEUR] : ${JSON.stringify(currentUser.metadata)}`
+            : "";
+          history.push({
+            role: "user",
+            content: `${userIntent}${personalContext}`,
+          });
+        }
+
+        const response = await fetch(gabrielConfig.url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${gabrielConfig.key}`,
+          },
+          body: JSON.stringify(
+            {
+              model: "gpt-4-turbo", // or configurable
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    BRIQUES.find((b) => b.id === "ophelia")?.prompts?.["task-gabriel"] ||
+                    "Tu es Gabriel, l'ange gardien personnel de l'utilisateur. Ton rôle est de protéger ses intérêts et ses valeurs, en bonne entente avec ses voisins, pour gérer paisiblement les conflits de la vie en commun. Tu agis selon le principe de subsidiarité.",
+                },
+                ...history,
+              ],
+            },
+            toolResults
+          ),
+        });
+
+        if (!response.ok) throw new Error("Gabriel API Error");
+
+        const data = await response.json();
+        const text = data.choices[0].message.content;
+
+        await sendMessageRef.current?.(text, { is_ai: true, name: "Gabriel" });
+      } catch (err) {
+        console.error("Erreur Gabriel:", err);
+        await sendMessageRef.current?.(
+          "Désolé, j'ai eu un problème de connexion à mon cerveau Gabriel. Je repasse en mode Ophélia personnelle.",
+          { is_ai: true, name: "Gabriel" }
+        );
+        // Fallback to Ophelia on error
+        return triggerOphéliaRef.current(userIntent, toolResults, "Gabriel");
+      } finally {
+        setIsOphéliaThinking(false);
+      }
+    },
+    [
+      gabrielConfig,
+      isOphéliaThinking,
+      messages,
+      roomName,
+      supabase,
+      isSpectator,
+      currentUser,
+      userProfile,
+    ]
+  );
+
+  const updateGabrielConfig = useCallback((newConfig) => {
+    setGabrielConfig((prev) => {
+      const updated = { ...prev, ...newConfig };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("inseme_gabriel_config", JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, []);
+
+  const triggerOphélia = useCallback(
+    async (userIntent = null, toolResults = [], aiName = "Ophélia") => {
       if (isOphéliaThinking && !toolResults.length) return;
 
       if (!roomName || !supabase || isSpectator) return;
@@ -1975,6 +2505,7 @@ RÈGLES D'EXÉCUTION :
           content: history,
           agenda: roomData.agenda, // Ajout de l'ordre du jour au contexte
           context: roomData,
+          role: roomMetadata?.settings?.ophelia?.role || "mediator",
           system_prompt: augmentedSystemPrompt,
           room_settings: {
             ...roomMetadata?.settings,
@@ -1984,21 +2515,14 @@ RÈGLES D'EXÉCUTION :
             },
           },
           user_id: user?.id,
-          user_name:
-            user?.user_metadata?.full_name ||
-            user?.email?.split("@")[0] ||
-            "Anonyme",
+          user_name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Anonyme",
           speech_stats: speechStats,
           brique_tools: BRIQUES.flatMap((b) => b.tools || []),
           pivot_lang: pivotLang,
           is_silent: isSilent,
         };
 
-        console.log(
-          "[useInseme] Calling Ophélia Edge Function:",
-          opheliaUrl,
-          payload
-        );
+        console.log("[useInseme] Calling Ophélia Edge Function:", opheliaUrl, payload);
         const response = await fetch(opheliaUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -2007,9 +2531,7 @@ RÈGLES D'EXÉCUTION :
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(
-            `API Error (${response.status}): ${errorText || "Unknown error"}`
-          );
+          throw new Error(`API Error (${response.status}): ${errorText || "Unknown error"}`);
         }
 
         const responseText = await response.text();
@@ -2017,9 +2539,7 @@ RÈGLES D'EXÉCUTION :
         try {
           data = JSON.parse(responseText);
         } catch (e) {
-          throw new Error(
-            `Invalid JSON from Ophélia API: ${responseText.substring(0, 100)}`
-          );
+          throw new Error(`Invalid JSON from Ophélia API: ${responseText.substring(0, 100)}`);
         }
         console.log("[useInseme] Ophélia response:", data);
         const { actions, text } = data || {};
@@ -2032,12 +2552,14 @@ RÈGLES D'EXÉCUTION :
             if (tool === "send_message") {
               await sendMessageRef.current?.(args.text, {
                 is_ai: true,
+                name: aiName,
                 vocal_payload,
               });
               currentToolResults.push({ id, result: "Message envoyé." });
             } else if (tool === "speak") {
               await sendMessageRef.current?.(args.text, {
                 is_ai: true,
+                name: aiName,
                 vocal_payload,
                 vocal_only: true,
               });
@@ -2051,7 +2573,7 @@ RÈGLES D'EXÉCUTION :
             } else if (tool === "manage_speech_queue") {
               await sendMessageRef.current?.(
                 `[Médiation] ${args.action === "invite" ? "Invitons" : "Retirons"} ${args.userId} de la liste.`,
-                { is_ai: true }
+                { is_ai: true, name: aiName }
               );
               currentToolResults.push({
                 id,
@@ -2095,8 +2617,7 @@ RÈGLES D'EXÉCUTION :
             } else if (tool === "web_search") {
               // On utilise la clé Brave de la salle ou une par défaut (Vault/Config)
               const braveKey =
-                roomMetadata?.settings?.brave_search_api_key ||
-                getConfig("brave_search_api_key");
+                roomMetadata?.settings?.brave_search_api_key || getConfig("brave_search_api_key");
 
               const results = await performWebSearch(args.query, {
                 apiKey: braveKey,
@@ -2151,9 +2672,7 @@ RÈGLES D'EXÉCUTION :
                   .replace(/[\s_-]+/g, "-")
                   .replace(/^-+|-+$/g, "");
 
-                const slug = args.is_room_specific
-                  ? `room:${roomName}:${baseSlug}`
-                  : baseSlug;
+                const slug = args.is_room_specific ? `room:${roomName}:${baseSlug}` : baseSlug;
 
                 // On appelle une API de création/mise à jour (à créer ou réutiliser)
                 // Pour l'instant on utilise une proposition directe qui nécessite validation
@@ -2196,11 +2715,7 @@ RÈGLES D'EXÉCUTION :
                   result,
                   logs,
                   actions: subActions,
-                } = await safeEval(
-                  code,
-                  input || {},
-                  functionLibraryRef.current
-                );
+                } = await safeEval(code, input || {}, functionLibraryRef.current);
                 const resultStr = JSON.stringify(result, null, 2);
                 const logsStr =
                   isDebug && logs && logs.length > 0
@@ -2302,9 +2817,7 @@ RÈGLES D'EXÉCUTION :
           const thinkMatch = opheliaMsg.match(/<think>([\s\S]*?)<\/think>/);
           if (thinkMatch) {
             const reasoning = thinkMatch[1].trim();
-            opheliaMsg = opheliaMsg
-              .replace(/<think>[\s\S]*?<\/think>/, "")
-              .trim();
+            opheliaMsg = opheliaMsg.replace(/<think>[\s\S]*?<\/think>/, "").trim();
 
             channelRef.current?.send({
               type: "broadcast",
@@ -2365,6 +2878,7 @@ RÈGLES D'EXÉCUTION :
     searchMemoryRef.current = searchMemory;
     castVoteRef.current = castVote;
     updateAssemblyTypeRef.current = updateAssemblyType;
+    cleanupEphemeralLogsRef.current = cleanupEphemeralLogs;
   }, [
     sendMessage,
     triggerOphélia,
@@ -2374,11 +2888,16 @@ RÈGLES D'EXÉCUTION :
     searchMemory,
     castVote,
     updateAssemblyType,
+    cleanupEphemeralLogs,
   ]);
 
   return {
     roomName,
     user,
+    currentUser,
+    isAfter,
+    isBar,
+    isEphemeral,
     userRole,
     isSpectator,
     canVote,
@@ -2393,19 +2912,31 @@ RÈGLES D'EXÉCUTION :
     template,
     sendMessage,
     askOphélia: triggerOphélia,
+    askGabriel: triggerGabriel,
+    gabrielConfig,
+    updateGabrielConfig,
     isOphéliaThinking,
     nativeLang,
     setNativeLang,
     isSilent,
     setIsSilent,
     setProposition,
+    updateRoomSettings,
     updateAssemblyType,
     generateReport,
+    cleanupEphemeralLogs,
     promoteToPlenary,
     archiveReport,
     startSession,
     endSession,
     updateAgenda,
+    sendBroadcast: (event, payload) => {
+      channelRef.current?.send({
+        type: "broadcast",
+        event,
+        payload,
+      });
+    },
     setTemplate,
     declarePower,
     castVote,
@@ -2415,9 +2946,13 @@ RÈGLES D'EXÉCUTION :
     currentSessionId,
     selectSession,
     presenceState,
+    presenceMetadata,
+    setPresenceMetadata,
     uploadVocal,
     playVocal,
     stopVocal,
+    microMode,
+    changeMicroMode,
     isHandsFree,
     setIsHandsFree,
     isRecording,
@@ -2428,7 +2963,11 @@ RÈGLES D'EXÉCUTION :
     duration,
     timeLeft,
     vocalState,
+    vocalError,
+    transcriptionPreview,
+    semanticWindow,
     transcriptionStatus,
     deviceCapability,
+    config: effectiveConfig,
   };
 }

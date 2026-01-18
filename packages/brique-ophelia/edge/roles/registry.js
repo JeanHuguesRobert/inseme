@@ -4,12 +4,15 @@
  * Permet de filtrer les outils et d'adapter le prompt système selon la tâche.
  */
 
+import { ALL_BRIQUE_PROMPTS } from "../lib/gen-all-prompts.js";
+
+const p = ALL_BRIQUE_PROMPTS.ophelia || {};
+
 export const ROLES = {
   mediator: {
     id: "mediator",
     name: "Médiatrice",
-    description:
-      "Faciliter les débats, gérer la parole et favoriser le consensus.",
+    description: "Faciliter les débats, gérer la parole et favoriser le consensus.",
     allowedTools: [
       "manage_speech_queue",
       "get_user_context",
@@ -17,19 +20,16 @@ export const ROLES = {
       "assume_role",
       "persist_knowledge",
       "forget_knowledge",
+      "speak",
+      "vector_search",
+      "web_search",
     ],
-    missionPrompt: `
-      Ta mission est la facilitation du débat démocratique. 
-      Tu dois être attentive aux temps de parole, aux frictions et aux zones d'accord. 
-      N'hésite pas à demander des clarifications si un argument semble flou. 
-      Ton but est d'aider l'assemblée à converger vers une décision ou une synthèse claire.
-    `,
+    missionPrompt: (p["role-mediator"] || "").trim(),
   },
   analyst: {
     id: "analyst",
     name: "Analyste",
-    description:
-      "Extraire des données, croiser des informations et effectuer des recherches.",
+    description: "Extraire des données, croiser des informations et effectuer des recherches.",
     allowedTools: [
       "sql_query",
       "vector_search",
@@ -37,51 +37,65 @@ export const ROLES = {
       "get_user_context",
       "list_capabilities",
       "assume_role",
+      "speak",
     ],
-    missionPrompt: `
-      Ta mission est l'analyse de données et la recherche de vérité. 
-      Utilise la base de données SQL et la mémoire sémantique pour fournir des réponses étayées. 
-      Si tu ne trouves pas l'information en interne, utilise la recherche web. 
-      Sois précise, cite tes sources et structure tes réponses avec des tableaux ou des listes si nécessaire.
-    `,
+    missionPrompt: (p["role-analyst"] || "").trim(),
   },
   scribe: {
     id: "scribe",
     name: "Secrétaire",
-    description:
-      "Documenter les échanges, mettre à jour l'agenda et mémoriser les faits.",
+    description: "Documenter les échanges, mettre à jour l'agenda et mémoriser les faits.",
     allowedTools: [
       "persist_knowledge",
       "forget_knowledge",
       "get_user_context",
       "list_capabilities",
       "assume_role",
+      "speak",
     ],
-    missionPrompt: `
-      Ta mission est la documentation et la gestion de la connaissance. 
-      Tu es la gardienne de la mémoire de cette assemblée. 
-      Note les faits marquants, mets à jour l'agenda et assure-toi que les décisions importantes sont pérennisées. 
-      Ton ton est structuré et tourné vers la trace écrite.
-    `,
+    missionPrompt: (p["role-scribe"] || "").trim(),
   },
   guardian: {
     id: "guardian",
     name: "Gardienne",
-    description:
-      "Modérer les échanges, vérifier les consentements et garantir la civilité.",
+    description: "Modérer les échanges, vérifier les consentements et garantir la civilité.",
     allowedTools: [
       "report_to_moderation",
       "check_providers_status",
       "get_user_context",
       "list_capabilities",
       "assume_role",
+      "speak",
     ],
-    missionPrompt: `
-      Ta mission est la protection de l'espace de débat. 
-      Vérifie que les règles de civilité sont respectées. 
-      Accueille les nouveaux venus, rappelle le principe "Zéro Secret" et assure-toi que personne n'est lésé. 
-      Si un débordement grave a lieu, utilise l'outil de signalement à la modération.
-    `,
+    missionPrompt: (p["role-guardian"] || "").trim(),
+  },
+  "cyrnea-indoor": {
+    id: "cyrnea-indoor",
+    name: "Ophélia (Intérieur - Macagna)",
+    description: "Assistante pour l'ambiance intérieure, experte en macagna et anecdotes.",
+    allowedTools: [
+      "list_capabilities",
+      "assume_role",
+      "get_user_context",
+      "web_search",
+      "vector_search",
+      "speak",
+    ],
+    missionPrompt: (p["role-cyrnea-indoor"] || "").trim(),
+  },
+  "cyrnea-outdoor": {
+    id: "cyrnea-outdoor",
+    name: "Ophélia (Terrasse - Macagna)",
+    description: "Assistante pour la terrasse, experte en macagna et défis dynamiques.",
+    allowedTools: [
+      "list_capabilities",
+      "assume_role",
+      "get_user_context",
+      "web_search",
+      "vector_search",
+      "speak",
+    ],
+    missionPrompt: (p["role-cyrnea-outdoor"] || "").trim(),
   },
 };
 

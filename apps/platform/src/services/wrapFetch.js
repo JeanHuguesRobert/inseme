@@ -1,4 +1,7 @@
 export async function wrapFetch(url, options = {}) {
+  // Auto-wrap URL via the global proxy if defined
+  const targetUrl = typeof window !== "undefined" && window.wrap ? window.wrap(url) : url;
+
   const { token, headers = {}, onAuthError } = options;
   const fetchOptions = { ...options };
 
@@ -12,7 +15,7 @@ export async function wrapFetch(url, options = {}) {
   };
   if (token) fetchOptions.headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(url, fetchOptions);
+  const res = await fetch(targetUrl, fetchOptions);
   if (res.status === 401 || res.status === 403) {
     if (typeof onAuthError === "function") onAuthError(res);
     const err = new Error(`Unauthorized (${res.status})`);

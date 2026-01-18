@@ -6,15 +6,15 @@ export const DEPLOY_DATE = import.meta.env.DEPLOY_DATE ?? "2025-12-25";
 // Palette Bauhaus sombre harmonisée avec le thème CSS
 // Voir src/index.css pour la correspondance exacte
 export const COLORS = [
-  "#B35A4A", // bauhaus-red
-  "#3B4E6B", // bauhaus-blue
-  "#C1A05A", // bauhaus-yellow
-  "#D0C1AA", // bauhaus-white
+  "var(--palette-red)", // bauhaus-red
+  "var(--palette-blue)", // bauhaus-blue
+  "var(--palette-yellow)", // bauhaus-yellow
+  "var(--palette-white)", // bauhaus-white
   "#E93D3D", // bauhaus-red-fresh (accent)
   "#2D58B8", // bauhaus-blue-fresh (accent)
 ];
-export const PRIMARY_COLOR = "#B35A4A"; // bauhaus-red
-export const SECONDARY_COLOR = "#3B4E6B"; // bauhaus-blue
+export const PRIMARY_COLOR = "var(--palette-red)"; // bauhaus-red
+export const SECONDARY_COLOR = "var(--palette-blue)"; // bauhaus-blue
 // COLORS[0]=primary (rouge brique), COLORS[1]=secondary (bleu grisâtre),
 // COLORS[2]=jaune ocre, COLORS[3]=offwhite, COLORS[4]=accent rouge vif, COLORS[5]=accent bleu vif
 
@@ -29,12 +29,57 @@ export const GOOGLE_SCRIPT_URL =
 
 import { getConfig as _getConfig } from "./common/config/instanceConfig.client.js";
 
+// ============================================================================
+// UTILITAIRES DE PROXY (GLOBAL)
+// ============================================================================
+
+/**
+ * Le PROXY est récupéré depuis la configuration de l'instance.
+ * Si non défini, les fonctions wrap/unwrap retournent l'URL originale.
+ */
+export const getProxyUrl = () => {
+  return _getConfig("proxy_url") || import.meta.env.VITE_PROXY_URL || "";
+};
+
+/**
+ * Enveloppe une URL dans le proxy si défini.
+ * Utilisé pour passer à travers le tunnel ngrok/local.
+ */
+export function wrap(url) {
+  const PROXY = getProxyUrl();
+  if (!url || !PROXY || typeof url !== "string") return url;
+  if (url.startsWith(PROXY)) return url;
+  // Ne pas wrapper les URLs locales ou relatives
+  if (!url.startsWith("http")) return url;
+  return PROXY + encodeURIComponent(url);
+}
+
+/**
+ * Récupère l'URL originale à partir d'une URL proxyfiée.
+ */
+export function unwrap(url) {
+  const PROXY = getProxyUrl();
+  if (!url || !PROXY || typeof url !== "string" || !url.startsWith(PROXY)) return url;
+  return decodeURIComponent(url.slice(PROXY.length));
+}
+
 // Helper pour récupérer une config avec fallback sur la valeur initiale
 const getConfig = (key, envValue) => {
   try {
     const val = _getConfig(key);
     // On considère que "" (chaîne vide) doit aussi déclencher le fallback
-    return val !== null && val !== undefined && val !== "" ? val : envValue;
+    const result = val !== null && val !== undefined && val !== "" ? val : envValue;
+
+    // Auto-wrap si c'est une URL et qu'on ne demande pas le proxy lui-même
+    if (
+      key !== "proxy_url" &&
+      typeof result === "string" &&
+      (result.startsWith("http://") || result.startsWith("https://"))
+    ) {
+      return wrap(result);
+    }
+
+    return result;
   } catch {
     return envValue;
   }
@@ -70,10 +115,8 @@ export const IS_NATIONAL_HUB =
 // ============================================================================
 // FONCTIONS DYNAMIQUES (préférées aux constantes statiques)
 // ============================================================================
-
-/**
- * Récupère les valeurs de configuration dynamiques depuis le vault
- * Utiliser ces fonctions plutôt que les constantes statiques quand possible
+/* Récupère les valeurs de configuration dynamiques depuis le vault
+ *  Utiliser ces fonctions plutôt que les constantes statiques quand possible
  */
 export const getDynamicConfig = () => ({
   cityName: getConfig("community_name", CITY_NAME),

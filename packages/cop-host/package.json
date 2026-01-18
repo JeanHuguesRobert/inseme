@@ -9,14 +9,15 @@
     ".": "./src/index.js",
     "./backend": "./src/backend.js",
     "./backend.js": "./src/backend.js",
-    "./config/*": "./src/config/*.js",
-    "./runtime/*": "./src/runtime/*.js",
+    "./config/*": "./src/config/*",
+    "./runtime/*": "./src/runtime/*",
     "./constants": "./src/constants.js",
     "./constants.js": "./src/constants.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "glob": "^10.3.10",
-    "react-router-dom": "^6.20.0"
+    "react-router-dom": "^6.20.0",
+    "lucide-react": "^0.562.0"
   }
 }

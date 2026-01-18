@@ -2,9 +2,27 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cyrnea - L'IA au Comptoir</title>
+    <link rel="icon" type="image/svg+xml" href="/cyrnea.svg" />
+
+    <!-- Open Graph / SEO (Dynamic IDs for JS update) -->
+    <title id="title">Inseme - L'IA au Comptoir</title>
+    <meta id="description" name="description" content="Application mobile pour Inseme Cyrnea" />
+
+    <meta property="og:type" content="website" />
+    <meta id="og-url" property="og:url" content="{{ APP_URL }}" />
+    <meta id="og-title" property="og:title" content="Inseme - L'IA au Comptoir" />
+    <meta id="og-description" property="og:description" content="Application mobile pour Inseme Cyrnea" />
+    <meta id="og-image" property="og:image" content="/cyrnea.svg" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta id="twitter-url" property="twitter:url" content="{{ APP_URL }}" />
+    <meta id="twitter-title" name="twitter:title" content="Inseme - L'IA au Comptoir" />
+    <meta id="twitter-description" name="twitter:description" content="Application mobile pour Inseme Cyrnea" />
+    <meta id="twitter-image" name="twitter:image" content="/cyrnea.svg" />
+
+    <!-- Meta-init injection point -->
+    <script src="/meta-init.js" onerror="console.log('No meta-init.js found, using defaults.')"></script>
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased">
     <div id="root"></div>

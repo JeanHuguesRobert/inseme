@@ -7,6 +7,7 @@
     "react-router-dom": "^6.26.1",
     "@inseme/ui": "workspace:*",
     "@inseme/cop-host": "workspace:*",
+    "openai": "^4.52.5",
     "recharts": "^2.12.7"
   }
 }

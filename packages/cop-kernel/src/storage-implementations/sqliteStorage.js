@@ -1,7 +1,6 @@
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import { SQLITE_SCHEMA, CURRENT_SCHEMA_VERSION, checkTableSchema } from "./sqliteSchema.js";
-import { unlink } from "node:fs/promises";
 
 export function createNodeSqliteStorage(options) {
   const { ERROR_CODES } = options;
@@ -288,13 +287,11 @@ export function createNodeSqliteStorage(options) {
       },
     },
     async clearCache() {
-      // For SQLite, clearing cache means closing the database connection and re-initializing it
       await db.close();
       try {
-        await unlink("cop_kernel.db");
-      } catch (error) {
-        // Ignore if file does not exist
-      }
+        const fs = await import("node:fs/promises");
+        await fs.unlink("cop_kernel.db");
+      } catch (error) {}
       await initializeDb();
       return { ok: true };
     },
