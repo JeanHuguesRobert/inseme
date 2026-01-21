@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   useInsemeContext,
   useVoiceInterface,
+  useVoiceRecorder,
   MondrianBlock,
   TalkButton,
   useAIProviders,
@@ -13,6 +14,18 @@ import { Button } from "@inseme/ui";
 
 const LOCAL_SOVEREIGN_URL = "http://localhost:8080";
 
+const cleanMessage = (text) => {
+  if (!text) return "";
+  let cleaned = text;
+  // 1. Remove <Think> tags and content
+  cleaned = cleaned.replace(/<Think>[\s\S]*?<\/Think>/gi, "");
+  // 2. Remove __PROVIDERS_STATUS__...
+  cleaned = cleaned.replace(/__PROVIDERS_STATUS__[\s\S]*/g, "");
+  // 3. Remove [VOCAL] : prefix
+  cleaned = cleaned.replace(/^\[VOCAL\]\s*:\s*/, "");
+  return cleaned.trim();
+};
+
 export default function VocalConversation() {
   const {
     messages: contextMessages,
@@ -21,6 +34,8 @@ export default function VocalConversation() {
     vocalState,
     isOphéliaThinking: isContextThinking,
     stopVocal,
+    config,
+    uploadVocal,
   } = useInsemeContext();
 
   const {
@@ -38,6 +53,20 @@ export default function VocalConversation() {
     return saved === null ? true : saved === "true";
   });
 
+  const [useBrowserSTT, setUseBrowserSTT] = useState(() => {
+    const saved = localStorage.getItem("ophelia_vocal_use_browser_stt");
+    return saved === null ? true : saved === "true";
+  });
+  const [isWhisperTranscribing, setIsWhisperTranscribing] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("ophelia_vocal_use_browser_stt", useBrowserSTT);
+  }, [useBrowserSTT]);
+
+  const [lastCleared, setLastCleared] = useState(() => {
+    return localStorage.getItem("ophelia_vocal_last_cleared") || null;
+  });
+
   const [localMessages, setLocalMessages] = useState([]);
   const [isLocalServiceAvailable, setIsLocalServiceAvailable] = useState(false);
   const [isLocalThinking, setIsLocalThinking] = useState(false);
@@ -48,6 +77,88 @@ export default function VocalConversation() {
   const [currentModel, setCurrentModel] = useState(
     localStorage.getItem("ophelia_local_model") || "qwen-2.5-coder-1.5b"
   );
+
+  const handleWhisperTranscription = async (blob, duration) => {
+    // 1. Always upload raw audio to storage (PV / Archive)
+    let vocalUrl = null;
+    try {
+      if (uploadVocal) {
+        console.log("Uploading raw vocal for archive...");
+        vocalUrl = await uploadVocal(blob);
+      }
+    } catch (e) {
+      console.warn("Failed to upload raw vocal:", e);
+    }
+
+    // 2. If Browser STT is active, we stop here (text already handled)
+    // BUT we want to ensure the vocal is archived in DB even if text was sent incrementally
+    if (useBrowserSTT) {
+      if (vocalUrl && sendContextMessage) {
+        // Send a silent system message to link the audio blob to the session
+        sendContextMessage("Audio Archive", {
+          type: "voice_trace",
+          vocal_url: vocalUrl,
+          voice_duration: duration,
+          is_hidden: true,
+        });
+      }
+      return;
+    }
+
+    // 3. Otherwise, use Server Transcription (Whisper)
+    setIsWhisperTranscribing(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", blob, "audio.webm");
+
+      const opheliaUrl = config?.opheliaUrl || "/api/ophelia";
+      let transcribeUrl = "/api/transcribe";
+      if (opheliaUrl && opheliaUrl.startsWith("http")) {
+        try {
+          const url = new URL(opheliaUrl);
+          transcribeUrl = `${url.origin}/api/transcribe`;
+        } catch (e) {}
+      }
+
+      const resp = await fetch(transcribeUrl, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!resp.ok) throw new Error("Transcription failed");
+      const data = await resp.json();
+      const text = data.text;
+
+      if (text) {
+        handleSendMessage(text, vocalUrl);
+      }
+    } catch (e) {
+      console.error("Whisper error", e);
+    } finally {
+      setIsWhisperTranscribing(false);
+    }
+  };
+
+  const {
+    isRecording: isWhisperRecording,
+    transcriptionPreview: whisperPreview,
+    startRecording: startWhisper,
+    stopRecording: stopWhisper,
+  } = useVoiceRecorder(handleWhisperTranscription, {
+    disableLocalPreview: true, // We use useVoiceInterface for preview
+  });
+
+  const handleStartVocal = () => {
+    // Always start recorder (for archive or whisper)
+    startWhisper();
+    // Always start browser listener (for preview or transcript)
+    startListening();
+  };
+
+  const handleStopVocal = () => {
+    stopWhisper();
+    stopListening();
+  };
 
   useEffect(() => {
     localStorage.setItem("ophelia_vocal_use_sovereign", useSovereign);
@@ -114,13 +225,13 @@ export default function VocalConversation() {
 
   // Stop Ophélia if user starts speaking
   useEffect(() => {
-    if (isListening) {
+    if (isListening || isWhisperRecording) {
       stopVocal();
       if (audioRef.current) {
         audioRef.current.pause();
       }
     }
-  }, [isListening, stopVocal]);
+  }, [isListening, isWhisperRecording, stopVocal]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -129,15 +240,15 @@ export default function VocalConversation() {
     }
   }, [localMessages, contextMessages, transcript]);
 
-  // Handle final transcript
+  // Handle final transcript (Browser STT)
   useEffect(() => {
-    if (lastFinalTranscript) {
+    if (lastFinalTranscript && useBrowserSTT) {
       handleSendMessage(lastFinalTranscript);
       setTranscript("");
     }
-  }, [lastFinalTranscript]);
+  }, [lastFinalTranscript, useBrowserSTT]);
 
-  const handleSendMessage = async (text) => {
+  const handleSendMessage = async (text, vocalUrl = null) => {
     if (!text.trim()) return;
 
     // Use local service if available AND enabled
@@ -152,12 +263,23 @@ export default function VocalConversation() {
       };
       setLocalMessages((prev) => [...prev, userMsg]);
       handleLocalResponse(text);
+
+      // Even in Sovereign mode, we might want to archive the vocal trace if available
+      if (vocalUrl && sendContextMessage) {
+        sendContextMessage("Audio Archive (Sovereign)", {
+          type: "voice_trace",
+          vocal_url: vocalUrl,
+          is_hidden: true,
+          sovereign_text: text,
+        });
+      }
     } else {
       // Fallback to cloud context with the selected AI settings
       sendContextMessage(text, {
         is_vocal_input: true,
         sender_name: user?.display_name || "Client",
         directive_prefix: aiProviders.directivePrefix,
+        vocal_url: vocalUrl, // Attach vocal URL if available (Server STT)
       });
     }
   };
@@ -237,6 +359,10 @@ export default function VocalConversation() {
     if (window.confirm("Effacer l'historique de cette conversation ?")) {
       setLocalMessages([]);
       localStorage.removeItem("ophelia_vocal_history");
+
+      const now = new Date().toISOString();
+      setLastCleared(now);
+      localStorage.setItem("ophelia_vocal_last_cleared", now);
     }
   };
 
@@ -250,13 +376,15 @@ export default function VocalConversation() {
   // If we're NOT using local service, we might want to include context messages
   // but for a "vocal" page, local history is often preferred.
   // Let's only show context messages if local history is empty and we're not in local mode
-  const visibleMessages = isLocalServiceAvailable
-    ? allMessages.slice(-10)
-    : contextMessages
-        .filter(
+  const visibleMessages = (
+    isLocalServiceAvailable
+      ? allMessages
+      : contextMessages.filter(
           (m) => m.type === "chat" || m.type === "system_summary" || m.type === "ophelia_thought"
         )
-        .slice(-10);
+  )
+    .filter((msg) => !lastCleared || (msg.timestamp && msg.timestamp > lastCleared))
+    .slice(-10);
 
   return (
     <div className="h-full flex flex-col bg-slate-100 p-4">
@@ -265,16 +393,16 @@ export default function VocalConversation() {
         <div className="flex gap-2">
           <button
             onClick={handleReturn}
-            className="bg-white border-4 border-black p-3 hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+            className="bg-white text-black border-4 border-black p-3 hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
           >
-            <ArrowLeft className="w-6 h-6" />
+            <ArrowLeft className="w-6 h-6" strokeWidth={2.5} />
           </button>
           <button
             onClick={clearHistory}
-            className="bg-white border-4 border-black p-3 hover:bg-mondrian-red hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+            className="bg-white text-black border-4 border-black p-3 hover:bg-mondrian-red hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
             title="Effacer l'historique"
           >
-            <Trash2 className="w-6 h-6" />
+            <Trash2 className="w-6 h-6" strokeWidth={2.5} />
           </button>
         </div>
 
@@ -297,9 +425,10 @@ export default function VocalConversation() {
 
         <button
           onClick={() => setShowModelModal(true)}
-          className="bg-white border-4 border-black p-3 hover:bg-mondrian-yellow transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+          className="bg-white text-black border-4 border-black p-3 hover:bg-mondrian-yellow hover:text-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+          title="Paramètres du modèle"
         >
-          <Settings className="w-6 h-6" />
+          <Settings className="w-6 h-6" strokeWidth={2.5} />
         </button>
       </div>
 
@@ -313,7 +442,7 @@ export default function VocalConversation() {
           className="flex-1 overflow-y-auto p-6 space-y-4 bg-[radial-gradient(var(--color-border-subtle)_1px,transparent_1px)] bg-[size:20px_20px]"
         >
           {visibleMessages.length === 0 && !transcript && (
-            <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
+            <div className="h-full flex flex-col items-center justify-center text-center opacity-80">
               <Volume2 className="w-16 h-16 mb-4 animate-pulse" />
               <p className="font-black uppercase text-sm max-w-[200px]">
                 {isLocalServiceAvailable
@@ -337,16 +466,14 @@ export default function VocalConversation() {
                   `}
                 >
                   <div className="flex justify-between items-center mb-1">
-                    <p className="text-[10px] font-black uppercase opacity-60">{msg.name}</p>
+                    <p className="text-[10px] font-black uppercase opacity-80">{msg.name}</p>
                     {msg.isLocal && (
                       <span className="text-[8px] font-black bg-black text-white px-1 ml-2">
                         LOCAL
                       </span>
                     )}
                   </div>
-                  <p className="font-bold leading-tight italic">
-                    {msg.message.replace("[VOCAL] : ", "")}
-                  </p>
+                  <p className="font-bold leading-tight italic">{cleanMessage(msg.message)}</p>
                 </div>
               </div>
             );
@@ -380,11 +507,11 @@ export default function VocalConversation() {
       <div className="flex justify-center items-center pb-8">
         <TalkButton
           vocalState={isLocalSpeaking ? "speaking" : vocalState}
-          isRecording={isListening}
-          isTranscribing={isLocalThinking || isContextThinking}
-          transcriptionPreview={transcript}
-          startRecording={startListening}
-          stopRecording={stopListening}
+          isRecording={isListening || isWhisperRecording}
+          isTranscribing={isLocalThinking || isContextThinking || isWhisperTranscribing}
+          transcriptionPreview={transcript || whisperPreview}
+          startRecording={handleStartVocal}
+          stopRecording={handleStopVocal}
           size="lg"
           className="scale-125"
         />
@@ -437,6 +564,31 @@ export default function VocalConversation() {
                         className={`w-3 h-3 rounded-full ${isLocalServiceAvailable ? "bg-green-600 animate-pulse" : "bg-red-600"}`}
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black uppercase mb-2">
+                      Méthode de Transcription
+                    </label>
+                    <div className="flex border-4 border-black">
+                      <button
+                        onClick={() => setUseBrowserSTT(true)}
+                        className={`flex-1 p-2 font-black uppercase text-xs transition-all ${useBrowserSTT ? "bg-black text-white" : "bg-white hover:bg-slate-50"}`}
+                      >
+                        Navigateur (Local)
+                      </button>
+                      <button
+                        onClick={() => setUseBrowserSTT(false)}
+                        className={`flex-1 p-2 font-black uppercase text-xs transition-all border-l-4 border-black ${!useBrowserSTT ? "bg-black text-white" : "bg-white hover:bg-slate-50"}`}
+                      >
+                        Serveur (Whisper)
+                      </button>
+                    </div>
+                    <p className="text-[10px] opacity-60 mt-1">
+                      {useBrowserSTT
+                        ? "Utilise l'API Web Speech du navigateur (Rapide, Gratuit)."
+                        : "Utilise OpenAI Whisper via le serveur (Plus précis, Latence)."}
+                    </p>
                   </div>
 
                   <div>

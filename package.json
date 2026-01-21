@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Monorepo for Inseme and Platform Citoyenne",
   "type": "module",
-  "packageManager": "pnpm@10.28.0",
+  "packageManager": "pnpm@10.28.1",
   "engines": {
     "node": ">=24"
   },
@@ -12,13 +12,13 @@
     "prepare": "husky",
     "lint": "pnpm -r --if-present lint",
     "inseme:dev": "pnpm --filter @inseme/app-inseme run dev",
-    "inseme:backend": "netlify dev --cwd apps/inseme --port 8888",
+    "inseme:backend": "node scripts/check-tunnel.js && netlify dev --cwd apps/inseme --port 8888",
     "platform:dev": "pnpm run dev --filter platform",
-    "platform:backend": "netlify dev --cwd apps/platform",
+    "platform:backend": "node scripts/check-tunnel.js && netlify dev --cwd apps/platform",
     "cyrnea:dev": "pnpm --filter @inseme/app-cyrnea run dev",
     "cyrnea:all": "turbo run @inseme/app-cyrnea#dev @inseme/models#sovereign:dev platform#tunnel",
     "cyrnea:tunnel": "pnpm --filter platform run tunnel",
-    "cyrnea:backend": "netlify dev --cwd apps/cyrnea",
+    "cyrnea:backend": "node scripts/check-tunnel.js && netlify dev --cwd apps/cyrnea",
     "sovereign:up": "pnpm --filter @inseme/models run sovereign:up",
     "sovereign:down": "pnpm --filter @inseme/models run sovereign:down",
     "sovereign:status": "pnpm --filter @inseme/models run sovereign:status",
@@ -32,7 +32,8 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
-    "turbo": "^2.7.3"
+    "turbo": "^2.7.3",
+    "undici": "^7.18.2"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,css,md}": "prettier --write"

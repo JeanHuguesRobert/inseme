@@ -21,6 +21,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@inseme/brique-cyrnea": "workspace:*",
     "@inseme/cop-host": "workspace:*",
+    "@inseme/cop-prolog": "workspace:*",
     "@inseme/room": "workspace:*",
     "@inseme/ui": "workspace:*",
     "@supabase/supabase-js": "^2.87.1",
@@ -28,7 +29,9 @@
     "date-fns": "^3.6.0",
     "framer-motion": "^10.16.4",
     "geoportal-extensions-leaflet": "^2.4.3",
+    "glob": "^10.3.10",
     "html2canvas": "^1.4.1",
+    "jsonwebtoken": "^9.0.3",
     "jspdf": "^2.5.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",
@@ -39,11 +42,14 @@
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.20.0",
     "recharts": "^2.10.3",
+    "stripe": "^20.2.0",
     "swr": "^2.2.5",
-    "tau-prolog": "^0.3.4"
+    "tau-prolog": "^0.3.4",
+    "undici": "^7.18.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
+    "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.17",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",

@@ -498,6 +498,7 @@ function updateSidebar() {
 
   const probEl = document.getElementById("sb-problems");
   probEl.className = `sidebar-item w-full text-left px-3 py-2 rounded text-xs flex justify-between items-center transition-all text-red-600 hover:bg-red-50 ${sidebarFilterType === "problems" ? "active bg-red-50 font-bold" : ""}`;
+
   document.getElementById("count-problems").innerText = problemCount;
   document.getElementById("count-problems").style.display =
     problemCount > 0 ? "inline-block" : "none";
@@ -529,6 +530,26 @@ function updateSidebar() {
       btn.innerHTML = `<span class="truncate pr-2">${name}</span> <span class="opacity-50">${count}</span>`;
       destList.appendChild(btn);
     });
+}
+
+function showQrCode() {
+  const link = document.getElementById("target-url-link");
+  if (!link || !link.href || link.href === "#") return;
+
+  const url = link.href;
+  const qrImg = document.getElementById("qr-image");
+  const qrUrlDisplay = document.getElementById("qr-url-display");
+  const modal = document.getElementById("qr-modal");
+
+  // Use local generated QR code
+  qrImg.src = `/__inspector/qrcode.png?t=${Date.now()}`;
+  qrUrlDisplay.innerText = url;
+
+  modal.classList.remove("hidden");
+}
+
+function closeQrCode() {
+  document.getElementById("qr-modal").classList.add("hidden");
 }
 
 function selectRequest(id) {

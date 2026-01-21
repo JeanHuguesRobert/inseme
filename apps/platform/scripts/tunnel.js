@@ -16,17 +16,24 @@ const execAsync = promisify(exec);
 import path from "path";
 import os from "os";
 import { fileURLToPath } from "url";
+import QRCode from "qrcode";
 import { createClient } from "@supabase/supabase-js";
 import { loadConfig, getConfig } from "./lib/config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// CRITICAL: Prevent the tunnel script from proxying itself
-// This avoids circular dependencies when ngrok/fetch try to use the proxy we are currently starting
-delete process.env.HTTP_PROXY;
-delete process.env.HTTPS_PROXY;
-delete process.env.http_proxy;
-delete process.env.https_proxy;
+// --- SECURITY: PREVENT CIRCULAR PROXYING ---
+// The tunnel process itself must NOT use the HTTP_PROXY it broadcasts.
+// Otherwise, it might try to route its own outgoing traffic (e.g. Supabase status updates)
+// back through itself, causing an infinite loop or "ECONNREFUSED".
+if (process.env.HTTP_PROXY || process.env.HTTPS_PROXY) {
+  console.log(
+    "[tunnel] 🛡️  Sanitizing environment: Removing HTTP_PROXY/HTTPS_PROXY for tunnel process."
+  );
+  delete process.env.HTTP_PROXY;
+  delete process.env.HTTPS_PROXY;
+  // We keep NO_PROXY as it might be useful, but generally tunnel needs direct access.
+}
 
 const ROOT_DIR = path.resolve(__dirname, "../../../");
 const ENV_PATH = path.join(ROOT_DIR, ".env");
@@ -129,7 +136,7 @@ Options:
   --help, -h       Show this help message
 
 Environment variables required (one of the tunnels):
-  
+
   [Cloudflare (Preferred)]
   CLOUDFLARE_TUNNEL_TOKEN   Token for your cloudflare tunnel (zero trust)
   CLOUDFLARE_DOMAIN         The domain/subdomain you mapped (e.g. cyrnea.lepp.fr)
@@ -454,6 +461,12 @@ async function notifyDeployedControl() {
   }
 }
 
+async function displayQrCode(url) {
+  if (!url) return;
+  console.log("\n📱 Scan this QR code to onboard/open app:");
+  console.log(await QRCode.toString(url, { type: "terminal", small: true }));
+}
+
 async function startTunnel() {
   if (IS_TUNNEL_RUNNING) return;
 
@@ -469,6 +482,7 @@ async function startTunnel() {
       const url = CF_DOMAIN.startsWith("http") ? CF_DOMAIN : `https://${CF_DOMAIN}`;
       PUBLIC_URL = url;
       IS_TUNNEL_RUNNING = true;
+      displayQrCode(url);
       broadcastStatus();
 
       if (USE_PROXY) await verifyTunnelReachability(url);
@@ -489,6 +503,7 @@ async function startTunnel() {
       const url = await ngrok.connect({ addr: Number(ngrokTargetPort) });
       PUBLIC_URL = url;
       IS_TUNNEL_RUNNING = true;
+      displayQrCode(url);
       broadcastStatus();
 
       if (USE_PROXY) await verifyTunnelReachability(url);
@@ -729,15 +744,46 @@ async function startProxyServer() {
       return;
     }
 
+    // Serve QR Code Image
+    if (pathname === "/__inspector/qrcode.png") {
+      if (!PUBLIC_URL) {
+        res.writeHead(404);
+        res.end("No active tunnel");
+        return;
+      }
+      try {
+        const buffer = await QRCode.toBuffer(PUBLIC_URL);
+        res.writeHead(200, { "Content-Type": "image/png" });
+        res.end(buffer);
+      } catch (err) {
+        res.writeHead(500);
+        res.end("Error generating QR code");
+      }
+      return;
+    }
+
     // Launch Proxied Browser
     if (pathname === "/__inspector/launch-browser") {
       debugLog("Launching proxied browser", "CONTROL");
-      const chromeCmd = `start chrome --proxy-server="http://localhost:${PROXY_PORT}" --user-data-dir="%TEMP%\\inseme-proxy-${PROXY_PORT}"`;
-      exec(chromeCmd, (err) => {
-        if (err) {
-          debugLog(`Failed to launch browser: ${err.message}`, "ERROR");
-        }
-      });
+
+      let cmd;
+      if (process.platform === "win32") {
+        cmd = `start chrome --proxy-server="http://localhost:${PROXY_PORT}" --user-data-dir="%TEMP%\\inseme-proxy-${PROXY_PORT}"`;
+      } else if (process.platform === "darwin") {
+        const userData = path.join(os.tmpdir(), `inseme-proxy-${PROXY_PORT}`);
+        cmd = `open -n -a "Google Chrome" --args --proxy-server="http://localhost:${PROXY_PORT}" --user-data-dir="${userData}"`;
+      } else {
+        cmd = `google-chrome --proxy-server="http://localhost:${PROXY_PORT}" --user-data-dir="/tmp/inseme-proxy-${PROXY_PORT}"`;
+      }
+
+      if (cmd) {
+        exec(cmd, (err) => {
+          if (err) {
+            debugLog(`Failed to launch browser: ${err.message}`, "ERROR");
+          }
+        });
+      }
+
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ status: "ok" }));
       return;
@@ -1043,11 +1089,19 @@ function getInspectorHTML() {
   }
 }
 
+let lastReportedUrl = undefined;
+
 async function updateRoomMetadata(url) {
   const localIp = getLocalIp();
-  console.log(
-    `Updating metadata for room: ${ROOM_SLUG} (Tunnel: ${url || "OFF"}, IP: ${localIp})...`
-  );
+  const isHeartbeat = url === lastReportedUrl;
+
+  if (!isHeartbeat) {
+    console.log(
+      `Updating metadata for room: ${ROOM_SLUG} (Tunnel: ${url || "OFF"}, IP: ${localIp})...`
+    );
+  } else {
+    debugLog(`Heartbeat update for room: ${ROOM_SLUG}`, "DB");
+  }
 
   // 1. Fetch current room settings
   let { data: room, error: fetchError } = await supabase
@@ -1087,11 +1141,12 @@ async function updateRoomMetadata(url) {
     room = newRoom;
   }
 
-  // 2. Patch settings with tunnel_url and local_ip
+  // 2. Patch settings with tunnel_url, local_ip, and last_active_at
   const newSettings = {
     ...room.settings,
     tunnel_url: url,
     local_ip: localIp,
+    last_active_at: url ? new Date().toISOString() : null, // Set timestamp if tunnel is active
   };
 
   const { error: updateError } = await supabase
@@ -1104,7 +1159,81 @@ async function updateRoomMetadata(url) {
     return false;
   }
 
-  console.log(`Room '${ROOM_SLUG}' updated with tunnel_url: ${url}`);
+  if (!isHeartbeat) {
+    console.log(`Room '${ROOM_SLUG}' updated with tunnel_url: ${url}`);
+  }
+
+  // 3. Also update 'public.instances' (or 'instances') if it exists (for Edge Function resolution)
+  // This ensures the Hub knows about the tunnel status and liveness
+  try {
+    // Try to find the instance in the new registry table
+    const { data: instance, error: instanceError } = await supabase
+      .from("instances")
+      .select("id, config")
+      .eq("slug", ROOM_SLUG)
+      .maybeSingle();
+
+    if (instance) {
+      const newConfig = {
+        ...(instance.config || {}),
+        tunnel_url: url,
+        local_ip: localIp,
+        last_active_at: url ? new Date().toISOString() : null,
+        site_config: {
+          redirect_enabled: !!url && REDIRECT_ENABLED,
+          redirect_url: url || null,
+        },
+      };
+
+      const { error: instUpdateError } = await supabase
+        .from("instances")
+        .update({ config: newConfig })
+        .eq("id", instance.id);
+
+      if (instUpdateError) {
+        debugLog(`Failed to update public.instances: ${instUpdateError.message}`, "DB-WARN");
+      } else {
+        debugLog(`Updated public.instances for ${ROOM_SLUG}`, "DB");
+      }
+    }
+
+    // Also try 'instance_registry' (legacy/alternative)
+    const { data: legacyInstance, error: legacyError } = await supabase
+      .from("instance_registry")
+      .select("id, metadata")
+      .eq("subdomain", ROOM_SLUG)
+      .maybeSingle();
+
+    if (legacyInstance) {
+      const newMetadata = {
+        ...(legacyInstance.metadata || {}),
+        tunnel_url: url,
+        local_ip: localIp,
+        last_active_at: url ? new Date().toISOString() : null,
+        site_config: {
+          redirect_enabled: !!url && REDIRECT_ENABLED,
+          redirect_url: url || null,
+        },
+      };
+
+      const { error: legUpdateError } = await supabase
+        .from("instance_registry")
+        .update({ metadata: newMetadata })
+        .eq("id", legacyInstance.id);
+
+      if (legUpdateError) {
+        debugLog(`Failed to update instance_registry: ${legUpdateError.message}`, "DB-WARN");
+      } else {
+        debugLog(`Updated instance_registry for ${ROOM_SLUG}`, "DB");
+      }
+    }
+  } catch (err) {
+    debugLog(`Skipping registry updates: ${err.message}`, "DB-INFO");
+  }
+
+  // Update the last reported URL so we don't spam logs next time
+  lastReportedUrl = url;
+
   return true;
 }
 
@@ -1184,6 +1313,9 @@ async function start() {
         throw new Error(`Health check failed with status ${response.status}`);
       }
       debugLog("Tunnel is healthy.", "HEALTH");
+
+      // Update heartbeat in Supabase
+      await updateRoomMetadata(PUBLIC_URL);
     } catch (err) {
       debugLog(`Tunnel health check FAILED: ${err.message}. Restarting...`, "HEALTH-ERR");
       console.warn(`\n⚠️ Tunnel public (${PUBLIC_URL}) inaccessible. Tentative de redémarrage...`);
@@ -1208,6 +1340,7 @@ async function start() {
     // Set a safety timeout to force exit if cleanup hangs
     setTimeout(() => {
       console.log("⚠️ Cleanup timed out, forcing exit.");
+      removeEnvProxy(); // Ensure .env is cleaned even on timeout
       process.exit(1);
     }, 5000).unref();
 
@@ -1242,6 +1375,17 @@ async function start() {
   process.on("SIGINT", cleanupAll);
   process.on("SIGTERM", cleanupAll);
   process.on("SIGUSR2", cleanupAll);
+
+  // Handle uncaught errors to ensure cleanup
+  process.on("uncaughtException", (err) => {
+    console.error("❌ Uncaught Exception:", err);
+    cleanupAll();
+  });
+
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+    cleanupAll();
+  });
 
   // Keep process alive
   /* eslint-disable no-constant-condition */

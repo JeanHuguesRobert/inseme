@@ -91,7 +91,7 @@ export default function CivicNetwork() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Mon Réseau Citoyen
+          Votre Réseau Citoyen
         </h1>
         <p className="text-gray-500">
           Gérez vos délégations et visualisez votre impact (Démocratie Liquide).
@@ -102,7 +102,7 @@ export default function CivicNetwork() {
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-lg mb-8">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
-            <h2 className="text-xl font-semibold opacity-90">Ma Force de Vote</h2>
+            <h2 className="text-xl font-semibold opacity-90">Votre Force de Vote</h2>
             <div className="text-5xl font-bold mt-2">{votingPower}</div>
             <p className="text-sm opacity-75 mt-1">
               1 voix personnelle + {myDelegators.length} mandat(s)
@@ -125,7 +125,7 @@ export default function CivicNetwork() {
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
           }`}
         >
-          Mes Délégués (Je délègue)
+          Vos Délégués
         </button>
         <button
           onClick={() => setActiveTab("delegators")}
@@ -135,7 +135,7 @@ export default function CivicNetwork() {
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
           }`}
         >
-          Ma Force (Ils me délèguent)
+          Votre Force (Ils vous délèguent)
         </button>
       </div>
 
@@ -151,7 +151,7 @@ export default function CivicNetwork() {
                   utilisateur.
                 </p>
                 <Link to="/settings/governance" className="btn btn-secondary mt-4 text-sm">
-                  Configurer mes délégations
+                  Configurer vos délégations
                 </Link>
               </div>
             ) : (

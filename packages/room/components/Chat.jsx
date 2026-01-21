@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { MarkdownViewer } from "@inseme/ui";
 import {
   Send,
@@ -60,78 +60,113 @@ const MessageHeader = ({
   playVocal,
   hasPublicProfile,
   onClickName,
-}) => (
-  <div className="flex items-baseline gap-2 mb-1.5 px-1">
-    {hasPublicProfile && onClickName ? (
-      <button
-        type="button"
-        onClick={onClickName}
-        className={`text-[10px] font-black tracking-widest underline decoration-dotted underline-offset-2 cursor-pointer ${isAI ? "text-mondrian-blue font-bold" : variant === "minimal" ? "text-black/60 hover:text-black" : "text-white/50 hover:text-white"}`}
-      >
-        {msg.name}
-      </button>
-    ) : (
+  zones,
+}) => {
+  const getZoneLabel = (zoneId) => {
+    if (!zoneId) return null;
+    if (Array.isArray(zones)) {
+      const z = zones.find((z) => z.id === zoneId);
+      if (z) return z.label;
+    }
+    // Fallback for standard zones if not in custom list
+    if (zoneId === "indoor") return "Intérieur";
+    if (zoneId === "outdoor") return "Terrasse";
+    return zoneId;
+  };
+
+  return (
+    <div className="flex items-baseline gap-2 mb-1.5 px-1 flex-wrap">
+      <div className="flex items-baseline gap-2">
+        {hasPublicProfile && onClickName ? (
+          <button
+            type="button"
+            onClick={onClickName}
+            className={`text-[10px] font-black tracking-widest underline decoration-dotted underline-offset-2 cursor-pointer ${isAI ? "text-mondrian-blue font-bold" : variant === "minimal" ? "text-black/60 hover:text-black" : "text-white/50 hover:text-white"}`}
+          >
+            {msg.name}
+          </button>
+        ) : (
+          <span
+            className={`text-[10px] font-black tracking-widest ${isAI ? "text-mondrian-blue font-bold" : variant === "minimal" ? "text-black/40" : "text-white/30"}`}
+          >
+            {msg.name}
+          </span>
+        )}
+        {msg.metadata?.zone && !isAI && (
+          <span
+            className={`text-[8px] font-bold uppercase tracking-tighter px-1 rounded ${variant === "minimal" ? "bg-black/5 text-black/40" : "bg-white/10 text-white/40"}`}
+          >
+            {getZoneLabel(msg.metadata.zone)}
+          </span>
+        )}
+      </div>
+      {msg.metadata?.role && msg.metadata.role !== "authenticated" && (
+        <span
+          className={`text-[8px] font-black px-1 py-0.5 rounded uppercase tracking-tighter ${msg.metadata.role === "member" ? "bg-mondrian-blue/20 text-mondrian-blue" : "bg-white/10 text-white/40"}`}
+        >
+          {msg.metadata.role}
+        </span>
+      )}
       <span
-        className={`text-[10px] font-black tracking-widest ${isAI ? "text-mondrian-blue font-bold" : variant === "minimal" ? "text-black/40" : "text-white/30"}`}
+        className={`text-[9px] font-medium ${variant === "minimal" ? "text-black/20" : "text-white/10"}`}
       >
-        {msg.name}
+        {new Date(msg.created_at).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
       </span>
-    )}
-    {msg.metadata?.role && msg.metadata.role !== "authenticated" && (
-      <span
-        className={`text-[8px] font-black px-1 py-0.5 rounded uppercase tracking-tighter ${msg.metadata.role === "member" ? "bg-mondrian-blue/20 text-mondrian-blue" : "bg-white/10 text-white/40"}`}
-      >
-        {msg.metadata.role}
-      </span>
-    )}
-    <span
-      className={`text-[9px] font-medium ${variant === "minimal" ? "text-black/20" : "text-white/10"}`}
-    >
-      {new Date(msg.created_at).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}
-    </span>
-    {isTranscription && (
-      <span className="text-[8px] bg-mondrian-red/20 text-mondrian-red px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">
-        Vocal
-      </span>
-    )}
-    {isReport && (
-      <span className="text-[8px] bg-mondrian-yellow/20 text-mondrian-yellow px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">
-        Officiel
-      </span>
-    )}
-    {isTranslated && (
-      <button
-        onClick={() => setShowOriginal(!showOriginal)}
-        className="flex items-center gap-1 text-[8px] bg-mondrian-blue/20 text-mondrian-blue px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter hover:bg-mondrian-blue/30 transition-colors"
-      >
-        <Globe className="w-2 h-2" />
-        {showOriginal ? "Original" : `Traduit de ${originalLang}`}
-      </button>
-    )}
-    {!isTranslated && !isReport && (
-      <button
-        onClick={handleTranslateToNative}
-        className={`opacity-0 group-hover:opacity-100 transition-opacity text-[8px] px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter flex items-center gap-1 ${translatedContent ? "bg-mondrian-blue text-white" : "text-white/20 hover:text-white/60"}`}
-        title="Traduire dans ma langue"
-      >
-        <Globe className="w-2 h-2" />
-        {translatedContent ? "Voir Original" : "Traduire"}
-      </button>
-    )}
-    {hasAudio && (
-      <button
-        onClick={() => playVocal(msg.metadata?.vocal_payload || msg.metadata?.vocal_url)}
-        className="p-1 hover:bg-white/10 rounded-full transition-colors group/play"
-        title="Réécouter le message vocal"
-      >
-        <Volume2 className="w-3 h-3 text-mondrian-blue animate-pulse group-hover/play:scale-125 transition-transform" />
-      </button>
-    )}
-  </div>
-);
+      {isTranscription && (
+        <span className="text-[8px] bg-mondrian-red/20 text-mondrian-red px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">
+          Vocal
+        </span>
+      )}
+      {isReport && (
+        <span className="text-[8px] bg-mondrian-yellow/20 text-mondrian-yellow px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">
+          Officiel
+        </span>
+      )}
+      {msg.pending && !msg.error && (
+        <span className="text-[8px] text-white/40 animate-pulse px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">
+          Envoi...
+        </span>
+      )}
+      {msg.error && (
+        <span className="text-[8px] bg-mondrian-red/20 text-mondrian-red px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-mondrian-red animate-pulse" />
+          Erreur: {msg.errorMessage || "Non délivré"}
+        </span>
+      )}
+      {isTranslated && (
+        <button
+          onClick={() => setShowOriginal(!showOriginal)}
+          className="flex items-center gap-1 text-[8px] bg-mondrian-blue/20 text-mondrian-blue px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter hover:bg-mondrian-blue/30 transition-colors"
+        >
+          <Globe className="w-2 h-2" />
+          {showOriginal ? "Original" : `Traduit de ${originalLang}`}
+        </button>
+      )}
+      {!isTranslated && !isReport && (
+        <button
+          onClick={handleTranslateToNative}
+          className={`opacity-0 group-hover:opacity-100 transition-opacity text-[8px] px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter flex items-center gap-1 ${translatedContent ? "bg-mondrian-blue text-white" : "text-white/20 hover:text-white/60"}`}
+          title="Traduire dans votre langue"
+        >
+          <Globe className="w-2 h-2" />
+          {translatedContent ? "Voir Original" : "Traduire"}
+        </button>
+      )}
+      {hasAudio && (
+        <button
+          onClick={() => playVocal(msg.metadata?.vocal_payload || msg.metadata?.vocal_url)}
+          className="p-1 hover:bg-white/10 rounded-full transition-colors group/play"
+          title="Réécouter le message vocal"
+        >
+          <Volume2 className="w-3 h-3 text-mondrian-blue animate-pulse group-hover/play:scale-125 transition-transform" />
+        </button>
+      )}
+    </div>
+  );
+};
 
 const RitualBlock = () => (
   <div className="flex flex-col items-center gap-2 mb-2">
@@ -211,13 +246,13 @@ const ThinkingBlock = ({
         <div className="bg-black/20 rounded-xl border border-white/5 overflow-hidden">
           <button
             onClick={() => setIsThinkingOpen(!isThinkingOpen)}
-            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-white/5 transition-colors text-[10px] font-bold text-white/40 uppercase tracking-widest"
+            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-white/5 transition-colors text-[10px] font-bold text-white/70 uppercase tracking-widest"
           >
             <Bot className={`w-3 h-3 transition-transform ${isThinkingOpen ? "rotate-180" : ""}`} />
             {isThinkingOpen ? "Masquer le raisonnement" : "Voir le raisonnement"}
           </button>
           {isThinkingOpen && (
-            <div className="px-3 py-3 border-t border-white/5 text-[11px] text-white/40 italic leading-relaxed bg-white/[0.02]">
+            <div className="px-3 py-3 border-t border-white/5 text-xs text-white/80 italic leading-relaxed bg-black/20 [&_p]:text-white/80">
               <MarkdownViewer content={relatedThought.reasoning} />
             </div>
           )}
@@ -227,22 +262,28 @@ const ThinkingBlock = ({
     );
   }
 
-  const thinkMatch = displayMessage.match(/<think>([\s\S]*?)<\/think>/);
-  if (thinkMatch) {
-    const thought = thinkMatch[1].trim();
-    const actualContent = displayMessage.replace(/<think>[\s\S]*?<\/think>/, "").trim();
+  const thinkRegex = /<think>([\s\S]*?)<\/think>/gi;
+  const thoughts = [];
+  let match;
+  while ((match = thinkRegex.exec(displayMessage)) !== null) {
+    thoughts.push(match[1].trim());
+  }
+
+  if (thoughts.length > 0) {
+    const thought = thoughts.join("\n\n---\n\n");
+    const actualContent = displayMessage.replace(thinkRegex, "").trim();
     return (
       <div className="space-y-4">
         <div className="bg-black/20 rounded-xl border border-white/5 overflow-hidden">
           <button
             onClick={() => setIsThinkingOpen(!isThinkingOpen)}
-            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-white/5 transition-colors text-[10px] font-bold text-white/40 uppercase tracking-widest"
+            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-white/5 transition-colors text-[10px] font-bold text-white/70 uppercase tracking-widest"
           >
             <Bot className={`w-3 h-3 transition-transform ${isThinkingOpen ? "rotate-180" : ""}`} />
             {isThinkingOpen ? "Masquer le raisonnement" : "Voir le raisonnement"}
           </button>
           {isThinkingOpen && (
-            <div className="px-3 py-3 border-t border-white/5 text-[11px] text-white/40 italic leading-relaxed bg-white/[0.02]">
+            <div className="px-3 py-3 border-t border-white/5 text-xs text-white/80 italic leading-relaxed bg-black/20 [&_p]:text-white/80">
               <MarkdownViewer content={thought} />
             </div>
           )}
@@ -331,9 +372,19 @@ function ChatMessage({
 }) {
   const [showOriginal, setShowOriginal] = useState(false);
   const [translatedContent, setTranslatedContent] = useState(null);
-  const [isThinkingOpen, setIsThinkingOpen] = useState(false);
 
-  if (msg.message.toLowerCase().startsWith("inseme")) return null;
+  // Initialize from localStorage (default to false if not set)
+  const [isThinkingOpen, setIsThinkingOpenState] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("inseme_think_expanded") === "true";
+  });
+
+  const setIsThinkingOpen = (value) => {
+    setIsThinkingOpenState(value);
+    localStorage.setItem("inseme_think_expanded", value ? "true" : "false");
+  };
+
+  // Removed: if (msg.message.toLowerCase().startsWith("inseme")) return null;
   if (msg.metadata?.vocal_only && !isSilent) return null;
   if (msg.type === "transcription_chunk") return null;
 
@@ -349,6 +400,12 @@ function ChatMessage({
   const hasAudio = !!msg.metadata?.vocal_payload || !!msg.metadata?.vocal_url;
   const isTranslated = !!msg.metadata?.original;
   const originalLang = msg.metadata?.lang?.toUpperCase();
+
+  const isSystem =
+    msg.type === "system_notification" ||
+    msg.metadata?.type === "system_notification" ||
+    msg.metadata?.type === "welcome_client" ||
+    msg.metadata?.action === "pseudo_change";
   const hasPublicProfile =
     !!publicProfile &&
     Array.isArray(publicProfile.public_links) &&
@@ -509,6 +566,7 @@ function ChatMessage({
           onClickName={
             hasPublicProfile && onProfileClick ? () => onProfileClick(publicProfile) : undefined
           }
+          zones={roomMetadata?.settings?.zones}
         />
       )}
 
@@ -518,17 +576,21 @@ function ChatMessage({
             ? "bg-mondrian-yellow border-4 border-black text-black w-full max-w-md transform -rotate-1 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center animate-in zoom-in duration-500"
             : isLegend
               ? "bg-black border-4 border-mondrian-yellow text-mondrian-yellow w-full max-w-md transform rotate-1 shadow-[8px_8px_0px_0px_var(--mondrian-yellow)] text-center animate-in slide-in-from-right duration-700"
-              : isAI
+              : isSystem
                 ? variant === "minimal"
-                  ? "bg-mondrian-blue/5 border-2 border-mondrian-blue/20 text-mondrian-blue text-sm leading-relaxed max-w-[92%]"
-                  : "bg-mondrian-blue/10 border border-mondrian-blue/20 text-mondrian-blue text-sm leading-relaxed max-w-[92%]"
-                : targetInfo
+                  ? "bg-slate-100 border-2 border-slate-300 text-slate-500 text-[10px] font-bold uppercase italic max-w-[95%] py-1.5"
+                  : "bg-white/5 border border-white/10 text-white/40 text-[10px] font-bold uppercase italic max-w-[95%] py-1.5"
+                : isAI
                   ? variant === "minimal"
-                    ? `${targetInfo.minimalColor} border-2 text-sm leading-relaxed max-w-[92%] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]`
-                    : `${targetInfo.color} border text-sm leading-relaxed max-w-[92%] shadow-[0_0_15px_-5px_rgba(0,0,0,0.3)]`
-                  : variant === "minimal"
-                    ? "bg-white border-2 border-black text-black text-sm leading-relaxed max-w-[92%]"
-                    : "bg-white/5 text-white/80 border border-white/5 text-sm leading-relaxed group-hover:bg-white/[0.07] max-w-[92%]"
+                    ? "bg-mondrian-blue/5 border-2 border-mondrian-blue/20 text-mondrian-blue text-sm leading-relaxed max-w-[92%]"
+                    : "bg-mondrian-blue/10 border border-mondrian-blue/20 text-mondrian-blue text-sm leading-relaxed max-w-[92%]"
+                  : targetInfo
+                    ? variant === "minimal"
+                      ? `${targetInfo.minimalColor} border-2 text-sm leading-relaxed max-w-[92%] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]`
+                      : `${targetInfo.color} border text-sm leading-relaxed max-w-[92%] shadow-[0_0_15px_-5px_rgba(0,0,0,0.3)]`
+                    : variant === "minimal"
+                      ? "bg-white border-2 border-black text-black text-sm leading-relaxed max-w-[92%]"
+                      : "bg-white/5 text-white/80 border border-white/5 text-sm leading-relaxed group-hover:bg-white/[0.07] max-w-[92%]"
         } ${isReport ? "border-mondrian-blue/30 bg-mondrian-blue/10" : ""}`}
       >
         {targetInfo && (
@@ -551,7 +613,25 @@ function ChatMessage({
 
         {msg.metadata?.image_url && <VisualSignalContent imageUrl={msg.metadata.image_url} />}
 
-        <div className="prose prose-invert prose-sm max-w-none prose-p:my-0 prose-headings:text-mondrian-yellow prose-a:text-mondrian-blue">
+        <div
+          className={`prose prose-sm max-w-none prose-p:my-0 prose-headings:text-mondrian-yellow prose-a:text-mondrian-blue ${
+            isRitual
+              ? "prose-p:text-black prose-li:text-black prose-strong:text-black"
+              : isLegend
+                ? "prose-invert prose-p:text-mondrian-yellow prose-li:text-mondrian-yellow"
+                : targetInfo
+                  ? (variant === "minimal" ? "" : "prose-invert ") +
+                    "prose-p:text-current prose-li:text-current prose-strong:text-current"
+                  : variant === "minimal"
+                    ? isAI
+                      ? "prose-p:text-mondrian-blue prose-li:text-mondrian-blue"
+                      : "prose-p:text-black prose-li:text-black prose-strong:text-black"
+                    : "prose-invert " +
+                      (isAI
+                        ? "prose-p:text-mondrian-blue prose-li:text-mondrian-blue"
+                        : "prose-p:text-white/90 prose-li:text-white/90 prose-strong:text-white")
+          }`}
+        >
           <ThinkingBlock
             msg={msg}
             ephemeralThoughts={ephemeralThoughts}
@@ -654,7 +734,33 @@ export function Chat(props) {
     canInteract,
     variant,
     config,
+    lastAiResponse,
+    forceTriggerOphelia,
+    currentUser,
   } = { ...context, ...props };
+
+  // AI Watchdog Logic
+  const canTriggerAi = useMemo(() => {
+    // 1. Is Barman?
+    if (currentUser?.role === "barman" || currentUser?.metadata?.role === "barman") return true;
+
+    // 2. Is there any Barman present?
+    const barmenPresent = (roomData.connectedUsers || []).some(
+      (u) => u.role === "barman" || u.metadata?.role === "barman"
+    );
+
+    // If no barman present, allow fallback to anyone (or at least valid members)
+    if (!barmenPresent) return true;
+
+    return false;
+  }, [currentUser, roomData.connectedUsers]);
+
+  // Force re-render every minute to update reference time display if needed
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const showLifecycleOverlay = props.showLifecycleOverlay ?? config?.showLifecycleOverlay ?? true;
   const lifecycleClosedMessage =
@@ -796,10 +902,12 @@ export function Chat(props) {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const urls = newMessage.match(urlRegex);
 
-    await sendMessage(newMessage, urls ? { type: "link", urls } : {}, attachment?.file);
-
+    const msgToSend = newMessage;
+    const attachmentToSend = attachment?.file;
     setNewMessage("");
     clearAttachment();
+
+    await sendMessage(msgToSend, urls ? { type: "link", urls } : {}, attachmentToSend);
   };
 
   useEffect(() => {
@@ -1110,27 +1218,29 @@ export function Chat(props) {
             </div>
           </div>
         ) : (
-          messages?.map((msg, i) => (
-            <ChatMessage
-              key={msg.id || i}
-              msg={msg}
-              i={i}
-              roomName={roomName}
-              roomMetadata={roomMetadata}
-              archiveReport={archiveReport}
-              ephemeralThoughts={ephemeralThoughts}
-              messages={messages}
-              user={user}
-              castVote={castVote}
-              sendMessage={sendMessage}
-              playVocal={playVocal}
-              vocalState={vocalState}
-              isSilent={isSilent}
-              isHandsFree={isHandsFree}
-              variant={variant}
-              terminology={terminology}
-            />
-          ))
+          messages
+            ?.filter((msg) => !msg.metadata?.is_hidden && msg.metadata?.type !== "voice_trace")
+            .map((msg, i) => (
+              <ChatMessage
+                key={msg.id || i}
+                msg={msg}
+                i={i}
+                roomName={roomName}
+                roomMetadata={roomMetadata}
+                archiveReport={archiveReport}
+                ephemeralThoughts={ephemeralThoughts}
+                messages={messages}
+                user={user}
+                castVote={castVote}
+                sendMessage={sendMessage}
+                playVocal={playVocal}
+                vocalState={vocalState}
+                isSilent={isSilent}
+                isHandsFree={isHandsFree}
+                variant={variant}
+                terminology={terminology}
+              />
+            ))
         )}
       </div>
 
@@ -1311,6 +1421,36 @@ export function Chat(props) {
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-mondrian-blue/50 transition-all group-hover:border-white/20"
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 sm:gap-2">
+                    {/* AI Watchdog Controls */}
+                    {canTriggerAi && (
+                      <div className="flex items-center gap-2 mr-2 border-r border-white/10 pr-2">
+                        {lastAiResponse && Date.now() - lastAiResponse > 120000 && (
+                          <span className="text-[10px] text-orange-400 font-mono hidden sm:inline-block">
+                            IA silencieuse: {Math.floor((Date.now() - lastAiResponse) / 60000)}m
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={forceTriggerOphelia}
+                          className="p-2 rounded-lg bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 transition-all"
+                          title="Réinitialiser / Réveiller Ophélia"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-4 h-4"
+                          >
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => {

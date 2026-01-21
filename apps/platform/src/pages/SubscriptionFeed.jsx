@@ -2,12 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getSupabase } from "../lib/supabase.js";
 import { useCurrentUser } from "@inseme/cop-host";
-import {
-  isDeleted,
-  getMetadata,
-  enrichUserMetadata,
-  getDisplayName,
-} from "@inseme/cop-host";
+import { isDeleted, getMetadata, enrichUserMetadata, getDisplayName } from "@inseme/cop-host";
 import { useSubscriptionNotifications } from "../lib/useSubscriptionNotifications.js";
 import SiteFooter from "../components/layout/SiteFooter";
 
@@ -337,7 +332,7 @@ export default function SubscriptionFeed() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-50 flex items-center gap-3">
-                🔔 Mes abonnements
+                🔔 Vos abonnements
                 {unreadCount > 0 && (
                   <span className="px-2 py-1 text-sm bg-red-600 text-white rounded-full">
                     {unreadCount}

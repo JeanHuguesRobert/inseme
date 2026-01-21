@@ -20,11 +20,7 @@ function getenv(key) {
 
   // 1. Try Netlify.env (Netlify Edge standard)
   try {
-    if (
-      typeof Netlify !== "undefined" &&
-      Netlify.env &&
-      typeof Netlify.env.get === "function"
-    ) {
+    if (typeof Netlify !== "undefined" && Netlify.env && typeof Netlify.env.get === "function") {
       val =
         Netlify.env.get(key) ||
         Netlify.env.get(`VITE_${key}`) ||
@@ -37,11 +33,7 @@ function getenv(key) {
   // 2. Fallback to Deno.env
   if (!val) {
     try {
-      if (
-        typeof Deno !== "undefined" &&
-        Deno.env &&
-        typeof Deno.env.get === "function"
-      ) {
+      if (typeof Deno !== "undefined" && Deno.env && typeof Deno.env.get === "function") {
         val =
           Deno.env.get(key) ||
           Deno.env.get(`VITE_${key}`) ||
@@ -55,16 +47,95 @@ function getenv(key) {
   return val;
 }
 
+// Proxy fetch implementation for Deno bridge
+const proxyFetch = async (input, init = {}) => {
+  // Determine URL and options from input/init
+  let url;
+  let options = init || {};
+
+  if (typeof input === "string") {
+    url = input;
+  } else if (input instanceof URL) {
+    url = input.toString();
+  } else if (input instanceof Request) {
+    url = input.url;
+    // Copy options from Request if not overridden by init
+    // Note: This is simplified, might need more robust handling for Request objects
+    options = {
+      method: input.method,
+      headers: input.headers,
+      body: input.body, // Stream? Text?
+      ...init,
+    };
+  }
+
+  // Construct proxy URL (assuming localhost:8888 for dev bridge)
+  // We try to use the current origin if available, otherwise default to localhost:8888
+  let origin = "http://127.0.0.1:8888";
+  try {
+    // In Edge Functions context, sometimes we don't have location
+    // But we can try Deno.env.get("URL") or similar
+    // For now, hardcode localhost:8888 as this bridge is mainly for local dev fix
+    if (getenv("URL")) origin = getenv("URL");
+  } catch (e) {}
+
+  // Force IPv4 loopback to avoid Deno/Node connectivity issues (os error 10061)
+  if (origin.includes("localhost")) {
+    origin = origin.replace("localhost", "127.0.0.1");
+  }
+
+  const proxyUrl = `${origin}/.netlify/functions/fetch-proxy`;
+
+  console.log(`[ProxyFetch] Proxying to ${proxyUrl} -> ${url}`);
+
+  // Convert headers to plain object
+  const headersObj = {};
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((v, k) => (headersObj[k] = v));
+    } else if (Array.isArray(options.headers)) {
+      options.headers.forEach(([k, v]) => (headersObj[k] = v));
+    } else {
+      Object.assign(headersObj, options.headers);
+    }
+  }
+
+  // Handle body
+  let bodyPayload = options.body;
+  // If body is not string/null, we might need to handle it.
+  // supabase-js usually sends stringified JSON.
+
+  const proxyPayload = {
+    url,
+    method: options.method || "GET",
+    headers: headersObj,
+    body: bodyPayload,
+  };
+
+  const res = await fetch(proxyUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(proxyPayload),
+  });
+
+  // Convert back to Response
+  // Note: res.body is a stream (or text).
+  // The proxy returns the target body as text (or json string).
+  // We need to match what the caller expects.
+  // Supabase client expects a Response object.
+
+  return res;
+};
+
 // Fonction pour créer une instance Supabase côté Deno Edge
 const createSupabase_Edge = (admin = false, options = {}) => {
   const supabaseUrl = options.supabaseUrl || getenv("SUPABASE_URL");
-  const supabaseServiceRoleKey =
-    options.supabaseKey || getenv("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseServiceRoleKey = options.supabaseKey || getenv("SUPABASE_SERVICE_ROLE_KEY");
   const supabaseAnonKey = options.supabaseKey || getenv("SUPABASE_ANON_KEY");
 
-  const supabaseKey = admin
-    ? supabaseServiceRoleKey
-    : options.supabaseKey || supabaseAnonKey;
+  const supabaseKey = admin ? supabaseServiceRoleKey : options.supabaseKey || supabaseAnonKey;
   if (!supabaseKey || !supabaseUrl) {
     console.warn(
       `Supabase ${admin ? "Service Role" : "Anon"} Key or URL not found in Deno Edge environment.`
@@ -79,6 +150,17 @@ const createSupabase_Edge = (admin = false, options = {}) => {
     persistSession: false,
   };
 
+  // BRIDGE: Use proxy fetch if enabled
+  // This is a workaround for local Deno connectivity issues
+  const useBridge = getenv("SUPABASE_DENO_BRIDGE") === "true";
+  if (useBridge) {
+    console.log("[createSupabase_Edge] Using Proxy Fetch Bridge");
+    options.global = {
+      ...options.global,
+      fetch: proxyFetch,
+    };
+  }
+
   return createClient(supabaseUrl, supabaseKey, options);
 };
 
@@ -92,27 +174,19 @@ export function newSupabase(admin = false, options = {}) {
 export function getSQL(configMap = null) {
   let dbUrl = getenv("DATABASE_URL") || getenv("POSTGRES_URL");
 
-  console.log(
-    "[DEBUG][getSQL] Initial check - DATABASE_URL from env:",
-    dbUrl ? "FOUND" : "NOT FOUND"
-  );
-
   if (!dbUrl) {
     console.log("[DEBUG][getSQL] dbUrl from getenv is empty, trying configMap");
   }
   if (!dbUrl && configMap) {
     const map = configMap.config || configMap;
     dbUrl = map["database_url"]?.value || map["postgres_url"]?.value;
-    if (dbUrl) console.log("[getSQL] Found DB URL in config map.");
   }
 
   const sslMode = getenv("DB_SSL_MODE");
   const isDebug = getenv("DEBUG") === "true";
 
   if (isDebug) {
-    const maskedUrl = dbUrl
-      ? dbUrl.replace(/\/\/.*:.*@/, "//***:***@")
-      : "NONE";
+    const maskedUrl = dbUrl ? dbUrl.replace(/\/\/.*:.*@/, "//***:***@") : "NONE";
     console.log(`[DEBUG][getSQL] dbUrl: ${maskedUrl}`);
     console.log(`[DEBUG][getSQL] sslMode: ${sslMode}`);
   }
@@ -121,9 +195,6 @@ export function getSQL(configMap = null) {
   if (sqlClient && sqlClient._url === dbUrl && sqlClient._sslMode === sslMode) {
     return sqlClient;
   }
-
-  console.log("[getSQL] DB URL found:", dbUrl ? "YES (hidden)" : "NO");
-  console.log("[getSQL] DB SSL Mode:", sslMode);
 
   if (!dbUrl) {
     console.warn("getSQL: No DATABASE_URL or POSTGRES_URL found.");
@@ -153,20 +224,15 @@ export function getSQL(configMap = null) {
       // Si on utilise le pooler Supabase (port 6543), on tente de repasser sur le port direct (5432)
       // car le pooler est parfois problématique avec le SSL désactivé.
       if (cleanUrl.includes(":6543")) {
-        console.log(
-          "[getSQL] Switching from pooler port 6543 to direct port 5432 for unsafe mode"
-        );
+        console.log("[getSQL] Switching from pooler port 6543 to direct port 5432 for unsafe mode");
 
         // 1. Try to use POSTGRES_URL if available (best source for direct connection)
         const explicitDirectUrl = getenv("POSTGRES_URL");
         if (explicitDirectUrl && explicitDirectUrl !== dbUrl) {
-          console.log(
-            "[getSQL] Using POSTGRES_URL for direct connection override"
-          );
+          console.log("[getSQL] Using POSTGRES_URL for direct connection override");
           cleanUrl = explicitDirectUrl.replace(/^["']|["']$/g, "");
           if (!cleanUrl.includes("sslmode=")) {
-            cleanUrl +=
-              (cleanUrl.includes("?") ? "&" : "?") + "sslmode=disable";
+            cleanUrl += (cleanUrl.includes("?") ? "&" : "?") + "sslmode=disable";
           }
         } else {
           // 2. Heuristic fallback (works for some Supabase projects, fails for others like aws-1-...)
@@ -197,10 +263,7 @@ export function getSQL(configMap = null) {
 
     return sqlClient;
   } catch (err) {
-    const errorMessage = err.message.replace(
-      /postgres:\/\/.*@/,
-      "postgres://***@"
-    );
+    const errorMessage = err.message.replace(/postgres:\/\/.*@/, "postgres://***@");
     console.error("getSQL: Failed to initialize postgres client", errorMessage);
     return null;
   }
@@ -214,10 +277,7 @@ export async function initializeInstanceAdmin(supabase) {
   return initializeInstance(supabase, true);
 }
 
-export async function loadInstanceConfig(
-  force = false,
-  supabase_config = null
-) {
+export async function loadInstanceConfig(force = false, supabase_config = null) {
   if (!inited()) {
     await initializeInstanceAdmin();
   }

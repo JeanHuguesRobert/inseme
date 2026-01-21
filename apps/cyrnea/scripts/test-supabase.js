@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import process from "node:process";
 
 const DEFAULT_URL =
   "https://opnotbjrbphwcezaqgim.supabase.co/rest/v1/instance_config?select=*&order=key.asc&offset=0&limit=1";

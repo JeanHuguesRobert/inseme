@@ -264,16 +264,7 @@ export default function DemandesList() {
     };
 
     fetchDemandes();
-  }, [
-    page,
-    search,
-    typeDemande,
-    statut,
-    showMine,
-    sortBy,
-    sortOrder,
-    user?.id,
-  ]);
+  }, [page, search, typeDemande, statut, showMine, sortBy, sortOrder, user?.id]);
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
@@ -282,12 +273,7 @@ export default function DemandesList() {
     total: totalCount,
     enCours: demandes.filter((d) => d.status === "EN_COURS").length,
     enRetard: demandes.filter((d) => {
-      if (
-        !d.date_limite_reponse ||
-        d.status === "REPONDUE" ||
-        d.status === "CLASSEE"
-      )
-        return false;
+      if (!d.date_limite_reponse || d.status === "REPONDUE" || d.status === "CLASSEE") return false;
       return new Date(d.date_limite_reponse) < new Date();
     }).length,
   };
@@ -306,9 +292,7 @@ export default function DemandesList() {
                 <span>/</span>
                 <span className="text-slate-700">Demandes administratives</span>
               </div>
-              <h1 className="text-2xl font-bold text-slate-900">
-                📬 Demandes Administratives
-              </h1>
+              <h1 className="text-2xl font-bold text-slate-900">📬 Demandes Administratives</h1>
               <p className="text-slate-600 mt-1">
                 Suivi des requêtes CRPA, saisines CADA et recours
               </p>
@@ -329,15 +313,11 @@ export default function DemandesList() {
         {/* Quick stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow border border-slate-200 p-4">
-            <div className="text-2xl font-bold text-slate-800">
-              {totalCount}
-            </div>
+            <div className="text-2xl font-bold text-slate-800">{totalCount}</div>
             <div className="text-sm text-slate-500">Total des demandes</div>
           </div>
           <div className="bg-white rounded-lg shadow border border-slate-200 p-4">
-            <div className="text-2xl font-bold text-blue-600">
-              {stats.enCours}
-            </div>
+            <div className="text-2xl font-bold text-blue-600">{stats.enCours}</div>
             <div className="text-sm text-slate-500">En cours de traitement</div>
           </div>
           <div className="bg-white rounded-lg shadow border border-slate-200 p-4">
@@ -357,9 +337,7 @@ export default function DemandesList() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Search */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">
-                Recherche
-              </label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Recherche</label>
               <input
                 type="text"
                 placeholder="Objet, motifs..."
@@ -371,9 +349,7 @@ export default function DemandesList() {
 
             {/* Type */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">
-                Type
-              </label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Type</label>
               <select
                 value={typeDemande}
                 onChange={(e) => updateFilters({ type: e.target.value })}
@@ -389,9 +365,7 @@ export default function DemandesList() {
 
             {/* Status */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">
-                Statut
-              </label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Statut</label>
               <select
                 value={statut}
                 onChange={(e) => updateFilters({ statut: e.target.value })}
@@ -407,21 +381,15 @@ export default function DemandesList() {
 
             {/* My demands only */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">
-                Filtre
-              </label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Filtre</label>
               <label className="flex items-center gap-2 mt-2">
                 <input
                   type="checkbox"
                   checked={showMine}
-                  onChange={(e) =>
-                    updateFilters({ mine: e.target.checked ? "true" : "" })
-                  }
+                  onChange={(e) => updateFilters({ mine: e.target.checked ? "true" : "" })}
                   className="rounded border-slate-300"
                 />
-                <span className="text-sm text-slate-600">
-                  Mes demandes uniquement
-                </span>
+                <span className="text-sm text-slate-600">Vos demandes uniquement</span>
               </label>
             </div>
 
@@ -460,59 +428,30 @@ export default function DemandesList() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
-                      Date
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
-                      Type
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
-                      Objet
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
-                      Acte lié
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">
-                      Statut
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600">
-                      Délai
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600">
-                      Réponses
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600">
-                      Actions
-                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Date</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Type</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Objet</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Acte lié</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Statut</th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600">Délai</th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600">Réponses</th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {demandes.map((demande) => (
-                    <tr
-                      key={demande.id}
-                      className="hover:bg-slate-50 border-b border-slate-100"
-                    >
+                    <tr key={demande.id} className="hover:bg-slate-50 border-b border-slate-100">
                       <td className="px-4 py-3 text-slate-600">
                         {demande.date_envoi
-                          ? new Date(demande.date_envoi).toLocaleDateString(
-                              "fr-FR"
-                            )
-                          : new Date(demande.created_at).toLocaleDateString(
-                              "fr-FR"
-                            )}
+                          ? new Date(demande.date_envoi).toLocaleDateString("fr-FR")
+                          : new Date(demande.created_at).toLocaleDateString("fr-FR")}
                       </td>
                       <td className="px-4 py-3">
                         <TypeBadge type={demande.type} />
                       </td>
                       <td className="px-4 py-3 text-slate-700 max-w-xs">
-                        <Link
-                          to={`/demandes/${demande.id}`}
-                          className="hover:text-blue-600"
-                        >
-                          <span
-                            className="block truncate"
-                            title={demande.objet}
-                          >
+                        <Link to={`/demandes/${demande.id}`} className="hover:text-blue-600">
+                          <span className="block truncate" title={demande.objet}>
                             {demande.objet || "Sans objet"}
                           </span>
                         </Link>
@@ -569,13 +508,10 @@ export default function DemandesList() {
 
         {/* Help box */}
         <div className="mt-8 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-indigo-800 mb-2">
-            💡 Types de demandes
-          </h3>
+          <h3 className="text-sm font-semibold text-indigo-800 mb-2">💡 Types de demandes</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-indigo-700">
             <div>
-              <strong>CRPA Communication:</strong> Demande de document (art.
-              L311-1)
+              <strong>CRPA Communication:</strong> Demande de document (art. L311-1)
             </div>
             <div>
               <strong>CRPA Réclamation:</strong> Plainte ou réclamation formelle
@@ -590,8 +526,7 @@ export default function DemandesList() {
               <strong>Recours hiérarchique:</strong> Recours auprès du Préfet
             </div>
             <div>
-              <strong>Droit à l'erreur:</strong> Régularisation (art. L123-1
-              CRPA)
+              <strong>Droit à l'erreur:</strong> Régularisation (art. L123-1 CRPA)
             </div>
           </div>
         </div>

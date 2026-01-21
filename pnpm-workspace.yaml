@@ -1,3 +1,14 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - apps/*
+  - packages/*
+
+onlyBuiltDependencies:
+  - '@scarf/scarf'
+  - core-js
+  - esbuild
+  - ngrok
+  - onnxruntime-node
+  - protobufjs
+  - sharp
+  - sqlite3
+  - supabase

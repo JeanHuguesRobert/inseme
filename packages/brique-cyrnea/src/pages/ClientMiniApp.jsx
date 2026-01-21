@@ -46,6 +46,10 @@ import {
   Lock,
   ShieldCheck,
   Newspaper,
+  LogOut,
+  LogIn,
+  Edit2,
+  Check,
 } from "lucide-react";
 import { Button } from "@inseme/ui";
 import { useInsemeContext, TalkButton, Chat, MondrianBlock, CameraModal } from "@inseme/room";
@@ -68,7 +72,7 @@ const MondrianTabTrigger = ({ isActive, onClick, color, icon: Icon, label }) => 
     onClick={onClick}
   >
     <Icon
-      className={`w-8 h-8 mb-2 ${isActive ? "scale-110" : "opacity-60"}`}
+      className={`w-8 h-8 mb-2 ${isActive ? "scale-110" : "opacity-100"}`}
       strokeWidth={isActive ? 3 : 2}
     />
     <span className="font-black text-[10px] md:text-xs tracking-widest">{label}</span>
@@ -225,59 +229,82 @@ const normalizePublicLink = (link) => {
    SCREENS
    ========================= */
 
-const LegendsScreen = ({ legends }) => (
-  <div className="h-full flex flex-col pt-4 px-4 pb-4">
-    <MondrianBlock
-      color="white"
-      className="flex-1 border-8 border-black flex flex-col shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] overflow-hidden"
-    >
-      <div className="bg-black text-white p-3 flex items-center justify-between border-b-4 border-black">
-        <h2 className="text-xl font-black italic tracking-tighter uppercase">Livre des Légendes</h2>
-        <Trophy className="w-5 h-5 text-mondrian-yellow" />
-      </div>
+const LegendsScreen = ({ legends, currentUser }) => {
+  const pseudo = currentUser?.pseudo || "";
+  return (
+    <div className="h-full flex flex-col pt-4 px-4 pb-4">
+      <MondrianBlock
+        color="white"
+        className="flex-1 border-8 border-black flex flex-col shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] overflow-hidden"
+      >
+        <div className="bg-black text-white p-3 flex items-center justify-between border-b-4 border-black">
+          <h2 className="text-xl font-black italic tracking-tighter uppercase">
+            Livre des Légendes
+          </h2>
+          <Trophy className="w-5 h-5 text-mondrian-yellow" />
+        </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-[radial-gradient(var(--color-border-subtle)_1px,transparent_1px)] bg-[size:20px_20px]">
-        {legends.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center opacity-40 p-8">
-            <Sparkles className="w-12 h-12 mb-4" />
-            <p className="font-black uppercase text-sm">
-              Aucune légende pour l'instant... Soyez brillants !
-            </p>
-          </div>
-        ) : (
-          legends
-            .slice()
-            .reverse()
-            .map((legend, i) => (
-              <div
-                key={i}
-                className="bg-white border-4 border-black p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative group animate-in zoom-in duration-300"
-              >
-                <div className="absolute -top-3 -left-3 bg-mondrian-yellow text-black border-4 border-black px-2 py-0.5 text-[10px] font-black uppercase rotate-[-5deg]">
-                  {legend.author}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-[radial-gradient(var(--color-border-subtle)_1px,transparent_1px)] bg-[size:20px_20px]">
+          {legends.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center opacity-40 p-8">
+              <Sparkles className="w-12 h-12 mb-4" />
+              <p className="font-black uppercase text-sm">
+                Aucune légende pour l'instant... Soyez brillants !
+              </p>
+            </div>
+          ) : (
+            legends
+              .slice()
+              .reverse()
+              .map((legend, i) => (
+                <div
+                  key={i}
+                  className="bg-white border-4 border-black p-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative group animate-in zoom-in duration-300"
+                >
+                  <div className="absolute -top-3 -left-3 bg-mondrian-yellow text-black border-4 border-black px-2 py-0.5 text-[10px] font-black rotate-[-5deg]">
+                    {legend.author}
+                  </div>
+                  <p className="text-lg font-black leading-tight italic mt-2">
+                    "{legend.original_message}"
+                  </p>
+                  {legend.image_url && (
+                    <img
+                      src={legend.image_url}
+                      alt="Légende"
+                      className="mt-4 border-4 border-black w-full grayscale hover:grayscale-0 transition-all"
+                    />
+                  )}
+                  <div className="text-[8px] font-bold opacity-40 mt-4 text-right uppercase">
+                    {new Date(legend.timestamp).toLocaleTimeString()} • {legend.barName || "Bar"}
+                  </div>
                 </div>
-                <p className="text-lg font-black leading-tight italic mt-2">
-                  "{legend.original_message}"
-                </p>
-                {legend.image_url && (
-                  <img
-                    src={legend.image_url}
-                    alt="Légende"
-                    className="mt-4 border-4 border-black w-full grayscale hover:grayscale-0 transition-all"
-                  />
-                )}
-                <div className="text-[8px] font-bold opacity-40 mt-4 text-right uppercase">
-                  {new Date(legend.timestamp).toLocaleTimeString()} • {legend.barName || "Bar"}
-                </div>
-              </div>
-            ))
-        )}
-      </div>
-    </MondrianBlock>
-  </div>
-);
+              ))
+          )}
+        </div>
+      </MondrianBlock>
+    </div>
+  );
+};
 
 const CityScreen = ({ commune, roomMetadata }) => {
+  const {
+    roomName,
+    user,
+    currentUser,
+    roomData,
+    presentPeople,
+    messages,
+    sendMessage,
+    askOphélia,
+    isOphéliaThinking,
+    isManuallyDisconnected,
+    toggleManualDisconnect,
+    updateAnonymousIdentity,
+    terminology,
+    template,
+  } = useInsemeContext();
+  const pseudo = currentUser?.pseudo || "";
+
   const barName = roomMetadata?.name || "Le Bar";
   const barSlug = roomMetadata?.slug || "bar";
   const settings = roomMetadata?.settings || {};
@@ -294,6 +321,23 @@ const CityScreen = ({ commune, roomMetadata }) => {
       )
     : [];
 
+  useEffect(() => {
+    console.log("[Presence Debug] CityScreen update:", {
+      presentPeople,
+      roomData,
+    });
+  }, [presentPeople, roomData]);
+
+  const getDuration = (dateStr) => {
+    if (!dateStr) return "À l'instant";
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 2) return "À l'instant";
+    if (mins < 60) return `${mins} min`;
+    const hours = Math.floor(mins / 60);
+    return `${hours}h${Math.floor((mins % 60) / 10) * 10}`;
+  };
+
   return (
     <div className="h-full flex flex-col pt-4 px-4 pb-4">
       <MondrianBlock
@@ -305,7 +349,7 @@ const CityScreen = ({ commune, roomMetadata }) => {
         >
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest opacity-80 leading-none mb-1">
-              Ma Commune
+              Votre Commune
             </p>
             <h2 className="text-3xl font-black italic tracking-tighter uppercase leading-none">
               {commune || "Ville"}
@@ -315,6 +359,89 @@ const CityScreen = ({ commune, roomMetadata }) => {
         </div>
 
         <div className="flex-1 p-6 space-y-6 bg-[radial-gradient(var(--color-border-subtle)_1px,transparent_1px)] bg-[size:20px_20px] flex flex-col justify-center">
+          {/* MY BADGE BLOCK */}
+          <div className="bg-mondrian-yellow border-4 border-black p-3 flex items-center justify-between shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="flex items-center gap-3 w-full">
+              <div className="bg-black text-white p-2 rounded-full shrink-0">
+                <User className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-black uppercase leading-none opacity-60 mb-1">
+                  Vous êtes
+                </div>
+                <div className="font-black text-xl italic leading-none truncate">
+                  {currentUser?.pseudo || "Visiteur"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* PRESENCE BLOCK */}
+          <div className="bg-white border-4 border-black p-4 relative shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4">
+            <div className="absolute -top-3 -left-3 bg-black text-white px-2 py-1 text-[10px] font-black uppercase rotate-[-2deg] border-2 border-white shadow-sm">
+              Présents au {barName}
+            </div>
+
+            <button
+              onClick={toggleManualDisconnect}
+              className={`absolute -top-3 -right-3 px-2 py-1 border-2 border-black shadow-sm text-[10px] font-black uppercase transition-transform hover:scale-105 z-10 ${
+                isManuallyDisconnected
+                  ? "bg-slate-200 text-black rotate-2 hover:bg-green-400"
+                  : "bg-red-500 text-white rotate-[-2deg] hover:bg-red-600"
+              }`}
+            >
+              {isManuallyDisconnected ? (
+                <div className="flex items-center gap-1">
+                  <LogIn className="w-3 h-3" />
+                  <span>Entrer</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <LogOut className="w-3 h-3" />
+                  <span>Sortir</span>
+                </div>
+              )}
+            </button>
+
+            <div className="flex flex-wrap gap-3 mt-2">
+              {presentPeople.length === 0 ? (
+                <div className="flex items-center gap-2 opacity-50">
+                  <Wind className="w-4 h-4" />
+                  <span className="text-xs font-bold italic">C'est calme pour le moment...</span>
+                </div>
+              ) : (
+                presentPeople.map((u, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 bg-slate-50 border-2 border-black p-1 pr-3 rounded-full animate-in zoom-in duration-300"
+                    style={{ animationDelay: `${i * 100}ms` }}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 border-black text-white shadow-sm ${
+                        ["bg-mondrian-red", "bg-mondrian-blue", "bg-mondrian-yellow text-black"][
+                          i % 3
+                        ]
+                      }`}
+                    >
+                      {u.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black leading-none truncate max-w-[100px]">
+                        {u.name}
+                      </span>
+                      <span className="text-[8px] font-bold opacity-60 leading-none mt-0.5">
+                        {getDuration(u.joined_at)}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <p className="text-[8px] font-bold uppercase text-right mt-2 opacity-40">
+              Liste mise à jour en temps réel
+            </p>
+          </div>
+
           <p className="text-[10px] font-bold border-l-4 border-black pl-3 leading-relaxed uppercase">
             L'application {barName} est connectée aux services citoyens de votre ville. Retrouvez
             l'actualité locale et la mémoire collective.
@@ -644,7 +771,8 @@ const GameInterface = ({ game, sendMessage, pseudo }) => {
   );
 };
 
-const GamesScreen = ({ activeGames, castVote, sendMessage, pseudo }) => {
+const GamesScreen = ({ activeGames, castVote, sendMessage, currentUser }) => {
+  const pseudo = currentUser?.pseudo || "";
   const latestGame = activeGames?.find((g) => g.type === "game_start");
 
   return (
@@ -696,7 +824,7 @@ const GamesScreen = ({ activeGames, castVote, sendMessage, pseudo }) => {
 
 const ProfileScreen = ({
   context,
-  pseudo,
+  currentUser,
   zone,
   isBarman,
   roomMetadata,
@@ -705,7 +833,10 @@ const ProfileScreen = ({
   onZoneChange,
   publicLinks,
   onPublicLinksChange,
+  isGabrielMode,
+  onToggleGabriel,
 }) => {
+  const pseudo = currentUser?.pseudo || "";
   const barName = roomMetadata?.name || "Bar";
   const commune = roomMetadata?.settings?.commune || "Ville";
   const nativeLang = context.nativeLang;
@@ -741,7 +872,7 @@ const ProfileScreen = ({
         <div className="bg-black text-white p-4 border-b-8 border-black flex items-center justify-between">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest opacity-60">
-              Mon Profil
+              Votre Profil
             </p>
             <h2 className="text-3xl font-black italic tracking-tighter uppercase leading-none">
               Identité & Rôles
@@ -766,25 +897,28 @@ const ProfileScreen = ({
                   {pseudo || "Choisir un pseudo"}
                 </button>
               </div>
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col gap-2">
                 <span className="opacity-60">Zone</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onZoneChange("indoor")}
-                    className={`px-2 py-1 border-2 border-black font-black ${
-                      zone === "indoor" ? "bg-mondrian-blue text-white" : "bg-white text-black"
-                    }`}
-                  >
-                    Intérieur
-                  </button>
-                  <button
-                    onClick={() => onZoneChange("outdoor")}
-                    className={`px-2 py-1 border-2 border-black font-black ${
-                      zone === "outdoor" ? "bg-mondrian-red text-white" : "bg-white text-black"
-                    }`}
-                  >
-                    Extérieur
-                  </button>
+                <div className="flex flex-wrap gap-2">
+                  {(roomMetadata?.settings?.zones?.length > 0
+                    ? roomMetadata.settings.zones
+                    : [
+                        { id: "indoor", label: "Intérieur" },
+                        { id: "outdoor", label: "Extérieur" },
+                      ]
+                  ).map((z) => (
+                    <button
+                      key={z.id}
+                      onClick={() => onZoneChange(zone === z.id ? null : z.id)}
+                      className={`px-2 py-1 border-2 border-black font-black uppercase ${
+                        zone === z.id
+                          ? "bg-mondrian-blue text-white"
+                          : "bg-white text-black hover:bg-slate-100"
+                      }`}
+                    >
+                      {z.label}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className="flex items-center justify-between gap-2">
@@ -813,16 +947,29 @@ const ProfileScreen = ({
               <Coins className="w-4 h-4" />
               Barman
             </h3>
-            <div className="flex items-center justify-between text-[10px] font-bold uppercase">
-              <span className="opacity-60">Statut {isBarman ? "actuel" : "possible"}</span>
-              <button
-                onClick={onOpenBarmanModal}
-                className={`px-3 py-1 border-2 border-black font-black ${
-                  isBarman ? "bg-mondrian-yellow text-black" : "bg-white text-black"
-                }`}
-              >
-                {isBarman ? "Modifier mes infos" : "Me déclarer barman"}
-              </button>
+            <div className="flex flex-col gap-2 text-[10px] font-bold uppercase">
+              <div className="flex items-center justify-between">
+                <span className="opacity-60">Statut {isBarman ? "actuel" : "possible"}</span>
+                <button
+                  onClick={onOpenBarmanModal}
+                  className={`px-3 py-1 border-2 border-black font-black ${
+                    isBarman ? "bg-mondrian-yellow text-black" : "bg-white text-black"
+                  }`}
+                >
+                  {isBarman ? "Modifier mes infos" : "Vous déclarer barman"}
+                </button>
+              </div>
+              {isBarman && (
+                <button
+                  onClick={() =>
+                    (window.location.href = `/bar/${roomMetadata?.slug || roomMetadata?.id || "cyrnea"}`)
+                  }
+                  className="w-full mt-2 bg-black text-white border-2 border-black hover:bg-mondrian-red hover:text-white font-black uppercase flex items-center justify-center gap-2 py-2"
+                >
+                  <Zap className="w-4 h-4" />
+                  Prendre le Service
+                </button>
+              )}
             </div>
           </section>
 
@@ -842,9 +989,16 @@ const ProfileScreen = ({
               </div>
               <div className="flex items-center justify-between gap-2">
                 <span className="opacity-60">Agent Gabriel</span>
-                <span className="px-2 py-1 border-2 border-black bg-white">
-                  {gabrielEnabled ? "Activé (privé)" : "Désactivé"}
-                </span>
+                {gabrielEnabled ? (
+                  <button
+                    onClick={onToggleGabriel}
+                    className={`px-2 py-1 border-2 border-black ${isGabrielMode ? "bg-black text-white" : "bg-white text-black"} font-bold uppercase transition-colors`}
+                  >
+                    {isGabrielMode ? "UTILISÉ" : "EN PAUSE"}
+                  </button>
+                ) : (
+                  <span className="px-2 py-1 border-2 border-black bg-white">Désactivé</span>
+                )}
               </div>
             </div>
           </section>
@@ -930,129 +1084,6 @@ const ProfileScreen = ({
 /* =========================
    OPHELIA SCREEN COMPONENTS
    ========================= */
-
-const OpheliaHeader = ({
-  isGabrielMode,
-  onToggleGabriel,
-  showGabrielSettings,
-  onToggleSettings,
-  isAfter,
-  gabrielConfigured,
-}) => (
-  <div
-    className={`p-3 flex justify-between items-center text-white border-b-4 shrink-0 transition-colors duration-1000 ${isAfter ? "bg-black border-mondrian-blue/30" : "bg-black border-black"}`}
-  >
-    <div className="flex items-center gap-2">
-      {!isAfter ? (
-        <>
-          {gabrielConfigured ? (
-            <>
-              <button
-                onClick={onToggleGabriel}
-                className={`px-2 py-0.5 border-2 border-white text-[10px] font-black uppercase transition-colors ${
-                  !isGabrielMode ? "bg-white text-black" : "bg-black text-white"
-                }`}
-              >
-                Ophélia
-              </button>
-              <button
-                onClick={onToggleGabriel}
-                className={`px-2 py-0.5 border-2 border-white text-[10px] font-black uppercase transition-colors ${
-                  isGabrielMode ? "bg-white text-black" : "bg-black text-white"
-                }`}
-              >
-                Gabriel
-              </button>
-            </>
-          ) : (
-            <div className="px-2 py-0.5 border-2 border-white bg-white text-black text-[10px] font-black uppercase">
-              Ophélia
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="flex items-center gap-2">
-          <Moon className="w-4 h-4 text-mondrian-blue animate-pulse" />
-          <span className="text-xs font-black uppercase tracking-[0.2em] text-mondrian-blue">
-            Mode After
-          </span>
-        </div>
-      )}
-    </div>
-    <div className="flex items-center gap-2">
-      <button
-        onClick={() => (window.location.href = window.location.pathname.replace("/app", "/vocal"))}
-        className="p-1 hover:bg-white hover:text-black transition-colors rounded border border-transparent hover:border-black"
-        title="Dialogue Vocal"
-      >
-        <Volume2 className="w-4 h-4" />
-      </button>
-      <button
-        onClick={onToggleSettings}
-        className="p-1 hover:bg-white hover:text-black transition-colors rounded border border-transparent hover:border-black"
-      >
-        <Zap className={`w-4 h-4 ${showGabrielSettings ? "fill-current" : ""}`} />
-      </button>
-      <div className="flex space-x-1">
-        <div className="w-2 h-2 bg-mondrian-red rounded-full border border-black/20" />
-        <div className="w-2 h-2 bg-mondrian-yellow rounded-full border border-black/20" />
-        <div className="w-2 h-2 bg-mondrian-blue rounded-full border border-black/20" />
-      </div>
-    </div>
-  </div>
-);
-
-const GabrielSettingsPanel = ({ context, onToggleSettings }) => (
-  <div
-    className={`absolute top-12 left-0 right-0 z-[60] bg-mondrian-yellow border-b-8 border-black p-4 animate-in slide-in-from-top duration-300`}
-  >
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="text-sm font-black uppercase italic tracking-tighter">Config Gabriel AI</h3>
-      <button onClick={onToggleSettings}>
-        <X className="w-5 h-5" />
-      </button>
-    </div>
-    <div className="space-y-3">
-      <div>
-        <label className="text-[8px] font-black uppercase block mb-1 opacity-60">
-          API URL (OpenAI Compatible)
-        </label>
-        <input
-          type="text"
-          value={context.gabrielConfig?.url || ""}
-          onChange={(e) => context.updateGabrielConfig({ url: e.target.value })}
-          placeholder="https://api.openai.com/v1/chat/completions"
-          className="w-full bg-white border-2 border-black p-2 text-[10px] font-bold focus:outline-none"
-        />
-      </div>
-      <div>
-        <label className="text-[8px] font-black uppercase block mb-1 opacity-60">API Key</label>
-        <input
-          type="password"
-          value={context.gabrielConfig?.key || ""}
-          onChange={(e) => context.updateGabrielConfig({ key: e.target.value })}
-          placeholder="sk-..."
-          className="w-full bg-white border-2 border-black p-2 text-[10px] font-bold focus:outline-none"
-        />
-      </div>
-      <div className="flex items-center gap-2 mt-2">
-        <input
-          type="checkbox"
-          id="gabriel-enabled"
-          checked={context.gabrielConfig?.enabled || false}
-          onChange={(e) => context.updateGabrielConfig({ enabled: e.target.checked })}
-          className="w-4 h-4 border-2 border-black rounded-none checked:bg-black"
-        />
-        <label htmlFor="gabriel-enabled" className="text-[10px] font-black uppercase">
-          Activer Gabriel (Privé)
-        </label>
-      </div>
-      <p className="text-[8px] font-bold opacity-60 italic mt-2">
-        Si non configuré, Gabriel utilise une instance Ophélia personnalisée avec vos données.
-      </p>
-    </div>
-  </div>
-);
 
 const AttachmentPreview = ({ attachment, onClearAttachment, onSend }) => (
   <div className="absolute top-14 left-4 z-50 w-32 h-32 border-8 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] group">
@@ -1167,103 +1198,103 @@ const OpheliaActionButtons = ({
   onSuspendu,
   onInvite,
   onAfter,
-  onEditPseudo,
-  pseudo,
   isAfter,
-}) => (
-  <div className="flex items-center justify-center gap-4 w-full">
-    <button
-      onClick={() => {
-        const next = !context.isHandsFree;
-        context.setIsHandsFree(next);
-        localStorage.setItem("inseme_hands_free", next ? "true" : "false");
-      }}
-      className={`p-3 rounded-full border-4 border-black transition-all ${
-        context.isHandsFree
-          ? "bg-black text-white"
-          : "bg-white text-black hover:bg-black hover:text-white"
-      }`}
-      title="Mode Mains Libres"
-    >
-      <Headphones className="w-6 h-6" strokeWidth={3} />
-    </button>
+}) => {
+  const pseudo = context.currentUser?.pseudo || "";
+  return (
+    <div className="flex items-center justify-center gap-4 w-full">
+      <button
+        onClick={() => {
+          const next = !context.isHandsFree;
+          context.setIsHandsFree(next);
+          localStorage.setItem("inseme_hands_free", next ? "true" : "false");
+        }}
+        className={`p-3 rounded-full border-4 border-black transition-all ${
+          context.isHandsFree
+            ? "bg-black text-white"
+            : "bg-white text-black hover:bg-black hover:text-white"
+        }`}
+        title="Mode Mains Libres"
+      >
+        <Headphones className="w-6 h-6" strokeWidth={3} />
+      </button>
 
-    <button
-      onClick={() => {
-        if (isMobile) {
-          onAttach();
-        } else {
-          onAttachCamera();
-        }
-      }}
-      className={`p-3 rounded-full border-4 border-black transition-all ${
-        attachment
-          ? "bg-mondrian-red text-white"
-          : "bg-white text-black hover:bg-black hover:text-white"
-      }`}
-      title={isMobile ? "Prendre une photo (Caméra)" : "Prendre une photo (Webcam)"}
-    >
-      <Camera className="w-6 h-6" strokeWidth={3} />
-    </button>
+      <button
+        onClick={() => {
+          if (isMobile) {
+            onAttach();
+          } else {
+            onAttachCamera();
+          }
+        }}
+        className={`p-3 rounded-full border-4 border-black transition-all ${
+          attachment
+            ? "bg-mondrian-red text-white"
+            : "bg-white text-black hover:bg-black hover:text-white"
+        }`}
+        title={isMobile ? "Prendre une photo (Caméra)" : "Prendre une photo (Webcam)"}
+      >
+        <Camera className="w-6 h-6" strokeWidth={3} />
+      </button>
 
-    <button
-      onClick={onAttachGallery}
-      className={`p-3 rounded-full border-4 border-black transition-all ${
-        attachment
-          ? "bg-mondrian-red text-white"
-          : "bg-white text-black hover:bg-black hover:text-white"
-      }`}
-      title="Choisir une image (Galerie)"
-    >
-      <Image className="w-6 h-6" strokeWidth={3} />
-    </button>
+      <button
+        onClick={onAttachGallery}
+        className={`p-3 rounded-full border-4 border-black transition-all ${
+          attachment
+            ? "bg-mondrian-red text-white"
+            : "bg-white text-black hover:bg-black hover:text-white"
+        }`}
+        title="Choisir une image (Galerie)"
+      >
+        <Image className="w-6 h-6" strokeWidth={3} />
+      </button>
 
-    <button
-      onClick={onTip}
-      className="p-3 rounded-full border-4 border-black bg-white text-black hover:bg-mondrian-yellow transition-all"
-      title="Offrir une tournée"
-    >
-      <Coffee className="w-6 h-6" strokeWidth={3} />
-    </button>
+      <button
+        onClick={onTip}
+        className="p-3 rounded-full border-4 border-black bg-white text-black hover:bg-mondrian-yellow transition-all"
+        title="Offrir une tournée"
+      >
+        <Coffee className="w-6 h-6" strokeWidth={3} />
+      </button>
 
-    <button
-      onClick={onSuspendu}
-      className="p-3 rounded-full border-4 border-black bg-white text-black hover:bg-mondrian-yellow transition-all"
-      title="Offrir un café suspendu"
-    >
-      <Heart className="w-6 h-6 text-red-600" strokeWidth={3} />
-    </button>
+      <button
+        onClick={onSuspendu}
+        className="p-3 rounded-full border-4 border-black bg-white text-black hover:bg-mondrian-yellow transition-all"
+        title="Offrir un café suspendu"
+      >
+        <Heart className="w-6 h-6 text-red-600" strokeWidth={3} />
+      </button>
 
-    <button
-      onClick={onInvite}
-      disabled={!pseudo}
-      className="p-3 rounded-full border-4 border-black bg-white text-black hover:bg-mondrian-yellow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-      title="Inviter un ami"
-    >
-      <QrCode className="w-6 h-6" strokeWidth={3} />
-    </button>
+      <button
+        onClick={onInvite}
+        disabled={!pseudo}
+        className="p-3 rounded-full border-4 border-black bg-white text-black hover:bg-mondrian-yellow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        title="Inviter un ami"
+      >
+        <QrCode className="w-6 h-6" strokeWidth={3} />
+      </button>
 
-    <button
-      onClick={onAfter}
-      className="p-3 rounded-full border-4 border-black bg-white text-black hover:bg-black hover:text-mondrian-yellow transition-all"
-      title="Proposer un After"
-    >
-      <Moon className="w-6 h-6" strokeWidth={3} />
-    </button>
+      <button
+        onClick={onAfter}
+        className="p-3 rounded-full border-4 border-black bg-white text-black hover:bg-black hover:text-mondrian-yellow transition-all"
+        title="Proposer un After"
+      >
+        <Moon className="w-6 h-6" strokeWidth={3} />
+      </button>
 
-    <div
-      className={`${isAfter ? "bg-black text-mondrian-blue border-mondrian-blue" : "bg-white text-black border-black"} px-2 py-1 border-4 flex flex-col items-center justify-center cursor-pointer hover:bg-black hover:text-white transition-colors min-w-[80px]`}
-      onClick={onEditPseudo}
-    >
-      <span className="text-[7px] font-black uppercase opacity-60 leading-none mb-0.5">
-        {isAfter ? "PAS DE NOM" : context.currentUser?.summary || "USER"}
-      </span>
-      <span className="text-[10px] font-black text-center leading-tight uppercase tracking-tighter">
-        {pseudo || (isAfter ? "???" : "???")}
-      </span>
+      <div
+        className={`${isAfter ? "bg-black text-mondrian-blue border-mondrian-blue" : "bg-white text-black border-black"} px-2 py-1 border-4 flex flex-col items-center justify-center transition-colors min-w-[80px]`}
+      >
+        <span className="text-[7px] font-black uppercase opacity-60 leading-none mb-0.5">
+          {isAfter ? "PAS DE NOM" : context.currentUser?.summary || "USER"}
+        </span>
+        <span className="text-[10px] font-black text-center leading-tight uppercase tracking-tighter">
+          {pseudo || (isAfter ? "???" : "???")}
+        </span>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const OpheliaInputArea = ({
   text,
@@ -1279,70 +1310,70 @@ const OpheliaInputArea = ({
   onSuspendu,
   onInvite,
   onAfter,
-  onEditPseudo,
-  pseudo,
   isAfter,
-}) => (
-  <div
-    className={`${isAfter ? "bg-black/80 backdrop-blur-md border-mondrian-blue/50 shadow-[0_-8px_20px_-5px_rgba(0,0,0,0.5)]" : "bg-mondrian-yellow border-black"} border-t-8 p-4 flex flex-col items-center justify-center gap-4 relative shrink-0 transition-all duration-1000`}
-  >
-    {isAfter && (
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
-        {[...Array(5)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-mondrian-blue rounded-full blur-xl animate-pulse"
-            style={{
-              width: `${Math.random() * 100 + 50}px`,
-              height: `${Math.random() * 100 + 50}px`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${i * 2}s`,
-            }}
-          />
-        ))}
+}) => {
+  const { currentUser } = context;
+  const pseudo = currentUser?.pseudo || "";
+  return (
+    <div
+      className={`${isAfter ? "bg-black/80 backdrop-blur-md border-mondrian-blue/50 shadow-[0_-8px_20px_-5px_rgba(0,0,0,0.5)]" : "bg-mondrian-yellow border-black"} border-t-8 p-4 flex flex-col items-center justify-center gap-4 relative shrink-0 transition-all duration-1000`}
+    >
+      {isAfter && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute bg-mondrian-blue rounded-full blur-xl animate-pulse"
+              style={{
+                width: `${Math.random() * 100 + 50}px`,
+                height: `${Math.random() * 100 + 50}px`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${i * 2}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black text-white px-2 py-0.5 text-[10px] font-black uppercase z-10 flex items-center gap-2">
+        {context.isHandsFree && (
+          <div className="flex items-center gap-1 border-r border-white/20 pr-2 mr-1">
+            <Headphones className="w-3 h-3 text-mondrian-yellow" />
+            <span className="text-[8px]">MAINS LIBRES</span>
+          </div>
+        )}
+        {context.isRecording && (
+          <div className="flex items-center gap-1 border-r border-white/20 pr-2 mr-1">
+            <Activity className="w-3 h-3 text-red-500 animate-pulse" />
+            <span className="text-[8px]">VAD ACTIVE</span>
+          </div>
+        )}
       </div>
-    )}
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black text-white px-2 py-0.5 text-[10px] font-black uppercase z-10 flex items-center gap-2">
-      {context.isHandsFree && (
-        <div className="flex items-center gap-1 border-r border-white/20 pr-2 mr-1">
-          <Headphones className="w-3 h-3 text-mondrian-yellow" />
-          <span className="text-[8px]">MAINS LIBRES</span>
-        </div>
-      )}
-      {context.isRecording && (
-        <div className="flex items-center gap-1 border-r border-white/20 pr-2 mr-1">
-          <Activity className="w-3 h-3 text-red-500 animate-pulse" />
-          <span className="text-[8px]">VAD ACTIVE</span>
-        </div>
-      )}
+
+      <OpheliaInputBar
+        text={text}
+        onTextChange={onTextChange}
+        onSend={onSend}
+        attachment={attachment}
+        context={context}
+      />
+
+      <OpheliaActionButtons
+        context={context}
+        isMobile={isMobile}
+        attachment={attachment}
+        onAttach={onAttach}
+        onAttachCamera={onAttachCamera}
+        onAttachGallery={onAttachGallery}
+        onTip={onTip}
+        onSuspendu={onSuspendu}
+        onInvite={onInvite}
+        onAfter={onAfter}
+        isAfter={isAfter}
+      />
     </div>
-
-    <OpheliaInputBar
-      text={text}
-      onTextChange={onTextChange}
-      onSend={onSend}
-      attachment={attachment}
-      context={context}
-    />
-
-    <OpheliaActionButtons
-      context={context}
-      isMobile={isMobile}
-      attachment={attachment}
-      onAttach={onAttach}
-      onAttachCamera={onAttachCamera}
-      onAttachGallery={onAttachGallery}
-      onTip={onTip}
-      onSuspendu={onSuspendu}
-      onInvite={onInvite}
-      onAfter={onAfter}
-      onEditPseudo={onEditPseudo}
-      pseudo={pseudo}
-      isAfter={isAfter}
-    />
-  </div>
-);
+  );
+};
 
 const OpheliaScreen = ({
   context,
@@ -1356,81 +1387,65 @@ const OpheliaScreen = ({
   onAttachGallery,
   onClearAttachment,
   onTip,
-  pseudo,
-  onEditPseudo,
   onSuspendu,
   onInvite,
   onAfter,
   isAfter,
-  isGabrielMode,
-  onToggleGabriel,
-  showGabrielSettings,
-  onToggleSettings,
-}) => (
-  <div className="h-full flex flex-col pt-4 px-4 pb-4 text-black transition-colors duration-1000 overflow-hidden relative">
-    {isAfter && (
-      <div className="absolute inset-0 bg-mondrian-black z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(79,70,229,0.1),transparent_70%)]" />
-        <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]" />
-      </div>
-    )}
-    <MondrianBlock
-      color={isAfter ? "black" : "white"}
-      className={`flex-1 border-8 ${isAfter ? "border-mondrian-blue/50 shadow-[0px_20px_50px_rgba(0,0,0,0.2)]" : "border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]"} flex flex-col transition-all duration-1000 overflow-hidden relative z-10 backdrop-blur-sm`}
-    >
-      <OpheliaHeader
-        isGabrielMode={isGabrielMode}
-        onToggleGabriel={onToggleGabriel}
-        showGabrielSettings={showGabrielSettings}
-        onToggleSettings={onToggleSettings}
-        isAfter={isAfter}
-        gabrielConfigured={context.gabrielConfig?.enabled}
-      />
-
-      {showGabrielSettings && (
-        <GabrielSettingsPanel context={context} onToggleSettings={onToggleSettings} />
+}) => {
+  const { currentUser } = context;
+  const pseudo = currentUser?.pseudo || "";
+  return (
+    <div className="h-full flex flex-col pt-4 px-4 pb-4 text-black transition-colors duration-1000 overflow-hidden relative">
+      {isAfter && (
+        <div className="absolute inset-0 bg-mondrian-black z-0">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(79,70,229,0.1),transparent_70%)]" />
+          <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]" />
+        </div>
       )}
-
-      {attachment && (
-        <AttachmentPreview
-          attachment={attachment}
-          onClearAttachment={onClearAttachment}
-          onSend={onSend}
-        />
-      )}
-
-      <div
-        className={`flex-1 overflow-hidden relative ${isAfter ? "bg-black" : "bg-[radial-gradient(var(--color-border-subtle)_1px,transparent_1px)] bg-[size:20px_20px]"}`}
+      <MondrianBlock
+        color={isAfter ? "black" : "white"}
+        className={`flex-1 border-8 ${isAfter ? "border-mondrian-blue/50 shadow-[0px_20px_50px_rgba(0,0,0,0.2)]" : "border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]"} flex flex-col transition-all duration-1000 overflow-hidden relative z-10 backdrop-blur-sm`}
       >
-        <Chat
-          variant="minimal"
-          className={`h-full p-4 ${isAfter ? "text-mondrian-blue" : "text-black"}`}
+        {attachment && (
+          <AttachmentPreview
+            attachment={attachment}
+            onClearAttachment={onClearAttachment}
+            onSend={onSend}
+          />
+        )}
+
+        <div
+          className={`flex-1 overflow-hidden relative ${isAfter ? "bg-black" : "bg-[radial-gradient(var(--color-border-subtle)_1px,transparent_1px)] bg-[size:20px_20px]"}`}
+        >
+          <Chat
+            variant="minimal"
+            className={`h-full p-4 ${isAfter ? "text-mondrian-blue" : "text-black"}`}
+          />
+        </div>
+
+        <OpheliaInputArea
+          text={text}
+          onTextChange={onTextChange}
+          onSend={onSend}
+          attachment={attachment}
+          context={context}
+          isMobile={isMobile}
+          onAttach={onAttach}
+          onAttachCamera={onAttachCamera}
+          onAttachGallery={onAttachGallery}
+          onTip={onTip}
+          onSuspendu={onSuspendu}
+          onInvite={onInvite}
+          onAfter={onAfter}
+          isAfter={isAfter}
         />
-      </div>
+      </MondrianBlock>
+    </div>
+  );
+};
 
-      <OpheliaInputArea
-        text={text}
-        onTextChange={onTextChange}
-        onSend={onSend}
-        attachment={attachment}
-        context={context}
-        isMobile={isMobile}
-        onAttach={onAttach}
-        onAttachCamera={onAttachCamera}
-        onAttachGallery={onAttachGallery}
-        onTip={onTip}
-        onSuspendu={onSuspendu}
-        onInvite={onInvite}
-        onAfter={onAfter}
-        onEditPseudo={onEditPseudo}
-        pseudo={pseudo}
-        isAfter={isAfter}
-      />
-    </MondrianBlock>
-  </div>
-);
-
-const InviteModal = ({ isOpen, onClose, pseudo, roomMetadata, clientUrl }) => {
+const InviteModal = ({ isOpen, onClose, currentUser, roomMetadata, clientUrl }) => {
+  const pseudo = currentUser?.pseudo || "";
   if (!isOpen) return null;
   const roomSettings = roomMetadata?.settings;
   const barName = roomMetadata?.name || "Bar";
@@ -1495,7 +1510,8 @@ const InviteModal = ({ isOpen, onClose, pseudo, roomMetadata, clientUrl }) => {
   );
 };
 
-const TipModal = ({ isOpen, onClose, barmans, onTip, pseudo, context }) => {
+const TipModal = ({ isOpen, onClose, barmans, onTip, currentUser, context }) => {
+  const pseudo = currentUser?.pseudo || "";
   const [selectedBarman, setSelectedBarman] = useState(null);
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState("");
@@ -1912,22 +1928,27 @@ const TipModal = ({ isOpen, onClose, barmans, onTip, pseudo, context }) => {
   );
 };
 
-const BarmanModal = ({ isOpen, onClose, onDeclare, currentToken }) => {
+const BarmanModal = ({ isOpen, onClose, onDeclare, currentToken, context }) => {
   const [stripeId, setStripeId] = useState("");
   const [place, setPlace] = useState("");
   const [phone, setPhone] = useState("");
   const [phoneVisibility, setPhoneVisibility] = useState("private"); // 'private' ou 'public'
+  const [sesame, setSesame] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
-    if (!stripeId || !place) return;
+    if (!sesame) {
+      alert("Le code sésame est requis.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await onDeclare({ stripeId, place, phone, phoneVisibility });
+      await onDeclare({ stripeId, place, phone, phoneVisibility, sesame });
     } catch (err) {
-      alert("Erreur lors de la déclaration.");
+      alert(err.message || "Erreur lors de la déclaration.");
     } finally {
       setIsSubmitting(false);
     }
@@ -1966,14 +1987,56 @@ const BarmanModal = ({ isOpen, onClose, onDeclare, currentToken }) => {
           </div>
 
           <div>
-            <label className="text-xs font-black uppercase mb-2 block">
-              Où êtes-vous ? (Poste/Nom)
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-black uppercase">Où êtes-vous ? (Poste/Nom)</label>
+              <a
+                href="file:///c:/tweesic/inseme/packages/brique-cyrnea/src/pages/BarmanDashboard.jsx#L334"
+                className="text-[8px] font-bold uppercase underline opacity-30 hover:opacity-100"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Zones
+              </a>
+            </div>
+
+            {/* Quick selection if zones are defined */}
+            {context?.roomMetadata?.settings?.zones?.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {context.roomMetadata.settings.zones.map((z, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setPlace(z.label)}
+                    className={`px-3 py-1.5 border-2 border-black text-[10px] font-black uppercase transition-all ${
+                      place === z.label
+                        ? "bg-black text-white"
+                        : "bg-white text-black hover:bg-slate-50"
+                    }`}
+                  >
+                    {z.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <input
               type="text"
               placeholder="EX: Bar Central, Terrasse, Salle 1..."
               value={place}
               onChange={(e) => setPlace(e.target.value)}
+              className="w-full bg-white border-4 border-black p-4 font-black text-xl focus:ring-0 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-black uppercase mb-2 block">
+              Code Sésame (Staff Uniquement)
+            </label>
+            <input
+              type="password"
+              placeholder="Code secret..."
+              value={sesame}
+              onChange={(e) => setSesame(e.target.value)}
               className="w-full bg-white border-4 border-black p-4 font-black text-xl focus:ring-0 focus:outline-none"
             />
           </div>
@@ -2043,9 +2106,9 @@ const BarmanModal = ({ isOpen, onClose, onDeclare, currentToken }) => {
           </div>
 
           <button
-            disabled={!stripeId || !place || isSubmitting}
+            disabled={isSubmitting || !sesame}
             onClick={handleSubmit}
-            className="w-full bg-mondrian-blue text-white py-4 border-4 border-black font-black uppercase tracking-widest hover:bg-black transition-colors shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1"
+            className="w-full bg-mondrian-blue text-white py-4 border-4 border-black font-black uppercase tracking-widest hover:bg-black transition-colors shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-1 disabled:opacity-50"
           >
             {isSubmitting ? "Enregistrement..." : "Activer mon profil"}
           </button>
@@ -2074,6 +2137,7 @@ const BroadcastOverlay = ({ event }) => {
   const isBell = event.type === "bell";
   const isUrlChange = event.type === "url_change";
   const isPhoneRevealed = event.type === "phone_revealed";
+  const isBarmanSuccess = event.type === "barman_success";
   const isImperial = event.level === "imperial";
   const isRoyal = event.level === "royal";
 
@@ -2114,14 +2178,38 @@ const BroadcastOverlay = ({ event }) => {
             </p>
             <button
               onClick={() => {
-                const url = new URL(event.newUrl);
-                url.search = window.location.search; // Garder les paramètres (room, etc.)
-                window.location.href = url.toString();
+                try {
+                  const newUrlObj = new URL(event.newUrl);
+                  const targetUrl = new URL(window.location.href);
+                  targetUrl.protocol = newUrlObj.protocol;
+                  targetUrl.host = newUrlObj.host;
+                  targetUrl.port = newUrlObj.port;
+                  window.location.href = targetUrl.toString();
+                } catch (e) {
+                  console.error("Invalid URL for new frequency", event.newUrl, e);
+                  window.location.href = event.newUrl;
+                }
               }}
               className="w-full bg-black text-white py-4 border-4 border-black font-black uppercase tracking-widest hover:bg-mondrian-red transition-colors shadow-[8px_8px_0px_0px_var(--mondrian-red)] active:translate-x-1 active:translate-y-1 active:shadow-none"
             >
               REJOINDRE LE BAR
             </button>
+          </div>
+        </MondrianBlock>
+      ) : isBarmanSuccess ? (
+        <MondrianBlock
+          color="white"
+          className="max-w-md border-8 border-black p-8 shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] animate-in zoom-in duration-300 pointer-events-auto flex flex-col items-center text-center"
+        >
+          <div className="text-6xl mb-4">🎉</div>
+          <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-4 leading-none">
+            FÉLICITATIONS !
+          </h2>
+          <p className="font-bold uppercase text-sm mb-6 leading-relaxed">
+            Vous êtes maintenant identifié comme Barman.
+          </p>
+          <div className="bg-mondrian-blue text-white px-4 py-2 border-4 border-black font-black uppercase text-xl transform -rotate-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            MODE STAFF ACTIVÉ
           </div>
         </MondrianBlock>
       ) : isBell ? (
@@ -2230,31 +2318,41 @@ export default function ClientMiniApp() {
     setPresenceMetadata,
     sendBroadcast,
     isAfter,
+    updateAnonymousIdentity,
+    currentUser,
   } = context;
 
   const barName = roomMetadata?.name || "Bar";
   const commune = roomMetadata?.settings?.commune || "Ville";
 
-  const [screen, setScreen] = useState(
-    () => localStorage.getItem("inseme_client_screen") || "ophelia"
-  );
-  const [pseudo, setPseudo] = useState(() => {
-    const saved = localStorage.getItem("inseme_client_pseudo");
-    return saved === "s" ? "" : saved || "";
-  });
+  const [screen, setScreen] = useState(() => localStorage.getItem("inseme_client_screen") || "fil");
+
+  // Use pseudo from context as the single source of truth
+  const pseudo = currentUser?.pseudo || "";
+
   const [invitedBy, setInvitedBy] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("invited_by") || "";
   });
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [zone, setZone] = useState(() => localStorage.getItem("inseme_client_zone") || "indoor");
+  const [zone, setZone] = useState(() => localStorage.getItem("inseme_client_zone") || null);
   const [isEditingPseudo, setIsEditingPseudo] = useState(
-    !localStorage.getItem("inseme_client_pseudo")
+    () =>
+      !currentUser?.pseudo &&
+      !localStorage.getItem("inseme_guest_pseudo") &&
+      !localStorage.getItem("inseme_client_pseudo")
   );
   const [isGabrielMode, setIsGabrielMode] = useState(
     () => localStorage.getItem("inseme_gabriel_mode") === "true"
   );
-  const [showGabrielSettings, setShowGabrielSettings] = useState(false);
+  const [draftPseudo, setDraftPseudo] = useState(pseudo);
+
+  // Sync draftPseudo with current user's pseudo when it changes (initial load or remote sync)
+  useEffect(() => {
+    if (currentUser?.pseudo) {
+      setDraftPseudo(currentUser.pseudo);
+    }
+  }, [currentUser?.pseudo]);
 
   // Force disable Gabriel mode if not configured
   useEffect(() => {
@@ -2373,25 +2471,29 @@ export default function ClientMiniApp() {
       const storedPhone = localStorage.getItem("inseme_barman_phone") || "";
       const storedPhoneVisibility =
         localStorage.getItem("inseme_barman_phone_visibility") || "private";
-      setPresenceMetadata({
+      setPresenceMetadata((prev) => ({
+        ...prev,
         role: "barman",
         tipToken: tipToken,
         place: storedPlace,
         phone: storedPhone,
         phone_visibility: storedPhoneVisibility,
         public_links: normalizedPublicLinks,
-      });
+        zone: zone,
+      }));
     } else {
-      setPresenceMetadata({
+      setPresenceMetadata((prev) => ({
+        ...prev,
         role: "client",
         tipToken: null,
         place: null,
         phone: null,
         phone_visibility: null,
         public_links: normalizedPublicLinks,
-      });
+        zone: zone,
+      }));
     }
-  }, [tipToken, normalizedPublicLinks, setPresenceMetadata]);
+  }, [tipToken, normalizedPublicLinks, setPresenceMetadata, zone]);
 
   const handleDeclareBarman = async (data) => {
     if (!data) {
@@ -2404,7 +2506,7 @@ export default function ClientMiniApp() {
       return;
     }
 
-    const { stripeId, place, phone, phoneVisibility } = data;
+    const { stripeId, place, phone, phoneVisibility, sesame } = data;
     try {
       const response = await fetch("/.netlify/functions/tipping", {
         method: "POST",
@@ -2415,6 +2517,7 @@ export default function ClientMiniApp() {
           place,
           phone,
           phone_visibility: phoneVisibility,
+          sesame,
         }),
       });
 
@@ -2428,6 +2531,17 @@ export default function ClientMiniApp() {
           localStorage.setItem("inseme_barman_phone_visibility", phoneVisibility);
         }
         setIsBarmanModalOpen(false);
+        // Feedback visuel de succès
+        setBroadcastEvent({ type: "barman_success" });
+        setTimeout(() => setBroadcastEvent(null), 3000);
+
+        // Broadcast to room (Ophélia + Clients)
+        await sendMessage(`🔔 ${pseudo.toUpperCase()} A PRIS LE SERVICE AU BAR !`, {
+          type: "role_announcement",
+          event: "barman_declared",
+          barman_name: pseudo,
+          place: place,
+        });
       } else {
         throw new Error(result.error || "Token error");
       }
@@ -2586,12 +2700,25 @@ export default function ClientMiniApp() {
     localStorage.setItem("inseme_client_screen", screen);
   }, [screen]);
 
+  // No local state persistence for pseudo needed as useInseme handles it
   useEffect(() => {
-    if (pseudo) localStorage.setItem("inseme_client_pseudo", pseudo);
-  }, [pseudo]);
+    if (!currentUser.pseudo || !sendBroadcast) return;
+
+    const timer = setTimeout(() => {
+      sendBroadcast("pseudo_presence", {
+        pseudo: currentUser.pseudo,
+        status: "active",
+      });
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [currentUser.pseudo, sendBroadcast]);
 
   useEffect(() => {
-    localStorage.setItem("inseme_client_zone", zone);
+    if (zone) {
+      localStorage.setItem("inseme_client_zone", zone);
+    } else {
+      localStorage.removeItem("inseme_client_zone");
+    }
   }, [zone]);
 
   const [isMobile, setIsMobile] = useState(false);
@@ -2631,7 +2758,7 @@ export default function ClientMiniApp() {
   };
 
   useEffect(() => {
-    if (isAfter && !pseudo) {
+    if (isAfter && !currentUser.pseudo) {
       const nocturnalPseudos = [
         "Chat Noir",
         "Hibou",
@@ -2643,9 +2770,9 @@ export default function ClientMiniApp() {
         "Lumière",
       ];
       const randomPseudo = nocturnalPseudos[Math.floor(Math.random() * nocturnalPseudos.length)];
-      setPseudo(randomPseudo);
+      updateAnonymousIdentity(randomPseudo); // Use updateAnonymousIdentity to set pseudo
     }
-  }, [isAfter, pseudo]);
+  }, [isAfter, currentUser.pseudo, updateAnonymousIdentity]);
 
   const handleAfter = () => {
     if (isAfter) {
@@ -2673,7 +2800,7 @@ export default function ClientMiniApp() {
         metadata: {
           parent_slug: parentSlug,
           after_slug: afterSlug,
-          proposed_by: pseudo || "Un noctambule",
+          proposed_by: currentUser.pseudo || "Un noctambule",
           is_cool: true,
         },
       });
@@ -2735,13 +2862,22 @@ export default function ClientMiniApp() {
   }, [vibeScore]);
 
   const handleValidatePseudo = () => {
-    if (!validatePseudo(pseudo)) return;
+    if (!validatePseudo(draftPseudo)) return;
 
-    const isFirstTime = !localStorage.getItem("inseme_client_pseudo");
+    const isFirstTime =
+      !localStorage.getItem("inseme_guest_pseudo") && !localStorage.getItem("inseme_client_pseudo");
+
+    // Update global identity (sync with useInseme)
+    if (updateAnonymousIdentity) {
+      updateAnonymousIdentity(draftPseudo);
+    } else {
+      localStorage.setItem("inseme_guest_pseudo", draftPseudo);
+    }
+
     setIsEditingPseudo(false);
 
     if (isFirstTime) {
-      let welcomeMsg = `[SYSTÈME] : Un nouveau client vient de se connecter sous le pseudo ${pseudo.trim().toUpperCase()} à ${barName} ! Bienvenue.`;
+      let welcomeMsg = `[SYSTÈME] : Un nouveau client vient de se connecter sous le pseudo ${draftPseudo.trim().toUpperCase()} à ${barName} ! Bienvenue.`;
       if (invitedBy) {
         welcomeMsg += ` Merci à ${invitedBy.toUpperCase()} de l'avoir aidé à entrer. 🍻`;
       }
@@ -2749,8 +2885,20 @@ export default function ClientMiniApp() {
       sendMessage(welcomeMsg, {
         type: "welcome_client",
         metadata: {
-          pseudo: pseudo.trim().toUpperCase(),
+          pseudo: draftPseudo.trim().toUpperCase(),
           invited_by: invitedBy || undefined,
+        },
+      });
+    } else if (currentUser?.pseudo && currentUser.pseudo !== draftPseudo.trim()) {
+      // Announce name change
+      const oldPseudo = currentUser.pseudo.trim().toUpperCase();
+      const newPseudo = draftPseudo.trim().toUpperCase();
+      sendMessage(`[SYSTÈME] : ${oldPseudo} s'appelle désormais ${newPseudo} !`, {
+        type: "action",
+        metadata: {
+          action: "pseudo_change",
+          old_pseudo: oldPseudo,
+          new_pseudo: newPseudo,
         },
       });
     }
@@ -2792,7 +2940,7 @@ export default function ClientMiniApp() {
         {activeRituals?.length > 0 && (
           <div
             className="bg-mondrian-yellow border-b-8 border-black p-4 flex items-center justify-between gap-4 animate-in slide-in-from-top duration-500 cursor-pointer hover:bg-black hover:text-mondrian-yellow transition-colors group"
-            onClick={() => setScreen("ophelia")}
+            onClick={() => setScreen("fil")}
           >
             <div className="flex items-center gap-3">
               <Sparkles className="w-8 h-8 group-hover:rotate-12 transition-transform" />
@@ -2811,13 +2959,20 @@ export default function ClientMiniApp() {
           </div>
         )}
 
-        {screen === "games" && <GamesScreen activeGames={activeGames} castVote={castVote} />}
+        {screen === "games" && (
+          <GamesScreen
+            activeGames={activeGames}
+            castVote={castVote}
+            sendMessage={sendMessage}
+            currentUser={currentUser}
+          />
+        )}
         {screen === "legends" && <LegendsScreen legends={legends} />}
         {screen === "city" && <CityScreen commune={commune} roomMetadata={roomMetadata} />}
         {screen === "profile" && (
           <ProfileScreen
             context={context}
-            pseudo={pseudo}
+            currentUser={currentUser}
             zone={zone}
             isBarman={isBarman}
             roomMetadata={roomMetadata}
@@ -2826,9 +2981,11 @@ export default function ClientMiniApp() {
             onZoneChange={setZone}
             publicLinks={normalizedPublicLinks}
             onPublicLinksChange={setPublicLinks}
+            isGabrielMode={isGabrielMode}
+            onToggleGabriel={handleToggleGabriel}
           />
         )}
-        {screen === "ophelia" && (
+        {screen === "fil" && (
           <OpheliaScreen
             context={context}
             isMobile={isMobile}
@@ -2852,7 +3009,7 @@ export default function ClientMiniApp() {
                 currentMsg || "📸 Signal Visuel",
                 {
                   type: "visual_signal",
-                  pseudonym: pseudo || undefined,
+                  pseudonym: currentUser.pseudo || undefined,
                 },
                 attachment?.file
               );
@@ -2861,7 +3018,7 @@ export default function ClientMiniApp() {
               setAttachment(null);
 
               // Trigger AI response if in the right screen
-              if (screen === "ophelia") {
+              if (screen === "fil") {
                 if (isGabrielMode) {
                   context.askGabriel(currentMsg);
                 } else {
@@ -2872,23 +3029,17 @@ export default function ClientMiniApp() {
             onTip={() => setIsTippingModalOpen(true)}
             onSuspendu={async () => {
               await sendMessage(
-                `❤️ ${pseudo.toUpperCase() || "UN CLIENT"} offre un CAFÉ SUSPENDU ! Quelle générosité ! ✨`,
+                `❤️ ${currentUser.pseudo.toUpperCase() || "UN CLIENT"} offre un CAFÉ SUSPENDU ! Quelle générosité ! ✨`,
                 {
                   type: "ritual_participation",
                   metadata: { ritual: "suspendu", name: "Café Suspendu" },
-                  pseudonym: pseudo || undefined,
+                  pseudonym: currentUser.pseudo || undefined,
                 }
               );
             }}
             onInvite={() => setIsInviteModalOpen(true)}
             onAfter={handleAfter}
             isAfter={isAfter}
-            pseudo={pseudo}
-            onEditPseudo={() => setIsEditingPseudo(true)}
-            isGabrielMode={isGabrielMode}
-            onToggleGabriel={handleToggleGabriel}
-            showGabrielSettings={showGabrielSettings}
-            onToggleSettings={() => setShowGabrielSettings(!showGabrielSettings)}
           />
         )}
       </main>
@@ -2896,7 +3047,7 @@ export default function ClientMiniApp() {
       <InviteModal
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
-        pseudo={pseudo}
+        pseudo={currentUser.pseudo}
         roomMetadata={roomMetadata}
         clientUrl={clientUrl}
       />
@@ -2923,11 +3074,11 @@ export default function ClientMiniApp() {
               type="text"
               autoFocus
               placeholder="EX: PIET, GINA, BAMBINO..."
-              value={pseudo}
+              value={draftPseudo}
               className="w-full bg-white border-4 border-black p-4 font-black text-xl focus:ring-0 focus:outline-none mb-6"
-              onChange={(e) => setPseudo(e.target.value)}
+              onChange={(e) => setDraftPseudo(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && validatePseudo(pseudo)) handleValidatePseudo();
+                if (e.key === "Enter" && validatePseudo(draftPseudo)) handleValidatePseudo();
               }}
             />
 
@@ -2949,16 +3100,16 @@ export default function ClientMiniApp() {
             </div>
 
             <button
-              disabled={!validatePseudo(pseudo)}
+              disabled={!validatePseudo(draftPseudo)}
               onClick={handleValidatePseudo}
               className={`w-full bg-mondrian-red text-white border-4 border-black p-4 font-black uppercase shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:shadow-none translate-y-0 active:translate-y-1 transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed`}
             >
               VALIDER
             </button>
 
-            {!validatePseudo(pseudo) && pseudo.length > 0 && (
+            {!validatePseudo(draftPseudo) && draftPseudo.length > 0 && (
               <p className="text-[10px] font-black uppercase text-red-600 mt-4 text-center">
-                {BLACKLIST.includes(pseudo.trim().toUpperCase())
+                {BLACKLIST.includes(draftPseudo.trim().toUpperCase())
                   ? "DÉSO, CE NOM EST RÉSERVÉ AU STAFF"
                   : "PSEUDO TROP COURT"}
               </p>
@@ -3018,7 +3169,7 @@ export default function ClientMiniApp() {
             color="yellow"
           />
           <MondrianTabTrigger
-            label="Ma Ville"
+            label="Chez vous"
             icon={Map}
             isActive={screen === "city"}
             onClick={() => setScreen("city")}
@@ -3035,14 +3186,16 @@ export default function ClientMiniApp() {
             label="Vocal"
             icon={Mic}
             isActive={false}
-            onClick={() => (window.location.href = "/vocal")}
+            onClick={() =>
+              (window.location.href = `/vocal/${roomMetadata?.slug || roomMetadata?.id || "cyrnea"}`)
+            }
             color="white"
           />
           <MondrianTabTrigger
-            label="Ophélia"
-            icon={Radio}
-            isActive={screen === "ophelia"}
-            onClick={() => setScreen("ophelia")}
+            label="Le Fil"
+            icon={Activity}
+            isActive={screen === "fil"}
+            onClick={() => setScreen("fil")}
             color="red"
           />
           <MondrianTabTrigger
@@ -3068,7 +3221,7 @@ export default function ClientMiniApp() {
         onClose={() => setIsTippingModalOpen(false)}
         barmans={barmans}
         onTip={handleTip}
-        pseudo={pseudo}
+        currentUser={currentUser}
         context={context}
       />
       <BarmanModal
@@ -3076,6 +3229,7 @@ export default function ClientMiniApp() {
         onClose={() => setIsBarmanModalOpen(false)}
         onDeclare={handleDeclareBarman}
         currentToken={tipToken}
+        context={context}
       />
 
       {/* OVERLAY SUCCÈS POURBOIRE */}

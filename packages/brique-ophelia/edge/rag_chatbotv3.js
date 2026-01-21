@@ -2111,8 +2111,10 @@ const handler = async (request) => {
   const readable = new ReadableStream({
     async start(controller) {
       debugLogger?.attachStream(controller, encoder);
-      const emitProviderMeta = (meta) =>
-        controller.enqueue(encoder.encode(`${PROVIDER_META_PREFIX}${JSON.stringify(meta)}\n`));
+      const emitProviderMeta = (meta) => {
+        // controller.enqueue(encoder.encode(`${PROVIDER_META_PREFIX}${JSON.stringify(meta)}\n`));
+        console.log("[EdgeFunction] Provider Meta:", meta);
+      };
       const emitThink = (message) => {
         const text = String(message || "").trim();
         if (!text) return;
@@ -2261,9 +2263,9 @@ const handler = async (request) => {
                 // If the generator yields an object, serialize it as provider metadata
                 try {
                   if (chunk && typeof chunk === "object") {
-                    controller.enqueue(
-                      encoder.encode(PROVIDER_META_PREFIX + JSON.stringify(chunk) + "\n")
-                    );
+                    // controller.enqueue(
+                    //   encoder.encode(PROVIDER_META_PREFIX + JSON.stringify(chunk) + "\n")
+                    // );
                   } else {
                     controller.enqueue(encoder.encode(chunkPrefix + String(chunk)));
                   }

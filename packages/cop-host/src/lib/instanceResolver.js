@@ -191,13 +191,17 @@ async function lookupRemoteRegistry(subdomain) {
  * @returns {InstanceConfig}
  */
 function getDefaultInstance() {
+  const env = import.meta.env || {};
+  const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL || null;
+  const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || null;
+
   return {
     subdomain: "default",
     displayName: "local",
-    supabaseUrl: null,
-    supabaseAnonKey: null,
+    supabaseUrl,
+    supabaseAnonKey,
     isDefault: true,
-    isConfigured: true,
+    isConfigured: !!supabaseUrl && !!supabaseAnonKey,
     source: "local",
     metadata: {},
   };

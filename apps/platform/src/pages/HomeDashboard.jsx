@@ -68,7 +68,7 @@ export default function HomeDashboard() {
           active={activeTab === "subscriptions"}
           onClick={() => setActiveTab("subscriptions")}
         >
-          📰 Mes Abonnements
+          📰 Vos Abonnements
         </TabButton>
         <TabButton active={activeTab === "global"} onClick={() => setActiveTab("global")}>
           🌍 Vue Globale

@@ -154,7 +154,7 @@ export default function PostLocationPicker() {
             onClick={handleUseMyLocation}
             className="px-4 py-2 border border-gray-700 text-sm hover:border-gray-500"
           >
-            📍 Utiliser ma position
+            📍 Utiliser votre position
           </button>
           {selectedLocation && (
             <button

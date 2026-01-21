@@ -29,6 +29,10 @@ export default function UserProfile() {
     interests: "",
     avatarUrl: "",
     public_profile: true,
+    gabriel_enabled: false,
+    gabriel_url: "",
+    gabriel_key: "",
+    gabriel_model: "",
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -45,12 +49,17 @@ export default function UserProfile() {
   // Synchronise le formulaire avec le profil utilisateur
   useEffect(() => {
     if (currentUser) {
+      const gabriel = currentUser.metadata?.gabriel || {};
       setFormData({
         display_name: currentUser.display_name || "",
         neighborhood: currentUser.neighborhood || "",
         interests: currentUser.interests || "",
         avatarUrl: currentUser?.metadata?.avatarUrl || "",
         public_profile: currentUser.public_profile !== false, // Default to true
+        gabriel_enabled: gabriel.enabled || false,
+        gabriel_url: gabriel.url || "",
+        gabriel_key: gabriel.key || "",
+        gabriel_model: gabriel.model || "",
       });
     } else {
       console.log("[UserProfile] No current user, redirecting to home");
@@ -73,9 +82,29 @@ export default function UserProfile() {
     try {
       // Ajoute avatarUrl et version dans metadata si présent
       let updates = { ...formData };
+
+      // Gestion de la configuration Gabriel
+      const gabrielConfig = {
+        enabled: formData.gabriel_enabled,
+        url: formData.gabriel_url,
+        key: formData.gabriel_key,
+        model: formData.gabriel_model,
+      };
+
+      // Nettoyage des champs temporaires de formData
+      delete updates.gabriel_enabled;
+      delete updates.gabriel_url;
+      delete updates.gabriel_key;
+      delete updates.gabriel_model;
+
+      updates.metadata = {
+        ...currentUser?.metadata,
+        gabriel: gabrielConfig,
+      };
+
       if (formData.avatarUrl && formData.avatarUrl.match(/^https?:\/\//)) {
         updates.metadata = {
-          ...currentUser?.metadata,
+          ...updates.metadata,
           avatarUrl: formData.avatarUrl,
           avatarVersion:
             (currentUser?.metadata?.avatarVersion || currentUser?.metadata?.schemaVersion || 1) + 1,
@@ -394,6 +423,73 @@ export default function UserProfile() {
                 </div>
               </div>
             </label>
+          </div>
+
+          {/* Configuration Gabriel */}
+          <div className="bg-gray-800 p-4 rounded border border-gray-700 space-y-4">
+            <div className="border-b border-gray-700 pb-2 mb-2">
+              <h3 className="text-lg font-bold text-gray-200">Gabriel (Assistant Personnel)</h3>
+              <p className="text-xs text-gray-400">
+                Configurez votre propre fournisseur d'IA pour Gabriel.
+              </p>
+            </div>
+
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="gabriel_enabled"
+                checked={formData.gabriel_enabled}
+                onChange={handleChange}
+                disabled={!canWrite(currentUser)}
+                className="w-5 h-5 text-orange-600 rounded focus:ring-orange-500"
+              />
+              <span className="font-medium text-gray-200">Activer le fournisseur personnalisé</span>
+            </label>
+
+            {formData.gabriel_enabled && (
+              <div className="space-y-3 pl-4 border-l-2 border-gray-700 mt-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    URL de l'API (Compatible OpenAI)
+                  </label>
+                  <input
+                    type="url"
+                    name="gabriel_url"
+                    value={formData.gabriel_url}
+                    onChange={handleChange}
+                    disabled={!canWrite(currentUser)}
+                    className="w-full px-3 py-2 bg-gray-900 border border-gray-600 text-gray-200 focus:border-orange-500"
+                    placeholder="https://api.openai.com/v1/chat/completions"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Clé API</label>
+                  <input
+                    type="password"
+                    name="gabriel_key"
+                    value={formData.gabriel_key}
+                    onChange={handleChange}
+                    disabled={!canWrite(currentUser)}
+                    className="w-full px-3 py-2 bg-gray-900 border border-gray-600 text-gray-200 focus:border-orange-500"
+                    placeholder="sk-..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Modèle (Optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    name="gabriel_model"
+                    value={formData.gabriel_model}
+                    onChange={handleChange}
+                    disabled={!canWrite(currentUser)}
+                    className="w-full px-3 py-2 bg-gray-900 border border-gray-600 text-gray-200 focus:border-orange-500"
+                    placeholder="gpt-4-turbo"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* RGPD Info */}

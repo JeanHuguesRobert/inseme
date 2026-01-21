@@ -6,7 +6,7 @@
   edge_functions = "netlify/edge-functions"
 
 [dev]
-  command = "pnpm vite"
+  command = "node ../../scripts/check-tunnel.js && pnpm vite"
   port = 8888
   targetPort = 5173
   publish = "dist"
@@ -17,6 +17,11 @@
 
 
 # --- GENERATED BRIQUE REDIRECTS START ---
+[[redirects]]
+  from = "/api/ophelia-prolog-executor"
+  to = "/.netlify/functions/gen-ophelia-prolog-executor"
+  status = 200
+
 [[redirects]]
   from = "/api/wiki-sync"
   to = "/.netlify/functions/gen-wiki-sync"
@@ -146,10 +151,6 @@
   path = "/api/health"
 
 [[edge_functions]]
-  function = "gen-ophelia-prolog-executor"
-  path = "/api/prolog-executor"
-
-[[edge_functions]]
   function = "gen-tool-tasks-list_projects"
   path = "/api/tools/tasks/list_projects"
 
@@ -164,4 +165,12 @@
 [[edge_functions]]
   function = "gen-tool-wiki-propose_wiki_page"
   path = "/api/tools/wiki/propose_wiki_page"
+
+[[edge_functions]]
+  function = "gen-host-upload"
+  path = "/api/upload"
+
+[[edge_functions]]
+  function = "gen-host-robots"
+  path = "/robots.txt"
 # --- GENERATED BRIQUE EDGE END ---

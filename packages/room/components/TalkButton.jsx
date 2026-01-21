@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { Mic, Square, Loader2, Volume2, Bot, Sparkles, AlertCircle } from "lucide-react";
 import { Tooltip } from "../../ui/src/index.js";
 
@@ -75,13 +75,19 @@ export function TalkButton({
       case "speaking":
         return "Ophélia parle";
       default:
-        return isHandsFree ? "Mode Auto" : "Parler";
+        return isHandsFree ? "Mode Auto" : "Maintenir pour parler";
     }
   };
 
-  const LONG_PRESS_MS = 300;
-  const pressStartRef = useRef(null);
-  const longPressTimeoutRef = useRef(null);
+  const pressStartRef = useRef(0);
+  const ignoreNextClickRef = useRef(false);
+  const stopTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (stopTimeoutRef.current) clearTimeout(stopTimeoutRef.current);
+    };
+  }, []);
 
   const tooltipContent = vocalError
     ? `Error: ${vocalError}`
@@ -90,92 +96,103 @@ export function TalkButton({
         ? "Stop listening"
         : "Click to talk"
       : onMicroModeChange
-        ? microMode === "OFF"
-          ? "Clic: ambiance, appui long: dicter"
-          : microMode === "AMBIANCE"
-            ? "Clic: couper micro, appui long: dicter"
-            : "Relâcher pour revenir en ambiance"
+        ? microMode === "AMBIANCE"
+          ? "Cliquer pour arrêter"
+          : microMode === "DICTATION" && isRecording
+            ? "Relâcher pour envoyer"
+            : "Maintenir pour parler, Clic pour verrouiller"
         : "Appuyer pour parler";
 
-  const handlePointerDown = () => {
-    if (disabled) return;
-    if (isHandsFree) return;
-    if (!onMicroModeChange) return;
+  const handlePointerDown = (e) => {
+    if (disabled || isHandsFree) return;
+    if (!onMicroModeChange) return; // Fallback handled by onClick
+
+    // If locked (AMBIANCE), ignore down (wait for click to stop)
+    if (microMode === "AMBIANCE") return;
+
+    // PTT Start
     pressStartRef.current = Date.now();
-    if (longPressTimeoutRef.current) {
-      clearTimeout(longPressTimeoutRef.current);
+
+    // Use immediate local logic if props lag
+    if (onMicroModeChange) onMicroModeChange("DICTATION");
+    if (startRecording) {
+      startRecording();
     }
-    longPressTimeoutRef.current = setTimeout(() => {
-      if (microMode !== "DICTATION") {
-        if (onMicroModeChange) {
-          onMicroModeChange("DICTATION");
-        }
-        if (!isRecording && startRecording) {
-          startRecording();
-        }
-      }
-    }, LONG_PRESS_MS);
   };
 
-  const handlePointerUp = () => {
-    if (disabled) return;
-    if (isHandsFree) return;
+  const handlePointerUp = (e) => {
+    if (disabled || isHandsFree) return;
     if (!onMicroModeChange) return;
-    if (longPressTimeoutRef.current) {
-      clearTimeout(longPressTimeoutRef.current);
-      longPressTimeoutRef.current = null;
-    }
-    const start = pressStartRef.current;
-    const duration = typeof start === "number" ? Date.now() - start : LONG_PRESS_MS + 1;
 
-    if (microMode === "DICTATION") {
-      if (isRecording && stopRecording) {
-        stopRecording();
-      }
-      if (onMicroModeChange) {
-        onMicroModeChange("AMBIANCE");
+    // If locked, ignore up
+    if (microMode === "AMBIANCE") return;
+
+    const pressDuration = Date.now() - pressStartRef.current;
+
+    // Hybrid Logic:
+    // < 300ms -> Treat as Click -> Handled in handleClick (Latch)
+    // >= 300ms -> Treat as Hold -> Stop (PTT)
+
+    if (pressDuration >= 300) {
+      // Long press: Stop (PTT)
+      if (stopRecording) stopRecording();
+      if (onMicroModeChange) onMicroModeChange("OFF");
+
+      // Prevent the subsequent click from triggering the Latch logic
+      ignoreNextClickRef.current = true;
+    }
+    // Else (Short press): Do nothing here.
+    // The recording continues (started in Down), and handleClick will latch it to AMBIANCE.
+  };
+
+  const handlePointerLeave = () => {
+    if (disabled || isHandsFree) return;
+    if (!onMicroModeChange) return;
+
+    // If we leave the button area while holding down (PTT), we should stop.
+    // However, if we were doing a click (<300ms), leaving might be accidental drag?
+    // Let's treat Leave as Up.
+
+    if (microMode === "AMBIANCE") return;
+
+    // Trigger Up logic
+    handlePointerUp();
+  };
+
+  // Double Click no longer needed for locking, but can stay as failsafe or removed.
+  // User asked for "start on click", so single click is enough.
+  // We remove double click handler to avoid confusion/conflict.
+
+  const handleClick = (e) => {
+    if (disabled) return;
+
+    // Legacy / No-MicroMode behavior
+    if (!onMicroModeChange || isHandsFree) {
+      if (isRecording) {
+        if (stopRecording) stopRecording();
+      } else {
+        if (startRecording) startRecording();
       }
       return;
     }
 
-    if (duration < LONG_PRESS_MS) {
-      if (microMode === "OFF") {
-        if (onMicroModeChange) {
-          onMicroModeChange("AMBIANCE");
-        }
-      } else if (microMode === "AMBIANCE") {
-        if (onMicroModeChange) {
-          onMicroModeChange("OFF");
-        }
-      }
+    // Check if this click should be ignored (because it was part of a Long Press PTT)
+    if (ignoreNextClickRef.current) {
+      ignoreNextClickRef.current = false;
+      return;
     }
-  };
 
-  const handlePointerLeave = () => {
-    if (disabled) return;
-    if (isHandsFree) return;
-    if (!onMicroModeChange) return;
-    if (longPressTimeoutRef.current) {
-      clearTimeout(longPressTimeoutRef.current);
-      longPressTimeoutRef.current = null;
-    }
-    if (microMode === "DICTATION") {
+    // Unlock behavior (Simple Click stops AMBIANCE)
+    if (microMode === "AMBIANCE") {
       if (isRecording && stopRecording) {
         stopRecording();
       }
-      if (onMicroModeChange) {
-        onMicroModeChange("AMBIANCE");
-      }
-    }
-  };
-
-  const handleClick = () => {
-    if (disabled) return;
-    if (onMicroModeChange && !isHandsFree) return;
-    if (isRecording) {
-      if (stopRecording) stopRecording();
+      onMicroModeChange("OFF");
     } else {
-      if (startRecording) startRecording();
+      // Latch behavior (Short Click starts/confirms AMBIANCE)
+      // Recording was already started in PointerDown (DICTATION)
+      // Now we lock it to AMBIANCE
+      onMicroModeChange("AMBIANCE");
     }
   };
 

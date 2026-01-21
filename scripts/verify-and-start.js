@@ -1,6 +1,37 @@
+/**
+ * @fileoverview Script de démarrage et de test pour l'écosystème Inseme/Cyrnea.
+ *
+ * Ce script orchestre le lancement de plusieurs services :
+ * - Tunnel ngrok (pour l'accès externe)
+ * - Sovereign AI (LLM + TTS local)
+ * - Netlify Dev (serveur de développement)
+ *
+ * Il gère également :
+ * - La détection des processus orphelins (baseline)
+ * - La compilation des briques
+ * - Les tests d'intégration Playwright
+ * - La génération de rapports détaillés
+ *
+ * @author Inseme Team
+ * @version 2.0.0
+ *
+ * @example
+ * // Démarrage standard
+ * node scripts/verify-and-start.js
+ *
+ * @example
+ * // Mode test avec suite spécifique
+ * node scripts/verify-and-start.js --test --tests api
+ *
+ * @example
+ * // Mode manuel (garde les services actifs)
+ * node scripts/verify-and-start.js --manual
+ */
+
 import fs from "fs";
 import path from "path";
 import net from "net";
+import readline from "readline";
 import { spawn, execSync } from "child_process";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
@@ -58,6 +89,7 @@ const SHOW_HELP = ARGS.includes("--help") || ARGS.includes("-h");
 const SET_BASELINE = ARGS.includes("--baseline");
 const RESET_BASELINE = ARGS.includes("--reset-baseline");
 const KEEP_NETLIFY = ARGS.includes("--keep-netlify");
+const CHECK_PROCESSES = ARGS.includes("--check-processes");
 
 let TEST_SUITE = "api";
 const testsArgIndex = ARGS.indexOf("--tests");
@@ -134,7 +166,19 @@ const PHASES_STATUS = {
   TESTS: { label: "Tests d'Intégration", status: "PENDING", duration: 0 },
 };
 
-// --- SNAPSHOT DES PROCESSUS ---
+// ============================================================================
+// SECTION: Process Snapshot & Hierarchy Management
+// ============================================================================
+
+/**
+ * Captures a snapshot of all running processes on the system.
+ *
+ * @returns {Map<number, ProcessInfo>} Map of PID -> process info object
+ * @property {number} ProcessId - The process ID
+ * @property {number} ParentProcessId - Parent process ID
+ * @property {string} Name - Process name
+ * @property {string} CommandLine - Full command line
+ */
 function getProcessSnapshot() {
   try {
     const currentPid = process.pid;
@@ -205,6 +249,12 @@ if (SET_BASELINE || RESET_BASELINE) {
   }
 }
 
+/**
+ * Finds the root process (typically the IDE) that spawned this script.
+ * Walks up the process tree to find a known IDE (Trae, VSCode, Cursor, etc.)
+ *
+ * @returns {{pid: number, name: string}} Root process info
+ */
 function getRootProcessInfo() {
   const currentPid = process.pid;
   const me = initialSnapshot.get(currentPid);
@@ -280,13 +330,24 @@ function logBaseline() {
 
 function isDescendantOf(snapshot, pid, rootPid) {
   let current = snapshot.get(pid);
+  let depth = 0;
   while (current && current.ParentProcessId !== 0) {
+    if (depth++ > 50) return false; // Safety break for cycles
     if (current.ParentProcessId === rootPid) return true;
     current = snapshot.get(current.ParentProcessId);
   }
   return pid === rootPid;
 }
 
+/**
+ * Generates an ASCII tree visualization of process hierarchy.
+ *
+ * @param {Map<number, ProcessInfo>} snapshot - Process snapshot map
+ * @param {number} rootPid - Root PID to start visualization from
+ * @param {string} [indent=''] - Current indentation level
+ * @param {Set<number>} [visited=new Set()] - Visited PIDs to prevent cycles
+ * @returns {string} Formatted tree string with ANSI colors
+ */
 function visualizeProcessHierarchy(snapshot, rootPid, indent = "", visited = new Set()) {
   if (visited.has(rootPid)) return "";
   visited.add(rootPid);
@@ -438,6 +499,7 @@ Options:
   --clear-cache    Efface le cache de vérification de Playwright et quitte.
   --stop           Arrête tous les services et nettoie les ports.
   --keep-netlify   Ne jamais arrêter Netlify Dev (pour debug et hot reload).
+  --check-processes Active la vérification détaillée des processus (lent).
   --help, -h       Affiche cette aide.
 
 Fichiers de sortie:
@@ -463,25 +525,8 @@ const IMPACTFUL_KEYS = [
   "NGROK_AUTHTOKEN",
 ];
 
-// --- CHARGEMENT DU CACHE (SUITE) ---
-function checkCacheValidity() {
-  if (NO_CACHE || !fs.existsSync(FUNCTIONS_CACHE_FILE)) return;
-
-  try {
-    const stats = fs.statSync(FUNCTIONS_CACHE_FILE);
-    const ageInHours = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60);
-
-    if (ageInHours < 24) {
-      addLogEntry("SYSTEM", "Utilisation du cache des fonctions (validité < 24h)");
-    } else {
-      addLogEntry("SYSTEM", "Cache expiré (> 24h), redétection complète...");
-      if (detectedFunctions.node) detectedFunctions.node.clear();
-      if (detectedFunctions.edge) detectedFunctions.edge.clear();
-    }
-  } catch (e) {}
-}
-
-loadFunctionsCache();
+// Note: Cache validity is checked via file modification time in loadFunctionsCache()
+// Functions cache is loaded once at line 419 via functionsCache = loadFunctionsCache()
 
 function saveFunctionsCache() {
   try {
@@ -577,7 +622,34 @@ function loadNetlifyTomlFunctions() {
 let lastSnapshot = getProcessSnapshot();
 
 function logNewProcesses(label) {
+  // Si la vérification est désactivée et que ce n'est pas une demande manuelle, on ignore
+  if (!CHECK_PROCESSES && !label.includes("MANUAL")) {
+    return { started: [], ended: [] };
+  }
+
   const current = getProcessSnapshot();
+
+  // === DIAGNOSTIC CYRNEA ===
+  // On regarde si on est en phase "NETLIFY" (lancement de l'app)
+  // et on cherche spécifiquement si "vite" ou "netlify dev" est lancé mais bloqué.
+  if (label.includes("NETLIFY")) {
+    const relevant = Array.from(current.values()).filter((p) => {
+      const cmd = (p.CommandLine || "").toLowerCase();
+      return cmd.includes("vite") || cmd.includes("netlify") || cmd.includes("cyrnea");
+    });
+    if (relevant.length > 0) {
+      console.log(
+        `${colors.magenta}[DIAGNOSTIC CYRNEA] Processus potentiellement liés :${colors.reset}`
+      );
+      relevant.forEach((p) => console.log(`   > ${formatProcessInfo(p)}`));
+    } else {
+      console.log(
+        `${colors.red}[DIAGNOSTIC CYRNEA] Aucun processus 'vite' ou 'netlify' détecté ! Le lancement a peut-être échoué silencieusement.${colors.reset}`
+      );
+    }
+  }
+  // =========================
+
   const deltaStarted = [];
   const deltaEnded = [];
 
@@ -739,7 +811,15 @@ const COMMANDS = {
   },
 };
 
-// --- LOGGING ENGINE ---
+// ============================================================================
+// SECTION: Logging Engine
+// ============================================================================
+
+/**
+ * Removes ANSI escape codes from a string.
+ * @param {string} str - String potentially containing ANSI codes
+ * @returns {string} Clean string without ANSI escape sequences
+ */
 function stripAnsi(str) {
   return str.replace(
     /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
@@ -747,6 +827,14 @@ function stripAnsi(str) {
   );
 }
 
+/**
+ * Adds a timestamped log entry to the global log and optionally prints to console.
+ *
+ * @param {string} source - Log source identifier (SYSTEM, METRICS, NETLIFY, etc.)
+ * @param {string} message - Log message content
+ * @param {boolean} [isError=false] - Whether this is an error message (affects coloring)
+ * @param {boolean} [silent=false] - If true, only logs to report (not console) unless DEBUG mode
+ */
 function addLogEntry(source, message, isError = false, silent = false) {
   const now = Date.now();
   const delta = ((now - START_TIME) / 1000).toFixed(3);
@@ -776,10 +864,20 @@ function addLogEntry(source, message, isError = false, silent = false) {
   );
 }
 
-function logToBoth(msg, color = colors.reset) {
-  addLogEntry("SYSTEM", msg);
-}
+// Logging is now unified via addLogEntry() - no need for separate logToBoth()
 
+// ============================================================================
+// SECTION: Process Manager Class
+// ============================================================================
+
+/**
+ * Manages lifecycle of a single service process (start, stop, health checks).
+ *
+ * @class ProcessManager
+ * @property {string} name - Service identifier (TUNNEL, SOVEREIGN, NETLIFY)
+ * @property {Object} config - Command configuration
+ * @property {ChildProcess|null} child - Spawned child process reference
+ */
 class ProcessManager {
   constructor(name, config) {
     this.name = name;
@@ -799,6 +897,16 @@ class ProcessManager {
 
     const fullCmd = `${this.config.cmd} ${args.join(" ")}`;
     addLogEntry(this.name, `DÉMARRAGE: [${fullCmd}] (CWD: ${this.config.cwd})`);
+
+    // On lance check-tunnel indépendamment avant
+    if (!IS_STOP && !CLEAR_CACHE && this.name === "NETLIFY") {
+      try {
+        addLogEntry(this.name, "Vérification préalable du tunnel...");
+        execSync("node scripts/check-tunnel.js", { stdio: "inherit" });
+      } catch (e) {
+        throw new Error("[NETLIFY] La vérification du tunnel a échoué. Arrêt.");
+      }
+    }
 
     this.child = spawn(this.config.cmd, args, {
       cwd: this.config.cwd,
@@ -919,9 +1027,31 @@ class ProcessManager {
           if (trimmed.includes("Response with status")) {
             addLogEntry("METRICS", `[NETLIFY] ${trimmed}`);
           }
-          if (trimmed.includes("DeprecationWarning: The `util._extend` API is deprecated.")) {
-            isReady = true;
-            addLogEntry("NETLIFY", "Fin du démarrage Netlify détectée (warning util._extend).");
+          if (
+            trimmed.includes("Server now ready on") ||
+            trimmed.includes("Ready on http") ||
+            trimmed.includes("Local server running across all listening ports")
+          ) {
+            const nodeCount = detectedFunctions.node.size;
+            const edgeCount = detectedFunctions.edge.size;
+
+            if (nodeCount === 0 && edgeCount === 0) {
+              addLogEntry(
+                "NETLIFY",
+                "⚠️ Attention: Serveur prêt mais aucune fonction détectée ! (Trop tôt ?)"
+              );
+              // On ne met pas isReady = true tout de suite si on attend des fonctions ?
+              // Le user dit "si aucun function... c'est certainement moins que ce qu'on attend".
+              // Mais si c'est vraiment "Ready", on ne peut pas faire grand chose de plus.
+              // On va quand même marquer ready mais avec un warning, car le processus est techniquement prêt.
+              isReady = true;
+            } else {
+              addLogEntry(
+                "NETLIFY",
+                `✅ Fin du démarrage. Fonctions chargées: ${nodeCount} Node, ${edgeCount} Edge.`
+              );
+              isReady = true;
+            }
           }
         }
 
@@ -932,7 +1062,6 @@ class ProcessManager {
 
         // Logs généraux : on capture TOUT dans le rapport, mais on filtre la console
         const isNoisy =
-          trimmed.includes("Waiting for Vite dev server") ||
           trimmed.includes("Reloading") ||
           trimmed.includes("Checking for updates") ||
           (trimmed.match(/^[◈⬥✔ℹ⚠✖]\s/) && !trimmed.includes("Loaded"));
@@ -951,13 +1080,31 @@ class ProcessManager {
     this.child.stdout.on("data", onData);
     this.child.stderr.on("data", onData);
 
+    let exitCode = null;
+    this.child.on("exit", (code) => {
+      exitCode = code;
+    });
+
     // Wait for ready check
     const startTime = Date.now();
     while (Date.now() - startTime < timeout) {
+      if (exitCode !== null) {
+        throw new Error(
+          `[${this.name}] Le processus s'est arrêté prématurément avec le code ${exitCode}`
+        );
+      }
+
       if (isReady) break;
-      if (this.name !== "NETLIFY" && (await readyCheck())) {
+
+      // On autorise maintenant le readyCheck pour NETLIFY aussi, car le log parsing est fragile
+      if (await readyCheck()) {
         isReady = true;
+        addLogEntry(this.name, "✅ Ready check externe (port/http) validé.");
         break;
+      }
+      if ((Date.now() - startTime) % 10000 < 2000) {
+        // Log every ~10s
+        addLogEntry(this.name, "En attente de disponibilité...", false, false);
       }
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
@@ -1007,8 +1154,18 @@ class ProcessManager {
   }
 }
 
-// --- UTILS ---
+// ============================================================================
+// SECTION: Process Utilities
+// ============================================================================
 
+/**
+ * Kills all processes listening on a specific port.
+ * Handles both Windows (netstat) and Unix (lsof) systems.
+ * Has safety guards to prevent killing system processes (PID < 1000).
+ *
+ * @param {number} port - Port number to clear
+ * @returns {Promise<void>}
+ */
 async function killByPort(port) {
   if (!port || isNaN(port)) return;
 
@@ -1061,6 +1218,12 @@ async function killByPort(port) {
   } catch (e) {}
 }
 
+/**
+ * Checks if a port is currently in use.
+ *
+ * @param {number} port - Port number to check
+ * @returns {Promise<boolean>} True if port is open and accepting connections
+ */
 async function checkPort(port) {
   return new Promise((resolve) => {
     const client = net.connect(port, "127.0.0.1", () => {
@@ -1087,7 +1250,13 @@ async function killOrphanedProcesses(graceDelayMs = 0) {
     await new Promise((resolve) => setTimeout(resolve, graceDelayMs));
   }
 
-  addLogEntry("SYSTEM", "Nettoyage intelligent des processus descendants...");
+  // Si on n'a pas activé la vérification des processus et qu'on n'est pas en mode stop/clean,
+  // on évite de spammer des logs de nettoyage "intelligent" qui peuvent faire peur.
+  const verbose = CHECK_PROCESSES || IS_STOP || CLEAR_CACHE;
+
+  if (verbose) {
+    addLogEntry("SYSTEM", "Nettoyage intelligent des processus descendants...");
+  }
 
   try {
     const root = getRootProcessInfo();
@@ -1098,16 +1267,17 @@ async function killOrphanedProcesses(graceDelayMs = 0) {
     const targets =
       "node|deno|python|ngrok|pnpm|netlify|esbuild|ruby|conda|cmd|powershell|conhost|brave|chrome|msedge";
 
-    // Commande PowerShell pour trouver les descendants
+    // Commande PowerShell pour trouver les descendants (OPTIMISÉE: 1 seul appel WMI)
     const psCommand = `
+      $allProcs = Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, Name, CommandLine;
       function Get-Descendants($p) {
-        Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq $p } | ForEach-Object {
+        $allProcs | Where-Object { $_.ParentProcessId -eq $p } | ForEach-Object {
           $_.ProcessId;
           Get-Descendants $_.ProcessId;
         }
       }
       $descendants = Get-Descendants ${root.pid};
-      Get-CimInstance Win32_Process | Where-Object {
+      $allProcs | Where-Object {
         ($descendants -contains $_.ProcessId) -and
         ($_.Name -match '${targets}') -and
         ($_.CommandLine -like '*${escapedRoot}*') -and
@@ -1131,7 +1301,7 @@ async function killOrphanedProcesses(graceDelayMs = 0) {
         "SYSTEM",
         `✅ Nettoyage terminé : ${killedPids.length} processus descendants tués.`
       );
-    } else {
+    } else if (verbose) {
       addLogEntry("SYSTEM", "✅ Aucun processus descendant orphelin trouvé.");
     }
   } catch (e) {
@@ -2008,12 +2178,21 @@ async function main() {
       const checkNetlifyHealth = async () => {
         try {
           const url = `http://127.0.0.1:${PORTS.NETLIFY}/api/health`;
-          const res = await fetch(url);
-          const text = await res.text();
-          if (res.ok) {
-            return true;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          try {
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            const text = await res.text();
+            if (res.ok) {
+              return true;
+            }
+            addLogEntry("DEBUG", `Check health failed: status ${res.status}`, false, true);
+            return false;
+          } catch (e) {
+            clearTimeout(timeoutId);
+            return false;
           }
-          return false;
         } catch (e) {
           return false;
         }
@@ -2042,7 +2221,7 @@ async function main() {
 
     // 6. Tests d'intégration
     if (!IS_MANUAL) {
-      addLogEntry("SYSTEM", "PHASE 5: TESTS D'INTÉGRATION");
+      addLogEntry("SYSTEM", "PHASE 6: TESTS D'INTÉGRATION");
       try {
         startPhase("PLAYWRIGHT");
         const playwrightOk = await checkPlaywright();
@@ -2087,6 +2266,7 @@ async function main() {
         process.exit(0);
       }, 1000);
     } else {
+      await generateFinalReport();
       addLogEntry(
         "SYSTEM",
         "Mode MANUAL : services prêts, logs en cours de collecte. Ctrl+C pour générer le rapport final."

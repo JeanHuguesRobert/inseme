@@ -71,6 +71,31 @@ automatiquement.
 - **Note** : Prolog a été déplacé dans `brique-ophelia`, ce qui est une bonne pratique
   (fonctionnalité liée à une brique), mais l'upload reste une fonction d'infrastructure transverse.
 
+### Résolveur d'instance (P2)
+
+- État actuel : le middleware Edge `instance-resolver` est désactivé (`path: "/TODO*"`) car il casse
+  les apps en dev lorsqu'il est actif sur `/*`.
+- Objectif : déboguer et fiabiliser le résolveur pour la config multi-tenant sans casser les
+  environnements de développement / Netlify.
+- Implémentation concrète désactivée dans `apps/cyrnea/netlify.toml` (Edge Function
+  `instance-resolver` retirée temporairement).
+
+### Bridge Deno -> Node (Contournement Connectivité Local) (P1 - Réalisé)
+
+**Problème** : En développement local sous Windows, Deno (Edge Functions) rencontre parfois des
+erreurs de connexion TCP (`os error 10061`) vers Supabase ou Internet, dues à des configurations de
+proxy ou firewall, alors que Node.js fonctionne correctement.
+
+**Solution** :
+
+- Implémentation d'un **Bridge** : une Netlify Function (Node.js) qui agit comme proxy pour les
+  requêtes HTTP.
+- Modification de `instanceConfig.edge.js` pour utiliser ce bridge lorsque le flag
+  `SUPABASE_DENO_BRIDGE=true` est présent dans `.env`.
+- Le bridge (`fetch-proxy.js`) relaie les requêtes vers Supabase et renvoie la réponse à Deno.
+- **État** : Implémenté et testé. Actif si `SUPABASE_DENO_BRIDGE=true`. Permet de contourner les
+  problèmes de connectivité Deno en local.
+
 ### Sécurité & Stockage (P2)
 
 **Problème** : Chemins d'upload multiples (R2 via backend, Supabase direct en fallback) avec des

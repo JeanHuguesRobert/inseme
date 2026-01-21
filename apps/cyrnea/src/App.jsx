@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route, useLocation, useParams } from "react-router-dom";
 import BarmanDashboard from "@inseme/brique-cyrnea/pages/BarmanDashboard";
 import ClientMiniApp from "@inseme/brique-cyrnea/pages/ClientMiniApp";
 import VocalConversation from "@inseme/brique-cyrnea/pages/VocalConversation";
+import RadioView from "@inseme/brique-cyrnea/pages/RadioView";
+import LegalPage from "./pages/LegalPage";
 import { useCurrentUser, isDeleted } from "@inseme/cop-host";
 import { InsemeProvider } from "@inseme/room";
 import { getSupabase } from "@inseme/cop-host/client/supabase.js";
-
-import { updatePageMeta } from "./lib/meta.js";
 
 function App() {
   const { currentUser: user } = useCurrentUser();
@@ -16,12 +16,6 @@ function App() {
   const supabase = getSupabase();
 
   const roomId = getRoomIdFromPath(route);
-
-  useEffect(() => {
-    // Mettre à jour les métadonnées SEO quand la config est chargée ou change
-    // Idéalement on écouterait aussi les changements de config, mais un useEffect simple au mount suffit souvent
-    updatePageMeta();
-  }, [roomId]); // On met à jour si on change de room/bar
 
   return (
     <InsemeProvider
@@ -37,8 +31,11 @@ function App() {
       <Routes>
         <Route path="/bar/:roomId" element={<BarmanDashboard roomId={roomId} />} />
         <Route path="/vocal/:roomId" element={<VocalConversation />} />
+        <Route path="/radio/:roomId" element={<RadioView />} />
         <Route path="/gazette" element={<GazetteView />} />
         <Route path="/gazette/:name" element={<GazetteView />} />
+        <Route path="/legal/terms" element={<LegalPage type="terms" />} />
+        <Route path="/legal/privacy" element={<LegalPage type="privacy" />} />
         <Route path="/app/:roomId" element={<ClientMiniApp roomId={roomId} />} />
         <Route path="*" element={<ClientMiniApp roomId={roomId} />} />
       </Routes>
@@ -48,7 +45,10 @@ function App() {
 
 function getRoomIdFromPath(pathname) {
   const parts = pathname.split("/");
-  if (parts.length >= 3 && (parts[1] === "bar" || parts[1] === "app")) {
+  if (
+    parts.length >= 3 &&
+    (parts[1] === "bar" || parts[1] === "app" || parts[1] === "vocal" || parts[1] === "radio")
+  ) {
     return parts[2] || "cyrnea";
   }
   return "cyrnea";

@@ -24,6 +24,11 @@ export default {
       component: "./src/pages/VocalConversation",
       protected: false,
     },
+    {
+      path: "/radio",
+      component: "./src/pages/RadioView",
+      protected: false,
+    },
   ],
 
   libs: {

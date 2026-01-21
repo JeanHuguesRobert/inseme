@@ -82,6 +82,11 @@ export default {
     "task-share": "./public/prompts/tasks/share.md",
     "task-gabriel": "./public/prompts/tasks/gabriel.md",
   },
+  functions: {
+    "prolog-executor": {
+      handler: "./edge/prolog-executor.js",
+    },
+  },
   edgeFunctions: {
     chat: {
       handler: "./edge/gateway.js",
@@ -90,6 +95,14 @@ export default {
     "chat-stream": {
       handler: "./edge/gateway.js",
       path: "/api/chat-stream",
+    },
+    "semantic-window": {
+      handler: "./edge/gateway.js",
+      path: "/api/semantic/window",
+    },
+    "semantic-state": {
+      handler: "./edge/gateway.js",
+      path: "/api/semantic/state",
     },
     "openai-v1": {
       handler: "./edge/gateway.js",
@@ -118,10 +131,6 @@ export default {
     health: {
       handler: "./edge/health.js",
       path: "/api/health",
-    },
-    "prolog-executor": {
-      handler: "./edge/prolog-executor.js",
-      path: "/api/prolog-executor",
     },
   },
 };

@@ -6,7 +6,7 @@
 // --- Prolog Engine Helper (Backend Delegation) ---
 const queryProlog = async (logic, goal) => {
   try {
-    const response = await fetch("/.netlify/functions/prolog-executor", {
+    const response = await fetch("/.netlify/functions/gen-ophelia-prolog-executor", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ facts: logic, query: goal }),

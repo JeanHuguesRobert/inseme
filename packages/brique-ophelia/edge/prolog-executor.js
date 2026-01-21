@@ -1,5 +1,5 @@
-import { defineFunction } from "@inseme/cop-host/src/runtime/function.js";
-import { createPrologEngine } from "@inseme/cop-prolog/src/index.node.js";
+import { defineFunction } from "@inseme/cop-host/runtime/function.js";
+import { createPrologEngine } from "@inseme/cop-prolog";
 
 /**
  * Netlify Function: prolog-executor

@@ -369,7 +369,7 @@ export default function ConsultationDemocratieLocale() {
             ? "Envoi en cours..."
             : alreadyResponded
               ? "Vous avez déjà participé"
-              : "Envoyer ma contribution"}
+              : "Envoyer votre contribution"}
         </button>
       </div>
     </>

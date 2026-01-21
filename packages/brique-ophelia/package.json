@@ -9,7 +9,8 @@
     "react-dom": "^18.2.0",
     "@inseme/ui": "workspace:*",
     "@inseme/cop-host": "workspace:*",
-    "@inseme/room": "workspace:*"
+    "@inseme/room": "workspace:*",
+    "@inseme/cop-prolog": "workspace:*"
   },
   "keywords": [
     "democracy",

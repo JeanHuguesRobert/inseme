@@ -29,6 +29,29 @@ export const CORS_HEADERS = {
     "X-Ophelia-Instance, X-Ophelia-Instance-Name, X-Ophelia-Supabase-URL, X-Ophelia-Supabase-Anon-Key, X-Ophelia-Instance-Error",
 };
 
+export const INSTANCE_RESOLVER_EDGE_CONFIG = {
+  path: "/*",
+  excludedPath: [
+    "/assets/*",
+    "/images/*",
+    "/fonts/*",
+    "/api/*",
+    "/briques/*",
+    "/_next/*",
+    "/*.svg",
+    "/*.ico",
+    "/*.png",
+    "/*.jpg",
+    "/*.jpeg",
+    "/*.gif",
+    "/*.webp",
+    "/sitemap.xml",
+    "/*.woff",
+    "/*.woff2",
+    "/*.ttf",
+  ],
+};
+
 // --- Multi-instance resolution constants ---
 const BASE_DOMAINS = ["lepp.fr", "kudocracy.org", "inseme.org"];
 const IGNORED_SUBDOMAINS = ["www", "app", "api", "admin", "staging", "preview", "platform"];
@@ -138,6 +161,33 @@ export async function handleInstanceResolution(request, context) {
       return undefined;
     }
 
+    // Check for tunnel liveness (Heartbeat Check)
+    // If we are redirecting to a tunnel, ensure it's been active recently
+    const config = instance.config || instance.metadata || {};
+
+    if (config.site_config && config.site_config.redirect_enabled) {
+      // Check last_active_at if available
+      if (config.last_active_at) {
+        const lastActive = new Date(config.last_active_at).getTime();
+        const now = Date.now();
+        const diff = now - lastActive;
+
+        // If inactive for more than 2 minutes (heartbeat is 5s), consider it down
+        if (diff > 120000) {
+          console.warn(
+            `[cop-host] Tunnel for ${subdomain} is stale (last active: ${config.last_active_at}). Ignoring redirect configuration.`
+          );
+
+          // Temporarily disable redirect in memory for this request context
+          // This prevents the application from trying to use a dead tunnel
+          if (instance.config && instance.config.site_config)
+            instance.config.site_config.redirect_enabled = false;
+          if (instance.metadata && instance.metadata.site_config)
+            instance.metadata.site_config.redirect_enabled = false;
+        }
+      }
+    }
+
     console.log(`[cop-host] Instance resolved: ${instance.display_name} (${instance.subdomain})`);
 
     // 3. Reload configuration with target instance credentials
@@ -154,7 +204,18 @@ export async function handleInstanceResolution(request, context) {
     // If we return undefined, the caller continues.
     return undefined;
   } catch (error) {
-    console.error("[cop-host] handleInstanceResolution failed:", error);
+    // Improve dev experience by detecting missing configuration
+    if (
+      error.message &&
+      (error.message.includes("supabase client is null") ||
+        error.message.includes("Supabase Key or URL not found"))
+    ) {
+      console.warn(
+        "[cop-host] Instance resolution skipped (Supabase not configured in environment)."
+      );
+    } else {
+      console.error("[cop-host] handleInstanceResolution failed:", error);
+    }
     return undefined;
   }
 }

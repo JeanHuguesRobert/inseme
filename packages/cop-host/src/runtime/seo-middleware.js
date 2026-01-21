@@ -2,8 +2,9 @@
 // Middleware Edge Function universel pour la gestion SEO et la résolution d'instance
 // Compatible avec Netlify Edge Functions (Deno)
 
-import { handleInstanceResolution, CORS_HEADERS } from "./edge.js";
+import { handleInstanceResolution } from "./edge.js";
 import { getConfig } from "../config/instanceConfig.edge.js";
+import { substituteVariables, getCommonVariables } from "../lib/template.js";
 
 /**
  * Middleware principal pour les points d'entrée d'application (app-entry.js).
@@ -25,15 +26,7 @@ export async function handleAppEntry(request, context) {
   // 2. Récupérer la réponse (soit le fichier statique, soit le index.html)
   // Si c'est une route client (ex: /bar/xxx), Netlify ne trouvera pas de fichier
   // et on doit servir index.html (SPA Fallback)
-  let response;
-  try {
-    response = await context.next();
-  } catch (e) {
-    // Si next() échoue (404), on charge index.html manuellement
-    // Note: Sur Netlify Edge, context.next() gère souvent le rewrite SPA si configuré,
-    // mais on assure le coup.
-    response = await context.rewrite("/index.html");
-  }
+  const response = await context.next();
 
   // Si ce n'est pas du HTML (ex: image, js), on retourne tel quel
   const contentType = response.headers.get("content-type") || "";
@@ -41,8 +34,9 @@ export async function handleAppEntry(request, context) {
     return response;
   }
 
-  // 3. Injection SEO (HTMLRewriter)
-  // On récupère les infos de l'instance résolue
+  // 3. Injection SEO via templating Mustache-like
+  const originalHtml = await response.text();
+
   const instanceName = getConfig("instance_name") || getConfig("city_name") || "Inseme";
   const appTitle = getConfig("app_title", `${instanceName} - Inseme`);
   const appDescription = getConfig(
@@ -52,68 +46,33 @@ export async function handleAppEntry(request, context) {
   const appUrl = getConfig("app_url", url.origin);
   const appImage = getConfig("app_image", `${url.origin}/og-image.png`);
 
-  // Utilisation de HTMLRewriter (API standard Edge/Deno) pour injecter les valeurs
-  return (
-    new HTMLRewriter()
-      .on("title", {
-        element(element) {
-          element.setInnerContent(appTitle);
-        },
-      })
-      .on('meta[name="description"]', {
-        element(element) {
-          element.setAttribute("content", appDescription);
-        },
-      })
-      .on('meta[property="og:title"]', {
-        element(element) {
-          element.setAttribute("content", appTitle);
-        },
-      })
-      .on('meta[property="og:description"]', {
-        element(element) {
-          element.setAttribute("content", appDescription);
-        },
-      })
-      .on('meta[property="og:url"]', {
-        element(element) {
-          element.setAttribute("content", appUrl);
-        },
-      })
-      .on('meta[property="og:image"]', {
-        element(element) {
-          element.setAttribute("content", appImage);
-        },
-      })
-      .on('meta[name="twitter:title"]', {
-        element(element) {
-          element.setAttribute("content", appTitle);
-        },
-      })
-      .on('meta[name="twitter:description"]', {
-        element(element) {
-          element.setAttribute("content", appDescription);
-        },
-      })
-      .on('meta[name="twitter:image"]', {
-        element(element) {
-          element.setAttribute("content", appImage);
-        },
-      })
-      // Injection d'un script de config global pour éviter le flash côté client
-      .on("head", {
-        element(element) {
-          const script = `
-          <script>
-            window.__INSEME_CONFIG__ = {
-              instanceName: "${instanceName}",
-              apiUrl: "${appUrl}"
-            };
-          </script>
-        `;
-          element.append(script, { html: true });
-        },
-      })
-      .transform(response)
-  );
+  const commonVars = getCommonVariables((key, defaultValue) => getConfig(key, defaultValue));
+
+  const allVars = {
+    ...commonVars,
+    APP_TITLE: appTitle,
+    APP_DESCRIPTION: appDescription,
+    APP_IMAGE: appImage,
+  };
+
+  const configScript = `
+<script>
+  window.__INSEME_CONFIG__ = {
+    instanceName: "${instanceName}",
+    apiUrl: "${appUrl}"
+  };
+</script>
+`;
+
+  const withConfigScript = originalHtml.replace("</head>", `${configScript}</head>`);
+  const finalHtml = substituteVariables(withConfigScript, allVars);
+
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+
+  return new Response(finalHtml, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }

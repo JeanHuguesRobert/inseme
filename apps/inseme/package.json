@@ -32,6 +32,7 @@
     "date-fns": "^3.6.0",
     "framer-motion": "^10.16.4",
     "geoportal-extensions-leaflet": "^2.4.3",
+    "glob": "^10.3.10",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "leaflet": "^1.9.4",
@@ -43,7 +44,8 @@
     "react-router-dom": "^6.20.0",
     "recharts": "^2.10.3",
     "swr": "^2.2.5",
-    "tau-prolog": "^0.3.4"
+    "tau-prolog": "^0.3.4",
+    "undici": "^7.18.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.17",

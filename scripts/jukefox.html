@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cyrnea JukeFox - Ambiance Musicale</title>
+    <style>
+      :root {
+        --primary: #1db954; /* Spotify Green */
+        --secondary: #191414; /* Spotify Black */
+        --deezer: #ef3054; /* Deezer Red-ish */
+        --cyrnea: #4a90e2; /* Cyrnea Blue */
+        --bg: #121212;
+        --text: #ffffff;
+        --card: #282828;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      h1,
+      h2,
+      h3 {
+        color: var(--text);
+        margin-bottom: 0.5rem;
+      }
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        width: 100%;
+        max-width: 1200px;
+      }
+      .panel {
+        flex: 1;
+        min-width: 300px;
+        background: var(--card);
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .barman-panel {
+        border-top: 4px solid var(--primary);
+      }
+      .client-panel {
+        border-top: 4px solid var(--cyrnea);
+      }
+
+      input,
+      select {
+        background: #333;
+        border: 1px solid #555;
+        color: white;
+        padding: 8px;
+        border-radius: 4px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 20px;
+        font-weight: bold;
+        cursor: pointer;
+        transition:
+          transform 0.1s,
+          opacity 0.2s;
+      }
+      button:active {
+        transform: scale(0.98);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-spotify {
+        background-color: var(--primary);
+        color: white;
+      }
+      .btn-deezer {
+        background-color: var(--deezer);
+        color: white;
+      }
+      .btn-cyrnea {
+        background-color: var(--cyrnea);
+        color: white;
+      }
+      .btn-control {
+        background-color: #444;
+        color: white;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .status {
+        font-size: 0.9em;
+        color: #aaa;
+        margin-top: 5px;
+      }
+      .now-playing {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 10px;
+        border-radius: 6px;
+        text-align: center;
+      }
+      .now-playing img {
+        width: 100%;
+        max-width: 200px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+      }
+      .meta-title {
+        font-size: 1.2em;
+        font-weight: bold;
+      }
+      .meta-artist {
+        color: #bbb;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .tab {
+        background: transparent;
+        border: 1px solid #555;
+        color: #888;
+      }
+      .tab.active {
+        background: var(--cyrnea);
+        color: white;
+        border-color: var(--cyrnea);
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      #deezer-root {
+        display: none;
+      } /* Deezer SDK hidden element */
+    </style>
+  </head>
+  <body>
+    <h1>🦊 Cyrnea JukeFox</h1>
+    <p>Architecture de démonstration : Barman (Source) vs Client (Récepteur)</p>
+
+    <!-- Configuration Globale (pour la démo) -->
+    <div style="width: 100%; max-width: 1200px; margin-bottom: 20px">
+      <details>
+        <summary style="cursor: pointer; color: #888">Configuration API (Spotify/Deezer)</summary>
+        <div style="background: #222; padding: 15px; margin-top: 10px; border-radius: 8px">
+          <label>Spotify Client ID: <input type="text" id="spotifyClientId" value="" /></label>
+          <label>Deezer App ID: <input type="text" id="deezerAppId" value="" /></label>
+          <label>Redirect URI: <input type="text" id="redirectUri" value="" /></label>
+          <p style="font-size: 0.8em; color: #666">
+            Pour cette démo, le Redirect URI doit correspondre à l'URL actuelle.
+          </p>
+          <button onclick="saveConfig()" class="btn-cyrnea">Sauvegarder</button>
+        </div>
+      </details>
+    </div>
+
+    <div class="container">
+      <!-- 1. BARMAN / DÉVELOPPEUR -->
+      <div class="panel barman-panel">
+        <h2>🍷 Espace Barman / Cyrnea</h2>
+        <p style="font-size: 0.9em; color: #aaa">
+          Contrôle le lecteur du bar et diffuse les métadonnées.
+        </p>
+
+        <div id="barAuth">
+          <h3>Connexion Service</h3>
+          <button id="loginSpotifyBar" class="btn-spotify">Connecter Spotify (Bar)</button>
+          <button id="loginDeezerBar" class="btn-deezer">Connecter Deezer (Bar)</button>
+          <div class="status" id="barAuthStatus">Non connecté</div>
+        </div>
+
+        <div id="barPlayer" class="hidden">
+          <h3>Lecteur Bar</h3>
+          <div class="now-playing">
+            <img id="barCover" src="" alt="Cover" style="display: none" />
+            <div id="barTitle" class="meta-title">-</div>
+            <div id="barArtist" class="meta-artist">-</div>
+          </div>
+          <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px">
+            <button class="btn-control" id="btnPrev">⏮</button>
+            <button class="btn-control" id="btnPlay">▶</button>
+            <button class="btn-control" id="btnPause">⏸</button>
+            <button class="btn-control" id="btnNext">⏭</button>
+          </div>
+          <div class="status" id="barPlayerStatus">Initialisation...</div>
+
+          <hr style="border-color: #444; width: 100%" />
+
+          <!-- Simulation IA -->
+          <h3>🧠 IA Ophélia (Simulation)</h3>
+          <p style="font-size: 0.8em">
+            L'IA détecte le changement de piste et envoie les métadonnées aux clients.
+          </p>
+          <div
+            style="
+              background: #222;
+              padding: 10px;
+              border-radius: 4px;
+              font-family: monospace;
+              font-size: 0.8em;
+            "
+            id="aiLog"
+          >
+            En attente de lecture...
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. CLIENT DISTANT -->
+      <div class="panel client-panel">
+        <h2>📱 Espace Client Distant</h2>
+        <p style="font-size: 0.9em; color: #aaa">
+          Reçoit l'ambiance et synchronise son propre compte.
+        </p>
+
+        <div id="clientView">
+          <h3>En direct du Cyrnea</h3>
+          <div class="now-playing" style="border: 1px dashed #555">
+            <img id="clientCover" src="" alt="Cover" style="display: none" />
+            <div id="clientTitle" class="meta-title">En attente...</div>
+            <div id="clientArtist" class="meta-artist">-</div>
+            <div
+              style="margin-top: 5px; font-size: 0.8em; color: var(--cyrnea)"
+              id="clientContext"
+            ></div>
+          </div>
+
+          <div style="margin-top: 20px">
+            <h3>Écouter sur mon compte</h3>
+            <p style="font-size: 0.8em; color: #aaa">
+              Synchronisez votre écoute avec l'ambiance du bar.
+            </p>
+            <button id="clientSyncSpotify" class="btn-spotify">🎧 Lire sur mon Spotify</button>
+            <button id="clientSyncDeezer" class="btn-deezer" disabled>
+              🎧 Lire sur mon Deezer (Bientôt)
+            </button>
+          </div>
+
+          <div class="status" id="clientSyncStatus">Non synchronisé</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deezer SDK Root -->
+    <div id="dz-root"></div>
+
+    <!-- Scripts SDKs -->
+    <script src="https://e-cdns-files.dzcdn.net/js/min/dz.js"></script>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+
+    <script>
+      // --- CONFIGURATION & UTILS ---
+      const DEFAULT_CONFIG = {
+        spotifyClientId: "VOTRE_CLIENT_ID_SPOTIFY",
+        deezerAppId: "VOTRE_APP_ID_DEEZER",
+        redirectUri: window.location.href.split("#")[0], // URL actuelle sans le hash
+      };
+
+      let config = JSON.parse(localStorage.getItem("jukefox_config")) || DEFAULT_CONFIG;
+
+      // Initialisation des champs de config
+      document.getElementById("spotifyClientId").value = config.spotifyClientId;
+      document.getElementById("deezerAppId").value = config.deezerAppId;
+      document.getElementById("redirectUri").value = config.redirectUri;
+
+      function saveConfig() {
+        config.spotifyClientId = document.getElementById("spotifyClientId").value;
+        config.deezerAppId = document.getElementById("deezerAppId").value;
+        config.redirectUri = document.getElementById("redirectUri").value;
+        localStorage.setItem("jukefox_config", JSON.stringify(config));
+        alert("Configuration sauvegardée. Rechargement...");
+        window.location.reload();
+      }
+
+      // --- GESTION OAUTH SPOTIFY (IMPLICIT GRANT) ---
+      // Vérifie si on revient d'une auth Spotify
+      let spotifyToken = null;
+      const hash = window.location.hash
+        .substring(1)
+        .split("&")
+        .reduce((acc, item) => {
+          if (item) {
+            const [key, val] = item.split("=");
+            acc[key] = decodeURIComponent(val);
+          }
+          return acc;
+        }, {});
+
+      if (hash.access_token) {
+        spotifyToken = hash.access_token;
+        // Nettoyage de l'URL pour faire propre
+        window.history.pushState(
+          "",
+          document.title,
+          window.location.pathname + window.location.search
+        );
+
+        // Si le token est présent, on assume que l'utilisateur voulait se connecter
+        // Mais qui ? Barman ou Client ?
+        // Pour la démo, on stocke le token en session et on demande/déduit
+        sessionStorage.setItem("spotify_token", spotifyToken);
+      } else {
+        spotifyToken = sessionStorage.getItem("spotify_token");
+      }
+
+      function authorizeSpotify(
+        scope = "streaming user-read-playback-state user-modify-playback-state user-read-currently-playing"
+      ) {
+        const authUrl = `https://accounts.spotify.com/authorize?response_type=token&client_id=${config.spotifyClientId}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(config.redirectUri)}`;
+        window.location.href = authUrl;
+      }
+
+      // --- BARMAN LOGIC (SENDER) ---
+      const barAuthStatus = document.getElementById("barAuthStatus");
+      const barPlayerSection = document.getElementById("barPlayer");
+      let barPlayer = null;
+
+      document.getElementById("loginSpotifyBar").onclick = () => {
+        if (!spotifyToken) {
+          authorizeSpotify(); // Redirige
+        } else {
+          initSpotifyBarPlayer();
+        }
+      };
+
+      function initSpotifyBarPlayer() {
+        if (!spotifyToken) return;
+        barAuthStatus.innerText = "Token Spotify actif. Initialisation Player...";
+
+        // Le SDK est chargé asynchrone, on attend l'event
+        if (window.Spotify) {
+          setupPlayer();
+        } else {
+          window.onSpotifyWebPlaybackSDKReady = setupPlayer;
+        }
+      }
+
+      // Auto-init si token présent (pour la démo simplifiée)
+      if (spotifyToken) {
+        barAuthStatus.innerText = "Token détecté.";
+      }
+
+      function setupPlayer() {
+        const player = new Spotify.Player({
+          name: "Cyrnea Bar Player",
+          getOAuthToken: (cb) => {
+            cb(spotifyToken);
+          },
+          volume: 0.5,
+        });
+
+        // Listeners
+        player.addListener("ready", ({ device_id }) => {
+          console.log("Ready with Device ID", device_id);
+          barAuthStatus.innerText = `Connecté à Spotify. Device ID: ${device_id}`;
+          barPlayerSection.classList.remove("hidden");
+          document.getElementById("barAuth").classList.add("hidden");
+
+          // Pour la démo, on essaye de transférer la lecture ici
+          transferPlayback(device_id);
+        });
+
+        player.addListener("not_ready", ({ device_id }) => {
+          console.log("Device ID has gone offline", device_id);
+        });
+
+        player.addListener("player_state_changed", (state) => {
+          if (!state) return;
+          updateBarUI(state);
+          broadcastMetadata(state); // C'est ici que l'IA intervient
+        });
+
+        player.connect();
+        barPlayer = player;
+
+        // Bind controls
+        document.getElementById("btnPlay").onclick = () => player.resume();
+        document.getElementById("btnPause").onclick = () => player.pause();
+        document.getElementById("btnPrev").onclick = () => player.previousTrack();
+        document.getElementById("btnNext").onclick = () => player.nextTrack();
+      }
+
+      async function transferPlayback(deviceId) {
+        await fetch("https://api.spotify.com/v1/me/player", {
+          method: "PUT",
+          body: JSON.stringify({ device_ids: [deviceId], play: false }),
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${spotifyToken}` },
+        });
+      }
+
+      function updateBarUI(state) {
+        const track = state.track_window.current_track;
+        document.getElementById("barTitle").innerText = track.name;
+        document.getElementById("barArtist").innerText = track.artists
+          .map((a) => a.name)
+          .join(", ");
+        document.getElementById("barCover").src = track.album.images[0]?.url;
+        document.getElementById("barCover").style.display = "block";
+
+        const status = state.paused ? "En pause" : "Lecture en cours";
+        document.getElementById("barPlayerStatus").innerText = status;
+      }
+
+      // --- IA SIMULATION (BROADCAST) ---
+      // Simule l'envoi de métadonnées via WebSocket/Supabase
+      // Ici on utilise localStorage pour communiquer entre onglets (ou le même onglet)
+      function broadcastMetadata(state) {
+        const track = state.track_window.current_track;
+        const metadata = {
+          source: "spotify",
+          id: track.id,
+          uri: track.uri,
+          name: track.name,
+          artist: track.artists.map((a) => a.name).join(", "),
+          album: track.album.name,
+          cover: track.album.images[0]?.url,
+          timestamp: Date.now(), // Pour sync
+          position: state.position,
+        };
+
+        const logEl = document.getElementById("aiLog");
+        logEl.innerText = `[${new Date().toLocaleTimeString()}] Broadcast: ${metadata.name} - ${metadata.artist}`;
+
+        // "Envoi" au cloud (simulation)
+        localStorage.setItem("cyrnea_live_metadata", JSON.stringify(metadata));
+      }
+
+      // --- CLIENT LOGIC (RECEIVER) ---
+      // Le client écoute les changements de métadonnées
+
+      window.addEventListener("storage", (e) => {
+        if (e.key === "cyrnea_live_metadata") {
+          const metadata = JSON.parse(e.newValue);
+          updateClientUI(metadata);
+        }
+      });
+
+      // Check initial si déjà présent
+      const existingMeta = localStorage.getItem("cyrnea_live_metadata");
+      if (existingMeta) updateClientUI(JSON.parse(existingMeta));
+
+      let currentClientMetadata = null;
+
+      function updateClientUI(metadata) {
+        currentClientMetadata = metadata;
+        document.getElementById("clientTitle").innerText = metadata.name;
+        document.getElementById("clientArtist").innerText = metadata.artist;
+        document.getElementById("clientCover").src = metadata.cover;
+        document.getElementById("clientCover").style.display = "block";
+        document.getElementById("clientContext").innerText =
+          `Source: ${metadata.source.toUpperCase()} | Album: ${metadata.album}`;
+
+        const btnSpotify = document.getElementById("clientSyncSpotify");
+        btnSpotify.innerText = `🎧 Lire "${metadata.name}" sur mon Spotify`;
+      }
+
+      // Action Client : Lire sur SON compte
+      document.getElementById("clientSyncSpotify").onclick = async () => {
+        if (!currentClientMetadata) return alert("Aucune musique en cours au bar.");
+
+        // Le client a besoin de SON propre token.
+        // Dans cette démo simplifiée, on utilise le MÊME token si présent,
+        // mais en prod ce serait un flow auth séparé.
+        // On demande un token via prompt si pas dispo (pour simuler un autre user)
+
+        let userToken = spotifyToken;
+        if (!userToken) {
+          // Si le client n'est pas loggué (scénario normal), il doit se logguer
+          // Ici on simplifie :
+          const manual = prompt(
+            "Veuillez entrer votre Token Spotify (Bearer) pour simuler un client distant :"
+          );
+          if (manual) userToken = manual;
+          else {
+            if (confirm("Pas de token. Voulez-vous vous connecter à Spotify (quitte la page) ?")) {
+              authorizeSpotify();
+              return;
+            }
+          }
+        }
+
+        if (userToken && currentClientMetadata.uri) {
+          try {
+            const res = await fetch(`https://api.spotify.com/v1/me/player/play`, {
+              method: "PUT",
+              body: JSON.stringify({ uris: [currentClientMetadata.uri] }), // On reprend l'URI exacte
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${userToken}`,
+              },
+            });
+
+            if (res.status === 204) {
+              document.getElementById("clientSyncStatus").innerText =
+                "Lecture lancée sur votre appareil actif !";
+            } else if (res.status === 404) {
+              document.getElementById("clientSyncStatus").innerText =
+                "Erreur: Aucun appareil Spotify actif trouvé sur votre compte.";
+              alert("Ouvrez Spotify sur votre appareil pour que Cyrnea puisse le contrôler.");
+            } else {
+              const err = await res.json();
+              document.getElementById("clientSyncStatus").innerText =
+                "Erreur: " + (err.error?.message || "Inconnue");
+            }
+          } catch (e) {
+            console.error(e);
+            alert("Erreur communication Spotify");
+          }
+        }
+      };
+
+      // --- DEEZER STUB (Support basique) ---
+      // Note: Deezer SDK est plus restrictif sur les domaines (localhost souvent bloqué sans SSL ou config App)
+      // Ceci est une ébauche.
+
+      document.getElementById("loginDeezerBar").onclick = () => {
+        if (!config.deezerAppId) return alert("Veuillez configurer l'App ID Deezer");
+
+        DZ.init({
+          appId: config.deezerAppId,
+          channelUrl: config.redirectUri, // Doit être un fichier HTML valide pour le channel
+        });
+
+        DZ.login(
+          function (response) {
+            if (response.authResponse) {
+              console.log("Welcome!  Fetching your information.... ");
+              DZ.api("/user/me", function (response) {
+                barAuthStatus.innerText = "Connecté à Deezer: " + response.name;
+                // On pourrait initialiser le player Deezer ici
+              });
+            } else {
+              console.log("User cancelled login or did not fully authorize.");
+            }
+          },
+          { perms: "basic_access,email,listening_history,manage_library" }
+        );
+      };
+    </script>
+  </body>
+</html>

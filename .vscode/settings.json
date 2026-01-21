@@ -21,12 +21,10 @@
   "files.insertFinalNewline": true,
   // On s'assure que Prettier ignore les fichiers de lock pour ne pas ralentir l'éditeur
   "prettier.ignorePath": ".gitignore",
-  
   /* --- REFACTORING INTELLIGENT --- */
   // Met à jour les imports automatiquement quand on déplace un fichier
   "javascript.updateImportsOnFileMove.enabled": "always",
   "typescript.updateImportsOnFileMove.enabled": "always",
-
   /* --- RECHERCHE --- */
   // On exclut les dossiers de build et les logs de la recherche globale pour plus de clarté
   "search.exclude": {
@@ -52,5 +50,12 @@
     "**/.turbo/**": true,
     "**/coverage/**": true,
     "**/test-results/**": true
-  }
+  },
+  "deno.enable": true,
+  "deno.enablePaths": [
+    "apps/cyrnea/netlify/edge-functions",
+    "apps/inseme/netlify/edge-functions"
+  ],
+  "deno.unstable": true,
+  "deno.importMap": ".netlify/edge-functions-import-map.json"
 }

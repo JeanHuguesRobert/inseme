@@ -4,6 +4,9 @@
   "description": "Multi-runtime Prolog Engine Loader for Inseme",
   "type": "module",
   "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
   "keywords": [
     "prolog",
     "reasoning",

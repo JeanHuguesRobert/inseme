@@ -35,6 +35,7 @@ import { useInsemeContext, TalkButton, OPHELIA_ID, MondrianBlock, CameraModal } 
 import { storage } from "@inseme/cop-host";
 import { getBarRoles } from "../lib/roles";
 import FundingWidget from "./FundingWidget";
+import MusicControl from "../components/MusicControl";
 import { getDailyAlibi, BAR_RITUALS } from "../lib/almanac";
 import { GAME_PACKS, game_reducer } from "../lib/gameManager";
 
@@ -69,9 +70,17 @@ const BroadcastOverlay = ({ event }) => {
             </p>
             <button
               onClick={() => {
-                const url = new URL(event.newUrl);
-                url.search = window.location.search;
-                window.location.href = url.toString();
+                try {
+                  const newUrlObj = new URL(event.newUrl);
+                  const targetUrl = new URL(window.location.href);
+                  targetUrl.protocol = newUrlObj.protocol;
+                  targetUrl.host = newUrlObj.host;
+                  targetUrl.port = newUrlObj.port;
+                  window.location.href = targetUrl.toString();
+                } catch (e) {
+                  console.error("Invalid URL for new frequency", event.newUrl, e);
+                  window.location.href = event.newUrl;
+                }
               }}
               className="w-full bg-black text-white py-4 border-4 border-black font-black uppercase tracking-widest hover:bg-mondrian-red transition-colors shadow-[8px_8px_0px_0px_var(--mondrian-red)] active:translate-x-1 active:translate-y-1 active:shadow-none"
             >
@@ -152,6 +161,7 @@ const GlobalConfigWidget = ({
   facebookUrl,
   instagramUrl,
   customLinks,
+  zones,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempSsid, setTempSsid] = useState(ssid || "");
@@ -163,6 +173,7 @@ const GlobalConfigWidget = ({
   const [tempCustomLinks, setTempCustomLinks] = useState(
     Array.isArray(customLinks) ? customLinks : []
   );
+  const [tempZones, setTempZones] = useState(Array.isArray(zones) ? zones : []);
   const [sesameInput, setSesameInput] = useState("");
   const [sesameError, setSesameError] = useState("");
 
@@ -178,7 +189,8 @@ const GlobalConfigWidget = ({
     setTempFacebook(facebookUrl || "");
     setTempInstagram(instagramUrl || "");
     setTempCustomLinks(Array.isArray(customLinks) ? customLinks : []);
-  }, [ssid, password, commune, barSesame, facebookUrl, instagramUrl, customLinks]);
+    setTempZones(Array.isArray(zones) ? zones : []);
+  }, [ssid, password, commune, barSesame, facebookUrl, instagramUrl, customLinks, zones]);
 
   const handleCustomLinkChange = (index, field, value) => {
     setTempCustomLinks((prev) => {
@@ -203,6 +215,25 @@ const GlobalConfigWidget = ({
     });
   };
 
+  const handleZoneChange = (index, field, value) => {
+    setTempZones((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const handleAddZone = () => {
+    setTempZones((prev) => [
+      ...prev,
+      { id: `zone-${Date.now()}`, label: "Nouvelle Zone", color: "bg-white" },
+    ]);
+  };
+
+  const handleRemoveZone = (index) => {
+    setTempZones((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSave = () => {
     const normalizedCustomLinks = (Array.isArray(tempCustomLinks) ? tempCustomLinks : []).filter(
       (link) =>
@@ -213,6 +244,8 @@ const GlobalConfigWidget = ({
         link.url.trim()
     );
 
+    const normalizedZones = tempZones.filter((z) => z.label && z.label.trim());
+
     onUpdate({
       wifi_ssid: tempSsid,
       wifi_password: tempPass,
@@ -220,6 +253,7 @@ const GlobalConfigWidget = ({
       facebook_url: tempFacebook,
       instagram_url: tempInstagram,
       custom_links: normalizedCustomLinks,
+      zones: normalizedZones,
     });
     if (onSesameChange) {
       onSesameChange(tempSesame);
@@ -265,7 +299,7 @@ const GlobalConfigWidget = ({
         )}
       </div>
 
-      <div className="flex-1 p-3 flex flex-col justify-center">
+      <div className="flex-1 p-3 flex flex-col justify-center overflow-y-auto">
         {isEditing && hasAccess ? (
           <div className="flex flex-col gap-2">
             <div>
@@ -295,6 +329,38 @@ const GlobalConfigWidget = ({
                 className="border-2 border-black p-1 text-xs font-bold uppercase tracking-tighter w-full focus:bg-mondrian-yellow/10 outline-none"
               />
             </div>
+
+            {/* ZONES CONFIGURATION */}
+            <div>
+              <label className="text-[8px] font-black uppercase opacity-40">Zones du Bar</label>
+              <div className="space-y-2 mt-1">
+                {tempZones.map((zone, index) => (
+                  <div key={index} className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                    <input
+                      value={zone.label}
+                      onChange={(e) => handleZoneChange(index, "label", e.target.value)}
+                      placeholder="Nom de la zone"
+                      className="border-2 border-black p-1 text-[10px] font-bold uppercase tracking-tighter w-full focus:bg-mondrian-yellow/10 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveZone(index)}
+                      className="border-2 border-black px-2 py-1 text-[10px] font-black uppercase bg-black text-white hover:bg-mondrian-red transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddZone}
+                  className="border-2 border-dashed border-black px-2 py-1 text-[10px] font-black uppercase bg-white hover:bg-mondrian-yellow/20 transition-colors w-full"
+                >
+                  Ajouter une zone
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="text-[8px] font-black uppercase opacity-40">
                 Sésame configuration bar (optionnel)
@@ -494,34 +560,59 @@ const RitualsWidget = ({ onTrigger, currentUser }) => {
   );
 };
 
-const ZoneSwitcher = ({ currentZone, onZoneChange }) => (
-  <MondrianBlock
-    color="white"
-    className="border-4 border-black flex flex-col h-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden"
-  >
-    <div className="bg-black text-white p-2 flex items-center gap-2 border-b-4 border-black">
-      <MapPin className="w-4 h-4 text-mondrian-yellow" />
-      <span className="text-[10px] font-black uppercase tracking-widest">Zone</span>
-    </div>
-    <div className="flex-1 flex flex-col">
-      <button
-        onClick={() => onZoneChange("indoor")}
-        className={`flex-1 flex items-center gap-3 px-4 transition-colors ${currentZone === "indoor" ? "bg-mondrian-blue text-white" : "hover:bg-mondrian-blue/10 text-black"}`}
-      >
-        <Home className="w-5 h-5" />
-        <span className="font-black uppercase text-xs">Intérieur</span>
-      </button>
-      <div className="h-1 bg-black" />
-      <button
-        onClick={() => onZoneChange("outdoor")}
-        className={`flex-1 flex items-center gap-3 px-4 transition-colors ${currentZone === "outdoor" ? "bg-mondrian-red text-white" : "hover:bg-mondrian-red/10 text-black"}`}
-      >
-        <Wind className="w-5 h-5" />
-        <span className="font-black uppercase text-xs">Extérieur</span>
-      </button>
-    </div>
-  </MondrianBlock>
-);
+const ZoneSwitcher = ({ currentZone, onZoneChange, zones }) => {
+  const hasCustomZones = Array.isArray(zones) && zones.length > 0;
+
+  return (
+    <MondrianBlock
+      color="white"
+      className="border-4 border-black flex flex-col h-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden"
+    >
+      <div className="bg-black text-white p-2 flex items-center gap-2 border-b-4 border-black">
+        <MapPin className="w-4 h-4 text-mondrian-yellow" />
+        <span className="text-[10px] font-black uppercase tracking-widest">Zone</span>
+      </div>
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        {!hasCustomZones ? (
+          <>
+            <button
+              onClick={() => onZoneChange("indoor")}
+              className={`flex-1 flex items-center gap-3 px-4 transition-colors ${currentZone === "indoor" ? "bg-mondrian-blue text-white" : "hover:bg-mondrian-blue/10 text-black"}`}
+            >
+              <Home className="w-5 h-5" />
+              <span className="font-black uppercase text-xs">Intérieur</span>
+            </button>
+            <div className="h-1 bg-black" />
+            <button
+              onClick={() => onZoneChange("outdoor")}
+              className={`flex-1 flex items-center gap-3 px-4 transition-colors ${currentZone === "outdoor" ? "bg-mondrian-red text-white" : "hover:bg-mondrian-red/10 text-black"}`}
+            >
+              <Wind className="w-5 h-5" />
+              <span className="font-black uppercase text-xs">Extérieur</span>
+            </button>
+          </>
+        ) : (
+          zones.map((zone, i) => (
+            <React.Fragment key={zone.id || i}>
+              <button
+                onClick={() => onZoneChange(zone.id)}
+                className={`flex-1 min-h-[50px] flex items-center gap-3 px-4 transition-colors ${
+                  currentZone === zone.id
+                    ? "bg-mondrian-yellow text-black"
+                    : "hover:bg-black/10 text-black"
+                }`}
+              >
+                <MapPin className="w-5 h-5" />
+                <span className="font-black uppercase text-xs">{zone.label}</span>
+              </button>
+              {i < zones.length - 1 && <div className="h-1 bg-black" />}
+            </React.Fragment>
+          ))
+        )}
+      </div>
+    </MondrianBlock>
+  );
+};
 
 const AlmanacWidget = ({ alibi, onTrigger }) => (
   <div
@@ -738,51 +829,18 @@ const DashHeader = ({
   </header>
 );
 
-const QrPassModal = ({ isOpen, onClose, roomSettings, onWelcome, barName, roomSlug: propSlug }) => {
+const QrPassModal = ({
+  isOpen,
+  onClose,
+  roomSettings,
+  onWelcome,
+  barName,
+  roomSlug: propSlug,
+  clientUrl,
+}) => {
   if (!isOpen) return null;
   const [showWifi, setShowWifi] = useState(false);
   const [newPseudo, setNewPseudo] = useState("");
-
-  const [broadcastEvent, setBroadcastEvent] = useState(null);
-
-  const clientUrl = useMemo(() => {
-    // Priorité 1: Tunnel URL (ngrok/cloudflare) - Requis par l'utilisateur
-    if (roomSettings?.tunnel_url) return roomSettings.tunnel_url;
-
-    // Priorité 2: IP locale injectée par le script tunnel (Fallback WiFi)
-    if (roomSettings?.local_ip && roomSettings.local_ip !== "localhost") {
-      return `http://${roomSettings.local_ip}:${window.location.port || 8888}`;
-    }
-
-    // Priorité 3: L'origine actuelle
-    const origin = window.location.origin;
-    if (origin.includes("localhost") && roomSettings?.local_ip) {
-      return origin.replace("localhost", roomSettings.local_ip);
-    }
-
-    return origin;
-  }, [roomSettings?.tunnel_url, roomSettings?.local_ip]);
-
-  // Détection de changement d'URL publique (Tunnel)
-  React.useEffect(() => {
-    if (!clientUrl) return;
-
-    const currentOrigin = window.location.origin;
-    // On ne compare que si on est sur un tunnel (pas localhost)
-    if (
-      clientUrl.includes("ngrok") ||
-      clientUrl.includes("cloudflare") ||
-      clientUrl.includes("lhr.life")
-    ) {
-      if (currentOrigin !== clientUrl && !currentOrigin.includes("localhost")) {
-        console.warn(`[Inseme] Tunnel URL changed: ${clientUrl}`);
-        setBroadcastEvent({
-          type: "url_change",
-          newUrl: clientUrl,
-        });
-      }
-    }
-  }, [clientUrl]);
 
   const roomSlug =
     propSlug || roomSettings?.slug || window.location.search.match(/room=([^&]+)/)?.[1] || "cyrnea";
@@ -1233,8 +1291,20 @@ const MicWidget = ({
   );
 };
 
-const FeedWidget = ({ messages, onPromoteToLegend, onPromoteToGazette, currentUser }) => {
+const FeedWidget = ({ messages, onPromoteToLegend, onPromoteToGazette, currentUser, zones }) => {
   const canModerate = currentUser?.can?.moderate;
+
+  const getZoneLabel = (zoneId) => {
+    if (!zoneId) return null;
+    if (Array.isArray(zones)) {
+      const z = zones.find((z) => z.id === zoneId);
+      if (z) return z.label;
+    }
+    // Fallback for default zones if not in custom list (though usually they should be)
+    if (zoneId === "indoor") return "Intérieur";
+    if (zoneId === "outdoor") return "Terrasse";
+    return zoneId;
+  };
 
   return (
     <MondrianBlock
@@ -1257,9 +1327,16 @@ const FeedWidget = ({ messages, onPromoteToLegend, onPromoteToGazette, currentUs
               className={`p-2 border-b border-black text-xs flex flex-col gap-1 text-black group relative ${msg.user_id === OPHELIA_ID ? "bg-mondrian-yellow/10" : "bg-white"}`}
             >
               <div className="flex items-start gap-2">
-                <span className="font-black uppercase text-[10px] min-w-[60px] text-right truncate text-mondrian-blue">
-                  {msg.name}
-                </span>
+                <div className="flex flex-col items-end min-w-[60px] max-w-[80px]">
+                  <span className="font-black uppercase text-[10px] text-right truncate text-mondrian-blue w-full">
+                    {msg.name}
+                  </span>
+                  {msg.metadata?.zone && (
+                    <span className="text-[7px] font-bold uppercase opacity-50 leading-none truncate w-full text-right text-black/60">
+                      {getZoneLabel(msg.metadata.zone)}
+                    </span>
+                  )}
+                </div>
                 <p className="font-bold leading-tight uppercase flex-1">{msg.message}</p>
                 <div className="flex gap-1">
                   {msg.type === "after_proposal" && (
@@ -1333,24 +1410,74 @@ export default function BarmanDashboard() {
   const barSlug = roomMetadata?.slug || roomMetadata?.id || "bar";
   const BAR_ROLES = useMemo(() => getBarRoles(barName), [barName]);
 
+  /* =========================
+     STATES (Must be first)
+     ========================= */
   const [mobileTab, setMobileTab] = useState(
     () => localStorage.getItem("inseme_barman_tab") || "overview"
-  ); // overview, games, mic, settings
-
+  );
+  const [broadcastEvent, setBroadcastEvent] = useState(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [attachment, setAttachment] = useState(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const fileInputRef = React.useRef(null);
-  const galleryInputRef = React.useRef(null);
   const [isMobile, setIsMobile] = useState(false);
-  const barSesame = roomMetadata?.settings?.bar_sesame || "";
-  const sesameStorageKey = `inseme_bar_sesame_ok_${barSlug}`;
   const [hasSesameSession, setHasSesameSession] = useState(() => {
+    const sesameStorageKey = `inseme_bar_sesame_ok_${barSlug}`;
     if (typeof window === "undefined") return false;
     return localStorage.getItem(sesameStorageKey) === "true";
   });
+  const [guardInput, setGuardInput] = useState("");
+  const [guardError, setGuardError] = useState("");
 
+  const fileInputRef = React.useRef(null);
+  const galleryInputRef = React.useRef(null);
+  const barSesame = roomMetadata?.settings?.bar_sesame || "";
+
+  /* =========================
+     MEMOS
+     ========================= */
+  const clientUrl = useMemo(() => {
+    const roomSettings = roomMetadata?.settings;
+    if (roomSettings?.tunnel_url) return roomSettings.tunnel_url;
+    if (roomSettings?.local_ip && roomSettings.local_ip !== "localhost") {
+      return `http://${roomSettings.local_ip}:${window.location.port || 8888}`;
+    }
+    const origin = window.location.origin;
+    if (origin.includes("localhost") && roomSettings?.local_ip) {
+      return origin.replace("localhost", roomSettings.local_ip);
+    }
+    return origin;
+  }, [roomMetadata?.settings?.tunnel_url, roomMetadata?.settings?.local_ip]);
+
+  const vibeScore = useMemo(() => {
+    const base = 70;
+    const votes = roomData?.results || {};
+    const positive = votes["vibe:up"] || 0;
+    const negative = votes["vibe:down"] || 0;
+    const score = base + positive * 5 - negative * 5;
+    return Math.max(0, Math.min(100, score));
+  }, [roomData?.results]);
+
+  /* =========================
+     EFFECTS
+     ========================= */
+  // Tunnel change detection
+  React.useEffect(() => {
+    if (!clientUrl) return;
+    const currentOrigin = window.location.origin;
+    if (
+      clientUrl.includes("ngrok") ||
+      clientUrl.includes("cloudflare") ||
+      clientUrl.includes("lhr.life")
+    ) {
+      if (currentOrigin !== clientUrl && !currentOrigin.includes("localhost")) {
+        setBroadcastEvent({ type: "url_change", newUrl: clientUrl });
+      }
+    }
+  }, [clientUrl]);
+
+  // Mobile detection
   React.useEffect(() => {
     const checkMobile = () => {
       const ua = navigator.userAgent.toLowerCase();
@@ -1376,42 +1503,30 @@ export default function BarmanDashboard() {
     }
   };
 
-  // Restricted Access Guard
-  if (currentUser && !currentUser.can.moderate) {
-    return (
-      <div className="min-h-screen bg-mondrian-red flex items-center justify-center p-8">
-        <MondrianBlock
-          color="white"
-          className="max-w-md p-8 border-8 border-black shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] text-center"
-        >
-          <Zap className="w-16 h-16 mx-auto mb-6 text-mondrian-red" strokeWidth={4} />
-          <h1 className="text-4xl font-black uppercase tracking-tighter mb-4 italic">
-            Accès Réservé
-          </h1>
-          <p className="font-bold uppercase text-sm mb-6 leading-tight">
-            Désolé, ce tableau de bord est réservé aux barmen et administrateurs.
-          </p>
-          <div className="bg-slate-100 p-4 border-2 border-black mb-6">
-            <span className="text-[10px] font-black uppercase opacity-60 block mb-1">
-              Votre Statut
-            </span>
-            <span className="text-xs font-black uppercase">{currentUser.summary}</span>
-          </div>
-          <Button
-            onClick={() => (window.location.href = "/")}
-            className="w-full bg-black text-white hover:bg-mondrian-blue transition-colors rounded-none font-black uppercase"
-          >
-            Retour à l'accueil
-          </Button>
-        </MondrianBlock>
-      </div>
-    );
-  }
+  const [guardInput, setGuardInput] = useState("");
+  const [guardError, setGuardError] = useState("");
 
-  // Persist mobile tab
+  const handleGuardSubmit = () => {
+    if (guardInput === MASTER_SESAME || (barSesame && guardInput === barSesame)) {
+      handleSesameValidated();
+      setGuardError("");
+    } else {
+      setGuardError("Sésame incorrect");
+    }
+  };
+
+  // Persist mobile tab - MOVED ABOVE GUARD
   React.useEffect(() => {
     localStorage.setItem("inseme_barman_tab", mobileTab);
   }, [mobileTab]);
+
+  // Restore zone on mount - MOVED ABOVE GUARD
+  React.useEffect(() => {
+    const savedZone = localStorage.getItem("inseme_barman_zone");
+    if (savedZone) {
+      setPresenceMetadata((prev) => ({ ...prev, zone: savedZone }));
+    }
+  }, [setPresenceMetadata]);
 
   const currentRole = roomMetadata?.settings?.ophelia?.role || "bar-indoor";
   const currentZone = presenceMetadata?.zone || "indoor";
@@ -1420,14 +1535,6 @@ export default function BarmanDashboard() {
     setPresenceMetadata((prev) => ({ ...prev, zone }));
     localStorage.setItem("inseme_barman_zone", zone);
   };
-
-  // Restore zone on mount
-  React.useEffect(() => {
-    const savedZone = localStorage.getItem("inseme_barman_zone");
-    if (savedZone) {
-      setPresenceMetadata((prev) => ({ ...prev, zone: savedZone }));
-    }
-  }, [setPresenceMetadata]);
 
   const handleRoleChange = async (roleId) => {
     await updateRoomSettings({
@@ -1770,6 +1877,88 @@ export default function BarmanDashboard() {
     clearAttachment();
   };
 
+  // Listeners for Global Events - MOVED ABOVE GUARD
+  React.useEffect(() => {
+    const handleCelebrate = (e) => {
+      const { level } = e.detail;
+      setBroadcastEvent({ type: "celebrate", level });
+      setTimeout(() => setBroadcastEvent(null), level === "imperial" ? 5000 : 2000);
+    };
+
+    const handleBell = () => {
+      setBroadcastEvent({ type: "bell" });
+      setTimeout(() => setBroadcastEvent(null), 3000);
+    };
+
+    window.addEventListener("inseme:celebrate", handleCelebrate);
+    window.addEventListener("inseme:bell_ring", handleBell);
+    return () => {
+      window.removeEventListener("inseme:celebrate", handleCelebrate);
+      window.removeEventListener("inseme:bell_ring", handleBell);
+    };
+  }, []);
+
+  // Restricted Access Guard (Safety check for can property) - MOVED TO END TO COMPLY WITH HOOK RULES
+  if (currentUser && !currentUser.can?.moderate && !hasSesameSession) {
+    return (
+      <div className="min-h-screen bg-mondrian-red flex items-center justify-center p-8">
+        <MondrianBlock
+          color="white"
+          className="max-w-md p-8 border-8 border-black shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] text-center"
+        >
+          <Zap className="w-16 h-16 mx-auto mb-6 text-mondrian-red" strokeWidth={4} />
+          <h1 className="text-4xl font-black uppercase tracking-tighter mb-4 italic">
+            Accès Réservé
+          </h1>
+          <p className="font-bold uppercase text-sm mb-6 leading-tight">
+            Désolé, ce tableau de bord est réservé aux barmen et administrateurs.
+          </p>
+          <div className="bg-slate-100 p-4 border-2 border-black mb-6">
+            <span className="text-[10px] font-black uppercase opacity-60 block mb-1">
+              Votre Statut
+            </span>
+            <span className="text-xs font-black uppercase">{currentUser.summary}</span>
+          </div>
+
+          {/* SESAME INPUT */}
+          <div className="mb-6">
+            <p className="text-[10px] font-black uppercase opacity-60 mb-2">
+              Avez-vous le sésame ?
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={guardInput}
+                onChange={(e) => setGuardInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleGuardSubmit()}
+                placeholder="Sésame..."
+                className="flex-1 border-4 border-black p-2 text-xs font-bold uppercase tracking-tighter focus:bg-mondrian-yellow/10 outline-none"
+              />
+              <button
+                onClick={handleGuardSubmit}
+                className="px-4 border-4 border-black bg-black text-white text-xs font-black uppercase hover:bg-mondrian-yellow hover:text-black transition-colors"
+              >
+                OK
+              </button>
+            </div>
+            {guardError && (
+              <p className="text-[10px] font-black text-mondrian-red mt-2 animate-pulse">
+                {guardError}
+              </p>
+            )}
+          </div>
+
+          <Button
+            onClick={() => (window.location.href = "/")}
+            className="w-full bg-white text-black border-4 border-black hover:bg-black hover:text-white transition-colors rounded-none font-black uppercase"
+          >
+            Retour à l'accueil
+          </Button>
+        </MondrianBlock>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`h-[100dvh] text-black font-mono flex flex-col fixed inset-0 overflow-hidden transition-colors duration-1000 ${
@@ -1781,6 +1970,7 @@ export default function BarmanDashboard() {
         onClose={() => setIsQrModalOpen(false)}
         roomSettings={roomMetadata?.settings}
         roomSlug={barSlug}
+        clientUrl={clientUrl}
         onWelcome={handleWelcomeClient}
         barName={barName}
       />
@@ -1822,7 +2012,17 @@ export default function BarmanDashboard() {
                 facebookUrl={roomMetadata?.settings?.facebook_url}
                 instagramUrl={roomMetadata?.settings?.instagram_url}
                 customLinks={roomMetadata?.settings?.custom_links}
+                zones={roomMetadata?.settings?.zones}
               />
+              <Button
+                className="w-full mt-4 bg-white text-black border-4 border-black font-black uppercase hover:bg-mondrian-yellow transition-colors flex items-center justify-center gap-2"
+                onClick={() =>
+                  (window.location.href = `/app/${roomMetadata?.slug || roomMetadata?.id || "cyrnea"}`)
+                }
+              >
+                <Users className="w-4 h-4" />
+                Mode Client (Repos)
+              </Button>
             </div>
             <div className={`flex-[0.2] ${mobileTab === "settings" ? "block" : "hidden md:block"}`}>
               <CityLinksWidget commune={roomMetadata?.settings?.commune} roomData={roomData} />
@@ -1836,7 +2036,11 @@ export default function BarmanDashboard() {
               />
             </div>
             <div className={`flex-[0.2] ${mobileTab === "settings" ? "block" : "hidden md:block"}`}>
-              <ZoneSwitcher currentZone={currentZone} onZoneChange={handleZoneChange} />
+              <ZoneSwitcher
+                currentZone={currentZone}
+                onZoneChange={handleZoneChange}
+                zones={roomMetadata?.settings?.zones}
+              />
             </div>
             <div className={`flex-[0.4] ${mobileTab === "settings" ? "block" : "hidden md:block"}`}>
               <RitualsWidget onTrigger={handleTriggerBarRitual} currentUser={currentUser} />
@@ -1851,8 +2055,10 @@ export default function BarmanDashboard() {
             <div className={`flex-[0.3] ${mobileTab === "overview" ? "block" : "hidden md:block"}`}>
               <VibeWidget score={vibeScore} onCheck={handleVibeCheck} currentUser={currentUser} />
             </div>
-            <div className={`flex-[0.4] ${mobileTab === "overview" ? "block" : "hidden md:block"}`}>
-              <MusicWidget currentUser={currentUser} />
+            <div
+              className={`flex-[0.4] ${mobileTab === "overview" || mobileTab === "music" ? "block" : "hidden md:block"}`}
+            >
+              <MusicControl />
             </div>
           </div>
 
@@ -1868,6 +2074,7 @@ export default function BarmanDashboard() {
                 onPromoteToLegend={currentUser?.can?.moderate ? handlePromoteToLegend : null}
                 onPromoteToGazette={currentUser?.can?.moderate ? handlePromoteToGazette : null}
                 currentUser={currentUser}
+                zones={roomMetadata?.settings?.zones}
               />
             </div>
             <div
@@ -1946,13 +2153,20 @@ export default function BarmanDashboard() {
       <BroadcastOverlay event={broadcastEvent} />
 
       {/* MOBILE NAVIGATION */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white border-t-4 border-black grid grid-cols-4 z-50">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white border-t-4 border-black grid grid-cols-5 z-50">
         <div
           onClick={() => setMobileTab("overview")}
           className={`flex flex-col items-center justify-center border-r-4 border-black ${mobileTab === "overview" ? "bg-mondrian-red text-white" : "bg-white text-black"}`}
         >
           <Zap className="w-6 h-6 mb-1" strokeWidth={3} />
           <span className="text-[10px] font-black uppercase tracking-widest">Dash</span>
+        </div>
+        <div
+          onClick={() => setMobileTab("music")}
+          className={`flex flex-col items-center justify-center border-r-4 border-black ${mobileTab === "music" ? "bg-black text-white" : "bg-white text-black"}`}
+        >
+          <Music className="w-6 h-6 mb-1" strokeWidth={3} />
+          <span className="text-[10px] font-black uppercase tracking-widest">Music</span>
         </div>
         <div
           onClick={() => setMobileTab("games")}

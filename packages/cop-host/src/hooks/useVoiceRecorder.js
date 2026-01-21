@@ -130,7 +130,7 @@ export function useVoiceRecorder(onTranscription, options = {}) {
 
       // Local Transcription Preview (Web Speech API)
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
+      if (SpeechRecognition && !options.disableLocalPreview) {
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;

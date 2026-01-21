@@ -1,8 +1,10 @@
 // Main Entry Point for Inseme Core Package
 export { InsemeRoom } from "./components/InsemeRoom";
 export { InsemeProvider, useInsemeContext } from "./InsemeContext";
-export { useInseme, OPHELIA_ID } from "./hooks/useInseme.js";
+export { useInseme } from "./hooks/useInseme.js";
+export { OPHELIA_ID } from "./constants.js";
 export { useVoiceInterface } from "./hooks/useVoiceInterface.js";
+export { useVoiceRecorder } from "./hooks/useVoiceRecorder.js";
 export { default as useOpheliaChat } from "./hooks/chat/useOpheliaChat.js";
 export {
   default as useAIProviders,

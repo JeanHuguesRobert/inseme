@@ -2,6 +2,7 @@
 @source "../../../packages/brique-cyrnea";
 @source "../../../packages/room";
 @source "../../../packages/ui";
+@plugin "@tailwindcss/typography";
 
 :root {
   /* Mondrian Palette (True Primaries) */

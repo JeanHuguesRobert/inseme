@@ -4,10 +4,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { resolveInstance } from "../lib/instanceResolver.js";
-import {
-  getConfig as getInstanceConfig,
-  getSupabase as getInstanceSupabase,
-} from "../config/instanceConfig.core.js";
+import { getConfig as getInstanceConfig } from "../config/instanceConfig.core.js";
 
 let supabaseInstance = null;
 let currentInstanceConfig = null;
@@ -17,9 +14,8 @@ let initPromise = null;
  * Crée un client Supabase avec logging
  */
 function createLoggingClient(url, anonKey, subdomain = "local", supabase_client = null) {
-  const existing_supabase = supabase_client || getInstanceSupabase();
   const rawClient =
-    existing_supabase ||
+    supabase_client ||
     createClient(url, anonKey, {
       auth: {
         autoRefreshToken: true,
@@ -80,13 +76,13 @@ function createLoggingClient(url, anonKey, subdomain = "local", supabase_client 
  */
 export function initSupabaseWithInstance(instanceConfig) {
   if (!instanceConfig.supabase) {
-      if (!instanceConfig?.supabaseUrl || !instanceConfig?.supabaseAnonKey) {
-          throw new Error("Supabase configuration missing (URL or Anon Key)");
-      }
+    if (!instanceConfig?.supabaseUrl || !instanceConfig?.supabaseAnonKey) {
+      throw new Error("Supabase configuration missing (URL or Anon Key)");
+    }
   }
 
   currentInstanceConfig = instanceConfig;
-  
+
   const url = instanceConfig.supabaseUrl;
   const key = instanceConfig.supabaseAnonKey;
   const subdomain = instanceConfig.subdomain || "local";
@@ -116,14 +112,14 @@ export async function initSupabase(instance = null) {
 
   // Si déjà initialisé, retourner
   if (supabaseInstance && currentInstanceConfig && !instance) {
-      return { supabase: supabaseInstance, instance: currentInstanceConfig };
+    return { supabase: supabaseInstance, instance: currentInstanceConfig };
   }
 
   initPromise = (async () => {
     const resolvedInstance = instance || (await resolveInstance());
-    
+
     if (!resolvedInstance.isConfigured && !resolvedInstance.supabaseUrl) {
-       console.warn("Initializing Supabase without valid config (likely fallback)");
+      console.warn("Initializing Supabase without valid config (likely fallback)");
     }
 
     const client = initSupabaseWithInstance(resolvedInstance);
@@ -138,12 +134,7 @@ export async function initSupabase(instance = null) {
  */
 export function getSupabase() {
   if (!supabaseInstance) {
-    const fromCore = getInstanceSupabase();
-    if (fromCore) {
-      supabaseInstance = createLoggingClient(null, null, "core", fromCore);
-    } else {
-      throw new Error("Supabase not initialized. Call initSupabase() first.");
-    }
+    throw new Error("Supabase not initialized. Call initSupabase() first.");
   }
   return supabaseInstance;
 }

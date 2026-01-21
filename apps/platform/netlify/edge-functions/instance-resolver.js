@@ -1,15 +1,18 @@
-// netlify/edge-functions/instance-resolver.js
-// Edge function pour résoudre l'instance à partir du sous-domaine.
-
-import { handleInstanceResolution } from "../../../../packages/cop-host/src/runtime/edge.js";
+import {
+  handleInstanceResolution,
+  INSTANCE_RESOLVER_EDGE_CONFIG,
+} from "../../../../packages/cop-host/src/runtime/edge.js";
 
 export default async function (request, context) {
-  return await handleInstanceResolution(request, context);
+  console.log("Before instance resolver");
+  const resolutionResponse = await handleInstanceResolution(request, context);
+  console.log("After instance resolver");
+
+  if (resolutionResponse instanceof Response) {
+    return resolutionResponse;
+  }
+
+  return context.next();
 }
 
-export const config = {
-  // S'exécute sur toutes les requêtes
-  path: "/*",
-  // Exclure les assets statiques
-  excludedPath: ["/assets/*", "/_next/*", "/images/*", "/fonts/*"],
-};
+export const config = INSTANCE_RESOLVER_EDGE_CONFIG;

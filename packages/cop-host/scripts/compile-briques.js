@@ -176,10 +176,10 @@ async function compile() {
           const isAlreadyWrapped = handlerContent.includes("defineFunction(");
 
           const wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
-import { defineFunction } from "${relRuntimePath}";
+import { defineFunction as DEFINE_FUNCTION } from "${relRuntimePath}";
 import handler from "${relHandlerPath}";
 
-export default ${isAlreadyWrapped ? "handler" : "defineFunction(handler)"};
+export default ${isAlreadyWrapped ? "handler" : "DEFINE_FUNCTION(handler)"};
 `;
           const targetFile = join(genDir, `gen-${config.id}-${funcName}.js`);
           generatedFiles.add(targetFile);
@@ -457,7 +457,7 @@ function updateNetlifyToml(appName, briques) {
     }
   }
 
-  writeIfChanged(tomlPath, content);
+  // TODO: need this? writeIfChanged(tomlPath, content);
 }
 
 function syncDependencies(appName, briques) {
