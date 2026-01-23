@@ -44,6 +44,16 @@ L'outil de pilotage pour le tenancier :
 - **Modération** : Supervision des échanges et de la Gazette.
 - **Pilotage d'Ophélia** : Configuration du comportement de l'IA.
 
+### 5. 🕹️ Recruit : Le Jeu d'Engagement Citoyen
+
+**Recruit** est un "serious game" optionnel intégré à Cyrnea, conçu pour transformer
+l'engagement civique en une expérience ludique et collective. Inspiré par des jeux comme Pokémon
+Go, il encourage les joueurs à interagir avec leur environnement local pour atteindre des objectifs
+citoyens.
+
+> Pour en savoir plus sur la vision et les mécaniques du jeu, consultez le document
+> [**Projet Recruit**](./Projet_Recruit.md).
+
 ---
 
 ## 🏗️ Architecture Technique
