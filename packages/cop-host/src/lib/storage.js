@@ -125,7 +125,7 @@ export const storage = {
 
     // Vocals are MEDIA (Ephemeral)
     const { url } = await this.upload("public-documents", fileName, blob, {
-      contentType: "audio/webm",
+      contentType: "audio/webm;codecs=opus",
       bucketType: "media",
     });
     return url;

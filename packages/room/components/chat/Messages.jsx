@@ -2,13 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { MarkdownViewer } from "@inseme/ui";
-import {
-  ChevronRight,
-  RefreshCw,
-  Wrench,
-  BarChart,
-  Lightbulb,
-} from "lucide-react";
+import { ChevronRight, RefreshCw, Wrench, BarChart, Lightbulb } from "lucide-react";
 
 // Helper to extract all <Think>...</Think> blocks and regroup consecutive ones
 const extractThoughts = (text) => {
@@ -59,14 +53,16 @@ const ThoughtItem = ({ thought, isStreaming }) => {
   const [isOpen, setIsOpen] = useState(false);
   const contentRef = useRef(null);
 
-  if (!thought || !thought.text) return null;
+  const completed = thought?.isComplete;
 
-  // Auto-open if it's the active streaming thought
+  // Auto-open if it's active streaming thought
   useEffect(() => {
-    if (isStreaming && !thought.isComplete) {
+    if (isStreaming && !completed) {
       setIsOpen(true);
     }
-  }, [isStreaming, thought.isComplete]);
+  }, [isStreaming, completed]);
+
+  if (!thought || !thought.text) return null;
 
   // Determine icon and label based on content
   let Icon = Lightbulb;
@@ -107,9 +103,7 @@ const ThoughtItem = ({ thought, isStreaming }) => {
   }
 
   return (
-    <div
-      className={`thought-item thought-type-${type} ${!thought.isComplete ? "is-active" : ""}`}
-    >
+    <div className={`thought-item thought-type-${type} ${!thought.isComplete ? "is-active" : ""}`}>
       <div
         className="thought-summary"
         onClick={() => setIsOpen(!isOpen)}
@@ -185,15 +179,10 @@ export default function Messages({
           <ul className="example-questions">
             {exampleQuestions.map((q, i) => {
               const isObj = q && typeof q === "object" && q.text;
-              const label = isObj
-                ? `${q.emoji || ""} ${q.label || ""}`.trim()
-                : q;
+              const label = isObj ? `${q.emoji || ""} ${q.label || ""}`.trim() : q;
               const text = isObj ? q.text : q;
               return (
-                <li
-                  key={i}
-                  onClick={() => (onExampleClick ? onExampleClick(text) : null)}
-                >
+                <li key={i} onClick={() => (onExampleClick ? onExampleClick(text) : null)}>
                   {label}
                 </li>
               );
@@ -260,10 +249,7 @@ export default function Messages({
                       return (
                         <>
                           {thoughts.length > 0 && (
-                            <ThoughtBlock
-                              thoughts={thoughts}
-                              isStreaming={msg.isStreaming}
-                            />
+                            <ThoughtBlock thoughts={thoughts} isStreaming={msg.isStreaming} />
                           )}
                           <div className="message-text">
                             <MarkdownViewer content={String(content || "")} />
@@ -299,13 +285,9 @@ export default function Messages({
                                 {source.type === "proposition" && (
                                   <span className="source-icon">🗳️</span>
                                 )}
-                                {source.type === "pdf" && (
-                                  <span className="source-icon">📄</span>
-                                )}
-                                {source.type === "wiki_page" &&
-                                  "Wiki communautaire"}
-                                {source.type === "proposition" &&
-                                  "Proposition citoyenne"}
+                                {source.type === "pdf" && <span className="source-icon">📄</span>}
+                                {source.type === "wiki_page" && "Wiki communautaire"}
+                                {source.type === "proposition" && "Proposition citoyenne"}
                                 {source.type === "pdf" && "Document officiel"}
                               </a>
                               <p className="source-preview">{source.content}</p>
@@ -323,24 +305,18 @@ export default function Messages({
                             className={`feedback-btn useful ${msg.feedback === "useful" ? "active" : ""}`}
                             disabled={msg.feedback === "useful"}
                           >
-                            {msg.feedback === "useful"
-                              ? "Merci pour votre avis !"
-                              : "Utile"}
+                            {msg.feedback === "useful" ? "Merci pour votre avis !" : "Utile"}
                           </button>
                           <button
                             onClick={() => onNotUsefulClick(msg)}
                             className={`feedback-btn ${msg.feedback === "not_useful" ? "active" : ""}`}
                           >
-                            {msg.feedback === "not_useful"
-                              ? "Merci ! (Réessayer ?)"
-                              : "Pas assez"}
+                            {msg.feedback === "not_useful" ? "Merci ! (Réessayer ?)" : "Pas assez"}
                           </button>
                         </div>
                         {chatbotSettings.enable_proposition_creation && (
                           <button
-                            onClick={() =>
-                              onCreateProposition && onCreateProposition(msg)
-                            }
+                            onClick={() => onCreateProposition && onCreateProposition(msg)}
                             className="btn btn-secondary"
                           >
                             💡 Formuler une proposition
@@ -367,11 +343,7 @@ export default function Messages({
                       {msg.cached && (
                         <span
                           className="cached-badge"
-                          title={
-                            msg.cacheKey
-                              ? `Cache key: ${msg.cacheKey}`
-                              : "Réponse en cache"
-                          }
+                          title={msg.cacheKey ? `Cache key: ${msg.cacheKey}` : "Réponse en cache"}
                         >
                           🗄️ En cache
                         </span>
@@ -399,9 +371,7 @@ export default function Messages({
                           </a>
                           <div className="prop-meta">
                             <span>🗳️ {prop.votes?.length || 0} votes</span>
-                            <span>
-                              💬 {prop.comments?.length || 0} commentaires
-                            </span>
+                            <span>💬 {prop.comments?.length || 0} commentaires</span>
                           </div>
                         </li>
                       ))}

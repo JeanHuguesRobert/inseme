@@ -8,6 +8,8 @@ import ConsultationLayout, {
   BarChartSection,
   ScoreSection,
 } from "../../components/consultations/ConsultationLayout";
+
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx.../exec"; // Replace with actual URL
 import { ShareCallToAction, ShareButton } from "@inseme/brique-kudocracy";
 import FilNewsFeed from "../../components/fil/FilNewsFeed";
 import { getDynamicConfig, getCommunityLabels } from "../../constants.js";
@@ -393,8 +395,8 @@ export default function ConsultationQuasquara() {
         />
       </div>
       <p className="section-description">
-          Une initiative {movementName} pour la {getCommunityLabels().name} de {communityName}
-        </p>
+        Une initiative {movementName} pour la {getCommunityLabels().name} de {communityName}
+      </p>
 
       {/* Message de brouillon restauré */}
       {draftRestored && draftInfo && (

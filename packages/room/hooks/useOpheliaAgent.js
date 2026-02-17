@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { performWebSearch } from "@inseme/ophelia";
+import { performWebSearch } from "../../models/index.js";
 import { safeEval } from "../utils/SafeEval.proxy.js";
 import { BRIQUES } from "../generated/brique-registry.js";
 import { getConfig } from "@inseme/cop-host";
-import { OPHELIA_ID } from "../constants";
+import { OPHELIA_ID } from "../constants.js";
 
 export function useOpheliaAgent({
   messages,

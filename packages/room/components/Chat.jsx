@@ -466,7 +466,21 @@ function ChatMessage({
     }
   };
 
-  const displayMessage = showOriginal ? msg.metadata.original : translatedContent || msg.message;
+  const cleanMessage = (text) => {
+    if (!text) return "";
+    let cleaned = text;
+    // Remove <Think> tags and content
+    cleaned = cleaned.replace(/<Think>[\s\S]*?<\/Think>/gi, "");
+    // Remove __PROVIDERS_STATUS__...
+    cleaned = cleaned.replace(/__PROVIDERS_STATUS__[\s\S]*/g, "");
+    // Remove __PROVIDER_INFO__...
+    cleaned = cleaned.replace(/__PROVIDER_INFO__[\s\S]*/g, "");
+    return cleaned.trim();
+  };
+
+  const displayMessage = showOriginal
+    ? msg.metadata.original
+    : translatedContent || cleanMessage(msg.message);
 
   const downloadReport = () => {
     const blob = new Blob([msg.message], { type: "text/markdown" });

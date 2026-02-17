@@ -2,11 +2,10 @@
 // Ophélia npm package – accès simple à l’API REST centrale
 
 const API_URL =
-  (typeof process !== "undefined" && process.env?.OPHELIA_API_URL) ||
+  (typeof globalThis !== "undefined" && globalThis.process?.env?.OPHELIA_API_URL) ||
   "https://lepp.fr/api/ophelia";
 const API_KEY =
-  (typeof process !== "undefined" && process.env?.OPHELIA_API_KEY) ||
-  "dev-demo-key";
+  (typeof globalThis !== "undefined" && globalThis.process?.env?.OPHELIA_API_KEY) || "dev-demo-key";
 
 async function ask(question, options = {}) {
   if (!question || typeof question !== "string") {

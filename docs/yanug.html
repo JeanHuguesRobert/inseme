@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>YanUg Master Generator v3.4 - Eye Scale</title>
+    <style>
+        :root { --accent: #FF7F00; --bg: #0a0a0a; --panel: #181818; }
+        body {
+            background: var(--bg); color: #eee; font-family: 'Segoe UI', sans-serif;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0;
+        }
+        .master-container {
+            display: flex; background: var(--panel); padding: 30px; border-radius: 12px;
+            gap: 30px; box-shadow: 0 25px 60px rgba(0,0,0,0.8); border: 1px solid #222;
+        }
+        .controls { display: flex; flex-direction: column; gap: 12px; width: 300px; }
+        .control-group { display: flex; flex-direction: column; gap: 4px; }
+        .color-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        label { font-size: 9px; text-transform: uppercase; color: #777; letter-spacing: 1.2px; font-weight: 800; }
+        input, select { background: #222; border: 1px solid #333; color: white; padding: 8px; border-radius: 4px; font-size: 13px; }
+        .viewer-box {
+            width: 512px; height: 512px; border-radius: 4px; display: flex; align-items: center; justify-content: center;
+            background-image: radial-gradient(#222 1px, transparent 1px); background-size: 20px 20px;
+        }
+        .effects-panel { margin-top: 5px; padding: 15px; background: #222; border-radius: 6px; border-left: 3px solid var(--accent); display: flex; flex-direction: column; gap: 10px; }
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        button { cursor: pointer; border: none; border-radius: 4px; padding: 12px; font-weight: bold; transition: 0.2s; text-transform: uppercase; font-size: 10px; }
+        .btn-rand { background: #3d3d3d; color: white; }
+        .btn-save { background: var(--accent); color: white; }
+        .btn-png { background: #0055A4; color: white; }
+        .btn-copy { background: #444; color: white; grid-column: span 2; }
+        h3 { margin: 0 0 10px 0; font-size: 18px; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div class="master-container">
+        <div class="controls">
+            <h3>YANUG SYSTEM v3.4</h3>
+
+            <div class="color-row">
+                <div class="control-group">
+                    <label>Couleur A (S)</label>
+                    <input type="color" id="colorA" value="#FF7F00">
+                </div>
+                <div class="control-group">
+                    <label>Couleur B (Fond)</label>
+                    <input type="color" id="colorB" value="#FFFFFF">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Expression Bucale</label>
+                <select id="expression">
+                    <option value="souriant">Souriant</option>
+                    <option value="neutre">Neutre</option>
+                    <option value="triste">Triste</option>
+                    <option value="etonne">Étonné</option>
+                    <option value="rictus">Rictus</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Taille des Yeux (Calibration)</label>
+                <select id="eyeScale">
+                    <option value="10">Micro (Technique)</option>
+                    <option value="16" selected>Petit (Original 2006)</option>
+                    <option value="22">Moyen (Standard)</option>
+                    <option value="30">Grand (Expressif)</option>
+                    <option value="45">Hyper (Surcharge)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>État Oculaire</label>
+                <select id="eyeState">
+                    <option value="normal">Normal</option>
+                    <option value="clin-oeil">Clin d'œil</option>
+                    <option value="fermes">Fermés</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Sourcils</label>
+                <select id="eyebrows">
+                    <option value="aucun">Aucun</option>
+                    <option value="serieux">Sérieux</option>
+                    <option value="inquiet">Inquiet</option>
+                    <option value="haut">Hautains</option>
+                </select>
+            </div>
+
+            <div class="effects-panel">
+                <label class="control-group" style="flex-direction:row; justify-content:space-between; align-items:center; cursor:pointer;">
+                    <span style="font-size:9px; text-transform:uppercase; color:#777; font-weight:800;">Aura (Glow)</span>
+                    <input type="checkbox" id="fx-glow">
+                </label>
+                <label class="control-group" style="flex-direction:row; justify-content:space-between; align-items:center; cursor:pointer;">
+                    <span style="font-size:9px; text-transform:uppercase; color:#777; font-weight:800;">Trame</span>
+                    <input type="checkbox" id="fx-grid">
+                </label>
+                <div class="control-group">
+                    <label>Épaisseur Contour</label>
+                    <input type="range" id="stroke" min="0" max="15" value="2">
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn-rand" onclick="randomize()">Hasard</button>
+                <button class="btn-save" onclick="downloadSVG()">SVG</button>
+                <button class="btn-png" onclick="downloadPNG()">PNG</button>
+                <button class="btn-copy" onclick="copyCode()">Code</button>
+            </div>
+        </div>
+
+        <div class="viewer-box" id="viewer"></div>
+    </div>
+
+<script>
+    function YanUgSVG(opt = {}) {
+        const size = 512, center = 256, radius = 200, eyeOff = 98, eyeY = 256;
+        const eR = parseFloat(opt.eyeScale) || 16;
+        const smileY = center + 112;
+        const cA = opt.colorA || "#FF7F00";
+        const cB = opt.colorB || "#FFFFFF";
+
+        const defs = `
+        <defs>
+            <filter id="fx-glow-filter" x="-40%" y="-40%" width="180%" height="180%">
+                <feGaussianBlur stdDeviation="15" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <pattern id="fx-grid-pattern" width="8" height="8" patternUnits="userSpaceOnUse">
+                <path d="M 8 0 L 0 0 0 8" fill="none" stroke="black" stroke-width="0.5" opacity="0.12"/>
+            </pattern>
+        </defs>`;
+
+        const sPath = `M ${center - radius},${center}
+                       A ${radius/2},${radius/2} 0 0 1 ${center},${center}
+                       A ${radius/2},${radius/2} 0 0 0 ${center + radius},${center}
+                       A ${radius},${radius} 0 0 0 ${center - radius},${center}`;
+
+        // Sourcils
+        let browsHTML = "";
+        if (opt.brows !== 'aucun') {
+            const bY = eyeY - 45, bW = 35;
+            const drawB = (x, c, type, isR) => {
+                if (type === 'serieux') return `<line x1="${x-bW}" y1="${bY+(isR?10:-10)}" x2="${x+bW}" y2="${bY+(isR?-10:10)}" stroke="${c}" stroke-width="7" stroke-linecap="round"/>`;
+                if (type === 'inquiet') return `<path d="M ${x-bW},${bY+5} Q ${x},${bY-15} ${x+bW},${bY+5}" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"/>`;
+                if (type === 'haut') return `<line x1="${x-bW}" y1="${bY-8}" x2="${x+bW}" y2="${bY-8}" stroke="${c}" stroke-width="5" stroke-linecap="round"/>`;
+                return "";
+            };
+            browsHTML = drawB(center-eyeOff, cA, opt.brows, false) + drawB(center+eyeOff, cB, opt.brows, true);
+        }
+
+        // Yeux Logic
+        const drawE = (x, y, r, type, isR) => {
+            const c = isR ? cB : cA;
+            if (type === 'clin-oeil' && isR) return `<path d="M ${x-r},${y} Q ${x},${y-r-4} ${x+r},${y}" fill="none" stroke="${c}" stroke-width="7" stroke-linecap="round"/>`;
+            if (type === 'fermes') return `<path d="M ${x-r},${y} Q ${x},${y+r+2} ${x+r},${y}" fill="none" stroke="${c}" stroke-width="7" stroke-linecap="round"/>`;
+            return `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`;
+        };
+
+        // Bouche
+        let mP = ""; const w = 72;
+        switch(opt.expr) {
+            case 'triste': mP = `M ${center-w},${smileY+15} Q ${center},${smileY-15} ${center+w},${smileY+15}`; break;
+            case 'neutre': mP = `M ${center-w},${smileY+5} L ${center+w},${smileY+5}`; break;
+            case 'etonne': mP = `M ${center-22},${smileY+5} A 22,22 0 1 0 ${center+22},${smileY+5} A 22,22 0 1 0 ${center-22},${smileY+5}`; break;
+            case 'rictus': mP = `M ${center-w},${smileY} Q ${center+w/2},${smileY+35} ${center+w},${smileY-15}`; break;
+            default:       mP = `M ${center-w},${smileY} Q ${center},${center+175} ${center+w},${smileY}`;
+        }
+
+        return `<svg id="yanug-svg" width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            ${defs}
+            <circle cx="${center}" cy="${center}" r="${radius}" fill="${cB}" stroke="${cA}" stroke-width="${opt.stroke}"/>
+            <g ${opt.glow ? 'filter="url(#fx-glow-filter)"' : ''}>
+                <path d="${sPath}" fill="${cA}" />
+                ${opt.grid ? `<path d="${sPath}" fill="url(#fx-grid-pattern)" />` : ''}
+            </g>
+            ${browsHTML}
+            ${drawE(center-eyeOff, eyeY, eR, opt.eyeState, false)}
+            ${drawE(center+eyeOff, eyeY, eR, opt.eyeState, true)}
+            <path d="${mP}" fill="none" stroke="${cA}" stroke-width="12" stroke-linecap="round"/>
+        </svg>`;
+    }
+
+    function update() {
+        const opt = {
+            colorA: document.getElementById('colorA').value,
+            colorB: document.getElementById('colorB').value,
+            expr: document.getElementById('expression').value,
+            eyeScale: document.getElementById('eyeScale').value,
+            eyeState: document.getElementById('eyeState').value,
+            brows: document.getElementById('eyebrows').value,
+            stroke: document.getElementById('stroke').value,
+            glow: document.getElementById('fx-glow').checked,
+            grid: document.getElementById('fx-grid').checked
+        };
+        document.getElementById('viewer').innerHTML = YanUgSVG(opt);
+    }
+
+    function randomize() {
+        const c = ["#FF7F00", "#E70003", "#0055A4", "#000000", "#FFFFFF", "#2ECC71"];
+        document.getElementById('colorA').value = c[Math.floor(Math.random()*c.length)];
+        document.getElementById('colorB').value = c[Math.floor(Math.random()*c.length)];
+        ['expression', 'eyeScale', 'eyeState', 'eyebrows'].forEach(id => {
+            const sel = document.getElementById(id);
+            sel.selectedIndex = Math.floor(Math.random() * sel.options.length);
+        });
+        update();
+    }
+
+    function downloadSVG() {
+        const blob = new Blob([document.getElementById('viewer').innerHTML], {type: "image/svg+xml"});
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob); link.download = "yanug_v3-4.svg"; link.click();
+    }
+
+    function downloadPNG() {
+        const svgElement = document.getElementById('viewer').querySelector('svg');
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const canvas = document.createElement('canvas');
+        canvas.width = 512; canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+        const url = URL.createObjectURL(svgBlob);
+
+        img.onload = function() {
+            ctx.clearRect(0, 0, 512, 512);
+            ctx.drawImage(img, 0, 0);
+            const pngUrl = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = pngUrl; link.download = "yanug_v3-4.png"; link.click();
+            URL.revokeObjectURL(url);
+        };
+        img.src = url;
+    }
+
+    function copyCode() {
+        navigator.clipboard.writeText(document.getElementById('viewer').innerHTML);
+        alert("Code copié.");
+    }
+
+    document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', update));
+    update();
+</script>
+</body>
+</html>

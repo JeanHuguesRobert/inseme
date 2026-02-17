@@ -38,25 +38,42 @@ const projectRoot = path.resolve(path.dirname(__dirname));
 // CLI Flags
 const SHOW_EXTENSIONS = process.argv.includes("--show-extensions");
 const ERRORS_ONLY = process.argv.includes("--errors-only");
-const FIX_PATHS =
-  process.argv.includes("--fix-paths") || process.argv.includes("--fix-all");
+const FIX_PATHS = process.argv.includes("--fix-paths") || process.argv.includes("--fix-all");
 const FIX_EXTENSIONS =
-  process.argv.includes("--fix-extensions") ||
-  process.argv.includes("--fix-all");
+  process.argv.includes("--fix-extensions") || process.argv.includes("--fix-all");
 const REQUIRE_EXTENSIONS =
-  process.argv.includes("--require-extensions") ||
-  process.argv.includes("--fix-all");
-const DEDUPLICATE =
-  process.argv.includes("--deduplicate") || process.argv.includes("--fix-all");
+  process.argv.includes("--require-extensions") || process.argv.includes("--fix-all");
+const DEDUPLICATE = process.argv.includes("--deduplicate") || process.argv.includes("--fix-all");
 const RENAME_PAGES = process.argv.includes("--rename-pages");
 const RENAME_COMPONENTS = process.argv.includes("--rename-components");
 const ANALYZE_EXPORTS =
   process.argv.includes("--analyze-exports") ||
   process.argv.find((arg) => arg.startsWith("--find-symbol="));
 const SHOW_UNUSED = process.argv.includes("--show-unused");
-const FIND_SYMBOL = process.argv
-  .find((arg) => arg.startsWith("--find-symbol="))
-  ?.split("=")[1];
+const FIND_SYMBOL = process.argv.find((arg) => arg.startsWith("--find-symbol="))?.split("=")[1];
+
+// Safety and output control
+// By default the script runs in DRY mode: it reports suggested fixes but does not modify files.
+// Use --apply to actually write changes, --backup to keep a .check-imports.bak copy of files being modified,
+// and --json=path to emit a machine-readable report (useful for CI).
+const APPLY_CHANGES = process.argv.includes("--apply");
+const BACKUP = process.argv.includes("--backup");
+const JSON_OUTPUT =
+  (process.argv.find((arg) => arg.startsWith("--json=")) || "").split("=")[1] || null;
+const FORCE = process.argv.includes("--force");
+const CONCURRENCY =
+  parseInt(
+    (process.argv.find((arg) => arg.startsWith("--concurrency=")) || "--concurrency=4").split(
+      "="
+    )[1],
+    10
+  ) || 4;
+
+// Tracking planned vs applied changes for reporting
+const plannedFixes = [];
+const appliedFixes = [];
+const plannedDeletes = [];
+const appliedDeletes = [];
 
 // Basenames that are expected to be duplicated across packages/apps and should be ignored in reports/suggestions
 const IGNORED_DUPLICATE_BASENAMES = new Set([
@@ -99,7 +116,7 @@ function colorize(text, color) {
 
 // Regex for imports and exports (multiline support)
 const IMPORT_REGEX_MULTILINE =
-  /(?:import|export)\s+(?:.*?from\s+)?["'](.*?)[""]|import\s*\(["'](.*?)["']\)|component\s*:\s*["'](.*?)["']/gs;
+  /(?:import|export)\s+(?:.*?from\s+)?["'](.*?)["']|import\s*\(["'](.*?)["']\)|component\s*:\s*["'](.*?)["']/gs;
 
 // Regex for named exports: export const/let/var/function/class Name
 const NAMED_EXPORT_REGEX =
@@ -152,26 +169,18 @@ function resolveWorkspacePath(importPath) {
  */
 function getTrackedFiles() {
   try {
-    const output = execSync(
-      "git ls-files --cached --others --exclude-standard",
-      {
-        cwd: projectRoot,
-        encoding: "utf8",
-        maxBuffer: 10 * 1024 * 1024,
-      }
-    );
+    const output = execSync("git ls-files --cached --others --exclude-standard", {
+      cwd: projectRoot,
+      encoding: "utf8",
+      maxBuffer: 10 * 1024 * 1024,
+    });
     return output
       .trim()
       .split("\n")
       .map((f) => path.join(projectRoot, f))
       .filter((f) => f.endsWith(".js") || f.endsWith(".jsx"));
   } catch (error) {
-    console.error(
-      colorize(
-        "Error running git ls-files. Falling back to manual crawl...",
-        "red"
-      )
-    );
+    console.error(colorize("Error running git ls-files. Falling back to manual crawl...", "red"));
     return [];
   }
 }
@@ -247,10 +256,7 @@ async function getFileHash(filePath) {
  */
 async function findNearestPackageJson(filePath) {
   let currentDir = path.dirname(filePath);
-  while (
-    currentDir !== projectRoot &&
-    currentDir !== path.dirname(projectRoot)
-  ) {
+  while (currentDir !== projectRoot && currentDir !== path.dirname(projectRoot)) {
     const pkgPath = path.join(currentDir, "package.json");
     if (existsSync(pkgPath)) {
       try {
@@ -274,14 +280,9 @@ async function isProxyFile(filePath) {
     const lines = content
       .split("\n")
       .map((l) => l.trim())
-      .filter(
-        (l) => l.length > 0 && !l.startsWith("//") && !l.startsWith("/*")
-      );
+      .filter((l) => l.length > 0 && !l.startsWith("//") && !l.startsWith("/*"));
     // A proxy file usually has only 1-2 lines like "export { ... } from '...';"
-    return (
-      lines.length <= 2 &&
-      lines.every((l) => l.startsWith("export") && l.includes("from"))
-    );
+    return lines.length <= 2 && lines.every((l) => l.startsWith("export") && l.includes("from"));
   } catch {
     return false;
   }
@@ -292,9 +293,7 @@ async function isProxyFile(filePath) {
  */
 async function buildFileIndex(allFiles) {
   if (!ERRORS_ONLY) {
-    console.log(
-      colorize(`Building file index for ${allFiles.length} files...`, "cyan")
-    );
+    console.log(colorize(`Building file index for ${allFiles.length} files...`, "cyan"));
   }
 
   for (const filePath of allFiles) {
@@ -498,6 +497,8 @@ async function checkImportsInFile(filePath) {
   let hasChanges = false;
   let match;
   IMPORT_REGEX_MULTILINE.lastIndex = 0;
+  let lastLineNumber = 1;
+  let lastImportPath = null;
 
   while ((match = IMPORT_REGEX_MULTILINE.exec(fileContent)) !== null) {
     if (isInsideComment(match.index)) continue;
@@ -508,14 +509,10 @@ async function checkImportsInFile(filePath) {
 
     const lineIndex = fileContent.substring(0, match.index).split("\n").length;
     const lineNumber = lineIndex > 0 ? lineIndex : 1;
+    lastLineNumber = lineNumber;
 
     // Ignore assets
-    if (
-      importPath.match(
-        /\.(css|scss|less|png|svg|jpg|jpeg|gif|webp|woff2?|ttf|eot)$/i
-      )
-    )
-      continue;
+    if (importPath.match(/\.(css|scss|less|png|svg|jpg|jpeg|gif|webp|woff2?|ttf|eot)$/i)) continue;
 
     const fileDir = path.dirname(filePath);
     let resolvedPath;
@@ -571,26 +568,15 @@ async function checkImportsInFile(filePath) {
               const pkgData = pkgInfo.data;
               if (!pkgData.dependencies) pkgData.dependencies = {};
               pkgData.dependencies[packageName] = "*";
-              await fs.writeFile(
-                pkgInfo.path,
-                JSON.stringify(pkgData, null, 2) + "\n"
-              );
+              await fs.writeFile(pkgInfo.path, JSON.stringify(pkgData, null, 2) + "\n");
               console.log(
                 colorize(
-                  `  [FIX] Added ${packageName} to ${path.relative(
-                    projectRoot,
-                    pkgInfo.path
-                  )}`,
+                  `  [FIX] Added ${packageName} to ${path.relative(projectRoot, pkgInfo.path)}`,
                   "green"
                 )
               );
             } catch (err) {
-              console.error(
-                colorize(
-                  `Failed to update ${pkgInfo.path}: ${err.message}`,
-                  "red"
-                )
-              );
+              console.error(colorize(`Failed to update ${pkgInfo.path}: ${err.message}`, "red"));
             }
           }
         }
@@ -604,12 +590,10 @@ async function checkImportsInFile(filePath) {
       (filePath.includes("netlify") && filePath.includes("functions")) ||
       filePath.includes("/edge/") ||
       filePath.includes("\\edge\\");
-    const isSharedPackage =
-      filePath.includes("packages") && !filePath.includes("ui");
+    const isSharedPackage = filePath.includes("packages") && !filePath.includes("ui");
 
     // Auto-enable REQUIRE_EXTENSIONS only for JS in Edge Functions or Shared Packages
-    const shouldRequireJsExtension =
-      isEdgeFunction || isSharedPackage || REQUIRE_EXTENSIONS;
+    const shouldRequireJsExtension = isEdgeFunction || isSharedPackage || REQUIRE_EXTENSIONS;
 
     if (hasJsxExtension) {
       // NEVER keep .jsx extensions, Vite doesn't want them
@@ -624,11 +608,9 @@ async function checkImportsInFile(filePath) {
       if (newContent.includes(fullMatch)) {
         newContent = newContent.replace(fullMatch, newMatch);
         hasChanges = true;
+        lastImportPath = importPath;
         console.log(
-          colorize(
-            `  [FIX] Removed .jsx extension: ${importPath} -> ${suggested}`,
-            "green"
-          )
+          colorize(`  [FIX] Removed .jsx extension: ${importPath} -> ${suggested}`, "green")
         );
       }
     } else if (hasJsExtension && !shouldRequireJsExtension && FIX_EXTENSIONS) {
@@ -644,18 +626,12 @@ async function checkImportsInFile(filePath) {
       if (newContent.includes(fullMatch)) {
         newContent = newContent.replace(fullMatch, newMatch);
         hasChanges = true;
+        lastImportPath = importPath;
         console.log(
-          colorize(
-            `  [FIX] Removed .js extension: ${importPath} -> ${suggested}`,
-            "green"
-          )
+          colorize(`  [FIX] Removed .js extension: ${importPath} -> ${suggested}`, "green")
         );
       }
-    } else if (
-      !hasJsExtension &&
-      !hasJsxExtension &&
-      shouldRequireJsExtension
-    ) {
+    } else if (!hasJsExtension && !hasJsxExtension && shouldRequireJsExtension) {
       // Add .js ONLY if it's a .js file and we are in a backend context
       if (existsSync(resolvedPath + ".js")) {
         const suggested = importPath + ".js";
@@ -669,11 +645,9 @@ async function checkImportsInFile(filePath) {
         if (newContent.includes(fullMatch)) {
           newContent = newContent.replace(fullMatch, newMatch);
           hasChanges = true;
+          lastImportPath = importPath;
           console.log(
-            colorize(
-              `  [FIX] Added .js extension: ${importPath} -> ${suggested}`,
-              "green"
-            )
+            colorize(`  [FIX] Added .js extension: ${importPath} -> ${suggested}`, "green")
           );
         }
       } else if (existsSync(path.join(resolvedPath, "index.js"))) {
@@ -688,11 +662,9 @@ async function checkImportsInFile(filePath) {
         if (newContent.includes(fullMatch)) {
           newContent = newContent.replace(fullMatch, newMatch);
           hasChanges = true;
+          lastImportPath = importPath;
           console.log(
-            colorize(
-              `  [FIX] Added .js extension: ${importPath} -> ${suggested}`,
-              "green"
-            )
+            colorize(`  [FIX] Added .js extension: ${importPath} -> ${suggested}`, "green")
           );
         }
       }
@@ -705,12 +677,8 @@ async function checkImportsInFile(filePath) {
     let potentialTargetFiles = [];
 
     if (path.extname(targetFileName) === "") {
-      potentialTargetFiles.push(
-        ...findTargetFilesFromIndex(targetFileName + ".js")
-      );
-      potentialTargetFiles.push(
-        ...findTargetFilesFromIndex(targetFileName + ".jsx")
-      );
+      potentialTargetFiles.push(...findTargetFilesFromIndex(targetFileName + ".js"));
+      potentialTargetFiles.push(...findTargetFilesFromIndex(targetFileName + ".jsx"));
     } else {
       potentialTargetFiles.push(...findTargetFilesFromIndex(targetFileName));
     }
@@ -786,10 +754,8 @@ async function checkImportsInFile(filePath) {
             const originalBase = path.basename(importPath).split(".")[0];
             const aBase = path.basename(a.targetFile).split(".")[0];
             const bBase = path.basename(b.targetFile).split(".")[0];
-            if (aBase.includes(originalBase) && !bBase.includes(originalBase))
-              return -1;
-            if (bBase.includes(originalBase) && !aBase.includes(originalBase))
-              return 1;
+            if (aBase.includes(originalBase) && !bBase.includes(originalBase)) return -1;
+            if (bBase.includes(originalBase) && !aBase.includes(originalBase)) return 1;
             return a.correctPath.length - b.correctPath.length;
           });
           suggestedPath = sortedFixes[0].correctPath;
@@ -808,13 +774,9 @@ async function checkImportsInFile(filePath) {
         if (newContent.includes(fullMatch)) {
           newContent = newContent.replace(fullMatch, newMatch);
           hasChanges = true;
+          lastImportPath = importPath;
           if (!ERRORS_ONLY) {
-            console.log(
-              colorize(
-                `  [FIX] Path: ${importPath} -> ${suggestedWithoutExt}`,
-                "green"
-              )
-            );
+            console.log(colorize(`  [FIX] Path: ${importPath} -> ${suggestedWithoutExt}`, "green"));
           }
         }
       }
@@ -822,18 +784,41 @@ async function checkImportsInFile(filePath) {
   }
 
   if (hasChanges && (FIX_EXTENSIONS || FIX_PATHS)) {
-    try {
-      await fs.writeFile(filePath, newContent, "utf8");
-      if (!ERRORS_ONLY) {
-        let fixedMsg = "Fixed";
-        if (FIX_EXTENSIONS) fixedMsg += " extensions";
-        if (FIX_PATHS) fixedMsg += (FIX_EXTENSIONS ? " and" : "") + " paths";
-        console.log(colorize(`${fixedMsg} in ${filePath}`, "green"));
+    // Record planned fix (dry-run)
+    plannedFixes.push({
+      file: filePath,
+      line: lastLineNumber,
+      importPath: lastImportPath,
+      suggested: (lastImportPath || "").replace(/\.jsx?$/, ""),
+    });
+
+    if (APPLY_CHANGES) {
+      try {
+        // Backup original file when requested
+        if (BACKUP) {
+          await fs.copyFile(filePath, filePath + ".check-imports.bak");
+        }
+        await fs.writeFile(filePath, newContent, "utf8");
+        appliedFixes.push({
+          file: filePath,
+          line: lastLineNumber,
+          importPath: lastImportPath,
+          suggested: (lastImportPath || "").replace(/\.jsx?$/, ""),
+        });
+        if (!ERRORS_ONLY) {
+          let fixedMsg = "Fixed";
+          if (FIX_EXTENSIONS) fixedMsg += " extensions";
+          if (FIX_PATHS) fixedMsg += (FIX_EXTENSIONS ? " and" : "") + " paths";
+          console.log(colorize(`${fixedMsg} in ${filePath}`, "green"));
+        }
+      } catch (err) {
+        console.error(colorize(`Error fixing ${filePath}: ${err.message}`, "red"));
       }
-    } catch (err) {
-      console.error(
-        colorize(`Error fixing ${filePath}: ${err.message}`, "red")
-      );
+    } else {
+      // Dry-run: report planned change without applying
+      if (!ERRORS_ONLY) {
+        console.log(colorize(`  [DRY] Would apply fixes to: ${filePath}`, "yellow"));
+      }
     }
   }
 
@@ -846,6 +831,20 @@ async function main() {
     console.log(colorize("       Monorepo Import Checker", "cyan"));
     console.log(colorize("========================================", "cyan"));
     console.log("");
+    // Mode info
+    console.log(
+      colorize(
+        APPLY_CHANGES
+          ? "Mode: APPLYING changes (--apply)"
+          : "Mode: DRY RUN (no changes). Use --apply to apply fixes.",
+        "cyan"
+      )
+    );
+    if (BACKUP)
+      console.log(
+        colorize("Backups enabled (--backup) - .check-imports.bak files will be created.", "cyan")
+      );
+    if (JSON_OUTPUT) console.log(colorize(`JSON output enabled: ${JSON_OUTPUT}`, "cyan"));
   }
 
   const allFiles = await getFilesToScan();
@@ -885,9 +884,7 @@ async function main() {
     }
 
     if (renameCount > 0) {
-      console.log(
-        colorize(`\nRenamed ${renameCount} files. Rebuilding index...`, "green")
-      );
+      console.log(colorize(`\nRenamed ${renameCount} files. Rebuilding index...`, "green"));
       // Re-scan files and rebuild index
       const updatedFiles = await getFilesToScan();
       allFilesIndex.clear();
@@ -907,20 +904,15 @@ async function main() {
     for (const [basename, paths] of allFilesIndex.entries()) {
       if (paths.length > 1 && !IGNORED_DUPLICATE_BASENAMES.has(basename)) {
         for (const filePath of paths) {
-          const relPath = path
-            .relative(projectRoot, filePath)
-            .replace(/\\/g, "/");
+          const relPath = path.relative(projectRoot, filePath).replace(/\\/g, "/");
           const parts = relPath.split("/");
 
           // Only rename if it's in a package/brique to avoid breaking app structure unnecessarily
           if (parts[0] === "packages") {
             const packageName = parts[1];
             // Remove 'brique-' prefix for cleaner names
-            const prefix = packageName
-              .replace("brique-", "")
-              .replace("cop-", "");
-            const capitalizedPrefix =
-              prefix.charAt(0).toUpperCase() + prefix.slice(1);
+            const prefix = packageName.replace("brique-", "").replace("cop-", "");
+            const capitalizedPrefix = prefix.charAt(0).toUpperCase() + prefix.slice(1);
 
             const ext = path.extname(basename);
             const nameWithoutExt = path.basename(basename, ext);
@@ -932,9 +924,7 @@ async function main() {
             const newPath = path.join(path.dirname(filePath), newBasename);
 
             if (!existsSync(newPath)) {
-              console.log(
-                colorize(`  [RENAME] ${relPath} -> ${newBasename}`, "green")
-              );
+              console.log(colorize(`  [RENAME] ${relPath} -> ${newBasename}`, "green"));
               await fs.rename(filePath, newPath);
               renameCount++;
             }
@@ -944,12 +934,7 @@ async function main() {
     }
 
     if (renameCount > 0) {
-      console.log(
-        colorize(
-          `\nRenamed ${renameCount} components. Rebuilding index...`,
-          "green"
-        )
-      );
+      console.log(colorize(`\nRenamed ${renameCount} components. Rebuilding index...`, "green"));
       // Re-scan files and rebuild index
       const updatedFiles = await getFilesToScan();
       allFilesIndex.clear();
@@ -996,9 +981,22 @@ async function main() {
             "red"
           )
         );
-        await fs.unlink(p);
-        redirects.set(p, canonical);
-        deleteCount++;
+        // Record planned delete
+        plannedDeletes.push({ file: p, canonical });
+
+        if (APPLY_CHANGES) {
+          try {
+            if (BACKUP) {
+              await fs.copyFile(p, p + ".check-imports.bak");
+            }
+            await fs.unlink(p);
+            appliedDeletes.push({ file: p, canonical });
+            redirects.set(p, canonical);
+            deleteCount++;
+          } catch (err) {
+            console.error(colorize(`Failed to delete ${p}: ${err.message}`, "red"));
+          }
+        }
       }
     }
 
@@ -1021,9 +1019,7 @@ async function main() {
 
   let allFixableImports = [];
   if (!ERRORS_ONLY) {
-    console.log(
-      colorize(`Scanning ${allFiles.length} files for imports...`, "cyan")
-    );
+    console.log(colorize(`Scanning ${allFiles.length} files for imports...`, "cyan"));
   }
 
   for (const file of allFiles) {
@@ -1032,9 +1028,7 @@ async function main() {
   }
 
   if (SHOW_UNUSED && ANALYZE_EXPORTS) {
-    console.log(
-      colorize("\n--- Dead Code Analysis (Unused Exports) ---", "yellow")
-    );
+    console.log(colorize("\n--- Dead Code Analysis (Unused Exports) ---", "yellow"));
     let unusedCount = 0;
     for (const [filePath, data] of exportsMap.entries()) {
       const relPath = path.relative(projectRoot, filePath);
@@ -1058,9 +1052,7 @@ async function main() {
     if (unusedCount === 0) {
       console.log(colorize("✅ No unused named exports found!", "green"));
     } else {
-      console.log(
-        colorize(`\nFound ${unusedCount} potentially unused exports.`, "yellow")
-      );
+      console.log(colorize(`\nFound ${unusedCount} potentially unused exports.`, "yellow"));
     }
   }
 
@@ -1088,17 +1080,13 @@ async function main() {
     if (collisionCount === 0) {
       console.log(colorize("✅ No export name collisions found.", "green"));
     } else {
-      console.log(
-        colorize(`\nFound ${collisionCount} export name collisions.`, "yellow")
-      );
+      console.log(colorize(`\nFound ${collisionCount} export name collisions.`, "yellow"));
     }
   }
 
   // --- NEW: Symbol Lookup ---
   if (FIND_SYMBOL) {
-    console.log(
-      colorize(`\n--- Symbol Lookup: "${FIND_SYMBOL}" ---`, "yellow")
-    );
+    console.log(colorize(`\n--- Symbol Lookup: "${FIND_SYMBOL}" ---`, "yellow"));
 
     // 1. Find definitions
     const definitions = [];
@@ -1135,21 +1123,15 @@ async function main() {
   }
 
   if (nonExistentImportWarnings.length > 0) {
-    console.log(
-      colorize("\n🚨 MAJOR ERRORS: Imports to non-existent files:\n", "red")
-    );
+    console.log(colorize("\n🚨 MAJOR ERRORS: Imports to non-existent files:\n", "red"));
     nonExistentImportWarnings.forEach((warning) => {
       const relPath = path.relative(projectRoot, warning.file);
-      console.log(
-        `${colorize(relPath, "gray")}:${colorize(warning.line, "yellow")}`
-      );
+      console.log(`${colorize(relPath, "gray")}:${colorize(warning.line, "yellow")}`);
       console.log(`  Import: "${colorize(warning.badImport, "red")}"`);
       console.log(`  ${warning.message}\n`);
     });
   } else if (!ERRORS_ONLY) {
-    console.log(
-      colorize("\n✅ No imports to missing files detected.", "green")
-    );
+    console.log(colorize("\n✅ No imports to missing files detected.", "green"));
   }
 
   if (ERRORS_ONLY) {
@@ -1170,9 +1152,7 @@ async function main() {
       );
       extensionImportWarnings.forEach((warning) => {
         const relPath = path.relative(projectRoot, warning.file);
-        console.log(
-          `${colorize(relPath, "gray")}:${colorize(warning.line, "yellow")}`
-        );
+        console.log(`${colorize(relPath, "gray")}:${colorize(warning.line, "yellow")}`);
         console.log(`  Current: "${colorize(warning.importPath, "red")}"`);
         console.log(`  Suggested: "${colorize(warning.suggested, "green")}"\n`);
       });
@@ -1187,25 +1167,16 @@ async function main() {
   }
 
   if (allFixableImports.length > 0) {
-    console.log(
-      colorize(
-        "\n⚠️ WARNINGS: Broken paths (but target exists elsewhere):\n",
-        "yellow"
-      )
-    );
+    console.log(colorize("\n⚠️ WARNINGS: Broken paths (but target exists elsewhere):\n", "yellow"));
     allFixableImports.forEach((result) => {
       const relPath = path.relative(projectRoot, result.file);
-      console.log(
-        `${colorize(relPath, "gray")}:${colorize(result.line, "yellow")}`
-      );
+      console.log(`${colorize(relPath, "gray")}:${colorize(result.line, "yellow")}`);
       console.log(`  Current: "${colorize(result.badImport, "red")}"`);
       result.fixes.forEach((fix, index) => {
         const targetRel = path.relative(projectRoot, fix.targetFile);
         console.log(`  Suggestion ${index + 1}:`);
         console.log(`    File found at: ${colorize(targetRel, "cyan")}`);
-        console.log(
-          `    Suggested path: "${colorize(fix.correctPath, "green")}"`
-        );
+        console.log(`    Suggested path: "${colorize(fix.correctPath, "green")}"`);
       });
       console.log("");
     });
@@ -1214,9 +1185,7 @@ async function main() {
   }
 
   // --- NEW: Unused Files Detection ---
-  const unusedFiles = [...scannedFiles].filter(
-    (f) => !importedFiles.has(path.resolve(f))
-  );
+  const unusedFiles = [...scannedFiles].filter((f) => !importedFiles.has(path.resolve(f)));
   // Filter out entry points and standalone files
   const filteredUnused = unusedFiles.filter((f) => {
     const rel = path.relative(projectRoot, f).replace(/\\/g, "/");
@@ -1242,20 +1211,12 @@ async function main() {
 
   if (filteredUnused.length > 0) {
     console.log(
-      colorize(
-        "\n🔍 UNUSED FILES: Files that are never imported (potential orphans):\n",
-        "magenta"
-      )
+      colorize("\n🔍 UNUSED FILES: Files that are never imported (potential orphans):\n", "magenta")
     );
     filteredUnused.forEach((file) => {
       console.log(`  - ${colorize(path.relative(projectRoot, file), "gray")}`);
     });
-    console.log(
-      colorize(
-        `\n  Total potential orphans: ${filteredUnused.length}`,
-        "magenta"
-      )
-    );
+    console.log(colorize(`\n  Total potential orphans: ${filteredUnused.length}`, "magenta"));
   }
 
   if (workspaceDepWarnings.length > 0) {
@@ -1285,10 +1246,7 @@ async function main() {
   // --- NEW: Exact Duplicates Report ---
   if (identicalFilesGroups.length > 0) {
     console.log(
-      colorize(
-        "\n👯 EXACT DUPLICATES: Files with same name AND identical content:\n",
-        "red"
-      )
+      colorize("\n👯 EXACT DUPLICATES: Files with same name AND identical content:\n", "red")
     );
     identicalFilesGroups.forEach((group) => {
       console.log(
@@ -1317,12 +1275,8 @@ async function main() {
     );
     for (const name of simpleDuplicates) {
       const paths = allFilesIndex.get(name);
-      console.log(
-        `  ${colorize(name, "cyan")} exists in ${paths.length} locations:`
-      );
-      paths.forEach((p) =>
-        console.log(`    - ${colorize(path.relative(projectRoot, p), "gray")}`)
-      );
+      console.log(`  ${colorize(name, "cyan")} exists in ${paths.length} locations:`);
+      paths.forEach((p) => console.log(`    - ${colorize(path.relative(projectRoot, p), "gray")}`));
     }
   }
 
@@ -1333,6 +1287,38 @@ async function main() {
     allFixableImports.length +
     extensionImportWarnings.length +
     identicalFilesGroups.length;
+
+  // Emit a JSON report when requested (useful for CI integration)
+  if (JSON_OUTPUT) {
+    const report = {
+      timestamp: new Date().toISOString(),
+      totals: {
+        totalIssues,
+        majorErrors: nonExistentImportWarnings.length,
+        fixablePaths: allFixableImports.length,
+        extensionWarnings: extensionImportWarnings.length,
+        exactDuplicates: identicalFilesGroups.length,
+      },
+      details: {
+        nonExistentImportWarnings,
+        extensionImportWarnings,
+        allFixableImports,
+        identicalFilesGroups,
+        plannedFixes,
+        appliedFixes,
+        plannedDeletes,
+        appliedDeletes,
+        filteredUnused: filteredUnused || [],
+      },
+    };
+    try {
+      await fs.writeFile(JSON_OUTPUT, JSON.stringify(report, null, 2), "utf8");
+      console.log(colorize(`Wrote JSON report to ${JSON_OUTPUT}`, "green"));
+    } catch (err) {
+      console.error(colorize(`Failed to write JSON report: ${err.message}`, "red"));
+    }
+  }
+
   if (totalIssues === 0) {
     console.log(colorize("🎉 All imports are valid!", "green"));
   } else {
@@ -1345,6 +1331,4 @@ async function main() {
   console.log(colorize("========================================", "cyan"));
 }
 
-main().catch((err) =>
-  console.error(colorize(`Script error: ${err.message}`, "red"))
-);
+main().catch((err) => console.error(colorize(`Script error: ${err.stack || err.message}`, "red")));

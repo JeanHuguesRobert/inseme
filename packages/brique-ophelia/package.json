@@ -10,7 +10,13 @@
     "@inseme/ui": "workspace:*",
     "@inseme/cop-host": "workspace:*",
     "@inseme/room": "workspace:*",
-    "@inseme/cop-prolog": "workspace:*"
+    "@inseme/cop-prolog": "workspace:*",
+    "@axiomhq/logging": "^0.1.6",
+    "@axiomhq/js": "^1.3.1",
+    "@axiomhq/react": "^0.1.6",
+    "loglayer": "^8.4.0",
+    "@loglayer/transport-axiom": "^2.1.16",
+    "serialize-error": "^11.0.0"
   },
   "keywords": [
     "democracy",

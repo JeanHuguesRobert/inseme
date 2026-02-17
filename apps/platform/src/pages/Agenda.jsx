@@ -60,6 +60,7 @@ export default function Agenda() {
   const [locationModalPost, setLocationModalPost] = useState(null);
   const [showFullHistory, setShowFullHistory] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
+  const [selectedGazette, setSelectedGazette] = useState(null);
   const HISTORY_PAGE_SIZE = 6;
 
   useEffect(() => {

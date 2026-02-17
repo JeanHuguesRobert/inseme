@@ -1,8 +1,6 @@
 import { getSupabase } from "@inseme/cop-host";
 import { appendOrMergeLastModifiedBy } from "../../../cop-host/src/lib/socialMetadata.js";
-
-// Réexport de validatePetitionUrl depuis le module centralisé pour compatibilité
-export { validatePetitionUrl } from "./petitions";
+import { validatePetitionUrl } from "./petitions";
 
 export async function createPropositionWithTags({
   userId,

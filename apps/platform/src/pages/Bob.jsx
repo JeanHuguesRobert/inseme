@@ -9,7 +9,7 @@ function App() {
     <div className="App">
       {
         // jhr
-        false && currentUser?.is_admin ? (
+        currentUser?.is_admin ? (
           "Pour l'instant la modération est manuelle, via l'UI de Supabase"
         ) : (
           <ChatWindow useV2={true} user={currentUser} />

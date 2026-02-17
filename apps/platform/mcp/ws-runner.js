@@ -4,6 +4,7 @@ import createBus from "./cop/bus.js";
 import store from "./cop/supabaseStore.js";
 import opheliaAgent from "./agents/opheliaAgent.js";
 import ragAgent from "./agents/ragAgent.js";
+import process from "node:process";
 
 let running = true;
 let subs = [];
@@ -11,25 +12,25 @@ let processed = 0;
 let failed = 0;
 let lastHeartbeat = new Date().toISOString();
 let workers = [];
-
 let readClient = null;
 let bus = null;
+
 async function init() {
   // Allow switching bus implementation via env var COP_BUS
-  bus = createBus({ type: process.env.COP_BUS || "supabase" });
+  bus = createBus({ type: import.meta.env?.COP_BUS || "supabase" });
   await bus.initBus();
   await store.initStore();
   // local read client for subscription wildcard
   readClient = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY ||
-      process.env.VITE_SUPABASE_ANON_KEY ||
-      process.env.SUPABASE_SERVICE_KEY
+    import.meta.env?.SUPABASE_URL,
+    import.meta.env?.SUPABASE_ANON_KEY ||
+      import.meta.env?.SUPABASE_SERVICE_KEY ||
+      import.meta.env?.VITE_SUPABASE_ANON_KEY
   );
 }
 
 function simpleMetrics() {
-  return `# HELP cop_ws_runner_processed Tasks processed\n# TYPE cop_ws_runner_processed counter\ncop_ws_runner_processed ${processed}\n# HELP cop_ws_runner_failed Task process failures\n# TYPE cop_ws_runner_failed counter\ncop_ws_runner_failed ${failed}\n# HELP cop_ws_runner_last_heartbeat Last heartbeat UNIX timestamp\n# TYPE cop_ws_runner_last_heartbeat gauge\ncop_ws_runner_last_heartbeat ${Math.floor(new Date(lastHeartbeat).getTime() / 1000)}\n`;
+  return `# HELP cop_ws_runner_processed Tasks processed\n# TYPE cop_ws_runner_processed counter\n# HELP cop_ws_runner_failed Task process failures\n# HELP cop_ws_runner_last_heartbeat Last heartbeat UNIX timestamp\n# TYPE cop_ws_runner_last_heartbeat gauge\ncop_ws_runner_last_heartbeat ${Math.floor(new Date(lastHeartbeat).getTime() / 1000)}\n`;
 }
 
 async function subscribeAllTopics() {
@@ -82,7 +83,9 @@ async function subscribeAllTopics() {
 
 async function workerIteration(workerId) {
   // This worker iteration claims a single task and processes a single step
-  const wid = workerId || `ws-runner-${process.pid}-${Math.random().toString(36).slice(2, 6)}`;
+  const wid =
+    workerId ||
+    `ws-runner-${typeof process !== "undefined" && process.pid ? process.pid : "unknown"}-${Math.random().toString(36).slice(2, 6)}`;
   try {
     const task = await store.claimTask({ workerId: wid, leaseSeconds: 60 });
     if (!task) return false;
@@ -160,7 +163,7 @@ async function workerIteration(workerId) {
 
 async function workerLoop() {
   // This worker loops calling workerIteration while running
-  const workerId = `ws-runner-${process.pid}-${Math.random().toString(36).slice(2, 6)}`;
+  const workerId = `ws-runner-${typeof process !== "undefined" && process.pid ? process.pid : "unknown"}-${Math.random().toString(36).slice(2, 6)}`;
   while (running) {
     try {
       const task = await store.claimTask({ workerId, leaseSeconds: 60 });
@@ -245,7 +248,9 @@ async function workerLoop() {
 async function startWorkers(
   count = Math.max(
     1,
-    process.env.WS_RUNNER_CONCURRENCY ? parseInt(process.env.WS_RUNNER_CONCURRENCY, 10) : 2
+    typeof process !== "undefined" && process.env?.WS_RUNNER_CONCURRENCY
+      ? parseInt(process.env.WS_RUNNER_CONCURRENCY, 10)
+      : 2
   )
 ) {
   for (let i = 0; i < count; i++) {
@@ -268,7 +273,11 @@ async function startWorkers(
   }
 }
 
-function startHealthServer(port = process.env.WS_RUNNER_PORT || 8123) {
+function startHealthServer(
+  port = typeof process !== "undefined" && process.env?.WS_RUNNER_PORT
+    ? process.env.WS_RUNNER_PORT
+    : 8123
+) {
   const server = http.createServer((req, res) => {
     if (req.url === "/health") {
       res.writeHead(200, { "Content-Type": "text/plain" });
@@ -316,17 +325,13 @@ async function initRunner() {
 }
 
 export async function reclaimStaleLeases() {
-  try {
-    const runningTasks = await store.listTasks({ status: ["running"], limit: 200 });
-    const now = new Date();
-    for (const j of runningTasks) {
-      if (j.lease_expires_at && new Date(j.lease_expires_at) < now) {
-        console.log("reclaiming stale task lease", j.id);
-        await store.saveTask({ id: j.id, lease_expires_at: null, worker_id: null });
-      }
+  const runningTasks = await store.listTasks({ status: ["running"], limit: 200 });
+  const now = new Date();
+  for (const j of runningTasks) {
+    if (j.lease_expires_at && new Date(j.lease_expires_at) < now) {
+      console.log("reclaiming stale task lease", j.id);
+      await store.saveTask({ id: j.id, lease_expires_at: null, worker_id: null });
     }
-  } catch (e) {
-    throw e;
   }
 }
 
@@ -358,10 +363,14 @@ function gracefulShutdown(server) {
       // Attempt to clear leases for worker id so other workers can pick up
       // Best-effort: requests to clear task leases could go here using RPC
       console.log("WS Runner shutdown complete");
-      process.exit(0);
+      if (typeof process !== "undefined") {
+        process.exit(0);
+      }
     }
   );
 }
 
-process.on("SIGINT", () => gracefulShutdown());
-process.on("SIGTERM", () => gracefulShutdown());
+if (typeof process !== "undefined") {
+  process.on("SIGINT", () => gracefulShutdown());
+  process.on("SIGTERM", () => gracefulShutdown());
+}

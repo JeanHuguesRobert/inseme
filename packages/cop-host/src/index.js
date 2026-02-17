@@ -32,6 +32,8 @@ export {
 // Common libs
 export * from "./lib/formatDate.js";
 export * from "./lib/userDisplay.js";
+export * from "./lib/userUtils.js";
+export * from "./entities/User.js";
 export * from "./lib/permissions.js";
 export * from "./lib/socialMetadata.js";
 export * from "./lib/useStatusOperations.js";
@@ -51,13 +53,18 @@ export * from "./lib/postPredicates.js";
 export * from "./lib/postActions.js";
 
 // Contexts
-export * from "./contexts/Cop-hostCurrentUserContext.jsx";
+export * from "./contexts/Cop-hostCurrentUserContext";
+export * from "./contexts/CurrentUserContext.js";
 
 // Components
-export { default as CommentSection } from "./components/Cop-hostCommentSection.jsx";
-export { default as AuthModal } from "./components/Cop-hostAuthModal.jsx";
-export { default as FacebookShareButton } from "./components/FacebookShareButton.jsx";
-export { default as ShareMenu } from "./components/ShareMenu.jsx";
-export { Icon as default, Icon } from "./components/Cop-hostIcon.jsx";
-export { default as CommentForm } from "./components/CommentForm.jsx";
-export { default as ReactionPicker } from "./components/ReactionPicker.jsx";
+export { default as CommentSection } from "./components/Cop-hostCommentSection";
+export { default as AuthModal } from "./components/Cop-hostAuthModal";
+export { default as FacebookShareButton } from "./components/FacebookShareButton";
+export { default as ShareMenu } from "./components/ShareMenu";
+export { Icon as default, Icon } from "./components/Cop-hostIcon";
+export { default as CommentForm } from "./components/CommentForm";
+export { default as ReactionPicker } from "./components/ReactionPicker";
+
+// Logging infrastructure
+export * from "./lib/logging/node-logger.js";
+export * from "./lib/logging/edge-logger.js";

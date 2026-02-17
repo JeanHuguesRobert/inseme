@@ -251,12 +251,12 @@ function getSupabaseForVault() {
 // ============================================================================
 
 function looksLikeJwt(s) {
-  return /^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(s);
+  return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(s);
 }
 function looksLikeBase64ishLong(s) {
   if (s.length < 32) return false;
   if (/\s/.test(s)) return false;
-  return /^[A-Za-z0-9+/=_\-]+$/.test(s);
+  return /^[A-Za-z0-9+/=_-]+$/.test(s);
 }
 function looksLikeOpenAIKey(s) {
   return /^sk-[A-Za-z0-9]{16,}/.test(s) || /^rk-[A-Za-z0-9]{16,}/.test(s);

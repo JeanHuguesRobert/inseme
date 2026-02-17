@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { storage } from "@inseme/cop-host";
+import { sendAiMessage } from "../lib/messageBus.js";
 
 export function useReporting({
   roomMetadata,
@@ -55,34 +56,27 @@ export function useReporting({
       if (error) throw new Error(error);
 
       if (report) {
-        const { data: insertData, error: insertError } = await supabase
-          .from("inseme_messages")
-          .insert([
-            {
-              room_id: roomMetadata?.id || roomName,
-              user_id: null,
-              name: "Ophélia",
-              message: report,
-              type: "report",
-              metadata: { type: "report", generated: true },
-            },
-          ])
-          .select();
+        const messageData = await sendAiMessage(supabase, {
+          roomId: roomMetadata?.id || roomName,
+          message: report,
+          type: "report",
+          metadata: { type: "report", generated: true },
+        });
 
-        if (insertError) throw new Error(insertError.message);
-
-        if (insertData && insertData[0]) {
-          await fetch("/api/vector-search", {
+        if (messageData) {
+          const embedRes = await fetch("/api/vector-search", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               action: "embed",
               text: report,
-              id: insertData[0].id,
+              id: messageData.id,
             }),
           });
+          if (!embedRes.ok) {
+            console.warn("Vector embedding failed:", await embedRes.text());
+          }
         }
-
         await sendMessageRef.current?.("📜 Le Procès-Verbal a été généré et archivé.", {
           is_ai: true,
         });

@@ -9,16 +9,23 @@ export function getEnv(name) {
   // Deno (Netlify Edge, etc.)
   try {
     // Netlify first
-    if (typeof Netlify !== "undefined" && Netlify.env && typeof Netlify.env.get === "function") {
-      // eslint-disable-next-line no-undef
-      const v = Netlify.env.get(name);
+    if (
+      typeof globalThis !== "undefined" &&
+      globalThis.Netlify &&
+      globalThis.Netlify.env &&
+      typeof globalThis.Netlify.env.get === "function"
+    ) {
+      const v = globalThis.Netlify.env.get(name);
       if (typeof v === "string") return v;
     }
 
-    // eslint-disable-next-line no-undef
-    if (typeof Deno !== "undefined" && Deno.env && typeof Deno.env.get === "function") {
-      // eslint-disable-next-line no-undef
-      const v = Deno.env.get(name);
+    if (
+      typeof globalThis !== "undefined" &&
+      globalThis.Deno &&
+      globalThis.Deno.env &&
+      typeof globalThis.Deno.env.get === "function"
+    ) {
+      const v = globalThis.Deno.env.get(name);
       if (typeof v === "string") return v;
     }
   } catch (_err) {

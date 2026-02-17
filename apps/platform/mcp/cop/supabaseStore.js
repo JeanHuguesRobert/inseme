@@ -2,9 +2,11 @@ import { createClient } from "@supabase/supabase-js";
 
 let client = null;
 export async function initStore({ supabaseUrl, serviceKey } = {}) {
-  const url = supabaseUrl || process.env.SUPABASE_URL;
+  const url = supabaseUrl || import.meta.env?.SUPABASE_URL;
   const sKey =
-    serviceKey || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    serviceKey ||
+    import.meta.env?.SUPABASE_SERVICE_ROLE_KEY ||
+    import.meta.env?.SUPABASE_SERVICE_KEY;
   if (!url || !sKey)
     throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required for supabaseStore");
   client = createClient(url, sKey);
@@ -77,7 +79,6 @@ export async function listTasks({ status, limit = 100 } = {}) {
  */
 export async function claimTask({ workerId, leaseSeconds = 60 } = {}) {
   if (!client) await initStore();
-  const now = new Date().toISOString();
   const leaseUntil = new Date(Date.now() + leaseSeconds * 1000).toISOString();
   // Find a task with status pending and no lease or expired lease, and atomically claim it
   const { data, error } = await client.rpc("cop_claim_task", {

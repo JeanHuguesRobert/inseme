@@ -5,9 +5,10 @@ import { Button } from "@inseme/ui";
 import { MondrianBlock } from "@inseme/room";
 
 const SpecialEventModal = ({ isOpen, onClose, onAnnounce }) => {
-  if (!isOpen) return null;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+
+  if (!isOpen) return null;
 
   const handleAnnounce = () => {
     if (!title.trim()) return;

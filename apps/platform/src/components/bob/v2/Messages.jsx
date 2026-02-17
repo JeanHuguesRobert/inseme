@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MarkdownViewer } from "@inseme/ui";
 import { Icon } from "@inseme/cop-host";
+import { Lightbulb, ArrowsClockwise, Wrench, ChartBar } from "lucide-react";
 
 // Helper to extract all <Think>...</Think> blocks and regroup consecutive ones
 const extractThoughts = (text) => {
@@ -53,8 +54,6 @@ const ThoughtItem = ({ thought, isStreaming }) => {
   const [isOpen, setIsOpen] = useState(false);
   const contentRef = useRef(null);
 
-  if (!thought || !thought.text) return null;
-
   // Auto-open if it's the active streaming thought
   useEffect(() => {
     if (isStreaming && !thought.isComplete) {
@@ -62,8 +61,10 @@ const ThoughtItem = ({ thought, isStreaming }) => {
     }
   }, [isStreaming, thought.isComplete]);
 
+  if (!thought || !thought.text) return null;
+
   // Determine icon and label based on content
-  let Icon = Lightbulb;
+  let ThoughtIcon = Lightbulb;
   let label = "Réflexion";
   let type = "general";
 
@@ -83,19 +84,19 @@ const ThoughtItem = ({ thought, isStreaming }) => {
     lowerText.includes("metrics");
 
   if (hasProvider && hasTool) {
-    Icon = Lightbulb;
+    ThoughtIcon = Lightbulb;
     label = "Analyse et exécution";
     type = "general";
   } else if (hasProvider) {
-    Icon = ArrowsClockwise;
+    ThoughtIcon = ArrowsClockwise;
     label = "Configuration du modèle";
     type = "provider";
   } else if (hasTool) {
-    Icon = Wrench;
+    ThoughtIcon = Wrench;
     label = "Utilisation d'outils";
     type = "tool";
   } else if (hasMonitoring) {
-    Icon = ChartBar;
+    ThoughtIcon = ChartBar;
     label = "Détails techniques";
     type = "monitoring";
   }
@@ -111,7 +112,7 @@ const ThoughtItem = ({ thought, isStreaming }) => {
           <Icon name="chevron-right" size={14} />
         </span>
         <span className="thought-icon">
-          <Icon name={type} size={16} />
+          <ThoughtIcon size={16} />
         </span>
         <span className="thought-label">{label}</span>
         {!thought.isComplete && <span className="thought-pulse" />}

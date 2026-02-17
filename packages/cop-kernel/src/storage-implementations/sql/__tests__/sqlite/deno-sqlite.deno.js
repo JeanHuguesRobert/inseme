@@ -1,4 +1,6 @@
-import { assertEquals, assert } from "jsr:@std/assert";
+/* eslint-env deno */
+/* global Deno */
+import { assertEquals, assert } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { createDenoSqliteConnection } from "../../sqlite/deno-sqlite.js";
 
 // Mock the Worker and its interactions

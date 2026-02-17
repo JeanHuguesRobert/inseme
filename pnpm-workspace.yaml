@@ -3,12 +3,15 @@ packages:
   - packages/*
 
 onlyBuiltDependencies:
+  - '@parcel/watcher'
   - '@scarf/scarf'
   - core-js
   - esbuild
+  - netlify-cli
   - ngrok
   - onnxruntime-node
   - protobufjs
   - sharp
   - sqlite3
   - supabase
+  - unix-dgram

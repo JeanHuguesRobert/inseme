@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { useInsemeContext, MondrianBlock } from "@inseme/room";
+import React, { useState } from "react";
+import { TheBar } from "../singletons/index.js";
+import { useInsemeContext } from "@inseme/room";
 import { Music, Radio, Disc3, ExternalLink, Volume2 } from "lucide-react";
 
 export default function RadioView() {
-  const { roomMetadata, roomData } = useInsemeContext();
-  const musicState = roomMetadata?.settings?.music || {};
-  const barName = roomMetadata?.name || "Cyrnea";
+  const { _roomMetadata, _roomData } = useInsemeContext();
+
+  // Accès direct au singleton Bar
+  const barName = TheBar.name;
+  const barSlug = TheBar.slug;
+  const musicState = TheBar.settings.music || {};
 
   const [clientStatus, setClientStatus] = useState("Prêt à synchroniser");
 
@@ -121,7 +125,7 @@ export default function RadioView() {
         {/* Footer Info */}
         <div className="text-center">
           <a
-            href={`/app/${roomData?.slug || roomMetadata?.id}`}
+            href={`/app/${barSlug}`}
             className="text-xs font-bold uppercase underline hover:text-mondrian-blue"
           >
             Retour à l'app client

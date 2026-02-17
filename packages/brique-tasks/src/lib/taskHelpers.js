@@ -129,54 +129,61 @@ export async function executeTaskCommand(taskId, command, userId, commentId) {
     let updates = {};
 
     switch (command.type) {
-      case TASK_COMMANDS.STATUS:
+      case TASK_COMMANDS.STATUS: {
         const newStatus = normalizeStatusArg(command.args[0]);
         if (!isValidStatus(newStatus)) {
           return { success: false, error: `Statut invalide: ${command.args[0]}` };
         }
         updates = await handleStatusChange(task, newStatus, userId, commentId);
         break;
+      }
 
-      case TASK_COMMANDS.ASSIGN:
+      case TASK_COMMANDS.ASSIGN: {
         const assigneeUsername = command.args[0]?.replace("@", "");
         if (!assigneeUsername) {
           return { success: false, error: "Nom d'utilisateur requis" };
         }
         updates = await handleAssign(task, assigneeUsername, userId);
         break;
+      }
 
-      case TASK_COMMANDS.UNASSIGN:
+      case TASK_COMMANDS.UNASSIGN: {
         const unassigneeUsername = command.args[0]?.replace("@", "");
         updates = await handleUnassign(task, unassigneeUsername, userId);
         break;
+      }
 
-      case TASK_COMMANDS.PRIORITY:
+      case TASK_COMMANDS.PRIORITY: {
         const priority = normalizePriorityArg(command.args[0]);
         if (!isValidPriority(priority)) {
           return { success: false, error: `Priorité invalide: ${command.args[0]}` };
         }
         updates = { task_details: { ...taskDetails, priority } };
         break;
+      }
 
-      case TASK_COMMANDS.LABEL:
+      case TASK_COMMANDS.LABEL: {
         const label = command.args.join(" ");
         const currentLabels = taskDetails.labels || [];
         if (!currentLabels.includes(label)) {
           updates = { task_details: { ...taskDetails, labels: [...currentLabels, label] } };
         }
         break;
+      }
 
-      case TASK_COMMANDS.DUE:
+      case TASK_COMMANDS.DUE: {
         const dueDate = command.args[0];
         updates = { task_details: { ...taskDetails, due_date: dueDate } };
         break;
+      }
 
-      case TASK_COMMANDS.ESTIMATE:
+      case TASK_COMMANDS.ESTIMATE: {
         const estimate = command.args.join(" ");
         updates = { task_details: { ...taskDetails, estimate } };
         break;
+      }
 
-      case TASK_COMMANDS.BLOCK:
+      case TASK_COMMANDS.BLOCK: {
         const blockReason = command.args.join(" ");
         updates = {
           task_details: {
@@ -186,6 +193,7 @@ export async function executeTaskCommand(taskId, command, userId, commentId) {
           },
         };
         break;
+      }
 
       case TASK_COMMANDS.UNBLOCK:
         updates = {
@@ -327,8 +335,6 @@ async function handleUnassign(task, username, userId) {
     },
   };
 }
-
-
 
 /**
  * Normalize priority argument from French to internal format

@@ -427,7 +427,7 @@ export async function executeInternalTool(runtime, name, args, context = {}) {
         return `Erreur vectorielle: ${e.message}`;
       }
 
-    case "sql_query":
+    case "sql_query": {
       const isDebug = runtime.getConfig ? runtime.getConfig("DEBUG") === "true" : false;
       if (isDebug) console.log("[DEBUG][Tools] Executing sql_query:", args.query);
 
@@ -496,6 +496,7 @@ export async function executeInternalTool(runtime, name, args, context = {}) {
       }
 
       return `SQL Error: No suitable driver or ${lastError}`;
+    }
 
     case "get_user_context":
       return JSON.stringify({
@@ -686,8 +687,8 @@ export async function executeInternalTool(runtime, name, args, context = {}) {
     case "forget_knowledge":
       if (sql) {
         // Recherche floue par catégorie ou terme
-        await sql`DELETE FROM inseme_messages 
-                  WHERE room_id = ${context.room_id} 
+        await sql`DELETE FROM inseme_messages
+                  WHERE room_id = ${context.room_id}
                   AND type = 'knowledge'
                   AND (metadata->>'category' = ${args.category} OR message ILIKE ${`%${args.search_term}%`})`;
       }
@@ -707,13 +708,14 @@ export async function executeInternalTool(runtime, name, args, context = {}) {
       }
       return "Signalement enregistré.";
 
-    case "check_providers_status":
+    case "check_providers_status": {
       const providers = ["openai", "anthropic", "mistral", "google", "groq", "huggingface"];
       const active = providers.filter(
         (p) =>
           !!getConfig(`${p.toUpperCase()}_API_KEY`) || (p === "groq" && !!getConfig("groq_api_key"))
       );
       return `Fournisseurs actifs : ${active.join(", ")}.`;
+    }
 
     case "get_semantic_window": {
       const { getSemanticWindow } = await import("../semantic-fusion.js");

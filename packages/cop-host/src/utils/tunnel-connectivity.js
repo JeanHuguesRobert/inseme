@@ -7,12 +7,12 @@
 export function getProxyEnv() {
   let proxy;
   // Deno
-  if (typeof Deno !== "undefined" && Deno.env) {
-    proxy = Deno.env.get("HTTP_PROXY") || Deno.env.get("HTTPS_PROXY");
+  if (typeof globalThis !== "undefined" && globalThis.Deno && globalThis.Deno.env) {
+    proxy = globalThis.Deno.env.get("HTTP_PROXY") || globalThis.Deno.env.get("HTTPS_PROXY");
   }
   // Node.js
-  else if (typeof process !== "undefined" && process.env) {
-    proxy = process.env.HTTP_PROXY || process.env.HTTPS_PROXY;
+  else if (typeof globalThis !== "undefined" && globalThis.process && globalThis.process.env) {
+    proxy = globalThis.process.env.HTTP_PROXY || globalThis.process.env.HTTPS_PROXY;
   }
   return proxy;
 }
@@ -31,9 +31,9 @@ export async function checkTunnel(proxyUrl) {
   }
 
   // Deno Environment
-  if (typeof Deno !== "undefined") {
+  if (typeof globalThis !== "undefined" && globalThis.Deno) {
     try {
-      const conn = await Deno.connect({ hostname, port });
+      const conn = await globalThis.Deno.connect({ hostname, port });
       conn.close();
       return true;
     } catch (e) {

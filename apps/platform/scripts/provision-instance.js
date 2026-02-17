@@ -29,7 +29,8 @@ const help = args.includes("--help");
 
 // Step flags
 const steps = {
-  collect: args.includes("--step-collect") || (!args.some(arg => arg.startsWith("--step-")) && !help),
+  collect:
+    args.includes("--step-collect") || (!args.some((arg) => arg.startsWith("--step-")) && !help),
   github: args.includes("--step-github"),
   migrations: args.includes("--step-migrations"),
   vault: args.includes("--step-vault"),
@@ -38,8 +39,8 @@ const steps = {
 };
 
 // Config override
-const subdomainArg = args.find(arg => arg.startsWith("--subdomain="))?.split("=")[1];
-const configFileArg = args.find(arg => arg.startsWith("--config="))?.split("=")[1];
+const subdomainArg = args.find((arg) => arg.startsWith("--subdomain="))?.split("=")[1];
+const configFileArg = args.find((arg) => arg.startsWith("--config="))?.split("=")[1];
 
 // ============================================
 // Configuration des templates par type de communauté
@@ -173,26 +174,31 @@ async function ensureGitHubRepo(info) {
     if (res.status === 404) {
       console.log(`  🚀 Création du dépôt à partir du template ${templateRepo}...`);
       if (dryRun) {
-        console.log(`  [DRY RUN] Octokit.repos.createUsingTemplate({ template_owner: 'JeanHuguesRobert', template_repo: 'commune-wiki-template', name: '${repoName}' })`);
+        console.log(
+          `  [DRY RUN] Octokit.repos.createUsingTemplate({ template_owner: 'JeanHuguesRobert', template_repo: 'commune-wiki-template', name: '${repoName}' })`
+        );
         return true;
       }
 
       // Utiliser fetch pour créer depuis template
       const [templOwner, templRepo] = templateRepo.split("/");
-      const createRes = await fetch(`https://api.github.com/repos/${templOwner}/${templRepo}/generate`, {
-        method: "POST",
-        headers: {
-          Authorization: `token ${token}`,
-          Accept: "application/vnd.github+json",
-        },
-        body: JSON.stringify({
-          owner: owner,
-          name: repoName,
-          description: `Wiki pour l'instance Ophélia de ${info.community_name}`,
-          include_all_branches: false,
-          private: false,
-        }),
-      });
+      const createRes = await fetch(
+        `https://api.github.com/repos/${templOwner}/${templRepo}/generate`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+          body: JSON.stringify({
+            owner: owner,
+            name: repoName,
+            description: `Wiki pour l'instance Ophélia de ${info.community_name}`,
+            include_all_branches: false,
+            private: false,
+          }),
+        }
+      );
 
       if (createRes.status === 201) {
         console.log(`  ✅ Dépôt créé avec succès.`);
@@ -485,19 +491,22 @@ async function seedWiki(info) {
     }
 
     try {
-      const { error } = await supabase.from("wiki_pages").upsert({
-        slug,
-        title,
-        content,
-        metadata: {
-          wiki_page: {
-            status: "active",
-            page_key: slug,
-            origin_hub_id: info.subdomain,
-            global_id: `instance:${info.subdomain}:${slug}`,
+      const { error } = await supabase.from("wiki_pages").upsert(
+        {
+          slug,
+          title,
+          content,
+          metadata: {
+            wiki_page: {
+              status: "active",
+              page_key: slug,
+              origin_hub_id: info.subdomain,
+              global_id: `instance:${info.subdomain}:${slug}`,
+            },
           },
         },
-      }, { onConflict: "slug" });
+        { onConflict: "slug" }
+      );
 
       if (error) {
         console.warn(`    ⚠️ Erreur: ${error.message}`);
@@ -599,7 +608,7 @@ Examples:
         if (loaded) {
           info = loaded;
           console.log(`✅ Config chargée pour: ${info.community_name}`);
-          
+
           if (isInteractive) {
             console.log("\nMode interactif: vérification des infos...");
             // On pourrait rajouter une boucle de confirmation ici
@@ -611,7 +620,7 @@ Examples:
       } else {
         info = await collectInstanceInfo();
       }
-      
+
       // Sauvegarder/Mettre à jour la config (sans secrets)
       saveInstanceConfig(info);
       // Générer SQL pour info manuelle
@@ -649,7 +658,9 @@ Examples:
     if (steps.registry) {
       const sql = generateRegistrySQL(info);
       if (info.hub_url) {
-        const hubServiceKey = process.env.HUB_SERVICE_ROLE_KEY || await ask("Clé service_role du HUB pour le registry");
+        const hubServiceKey =
+          process.env.HUB_SERVICE_ROLE_KEY ||
+          (await ask("Clé service_role du HUB pour le registry"));
         if (hubServiceKey) {
           const hubInfo = { supabase_url: info.hub_url, supabase_service_key: hubServiceKey };
           await executeSQL(hubInfo, sql, "Enregistrement dans le registry");
@@ -665,11 +676,69 @@ Examples:
     }
 
     console.log("\n🏁 Opérations terminées.");
-
   } catch (err) {
     console.error("\n❌ Erreur:", err.message);
   } finally {
     rl.close();
+  }
+}
+
+// ============================================
+// Helper functions
+// ============================================
+
+function saveInstanceConfig(info) {
+  const configPath = path.join(process.cwd(), "instances", `${info.subdomain}.json`);
+  const dir = path.dirname(configPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  // Remove sensitive data before saving
+  const safeInfo = { ...info };
+  delete safeInfo.supabase_service_key;
+  delete safeInfo.openai_key;
+  delete safeInfo.anthropic_key;
+  delete safeInfo.hub_anon_key;
+
+  fs.writeFileSync(configPath, JSON.stringify(safeInfo, null, 2));
+  console.log(`✅ Config sauvegardée: ${configPath}`);
+}
+
+function generateSQLFiles(info) {
+  const instancesDir = path.join(process.cwd(), "instances");
+  if (!fs.existsSync(instancesDir)) {
+    fs.mkdirSync(instancesDir, { recursive: true });
+  }
+
+  const vaultSQL = generateVaultSQL(info);
+  const vaultPath = path.join(instancesDir, `${info.subdomain}-vault.sql`);
+  fs.writeFileSync(vaultPath, vaultSQL);
+  console.log(`📄 SQL vault généré: ${vaultPath}`);
+
+  const registrySQL = generateRegistrySQL(info);
+  const registryPath = path.join(instancesDir, `${info.subdomain}-registry.sql`);
+  fs.writeFileSync(registryPath, registrySQL);
+  console.log(`📄 SQL registry généré: ${registryPath}`);
+
+  return { vaultPath, registryPath };
+}
+
+async function executeSQL(dbInfo, sql, description) {
+  if (dryRun) {
+    console.log(`[DRY RUN] ${description}:`);
+    console.log(sql.substring(0, 200) + "...");
+    return;
+  }
+
+  const supabase = createClient(dbInfo.supabase_url, dbInfo.supabase_service_key);
+  const { error } = await supabase.rpc("exec_sql", { sql_query: sql });
+
+  if (error) {
+    console.error(`❌ Erreur ${description}:`, error.message);
+    throw error;
+  } else {
+    console.log(`✅ ${description} terminé avec succès`);
   }
 }
 

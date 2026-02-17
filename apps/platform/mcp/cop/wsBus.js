@@ -11,14 +11,14 @@ export default function wsBus() {
 
   async function publish(rec) {
     // Rec should include topic_id
-    setImmediate(() => emitter.emit("event", rec));
+    setTimeout(() => emitter.emit("event", rec), 0);
     return { success: true };
   }
 
-  function subscribe(topicId, handler) {
+  function subscribe(_topicId, handler) {
     const listener = (payload) => {
       // optional filtering
-      if (payload && payload.topic_id && payload.topic_id === topicId) {
+      if (payload && payload.topic_id && payload.topic_id === _topicId) {
         handler(payload);
       }
     };
@@ -27,12 +27,12 @@ export default function wsBus() {
     return () => emitter.off("event", listener);
   }
 
-  function fetchSince(topicId, ts) {
+  function fetchSince(_topicId, _ts) {
     // Not implemented for this stub; implement if necessary for tests
     return [];
   }
 
-  function fetchLatest(topicId) {
+  function fetchLatest(_topicId) {
     return [];
   }
 

@@ -1,6 +1,7 @@
 import createBus from "./cop/bus.js";
 import store from "./cop/supabaseStore.js";
 import ophAgent from "./agents/ophéliaAgent.js";
+import process from "node:process";
 
 const DEFAULT_POLL_MS = 1000;
 
@@ -14,7 +15,7 @@ export class MCPscheduler {
   }
 
   async init() {
-    this.bus = createBus({ type: process.env.COP_BUS || "supabase" });
+    this.bus = createBus({ type: import.meta.env?.COP_BUS || "supabase" });
     await this.bus.initBus();
     await store.initStore();
   }
@@ -48,7 +49,7 @@ export class MCPscheduler {
 
     // Claim and process distributed tasks using store.claimTask if available
     try {
-      const workerId = `mcp-${process.pid}-${Math.random().toString(36).slice(2, 6)}`;
+      const workerId = `mcp-${import.meta.env?.pid}-${Math.random().toString(36).slice(2, 6)}`;
       let claimed = await store.claimTask({ workerId, leaseSeconds: 60 }).catch(() => null);
       let processed = 0;
       while (claimed && processed < 20) {
@@ -100,25 +101,27 @@ export class MCPscheduler {
     await this.processEvents();
     await this.processTicks();
     // Add supervision of the scheduler: restart main loop on uncaught errors in the process and attempt a restart
-    process.on("unhandledRejection", (reason, p) => {
-      console.error("Unhandled Rejection at: Promise", p, "reason:", reason);
-    });
-    process.on("uncaughtException", (err) => {
-      console.error("Uncaught exception in scheduler process", err);
-      try {
-        this.stop();
-      } catch (e) {
-        /* ignore */
-      }
-      setTimeout(() => this.start(), 3000);
-    });
-
+    // Note: process is available in Node.js environment
+    if (typeof process !== "undefined") {
+      process.on("unhandledRejection", (reason, p) => {
+        console.error("Unhandled Rejection at: Promise", p, "reason:", reason);
+      });
+      process.on("uncaughtException", (_err) => {
+        console.error("Uncaught exception in scheduler process", _err);
+        try {
+          this.stop();
+        } catch (e) {
+          /* ignore */
+        }
+        setTimeout(() => this.start(), 3000);
+      });
+    }
     this.intervalId = setInterval(async () => {
       try {
         await this.processEvents();
         await this.processTicks();
-      } catch (err) {
-        console.error("Scheduler loop error", err?.message || err);
+      } catch (_err) {
+        console.error("Scheduler loop error", _err?.message || _err);
       }
     }, this.pollIntervalMs);
     console.log("MCP Scheduler started");

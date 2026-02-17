@@ -35,7 +35,7 @@ function getNationalSupabase() {
 
   const url = getConfig("NATIONAL_API_URL", DEFAULT_NATIONAL_API_URL);
   const key = getConfig("NATIONAL_API_KEY", DEFAULT_NATIONAL_API_KEY);
-  
+
   // IS_NATIONAL_HUB est maintenant déterminé dynamiquement si possible
   const isHub = getConfig("IS_NATIONAL_HUB", DEFAULT_IS_NATIONAL_HUB);
 
@@ -177,7 +177,7 @@ export function validateResponses(responses, schema) {
             }
             break;
 
-          case "scale":
+          case "scale": {
             const numVal = typeof value === "number" ? value : parseInt(value);
             if (isNaN(numVal) || numVal < (q.min || 1) || numVal > (q.max || 5)) {
               errors.push({
@@ -186,15 +186,17 @@ export function validateResponses(responses, schema) {
               });
             }
             break;
+          }
 
           case "radio":
-          case "select":
+          case "select": {
             if (q.options && !q.options.includes(value)) {
               errors.push({ field: q.id, message: "Valeur non valide" });
             }
             break;
+          }
 
-          case "checkbox":
+          case "checkbox": {
             if (Array.isArray(value) && q.options) {
               const invalid = value.filter((v) => !q.options.includes(v));
               if (invalid.length > 0) {
@@ -202,15 +204,20 @@ export function validateResponses(responses, schema) {
               }
             }
             break;
+          }
 
           case "text":
-          case "textarea":
+          case "textarea": {
             if (q.maxLength && value.length > q.maxLength) {
               errors.push({
                 field: q.id,
                 message: `Maximum ${q.maxLength} caractères`,
               });
             }
+            break;
+          }
+          default:
+            // Type non géré, pas de validation spécifique
             break;
         }
       }
@@ -996,7 +1003,9 @@ export async function getNationalStats(consultationSlug) {
       // Identifier la commune
       const commune =
         r._commune ||
-        (source?.startsWith("federated:") ? source.replace("federated:", "") : COMMUNITY_NAME);
+        (source?.startsWith("federated:")
+          ? source.replace("federated:", "")
+          : DEFAULT_COMMUNITY_NAME);
 
       if (!byCommune[commune]) {
         byCommune[commune] = { count: 0, byField: {} };
@@ -1064,7 +1073,7 @@ export async function compareWithNational(consultationSlug, field) {
   const nationalStats = await getNationalStats(consultationSlug);
   if (!nationalStats) return null;
 
-  const localCommune = COMMUNITY_NAME;
+  const localCommune = DEFAULT_COMMUNITY_NAME;
   const localStats = nationalStats.byCommune[localCommune];
   const globalStats = nationalStats.global;
 
@@ -1194,10 +1203,10 @@ export function getShareText(consultation, options = {}) {
 
   const scopeLabel =
     {
-      local: COMMUNITY_NAME,
-      regional: REGION_NAME,
+      local: DEFAULT_COMMUNITY_NAME,
+      regional: DEFAULT_REGION_NAME,
       national: "France",
-    }[scope] || COMMUNITY_NAME;
+    }[scope] || DEFAULT_COMMUNITY_NAME;
 
   let title = `${scopeEmoji} ${consultation.title}`;
   let text = consultation.description || "";
@@ -1213,7 +1222,7 @@ export function getShareText(consultation, options = {}) {
   text += " • Donnez votre avis !";
 
   const hashtags = [
-    HASHTAG.replace("#", ""),
+    DEFAULT_HASHTAG.replace("#", ""),
     `democratie${scope === "local" ? "locale" : scope === "regional" ? "regionale" : "participative"}`,
     consultation.slug.replace(/-/g, ""),
   ];

@@ -1,3 +1,5 @@
+/* eslint-env deno */
+/* global Deno, DB */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { createAuditLogger } from "./auditLogger.js";
@@ -10,7 +12,14 @@ const ERROR_CODES = {
   OPTIMISTIC_LOCK_FAIL: "STORAGE_OPTIMISTIC_LOCK_FAILED",
 };
 
-export function createDenoFileBasedStorage(options = {}) {
+export function createDenoFileBasedStorage(options) {
+  const { ERROR_CODES } = options;
+  let db;
+
+  function initializeDb() {
+    db = new DB("cop_kernel.db");
+  }
+
   const { basePath = "./file_storage_data", auditLogPath = "./audit_logs.jsonl" } = options;
   const auditLogger = createAuditLogger({ auditLogPath });
 

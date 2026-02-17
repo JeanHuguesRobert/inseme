@@ -25,25 +25,15 @@ async function main() {
       await cmdTrace(rest);
     } else if (cmd === "send-message") {
       await cmdSendMessage(rest);
-    } else if (cmd === "nodes") {
-      await cmdNodes(rest);
-    } else if (cmd === "agents") {
-      await cmdAgents(rest);
-    } else if (cmd === "identities") {
-      await cmdIdentities(rest);
-    } else if (cmd === "trace") {
-      await cmdTrace(rest);
-    } else if (cmd === "send-message") {
-      await cmdSendMessage(rest);
     } else if (cmd === "tasks") {
       await cmdTasks(rest);
-    } else if (cmd === "task") {
-      await cmdTask(rest);
-    } else {
-      console.error(`Unknown command: ${cmd}`);
+    } else if (cmd === "help") {
       printHelp();
-      process.exit(1);
+    } else {
+      console.error(`Commande inconnue: ${cmd}`);
+      printHelp();
     }
+    process.exit(1);
   } catch (err) {
     console.error("Error:", err && err.message ? err.message : String(err));
     process.exit(1);

@@ -18,8 +18,8 @@ import fs from "node:fs/promises";
 import { getDocumentProxy, extractText } from "unpdf";
 
 async function loadCanvasImportIfNode() {
-  if (typeof process === "undefined") return null;
-  if (process?.versions?.node == null) return null;
+  if (typeof globalThis.process === "undefined") return null;
+  if (globalThis.process?.versions?.node == null) return null;
   try {
     const mod = await import("canvas");
     const m = mod?.default ? { ...mod.default, ...mod } : mod;
@@ -81,7 +81,7 @@ async function renderPageAsImageFromPdf(
       ? canvas.toDataURL("image/png")
       : canvas.toBuffer
         ? canvas.toBuffer("image/png")
-        : Buffer.from(canvas.toDataURL("image/png").split(",")[1], "base64");
+        : globalThis.Buffer.from(canvas.toDataURL("image/png").split(",")[1], "base64");
   canvasFactory.destroy(canvas);
   return out;
 }
@@ -141,6 +141,10 @@ export const DEFAULT_OPTIONS = {
  * @param {PdfToMarkdownOptions} [options]
  * @returns {Promise<{ markdown: string, pages: string[], meta: Record<string, any> }>} markdown result with metadata.
  */
+
+// Global variables for OCR worker
+let ocrWorker = null;
+let settings = DEFAULT_OPTIONS;
 
 async function ensureOcrWorker() {
   if (ocrWorker) return ocrWorker;
@@ -372,7 +376,7 @@ export function formatPage(text, pageNumber, settings) {
 
 export function sanitisePageText(text) {
   return text
-    .replace(/\u0000/g, "")
+    .replace(new RegExp(String.fromCharCode(0), "g"), "")
     .replace(/\f/g, "\n")
     .replace(/\s+$/gm, "")
     .trim();
@@ -411,19 +415,19 @@ export function normaliseHeading(text) {
 }
 
 export function parseListLine(line) {
-  const bulletMatch = line.match(/^([\-*•●▪◦])\s+(.*)$/);
+  const bulletMatch = line.match(/^([-*•●▪◦])\s+(.*)$/);
   if (bulletMatch) {
     return {
       kind: "unordered",
-      content: bulletMatch[2].trim(),
+      content: bulletMatch[1].trim(),
     };
   }
-  const orderedMatch = line.match(/^(\d+)[\.)]\s+(.*)$/);
+  const orderedMatch = line.match(/^(\d+)[.]\s+(.*)$/);
   if (orderedMatch) {
     return {
       kind: "ordered",
       start: Number.parseInt(orderedMatch[1], 10),
-      content: orderedMatch[2].trim(),
+      content: orderedMatch[1].trim(),
     };
   }
   return null;

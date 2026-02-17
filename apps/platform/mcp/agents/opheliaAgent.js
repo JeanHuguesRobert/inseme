@@ -1,8 +1,8 @@
 import bus from "../cop/supabaseBus.js";
 import store from "../cop/supabaseStore.js";
 
-// TODO: jhr, should get that from the vault
-const BOT_NAME = process.env.VITE_BOT_NAME || "Ophélia";
+// TODO: jhr, should get that from vault
+const BOT_NAME = import.meta.env?.VITE_BOT_NAME || "Ophélia";
 
 export const name = "ophelia-agent";
 export const taskTypes = ["deep_reply"];
@@ -67,37 +67,36 @@ export async function onEvent(event, ctx) {
   }
 }
 
-export async function onTick(ctx) {
+export async function onTick(_ctx) {
   // onTick does not claim or force-run tasks in distributed mode; only used for lightweight periodic work
   try {
     // Optionally handle lightweight background tasks or health checks
-    return;
   } catch (e) {
     console.error("opheliaAgent.onTick error", e.message);
   }
 }
 
-export async function onTask(task, ctx) {
+export async function onTask(task, _ctx) {
   // Handle a single claimed task by delegating to onStep for sequential steps.
   try {
     if (!task || task.type !== "deep_reply") return;
-    const _store = ctx?.store || store;
+    const _store = _ctx?.store || store;
     const next = await _store.getNextPendingStep(task.id);
     if (!next) {
       // no pending steps, maybe it's done
       const finalSteps = await _store.getSteps(task.id);
       const allDone = finalSteps.every((s) => s.status === "done");
       if (allDone) {
-        await (ctx?.store || store).saveTask({ id: task.id, status: "done" });
+        await (_ctx?.store || store).saveTask({ id: task.id, status: "done" });
       }
       return;
     }
     // process single step via onStep
-    await onStep(task, next, ctx);
+    await onStep(task, next, _ctx);
   } catch (e) {
     console.error("onTask error", e?.message || e);
     try {
-      await (ctx?.store || store).saveTask({
+      await (_ctx?.store || store).saveTask({
         id: task.id,
         status: "pending",
         last_error: e?.message || String(e),
@@ -107,11 +106,11 @@ export async function onTask(task, ctx) {
   }
 }
 
-export async function onStep(task, step, ctx) {
+export async function onStep(task, step, _ctx) {
   try {
     if (!task || task.type !== "deep_reply") return;
-    const _bus = ctx?.bus || bus;
-    const _store = ctx?.store || store;
+    const _bus = _ctx?.bus || bus;
+    const _store = _ctx?.store || store;
 
     // Skip if already done (idempotency)
     const refreshed = await _store.getSteps(task.id);
@@ -180,7 +179,7 @@ export async function onStep(task, step, ctx) {
   } catch (e) {
     console.error("ophelia onStep error", e?.message || e);
     try {
-      await (ctx?.store || store).saveStep({
+      await (_ctx?.store || store).saveStep({
         id: step.id,
         task_id: task.id,
         status: "pending",

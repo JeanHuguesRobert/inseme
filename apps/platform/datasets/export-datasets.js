@@ -1,8 +1,13 @@
 // datasets/export-datasets.js
-// Script d’export open data Ophélia (wiki, Q&A, docs)
+// Script d'export open data Ophélia (wiki, Q&A, docs)
 
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Déclarer __dirname pour ES6
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Exemples de chemins sources (à adapter selon vos données)
 const WIKI_SRC = path.join(__dirname, "../public/docs/wiki_pages.json");

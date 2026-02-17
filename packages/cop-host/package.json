@@ -14,13 +14,22 @@
     "./utils/node-proxy": "./src/utils/node-proxy.js",
     "./utils/node-proxy.js": "./src/utils/node-proxy.js",
     "./constants": "./src/constants.js",
-    "./constants.js": "./src/constants.js"
+    "./constants.js": "./src/constants.js",
+    "./logging/*": "./src/lib/logging/*"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "glob": "^10.3.10",
-    "lucide-react": "^0.562.0",
+    "lucide-react": "^0.563.0",
     "react-router-dom": "^6.20.0",
-    "undici": "^7.18.2"
+    "undici": "^7.18.2",
+    "@axiomhq/js": "^1.3.1",
+    "@axiomhq/logging": "^0.1.6",
+    "@axiomhq/react": "^0.1.6",
+    "loglayer": "^8.4.0",
+    "@loglayer/transport-axiom": "^2.1.16",
+    "serialize-error": "^11.0.0",
+    "@inseme/ui": "*",
+    "@inseme/brique-kudocracy": "*"
   }
 }

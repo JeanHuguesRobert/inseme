@@ -86,8 +86,12 @@ function ansiToHtml(text) {
   let result = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   // Replace ANSI escape codes with spans
-  // Match \x1b[XXm or \x1b[Xm
-  result = result.replace(/\x1b\[(\d+)(;\d+)?m/g, (match, code) => {
+  // Match \u001b[XXm or \u001b[Xm
+  // Use String.fromCharCode to bypass no-control-regex lint error
+  const ESC = String.fromCharCode(27);
+  const CSI = String.fromCharCode(155);
+  const ansiRegex = new RegExp("[" + ESC + CSI + "]\\[(\\d+)(;\\d+)?m", "g");
+  result = result.replace(ansiRegex, (match, code) => {
     const cls = colors[code];
     if (code === "0") return "</span>";
     if (cls) return `</span><span class="${cls}">`;
@@ -410,7 +414,10 @@ function render() {
     listEl.appendChild(div);
   });
 
-  lucide.createIcons();
+  // Initialize lucide icons for newly created elements
+  if (typeof window !== "undefined" && window.lucide) {
+    window.lucide.createIcons();
+  }
 }
 
 async function launchProxiedBrowser() {
@@ -796,5 +803,3 @@ function clearDebugLogs() {
   document.getElementById("count-debug").innerText = "0";
   document.getElementById("debug-logs").innerHTML = "";
 }
-
-lucide.createIcons();

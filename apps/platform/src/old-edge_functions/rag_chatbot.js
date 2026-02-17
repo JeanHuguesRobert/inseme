@@ -996,7 +996,7 @@ const TOOL_HANDLERS = {
     return "✅ Vous avez quitté le groupe.";
   },
 
-  async list_my_groups({}, { supabase, user }) {
+  async list_my_groups(_params, { supabase, user }) {
     if (!user) return "⚠️ Connexion requise.";
     const { data, error } = await supabase
       .from("group_members")
@@ -1200,7 +1200,7 @@ const TOOL_HANDLERS = {
     );
   },
 
-  async get_user_context({}, { user, context }) {
+  async get_user_context(_params, { user, context }) {
     if (!user) return "Utilisateur non connecté.";
     return JSON.stringify(
       {
@@ -1260,7 +1260,7 @@ function sanitizeSqlRows(rows, columns) {
 function normalizeSqlValue(value) {
   if (typeof value === "bigint") return value.toString();
   if (value instanceof Date) return value.toISOString();
-  if (value && typeof Buffer !== "undefined" && Buffer.isBuffer?.(value)) {
+  if (value && typeof globalThis.Buffer !== "undefined" && globalThis.Buffer.isBuffer?.(value)) {
     return value.toString("utf-8");
   }
   return value;
@@ -2384,7 +2384,11 @@ const handler = async (request) => {
 
     if (request.method === "POST" && path.endsWith("/v1/chat/completions")) {
       const body = await request.json();
-      return handleOpenAIChatCompletions({ request, body });
+      // TODO: Implement handleOpenAIChatCompletions function
+      return new Response(JSON.stringify({ error: "OpenAI chat completions not implemented" }), {
+        status: 501,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (request.method === "GET" && url.searchParams.get("healthcheck") === "true") {

@@ -42,4 +42,4 @@ export {
   MediaLayer,
   MockAdapter,
   MediaManager,
-} from "./lib/media/SmartAudio";
+} from "./lib/media/SmartAudio.js";

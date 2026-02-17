@@ -382,6 +382,7 @@ export default function useChatLogic(initial = {}) {
                   (window.location.pathname.match(/\/groups\/([a-f0-9-]+)/) || [])[1] || null,
                 missionId:
                   (window.location.search.match(/missionId=([a-f0-9-]+)/) || [])[1] || null,
+                connectedUsers: initial.connectedUsers || [],
               },
             }),
             signal: abortControllerRef.current.signal,
@@ -657,7 +658,7 @@ export default function useChatLogic(initial = {}) {
               chunk.includes("[DEBUG]") // Show debug messages in UI when debug mode is active
             ) {
               // Extract and display the error/debug message in the UI
-              const errorMatch = chunk.match(/[❌⚠️\[DEBUG\]][^]*?(?=\n\n|$)/);
+              const errorMatch = chunk.match(/(?:❌|⚠️|\[DEBUG\])[\s\S]*?(?=\n\n|$)/);
               if (errorMatch) {
                 const errorText = errorMatch[0].trim();
                 const isDebug = errorText.startsWith("[DEBUG]");

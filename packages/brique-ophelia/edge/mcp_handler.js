@@ -31,26 +31,32 @@ export async function handleMCPRequest(request, runtime) {
         const channel = supabase.channel(`mcp:${newSessionId}`);
         channel
           .on("broadcast", { event: "message" }, ({ payload }) => {
-            controller.enqueue(encoder.encode(`event: message\ndata: ${JSON.stringify(payload)}\n\n`));
+            controller.enqueue(
+              encoder.encode(`event: message\ndata: ${JSON.stringify(payload)}\n\n`)
+            );
           })
           .subscribe();
 
         // Garder la connexion ouverte
         const keepAlive = setInterval(() => {
-          try { controller.enqueue(encoder.encode(": keep-alive\n\n")); } catch(e) { clearInterval(keepAlive); }
+          try {
+            controller.enqueue(encoder.encode(": keep-alive\n\n"));
+          } catch (e) {
+            clearInterval(keepAlive);
+          }
         }, 15000);
       },
       cancel() {
-          // Cleanup
-      }
+        // Cleanup
+      },
     });
 
     return new Response(stream, {
-      headers: { 
+      headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive"
-      }
+        Connection: "keep-alive",
+      },
     });
   }
 
@@ -72,83 +78,94 @@ export async function handleMCPRequest(request, runtime) {
             capabilities: {
               tools: {},
               resources: {},
-              prompts: {}
+              prompts: {},
             },
-            serverInfo: { name: "ophelia-mcp", version: "1.0.0" }
+            serverInfo: { name: "ophelia-mcp", version: "1.0.0" },
           };
           break;
 
         case "tools/list":
           result = {
-            tools: ALL_TOOLS.map(t => ({
+            tools: ALL_TOOLS.map((t) => ({
               name: t.function.name,
               description: t.function.description,
-              inputSchema: t.function.parameters
-            }))
+              inputSchema: t.function.parameters,
+            })),
           };
           break;
 
-        case "tools/call":
+        case "tools/call": {
           const toolName = params.name;
           const args = params.arguments;
           // Mock runtime for internal execution
           const mockRuntime = {
-              getConfig: (key) => getConfig(key),
-              sql: null, // Would need dynamic injection
-              supabase: supabase
+            getConfig: (key) => getConfig(key),
+            sql: null, // Would need dynamic injection
+            supabase: supabase,
           };
           const output = await executeInternalTool(mockRuntime, toolName, args, {});
           result = {
-            content: [{ type: "text", text: typeof output === 'string' ? output : JSON.stringify(output) }]
+            content: [
+              { type: "text", text: typeof output === "string" ? output : JSON.stringify(output) },
+            ],
           };
           break;
+        }
 
-        case "resources/list":
+        case "resources/list": {
           // Fetch wiki pages
           const { data: wiki } = await supabase.from("wiki_pages").select("id, title");
           result = {
-            resources: (wiki || []).map(p => ({
-              uri: `wiki://${p.id}`,
-              name: p.title,
-              mimeType: "text/markdown"
-            }))
+            resources: wiki.map((page) => ({
+              uri: `wiki://${page.id}`,
+              name: page.title,
+              description: `Page wiki: ${page.title}`,
+              mimeType: "text/markdown",
+            })),
           };
           break;
+        }
 
-        case "resources/read":
+        case "resources/read": {
           const uri = params.uri;
           const wikiId = uri.replace("wiki://", "");
-          const { data: page } = await supabase.from("wiki_pages").select("content").eq("id", wikiId).single();
+          const { data: page } = await supabase
+            .from("wiki_pages")
+            .select("content")
+            .eq("id", wikiId)
+            .single();
           result = {
-            contents: [{
-              uri,
-              mimeType: "text/markdown",
-              text: page?.content || "Page non trouvée."
-            }]
+            contents: [
+              {
+                uri,
+                mimeType: "text/markdown",
+                text: page?.content || "Page non trouvée.",
+              },
+            ],
+          };
+          break;
+        }
+
+        case "prompts/list":
+          result = {
+            prompts: [
+              { name: "mediator", description: "Ophélia en mode médiatrice de débat." },
+              { name: "analyst", description: "Ophélia en mode analyse de données et SQL." },
+              { name: "scribe", description: "Ophélia en mode rédaction de comptes rendus." },
+              { name: "guardian", description: "Ophélia en mode protection des règles." },
+            ],
           };
           break;
 
-        case "prompts/list":
-            result = {
-                prompts: [
-                    { name: "mediator", description: "Ophélia en mode médiatrice de débat." },
-                    { name: "analyst", description: "Ophélia en mode analyse de données et SQL." },
-                    { name: "scribe", description: "Ophélia en mode rédaction de comptes rendus." },
-                    { name: "guardian", description: "Ophélia en mode protection des règles." }
-                ]
-            };
-            break;
-
-        case "prompts/get":
-            const roleId = params.name;
-            // Simplified prompt retrieval
-            result = {
-                description: `Prompt pour le rôle ${roleId}`,
-                messages: [
-                    { role: "user", content: `Agis en tant que ${roleId}.` }
-                ]
-            };
-            break;
+        case "prompts/get": {
+          const roleId = params.name;
+          // Simplified prompt retrieval
+          result = {
+            description: `Prompt pour le rôle ${roleId}`,
+            messages: [{ role: "user", content: `Agis en tant que ${roleId}.` }],
+          };
+          break;
+        }
 
         case "notifications/initialized":
           return new Response(null, { status: 202 });
@@ -169,12 +186,12 @@ export async function handleMCPRequest(request, runtime) {
     await supabase.channel(`mcp:${sessionId}`).send({
       type: "broadcast",
       event: "message",
-      payload: response
+      payload: response,
     });
 
-    return new Response(JSON.stringify({ status: "accepted" }), { 
-        status: 202,
-        headers: { "Content-Type": "application/json" }
+    return new Response(JSON.stringify({ status: "accepted" }), {
+      status: 202,
+      headers: { "Content-Type": "application/json" },
     });
   }
 

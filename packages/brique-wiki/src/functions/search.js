@@ -1,4 +1,4 @@
-import { loadInstanceConfig, newSupabase } from "@inseme/cop-host/backend";
+import { loadInstanceConfig, newSupabase } from "@inseme/cop-host/backend.js";
 
 export default async (req, context) => {
   await loadInstanceConfig();
@@ -9,8 +9,7 @@ export default async (req, context) => {
     });
   }
 
-  const params =
-    req.method === "GET" ? req.queryStringParameters || {} : await req.json();
+  const params = req.method === "GET" ? req.queryStringParameters || {} : await req.json();
   const query = params.query;
   const scope = params.scope; // 'global' ou 'room'
   const room_slug = params.room_slug;

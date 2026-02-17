@@ -1,5 +1,6 @@
+/* eslint-env node */
 import { createClient } from "@supabase/supabase-js";
-import { loadConfig, getConfig } from "../../../../cop-host/src/scripts/config";
+import { loadConfig, getConfig } from "../../../../cop-host/src/scripts/config.js";
 
 // Load environment variables
 await loadConfig();

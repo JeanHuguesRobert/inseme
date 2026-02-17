@@ -1,5 +1,6 @@
 import { useRef, useEffect, useMemo, useCallback } from "react";
-import { OPHELIA_ID } from "../constants";
+import { OPHELIA_ID } from "../constants.js";
+import { sendSystemMessage } from "../lib/messageBus.js";
 
 export function useSilenceTrigger({
   roomData,
@@ -24,9 +25,9 @@ export function useSilenceTrigger({
     // - Silence Timeout: 2s for 1:1, 5s for groups.
     // - Reset: Timer clears on any message arrival or if leader status is lost.
 
-    const users = connectedUsers || roomData?.connectedUsers || [];
+    const users = connectedUsers || [];
 
-    // 3.1 Identify Candidates & Determine Leadership
+    // Identify Candidates & Determine Leadership
     const candidates = users
       .filter((u) => u.name !== "Ophélia" && !u.is_ai)
       .sort((a, b) => {
@@ -40,7 +41,7 @@ export function useSilenceTrigger({
         if (!isBarmanA && isBarmanB) return 1;
 
         // Fallback to ID sort
-        return a.id.localeCompare(b.id);
+        return (a.id || "").localeCompare(b.id || "");
       });
 
     const isLeader =
@@ -54,6 +55,27 @@ export function useSilenceTrigger({
 
     // 3.3 Guard Clauses
     if (!isLeader || !roomName || !supabase || messages.length === 0 || isSpectator) {
+      if (isLeader) {
+        if (!roomName) {
+          console.error("[useSilenceTrigger] Error: roomName is required for leader election.");
+          return;
+        }
+        if (!supabase) {
+          console.error("[useSilenceTrigger] Error: supabase is required for leader election.");
+          return;
+        }
+        if (messages.length === 0) {
+          console.error("[useSilenceTrigger] Error: messages is required for leader election.");
+          return;
+        }
+        if (isSpectator) {
+          console.error(
+            "[useSilenceTrigger] Error: Spectators are not allowed to trigger silence."
+          );
+          return;
+        }
+      }
+      // Non-leader case is normal behavior, just return silently
       return;
     }
 
@@ -63,7 +85,10 @@ export function useSilenceTrigger({
     if (lastMsg?.name === "Ophélia" || lastMsg?.user_id === OPHELIA_ID) return;
 
     // Rule 4: Error Recovery
-    if (isOphéliaThinking) return;
+    if (isOphéliaThinking) {
+      console.log("[useSilenceTrigger] Warning: Ophélia is thinking. Silence trigger disabled.");
+      return;
+    }
 
     // 3.4 Define Dynamic Threshold
     const threshold = candidates.length <= 1 ? 2000 : 5000;
@@ -100,19 +125,27 @@ export function useSilenceTrigger({
 
   // Manual Trigger Function (Reset)
   const forceTriggerOphelia = useCallback(async () => {
-    if (!roomName || !supabase) return;
+    if (!roomName || !supabase) {
+      if (!roomName) {
+        console.error("[useSilenceTrigger] Error: roomName is required for manual trigger.");
+      }
+      if (!supabase) {
+        console.error("[useSilenceTrigger] Error: supabase is required for manual trigger.");
+      }
+      return;
+    }
 
     // 1. Send system message to reset context and inform AI
-    await supabase.from("inseme_messages").insert([
-      {
-        room_id: roomMetadata?.id || roomName,
-        user_id: effectiveUser.isAnonymous ? null : effectiveUser.id,
-        name: "Système",
-        message: `[SYSTÈME] : Reset manuel demandé par ${effectiveUser.name}.`,
-        type: "info",
-        metadata: { status: "manual_reset" },
-      },
-    ]);
+    console.log(
+      "[useSilenceTrigger] forceTriggerOphelia: Sending system message to reset context and inform AI."
+    );
+    await sendSystemMessage(supabase, {
+      roomId: roomMetadata?.id || roomName,
+      userId: effectiveUser.isAnonymous ? null : effectiveUser.id,
+      name: "Système",
+      message: `[SYSTÈME] : Reset manuel demandé par ${effectiveUser.name}.`,
+      metadata: { status: "manual_reset" },
+    });
 
     // 2. Trigger AI manually using Ref to avoid TDZ
     triggerOphéliaRef.current?.(

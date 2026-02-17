@@ -12,17 +12,17 @@
   --mondrian-black: #000000;
   --mondrian-white: #ffffff;
 
-  /* Grayscale Palette */
-  --palette-gray-50: rgb(26 24 22 / 90%);
-  --palette-gray-100: rgb(40 36 32 / 90%);
-  --palette-gray-200: rgb(60 56 52 / 90%);
-  --palette-gray-300: rgb(84 78 72 / 90%);
-  --palette-gray-400: rgb(112 104 96 / 92%);
-  --palette-gray-500: rgb(140 130 120 / 94%);
-  --palette-gray-600: rgb(170 158 144 / 95%);
-  --palette-gray-700: rgb(198 186 168 / 96%);
-  --palette-gray-800: rgb(224 214 192 / 97%);
-  --palette-gray-900: rgb(248 242 230 / 99%);
+  /* Grayscale Palette - High Contrast */
+  --palette-gray-50: #ffffff;
+  --palette-gray-100: #f8fafc;
+  --palette-gray-200: #f1f5f9;
+  --palette-gray-300: #e2e8f0;
+  --palette-gray-400: #cbd5e1;
+  --palette-gray-500: #94a3b8;
+  --palette-gray-600: #64748b;
+  --palette-gray-700: #475569;
+  --palette-gray-800: #334155;
+  --palette-gray-900: #1e293b;
 }
 
 @theme {
@@ -47,7 +47,36 @@
 }
 
 @layer base {
+  html,
   body {
-    background-color: var(--color-slate-950);
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: #ffffff;
+    color: #1e293b;
+  }
+
+  #root {
+    height: 100vh;
+  }
+
+  /* High contrast text utilities */
+  .text-high-contrast {
+    color: #0f172a !important;
+  }
+
+  .text-muted-high-contrast {
+    color: #475569 !important;
+  }
+
+  .bg-high-contrast {
+    background-color: #ffffff !important;
+  }
+
+  .bg-muted-high-contrast {
+    background-color: #f8fafc !important;
   }
 }

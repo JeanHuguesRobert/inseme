@@ -61,8 +61,8 @@ const ShareModal = ({ isOpen, onClose, pageTitle, pageUrl, pageContent }) => {
 
     // Substitution de l'adresse Netlify par LePP.fr
     if (finalPageUrl.includes(".netlify.app")) {
-      finalPageUrl = finalPageUrl.replace(/https?:\/\/[^\/]+\.netlify\.app/, "https://lepp.fr");
-      finalShareText = finalShareText.replace(/https?:\/\/[^\/]+\.netlify\.app/, "https://lepp.fr");
+      finalPageUrl = finalPageUrl.replace(/https?:\/\/[^/]+\.netlify\.app/, "https://lepp.fr");
+      finalShareText = finalShareText.replace(/https?:\/\/[^/]+\.netlify\.app/, "https://lepp.fr");
     }
 
     if (navigator.share) {

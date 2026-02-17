@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Icon } from "./Cop-hostIcon.jsx";
-// import { sharePost } from "../../../../apps/platform/src/lib/sharePost"; // Supprimé pour éviter les dépendances circulaires trop lourdes
+import { Icon } from "./Cop-hostIcon";
+import { sharePost as apiSharePost } from "../../../../apps/platform/src/lib/sharePost.js";
 import { getConfig } from "../client/supabase.js";
 
 /**
@@ -38,7 +38,7 @@ export default function ShareMenu({
   // Clean URL (replace netlify with lepp.fr if needed)
   // TODO: jhr, should use APP_URL from env
   const cleanUrl = url.includes(".netlify.app")
-    ? url.replace(/https?:\/\/[^\/]+\.netlify\.app/, "https://lepp.fr")
+    ? url.replace(/https?:\/\/[^/]+\.netlify\.app/, "https://lepp.fr")
     : url;
 
   const shareText = description || `Découvrez "${title}" sur LePP.fr`;
@@ -247,7 +247,7 @@ function GazetteShareDialog({ entityId, currentUserId, onClose }) {
     }
     setLoading(true);
     try {
-      await sharePost(entityId, { gazette: selected }, { id: currentUserId });
+      await apiSharePost(entityId, { gazette: selected }, { id: currentUserId });
       alert("Partagé avec succès!");
       onClose();
     } catch (err) {

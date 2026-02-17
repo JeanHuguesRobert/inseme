@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { useInsemeContext, MondrianBlock } from "@inseme/room";
+import { TheBar } from "../singletons/index.js";
 import { Music, Play, Pause, SkipForward, SkipBack, Power } from "lucide-react";
 
 const SPOTIFY_CLIENT_ID = "VOTRE_CLIENT_ID_SPOTIFY"; // To be configured via settings
 const DEFAULT_REDIRECT_URI = window.location.origin + "/bar"; // Need to handle auth callback
 
-export default function MusicControl() {
-  const { updateRoomSettings, roomMetadata } = useInsemeContext();
+const MusicControl = ({ roomMetadata, _onToggle, _onVolumeChange }) => {
+  const { updateRoomSettings } = useInsemeContext();
   const [token, setToken] = useState(sessionStorage.getItem("spotify_bar_token"));
   const [player, setPlayer] = useState(null);
   const [isPaused, setIsPaused] = useState(true);
   const [currentTrack, setCurrentTrack] = useState(null);
-  const [deviceId, setDeviceId] = useState(null);
+  const [_deviceId, setDeviceId] = useState(null);
   const [status, setStatus] = useState("Déconnecté");
+
+  // Accès direct au singleton Bar
+  const _barName = TheBar.name;
 
   // Configuration from Room Settings (if available)
   const configClientId = roomMetadata?.settings?.spotify_client_id || SPOTIFY_CLIENT_ID;
@@ -50,13 +54,13 @@ export default function MusicControl() {
       });
 
       p.addListener("ready", ({ device_id }) => {
-        console.log("Ready with Device ID", device_id);
+        console.debug("Ready with Device ID", device_id);
         setDeviceId(device_id);
         setStatus("Prêt (Device ID: " + device_id + ")");
       });
 
       p.addListener("not_ready", ({ device_id }) => {
-        console.log("Device ID has gone offline", device_id);
+        console.debug("Device ID has gone offline", device_id);
         setStatus("Offline");
       });
 
@@ -211,4 +215,6 @@ export default function MusicControl() {
       </div>
     </MondrianBlock>
   );
-}
+};
+
+export default MusicControl;

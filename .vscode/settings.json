@@ -57,5 +57,11 @@
     "apps/inseme/netlify/edge-functions"
   ],
   "deno.unstable": true,
-  "deno.importMap": ".netlify/edge-functions-import-map.json"
+  "deno.importMap": ".netlify/edge-functions-import-map.json",
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  }
 }

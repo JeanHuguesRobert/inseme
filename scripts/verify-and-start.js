@@ -37,20 +37,155 @@ import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 import fetch from "node-fetch";
 
+// Charger les variables d'environnement depuis .env
+dotenv.config();
+
+console.log("🚀 Démarrage de la vérification Inseme...\n");
+
+// Configuration sera chargée après vérification Supabase (PHASE 1)
+let getConfig = (key, fallback) => process.env[key] || fallback; // Fallback initial
+
+// Axiom logger will be initialized after PHASE 1 (Supabase)
+let axiomLogger = null;
+
+/**
+ * Initialize Axiom logger after Supabase connection is established
+ * This function should be called in PHASE 1 (SUPABASE)
+ */
+async function initializeAxiomLogger() {
+  if (axiomLogger) return; // Already initialized
+
+  try {
+    const { LogLayer } = await import("loglayer");
+    const { Axiom } = await import("@axiomhq/js");
+
+    const isProd = getConfig("NODE_ENV") === "production";
+    const isDebug = getConfig("DEBUG") === "true";
+    const axiomToken = getConfig("AXIOM_TOKEN");
+    const axiomDataset = getConfig("AXIOM_DATASET");
+
+    if (axiomToken) {
+      // Axiom works in both dev and prod
+      const axiomTransport = {
+        id: "axiom",
+        ship: (entry) => {
+          try {
+            const axiom = new Axiom({ token: axiomToken });
+            axiom.ingest(axiomDataset, [entry]);
+          } catch (error) {
+            console.error("[Startup Logger] Failed to send to Axiom:", error.message);
+          }
+        },
+      };
+
+      axiomLogger = new LogLayer({
+        transport: {
+          id: "combined",
+          ship: (entry) => {
+            // Enhanced console logging with debug mode
+            const color =
+              entry.level === "error"
+                ? "\u001b[31m"
+                : entry.level === "warn"
+                  ? "\u001b[33m"
+                  : "\u001b[32m";
+
+            if (isDebug) {
+              // Debug mode: show full entry details
+              console.log(
+                `${color}[STARTUP-${entry.level.toUpperCase()}] [DEBUG]\u001b[0m ${entry.message}`
+              );
+              console.log(`📊 Data:`, JSON.stringify(entry.data, null, 2));
+              console.log(`🕐 Timestamp: ${entry.timestamp}`);
+              console.log(`🏷️  Level: ${entry.level}`);
+              console.log("---");
+            } else {
+              // Normal mode: concise logging
+              console.log(
+                `${color}[STARTUP-${entry.level.toUpperCase()}]\u001b[0m ${entry.message}`,
+                entry.data || ""
+              );
+            }
+
+            // Send to Axiom in both dev and prod
+            axiomTransport.ship(entry);
+          },
+        },
+      });
+
+      console.log(
+        `[Startup Logger] ✅ Axiom logging initialized (dataset: ${axiomDataset}, mode: ${isProd ? "production" : "development"}, debug: ${isDebug})`
+      );
+    } else {
+      console.log("[Startup Logger] ⚠️ Axiom logging disabled (missing token)");
+    }
+  } catch (_e) {
+    console.log("[Startup Logger] ⚠️ Axiom logging not available, using console only");
+  }
+}
+
+/**
+ * Enhanced logging function that uses both local logging and Axiom
+ */
+function logStartup(level, message, data = {}) {
+  const isDebug = getConfig("DEBUG") === "true" || getConfig("AXIOM_DEBUG") === "true";
+
+  const enrichedData = {
+    ...data,
+    phase: getCurrentPhase(),
+    timestamp: new Date().toISOString(),
+    script: "verify-and-start.js",
+    environment: getConfig("NODE_ENV", "development"),
+    debug: isDebug,
+  };
+
+  // Add debug-specific information
+  if (isDebug) {
+    enrichedData.debugInfo = {
+      memoryUsage: process.memoryUsage(),
+      uptime: process.uptime(),
+      pid: process.pid,
+      platform: process.platform,
+      nodeVersion: process.version,
+      configSnapshot: {
+        NODE_ENV: getConfig("NODE_ENV"),
+        DEBUG: getConfig("DEBUG"),
+        AXIOM_DATASET: getConfig("AXIOM_DATASET"),
+        SUPABASE_URL: getConfig("SUPABASE_URL")?.replace(/\/\/.*@/, "//***@"), // Mask credentials
+      },
+    };
+  }
+
+  if (axiomLogger) {
+    axiomLogger[level](message, enrichedData);
+  } else {
+    // Fallback to enhanced console logging
+    const color = level === "error" ? "\u001b[31m" : level === "warn" ? "\u001b[33m" : "\u001b[32m";
+    console.log(`${color}[STARTUP-${level.toUpperCase()}]\u001b[0m ${message}`, enrichedData);
+  }
+}
+
+function getCurrentPhase() {
+  for (const [, phase] of Object.entries(PHASES_STATUS)) {
+    if (phase.status === "RUNNING") return phase.label;
+  }
+  return "UNKNOWN";
+}
+
 const ROOT_DIR = process.cwd();
 const LOGS_DIR = path.join(ROOT_DIR, "logs");
 if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR);
 
 const colors = {
-  reset: "\x1b[0m",
-  bright: "\x1b[1m",
-  red: "\x1b[31m",
-  green: "\x1b[32m",
-  yellow: "\x1b[33m",
-  blue: "\x1b[34m",
-  magenta: "\x1b[35m",
-  cyan: "\x1b[36m",
-  gray: "\x1b[90m",
+  reset: "\u001b[0m",
+  bright: "\u001b[1m",
+  red: "\u001b[31m",
+  green: "\u001b[32m",
+  yellow: "\u001b[33m",
+  blue: "\u001b[34m",
+  magenta: "\u001b[35m",
+  cyan: "\u001b[36m",
+  gray: "\u001b[90m",
 };
 
 function resolveAppArg(args) {
@@ -581,7 +716,7 @@ function loadNetlifyTomlFunctions() {
     addLogEntry("SYSTEM", "📖 Lecture du netlify.toml...");
 
     const edgeFunctionRegex = /\[\[edge_functions\]\]\s+function\s*=\s*"([^"]+)"/g;
-    const nodeFunctionRegex = /to\s*=\s*"\/\.netlify\/functions\/([^"\/]+)"/g;
+    const nodeFunctionRegex = /to\s*=\s*"\/\.netlify\/functions\/([^"/]+)"/g;
 
     let matchEdge;
     let edgeCount = 0;
@@ -821,10 +956,14 @@ const COMMANDS = {
  * @returns {string} Clean string without ANSI escape sequences
  */
 function stripAnsi(str) {
-  return str.replace(
-    /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
-    ""
+  // Use String.fromCharCode to bypass no-control-regex lint error
+  const ESC = String.fromCharCode(27);
+  const CSI = String.fromCharCode(155);
+  const ansiRegex = new RegExp(
+    "[" + ESC + CSI + "][[\\]()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]",
+    "g"
   );
+  return str.replace(ansiRegex, "");
 }
 
 /**
@@ -952,7 +1091,7 @@ class ProcessManager {
                 declared: false,
                 loaded: true,
               });
-              addLogEntry("DEBUG", `🔍 Fonction Node.js chargée (log) : ${name}`);
+              addLogEntry("DEBUG", ` Fonction Node.js chargée (log) : ${name}`);
               saveFunctionsCache();
             } else {
               detectedFunctions.node.get(name).loaded = true;
@@ -965,7 +1104,7 @@ class ProcessManager {
                 declared: false,
                 loaded: true,
               });
-              addLogEntry("DEBUG", `🔍 Fonction Edge chargée (log) : ${name}`);
+              addLogEntry("DEBUG", ` Fonction Edge chargée (log) : ${name}`);
               saveFunctionsCache();
             } else {
               detectedFunctions.edge.get(name).loaded = true;
@@ -987,7 +1126,7 @@ class ProcessManager {
                     declared: false,
                     loaded: true,
                   });
-                  addLogEntry("DEBUG", `🔍 Fonction Edge chargée (fallback edge) : ${name}`);
+                  addLogEntry("DEBUG", ` Fonction Edge chargée (fallback edge) : ${name}`);
                   saveFunctionsCache();
                 } else {
                   detectedFunctions.edge.get(name).loaded = true;
@@ -998,7 +1137,7 @@ class ProcessManager {
                     declared: false,
                     loaded: true,
                   });
-                  addLogEntry("DEBUG", `🔍 Fonction Node.js chargée (fallback func) : ${name}`);
+                  addLogEntry("DEBUG", ` Fonction Node.js chargée (fallback func) : ${name}`);
                   saveFunctionsCache();
                 } else {
                   detectedFunctions.node.get(name).loaded = true;
@@ -1038,7 +1177,7 @@ class ProcessManager {
             if (nodeCount === 0 && edgeCount === 0) {
               addLogEntry(
                 "NETLIFY",
-                "⚠️ Attention: Serveur prêt mais aucune fonction détectée ! (Trop tôt ?)"
+                " Attention: Serveur prêt mais aucune fonction détectée ! (Trop tôt ?)"
               );
               // On ne met pas isReady = true tout de suite si on attend des fonctions ?
               // Le user dit "si aucun function... c'est certainement moins que ce qu'on attend".
@@ -1048,7 +1187,7 @@ class ProcessManager {
             } else {
               addLogEntry(
                 "NETLIFY",
-                `✅ Fin du démarrage. Fonctions chargées: ${nodeCount} Node, ${edgeCount} Edge.`
+                ` Fin du démarrage. Fonctions chargées: ${nodeCount} Node, ${edgeCount} Edge.`
               );
               isReady = true;
             }
@@ -1056,7 +1195,7 @@ class ProcessManager {
         }
 
         // Ready checks
-        if (this.name === "SOVEREIGN" && trimmed.includes("✅ Sovereign AI Ready")) {
+        if (this.name === "SOVEREIGN" && trimmed.includes(" Sovereign AI Ready")) {
           isReady = true;
         }
 
@@ -1099,7 +1238,7 @@ class ProcessManager {
       // On autorise maintenant le readyCheck pour NETLIFY aussi, car le log parsing est fragile
       if (await readyCheck()) {
         isReady = true;
-        addLogEntry(this.name, "✅ Ready check externe (port/http) validé.");
+        addLogEntry(this.name, " Ready check externe (port/http) validé.");
         break;
       }
       if ((Date.now() - startTime) % 10000 < 2000) {
@@ -1112,13 +1251,13 @@ class ProcessManager {
     if (isReady) {
       addLogEntry(
         this.name,
-        `✅ Prêt et vérifié après ${((Date.now() - startTime) / 1000).toFixed(1)}s`
+        ` Prêt et vérifié après ${((Date.now() - startTime) / 1000).toFixed(1)}s`
       );
     } else {
       if (this.name === "SOVEREIGN") {
         addLogEntry(
           this.name,
-          "⚠️ Le service n'a pas répondu dans les temps. Continuation en mode dégradé.",
+          " Le service n'a pas répondu dans les temps. Continuation en mode dégradé.",
           true
         );
         return;
@@ -1299,13 +1438,13 @@ async function killOrphanedProcesses(graceDelayMs = 0) {
       const killedPids = output.split(/\r?\n/).filter((p) => p.trim());
       addLogEntry(
         "SYSTEM",
-        `✅ Nettoyage terminé : ${killedPids.length} processus descendants tués.`
+        ` Nettoyage terminé : ${killedPids.length} processus descendants tués.`
       );
     } else if (verbose) {
-      addLogEntry("SYSTEM", "✅ Aucun processus descendant orphelin trouvé.");
+      addLogEntry("SYSTEM", " Aucun processus descendant orphelin trouvé.");
     }
   } catch (e) {
-    addLogEntry("SYSTEM", `⚠️ Erreur lors du nettoyage: ${e.message}`, true);
+    addLogEntry("SYSTEM", ` Erreur lors du nettoyage: ${e.message}`, true);
   }
 }
 
@@ -1392,7 +1531,7 @@ function isFunctionTested(f, metricsEntries) {
 
 async function generateFinalReport() {
   const reportStream = fs.createWriteStream(MAIN_REPORT_FILE, {
-    flags: IS_MANUAL ? "a" : "w",
+    flags: "w", // Always create a fresh report
   });
   reportStream.write(`RAPPORT DE TEST DÉTAILLÉ - ${new Date().toISOString()}\n`);
   reportStream.write(`=============================================\n\n`);
@@ -1611,7 +1750,7 @@ async function generateFinalReport() {
   const finalSnapshot = getProcessSnapshot();
   const remaining = diffProcessSnapshot(finalSnapshot);
   if (remaining.length > 0) {
-    reportStream.write("\n🚨 PROCESSUS RÉSIDUELS DÉTECTÉS (FUITES POTENTIELLES) :\n");
+    reportStream.write("\n PROCESSUS RÉSIDUELS DÉTECTÉS (FUITES POTENTIELLES) :\n");
     reportStream.write("--------------------------------------------------\n");
 
     // Grouper par processus parent pour montrer la hiérarchie des fuites
@@ -1654,7 +1793,7 @@ async function generateFinalReport() {
 function displaySummaryReport() {
   console.log(`\n${colors.bright}=============================================${colors.reset}`);
   console.log(`${colors.bright}   RÉSUMÉ DE L'EXÉCUTION                     ${colors.reset}`);
-  console.log(`${colors.bright}=============================================${colors.reset}`);
+  console.log(`${colors.bright}=============================================\n${colors.reset}`);
 
   let hasError = false;
   Object.values(PHASES_STATUS).forEach((phase) => {
@@ -1742,7 +1881,7 @@ function displaySummaryReport() {
   } else {
     console.log(`${colors.green}${colors.bright}ÉTAT FINAL: SUCCÈS${colors.reset}`);
   }
-  console.log(`${colors.bright}=============================================${colors.reset}\n`);
+  console.log(`${colors.bright}=============================================\n${colors.reset}`);
 }
 
 async function checkPlaywright() {
@@ -1762,7 +1901,7 @@ async function checkPlaywright() {
     if (ageInHours < 24) {
       addLogEntry(
         "SYSTEM",
-        `✅ Utilisation du cache pour Playwright (âge: ${ageInHours.toFixed(1)}h)`
+        ` Utilisation du cache pour Playwright (âge: ${ageInHours.toFixed(1)}h)`
       );
       return true;
     }
@@ -1785,7 +1924,7 @@ async function checkPlaywright() {
     fs.writeFileSync(CACHE_FILE, new Date().toISOString());
     return true;
   } catch (e) {
-    addLogEntry("SYSTEM", "❌ Échec de l'installation de Playwright.", true);
+    addLogEntry("SYSTEM", " Échec de l'installation de Playwright.", true);
     if (e.stdout) addLogEntry("PLAYWRIGHT", e.stdout.toString(), true);
     if (e.stderr) addLogEntry("PLAYWRIGHT", e.stderr.toString(), true);
     return false;
@@ -1859,18 +1998,14 @@ async function runTests() {
     child.stderr.on("data", (chunk) => onLine(chunk, true));
 
     child.on("error", (err) => {
-      addLogEntry(
-        "SYSTEM",
-        `❌ Impossible de lancer les tests d'intégration: ${err.message}`,
-        true
-      );
+      addLogEntry("SYSTEM", ` Impossible de lancer les tests d'intégration: ${err.message}`, true);
       resolve(false);
     });
 
     const timeout = setTimeout(() => {
       addLogEntry(
         "SYSTEM",
-        `❌ Timeout des tests d'intégration après ${timeoutMs / 60000} minutes`,
+        ` Timeout des tests d'intégration après ${timeoutMs / 60000} minutes`,
         true
       );
       try {
@@ -1886,10 +2021,10 @@ async function runTests() {
     child.on("close", (code) => {
       clearTimeout(timeout);
       if (code === 0) {
-        addLogEntry("SYSTEM", "✅ Tous les tests d'intégration ont réussi.");
+        addLogEntry("SYSTEM", " Tous les tests d'intégration ont réussi.");
         resolve(true);
       } else {
-        addLogEntry("SYSTEM", `❌ Tests d'intégration terminés avec le code ${code}.`, true);
+        addLogEntry("SYSTEM", ` Tests d'intégration terminés avec le code ${code}.`, true);
         resolve(false);
       }
     });
@@ -1927,7 +2062,7 @@ async function runBriqueCompiler() {
     child.on("error", (err) => {
       addLogEntry(
         "SYSTEM",
-        `❌ Impossible de lancer le compilateur de briques: ${err.message}`,
+        ` Impossible de lancer le compilateur de briques: ${err.message}`,
         true
       );
       resolve(false);
@@ -1941,7 +2076,7 @@ async function runBriqueCompiler() {
       } else {
         addLogEntry(
           "SYSTEM",
-          `❌ Compilateur de briques terminé avec le code ${code} après ${duration.toFixed(1)}s`,
+          ` Compilateur de briques terminé avec le code ${code} après ${duration.toFixed(1)}s`,
           true
         );
         resolve(false);
@@ -1971,23 +2106,16 @@ async function startRepl() {
     const rest = args.slice(1).join(" ");
 
     switch (cmd) {
-      case "status":
-        console.log(`\n${colors.bright}ÉTAT DES SERVICES :${colors.reset}`);
-        console.log(
-          `Tunnel    : ${trackedProcesses.has("TUNNEL") ? colors.green + "Actif (PID " + trackedProcesses.get("TUNNEL") + ")" : colors.red + "Inactif"}${colors.reset}`
-        );
-        console.log(
-          `Sovereign : ${trackedProcesses.has("SOVEREIGN") ? colors.green + "Actif (PID " + trackedProcesses.get("SOVEREIGN") + ")" : colors.red + "Inactif"}${colors.reset}`
-        );
+      case "status": {
+        console.log(`${colors.bright}PROCESSES :${colors.reset}`);
         console.log(
           `Netlify   : ${trackedProcesses.has("NETLIFY") ? colors.green + "Actif (PID " + trackedProcesses.get("NETLIFY") + ")" : colors.red + "Inactif"}${colors.reset}`
         );
 
+        console.log(`\n${colors.bright}PORTS :${colors.reset}`);
         const tPort = await checkPort(PORTS.TUNNEL);
         const sPort = await checkPort(PORTS.SOVEREIGN);
         const nPort = await checkPort(PORTS.NETLIFY);
-
-        console.log(`\n${colors.bright}PORTS :${colors.reset}`);
         console.log(
           `Tunnel (${PORTS.TUNNEL})    : ${tPort ? colors.green + "OUVERT" : colors.red + "FERMÉ"}${colors.reset}`
         );
@@ -1998,6 +2126,7 @@ async function startRepl() {
           `Netlify (${PORTS.NETLIFY})   : ${nPort ? colors.green + "OUVERT" : colors.red + "FERMÉ"}${colors.reset}`
         );
         break;
+      }
 
       case "urls":
         console.log(`\n${colors.bright}URLS D'ACCÈS :${colors.reset}`);
@@ -2022,13 +2151,14 @@ async function startRepl() {
         console.log(`${colors.green}Rapport mis à jour : ${reportUrl}${colors.reset}`);
         break;
 
-      case "delta":
+      case "delta": {
         console.log(`${colors.yellow}Calcul du delta des processus...${colors.reset}`);
         const deltaResult = logNewProcesses("MANUAL DELTA");
         if (deltaResult.started.length === 0 && deltaResult.ended.length === 0) {
           console.log(`${colors.green}Aucun changement de processus détecté.${colors.reset}`);
         }
         break;
+      }
 
       case "exit":
       case "quit":
@@ -2073,49 +2203,174 @@ async function main() {
   console.log(`${colors.bright}=============================================\n${colors.reset}`);
 
   try {
-    startPhase("CLEANUP");
-    await cleanupAll();
-    endPhase("CLEANUP", "SUCCESS");
-
-    // 1. Supabase Check
+    // 1. Supabase Check with Axiom logging
     addLogEntry("SYSTEM", "PHASE 1: VÉRIFICATION SUPABASE");
     startPhase("SUPABASE");
+
+    logStartup("info", "🔍 Starting Supabase connectivity check", {
+      phase: "SUPABASE_CHECK",
+      environment: process.env.NODE_ENV || "development",
+    });
+
     try {
       const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
       const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-      if (!url || !key) throw new Error("Credentials Supabase manquantes");
+
+      if (!url || !key) {
+        const error = "Credentials Supabase manquantes";
+        logStartup("error", "❌ Supabase credentials missing", {
+          hasUrl: !!url,
+          hasKey: !!key,
+          error: error,
+        });
+        throw new Error(error);
+      }
+
+      logStartup("info", "🔗 Creating Supabase client", {
+        url: url.replace(/\/\/.*@/, "//***@"), // Mask credentials in logs
+      });
 
       const supabase = createClient(url, key);
+
+      // Test basic connectivity first
+      const startTime = Date.now();
+      const { data: testData, error: testError } = await supabase
+        .from("instance_config")
+        .select("key")
+        .limit(1);
+
+      const connectivityTime = Date.now() - startTime;
+
+      if (testError) {
+        logStartup("error", "❌ Supabase connectivity test failed", {
+          error: testError.message,
+          connectivityTime: `${connectivityTime}ms`,
+          phase: "SUPABASE_CONNECTIVITY",
+        });
+        throw testError;
+      }
+
+      logStartup("info", "✅ Supabase connectivity established", {
+        connectivityTime: `${connectivityTime}ms`,
+        phase: "SUPABASE_CONNECTIVITY",
+      });
+
+      // NOW load instance configuration after Supabase connectivity is verified
+      logStartup("info", "📡 Loading instance configuration", {
+        phase: "CONFIG_LOAD",
+      });
+
+      try {
+        const instanceConfig =
+          await import("../packages/cop-host/src/config/instanceConfig.backend.js");
+
+        // Initialize instanceConfig with the working Supabase client
+        await instanceConfig.initializeInstanceCore(
+          supabase,
+          (key) => process.env[key],
+          (admin, options) => createClient(url, key, options),
+          false
+        );
+
+        // Load the instance_config table
+        await instanceConfig.loadConfigTable();
+
+        // Replace getConfig with the real one
+        getConfig = instanceConfig.getConfig;
+
+        logStartup("info", "✅ Instance configuration loaded successfully", {
+          phase: "CONFIG_LOAD",
+        });
+      } catch (configError) {
+        logStartup("error", "❌ Failed to load instance configuration", {
+          error: configError.message,
+          phase: "CONFIG_LOAD",
+        });
+        throw configError;
+      }
+
+      // NOW initialize Axiom logger with the real configuration
+      logStartup("info", "🔧 Initializing Axiom logger", {
+        phase: "AXIOM_INIT",
+      });
+      await initializeAxiomLogger();
+      logStartup("info", "✅ Axiom logger initialization completed", {
+        phase: "AXIOM_INIT",
+      });
+
+      // Fetch all configuration (now with real getConfig)
       const { data: configData, error } = await supabase
         .from("instance_config")
-        .select("key, value");
+        .select("key, value, value_json");
 
-      if (error) throw error;
+      if (error) {
+        logStartup("error", "❌ Failed to fetch instance_config", {
+          error: error.message,
+          phase: "SUPABASE_CONFIG_FETCH",
+        });
+        throw error;
+      }
 
       addLogEntry("SYSTEM", `✅ Supabase OK (${configData.length} config items)`);
       endPhase("SUPABASE", "SUCCESS");
 
-      // Extract and display impactful config
-      configData.forEach((row) => {
-        const k = row.key.trim();
-        const lowerK = k.toLowerCase();
-        const isImpactful = IMPACTFUL_KEYS.some((ik) => ik.toLowerCase() === lowerK);
+      // Log Axiom-specific configuration
+      const axiomConfig = configData.filter(
+        (row) =>
+          row.key.includes("AXIOM") ||
+          row.key.includes("axiom") ||
+          row.key.toLowerCase().includes("logging")
+      );
 
-        if (isImpactful) {
-          startupConfig[k] = row.value;
-          const displayValue =
-            k.toLowerCase().includes("key") || k.toLowerCase().includes("token")
-              ? `${row.value.substring(0, 4)}...${row.value.substring(row.value.length - 4)}`
-              : row.value;
+      if (axiomConfig.length > 0) {
+        logStartup("info", "📊 Axiom configuration found", {
+          axiomConfigCount: axiomConfig.length,
+          configKeys: axiomConfig.map((row) => row.key),
+          phase: "AXIOM_CONFIG_DISCOVERY",
+        });
+      }
+
+      // Extract and display impactful config with Axiom logging
+      const impactfulConfig = [];
+      configData.forEach((row) => {
+        const k = row.key;
+        if (IMPACTFUL_KEYS.includes(k)) {
+          const displayValue = k.includes("KEY") ? "***REDACTED***" : row.value;
           addLogEntry("CONFIG", `Found: ${k} = ${displayValue}`);
+
+          impactfulConfig.push({
+            key: k,
+            hasValue: !!row.value,
+            isRedacted: k.includes("KEY"),
+          });
         }
       });
+
+      logStartup("info", "📋 Impactful configuration loaded", {
+        totalConfigItems: configData.length,
+        impactfulConfigCount: impactfulConfig.length,
+        axiomConfigCount: axiomConfig.length,
+        phase: "CONFIG_SUMMARY",
+      });
+
       logNewProcesses("SUPABASE");
+
+      logStartup("info", "🎉 Supabase phase completed successfully", {
+        totalConfigItems: configData.length,
+        connectivityTime: `${connectivityTime}ms`,
+        phase: "SUPABASE_COMPLETE",
+      });
     } catch (e) {
+      logStartup("error", "💥 Supabase phase failed", {
+        error: e.message,
+        phase: "SUPABASE_FAILED",
+        stack: e.stack,
+      });
       endPhase("SUPABASE", "FAILED");
       throw e;
     }
 
+    // 2. Compilation des Briques
     addLogEntry("SYSTEM", "PHASE 2: COMPILATION DES BRIQUES");
     startPhase("BRIQUES");
     try {

@@ -20,6 +20,7 @@ export default async (request, runtime, context) => {
 
     const { room_id } = body;
 
+    var targetRoomId;
     if (!room_id) {
       // If no room_id in body, maybe it's a GET request with query params
       const url = new URL(request.url);
@@ -28,9 +29,9 @@ export default async (request, runtime, context) => {
         return error("room_id is required", 400);
       }
       // Use query param if available
-      var targetRoomId = qRoomId;
+      targetRoomId = qRoomId;
     } else {
-      var targetRoomId = room_id;
+      targetRoomId = room_id;
     }
 
     const supabase = getSupabase();

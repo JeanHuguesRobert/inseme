@@ -3,12 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getSupabase } from "../../../lib/supabase.js";
 import { canWrite } from "@inseme/cop-host";
-import {
-  useDataLoader,
-  useApiCaller,
-  useDataSaver,
-  useSyncOperation,
-} from "@inseme/cop-host";
+import { useDataLoader, useApiCaller, useDataSaver, useSyncOperation } from "@inseme/cop-host";
 import { createPropositionWithTags } from "../../../lib/propositions.js";
 import { useNavigate } from "react-router-dom";
 import { getConfig } from "../../../common/config/instanceConfig.client.js";
@@ -657,7 +652,7 @@ export default function useChatLogic(initial = {}) {
               chunk.includes("[DEBUG]") // Show debug messages in UI when debug mode is active
             ) {
               // Extract and display the error/debug message in the UI
-              const errorMatch = chunk.match(/[❌⚠️\[DEBUG\]][^]*?(?=\n\n|$)/);
+              const errorMatch = chunk.match(/(?:❌|⚠️|\[DEBUG\])[^]*?(?=\n\n|$)/);
               if (errorMatch) {
                 const errorText = errorMatch[0].trim();
                 const isDebug = errorText.startsWith("[DEBUG]");

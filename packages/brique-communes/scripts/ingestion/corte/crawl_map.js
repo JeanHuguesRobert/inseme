@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import { createClient } from "@supabase/supabase-js";
-import { loadConfig, getConfig } from "../../../../cop-host/src/scripts/config";
+import { loadConfig, getConfig } from "../../../../cop-host/src/scripts/config.js";
 import {
   fetchAndStoreRawDocument,
   ensureSource,

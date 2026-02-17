@@ -7,6 +7,10 @@ import CollectorModal from "../components/collector/CollectorModal";
 
 const DEFAULT_URL = "https://cortideri.fr/";
 
+const isAnonymous = (user) => {
+  return !user || !user.id || user.isAnonymous;
+};
+
 /**
  * DataCollector - Main page for collecting structured data from websites
  * Users can view a website in iframe and extract information for Ophélia

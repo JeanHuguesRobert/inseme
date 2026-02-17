@@ -1,0 +1,7 @@
+**/*.backup
+*.backup
+*.bak
+**/*~
+node_modules/
+dist/
+build/

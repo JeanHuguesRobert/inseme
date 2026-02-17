@@ -1,21 +1,43 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, useLocation, useParams } from "react-router-dom";
-import BarmanDashboard from "@inseme/brique-cyrnea/pages/BarmanDashboard";
-import ClientMiniApp from "@inseme/brique-cyrnea/pages/ClientMiniApp";
-import VocalConversation from "@inseme/brique-cyrnea/pages/VocalConversation";
-import RadioView from "@inseme/brique-cyrnea/pages/RadioView";
+import {
+  BarmanDashboard,
+  ClientMiniApp,
+  VocalConversation,
+  RadioView,
+  getRoomIdFromURL,
+} from "../../platform/netlify/edge-functions/lib/document_search/index.js";
+import {
+  BlogHome,
+  BlogPost,
+  BlogEditor,
+  GazettePage,
+} from "../../platform/netlify/edge-functions/lib/document_search/index.js";
 import LegalPage from "./pages/LegalPage";
 import { useCurrentUser, isDeleted } from "@inseme/cop-host";
 import { InsemeProvider } from "@inseme/room";
 import { getSupabase } from "@inseme/cop-host/client/supabase.js";
+import { useLogger } from "@inseme/cop-host/lib/axiom.js";
 
 function App() {
   const { currentUser: user } = useCurrentUser();
   const location = useLocation();
   const route = location.pathname;
   const supabase = getSupabase();
+  const logger = useLogger();
 
-  const roomId = getRoomIdFromPath(route);
+  const roomId = getRoomIdFromURL(route);
+
+  // Log navigation events
+  useEffect(() => {
+    logger.info("App navigation", {
+      path: route,
+      roomId: roomId,
+      userId: user?.id || "anonymous",
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString(),
+    });
+  }, [route, roomId, user?.id, logger]);
 
   return (
     <InsemeProvider
@@ -32,6 +54,10 @@ function App() {
         <Route path="/bar/:roomId" element={<BarmanDashboard roomId={roomId} />} />
         <Route path="/vocal/:roomId" element={<VocalConversation />} />
         <Route path="/radio/:roomId" element={<RadioView />} />
+        <Route path="/blog" element={<BlogHome />} />
+        <Route path="/blog/new" element={<BlogEditor />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
+        <Route path="/blog/:slug/edit" element={<BlogEditor />} />
         <Route path="/gazette" element={<GazetteView />} />
         <Route path="/gazette/:name" element={<GazetteView />} />
         <Route path="/legal/terms" element={<LegalPage type="terms" />} />
@@ -43,23 +69,13 @@ function App() {
   );
 }
 
-function getRoomIdFromPath(pathname) {
-  const parts = pathname.split("/");
-  if (
-    parts.length >= 3 &&
-    (parts[1] === "bar" || parts[1] === "app" || parts[1] === "vocal" || parts[1] === "radio")
-  ) {
-    return parts[2] || "cyrnea";
-  }
-  return "cyrnea";
-}
-
 function GazetteView() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { name } = useParams();
   const gazetteName = name || "global";
   const supabase = getSupabase();
+  const logger = useLogger();
 
   useEffect(() => {
     let isMounted = true;
@@ -67,6 +83,12 @@ function GazetteView() {
     async function loadGazette() {
       try {
         setLoading(true);
+
+        logger.info("Gazette loading started", {
+          gazetteName: gazetteName,
+          timestamp: new Date().toISOString(),
+        });
+
         const { data, error } = await supabase
           .from("posts")
           .select("*")
@@ -77,20 +99,33 @@ function GazetteView() {
         if (!isMounted) return;
 
         if (error) {
+          logger.error("Gazette loading failed", {
+            gazetteName: gazetteName,
+            error: error.message,
+            timestamp: new Date().toISOString(),
+          });
           console.error("Error loading gazette posts:", error);
           setPosts([]);
         } else {
           const activePosts = (data || []).filter((p) => !isDeleted(p));
           setPosts(activePosts);
+          logger.info("Gazette loading completed", {
+            gazetteName: gazetteName,
+            postsCount: activePosts.length,
+            timestamp: new Date().toISOString(),
+          });
         }
       } catch (err) {
         if (!isMounted) return;
         console.error("Unexpected error loading gazette posts:", err);
         setPosts([]);
+        logger.error("Gazette loading unexpected error", {
+          gazetteName: gazetteName,
+          error: err.message,
+          timestamp: new Date().toISOString(),
+        });
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     }
 
@@ -99,7 +134,7 @@ function GazetteView() {
     return () => {
       isMounted = false;
     };
-  }, [gazetteName, supabase]);
+  }, [gazetteName, logger, supabase]);
 
   const title = gazetteName === "global" ? "LA GAZETTE" : `GAZETTE ${gazetteName.toUpperCase()}`;
 

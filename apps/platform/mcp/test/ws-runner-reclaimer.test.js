@@ -7,7 +7,7 @@ import store from "../cop/supabaseStore.js";
   const originalList = store.listTasks;
   const originalSave = store.saveTask;
   try {
-    store.listTasks = async ({ status }) => {
+    store.listTasks = async ({ _status }) => {
       return [
         {
           id: "task-1",
@@ -27,6 +27,7 @@ import store from "../cop/supabaseStore.js";
     assert.strictEqual(saved.length, 1, "Expect one task to be reclaimed");
     assert.strictEqual(saved[0].id, "task-1");
     assert.strictEqual(saved[0].worker_id, null);
+
     console.log("reclaimer test passed");
   } finally {
     store.listTasks = originalList;

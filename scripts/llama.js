@@ -174,25 +174,23 @@ async function startREPL() {
         case "/export":
           exportTraeProvider(currentModel, MODELS[currentModel]);
           break;
-        case "/temp":
+        case "/temp": {
           const t = parseFloat(arg);
           if (!isNaN(t) && t >= 0 && t <= 1) {
             temperature = t;
             console.log(`Temperature: ${temperature}`);
           } else console.log("Invalid temperature");
           break;
-        case "/max":
+        }
+
+        case "/max": {
           const m = parseInt(arg);
           if (!isNaN(m) && m > 0) {
             max_tokens = m;
             console.log(`Max tokens: ${max_tokens}`);
           } else console.log("Invalid max_tokens");
           break;
-        case "/history":
-          chatHistory.forEach((msg, i) => console.log(`${i + 1}: ${msg}`));
-          break;
-        default:
-          console.log("Unknown command");
+        }
       }
       rl.prompt();
       return;
@@ -266,14 +264,14 @@ function stopServer() {
     });
     console.log("Sovereign AI stopped gracefully.");
     return;
-  } catch (e) {
+  } catch (_e) {
     console.log("Graceful stop failed, trying force kill...");
   }
 
   // Fallback: kill node process running ai.js if needed, but pnpm script should handle it.
   // If we really need to force kill ports:
   const isWin = process.platform === "win32";
-  const cmd = isWin
+  const CMD = isWin
     ? `taskkill /F /IM node.exe /FI "WINDOWTITLE eq Sovereign*"` // Hard to target specifically without PID
     : "pkill -f 'src/ai.js'"; // risky on shared systems
 

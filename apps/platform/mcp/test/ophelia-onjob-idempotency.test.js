@@ -13,7 +13,7 @@ import * as opheliaAgent from "../agents/opheliaAgent.js";
   ];
   const artifacts = [];
   const mockStore = {
-    getTask: async (id) => ({ id: id, topic_id: "t1", status: "running" }),
+    getTask: async (_taskId) => ({ id: _taskId, topic_id: "t1", status: "running" }),
     getSteps: async (taskId) => stepsDb,
     saveStep: async (s) => {
       const idx = stepsDb.findIndex((x) => x.id === s.id);
@@ -38,8 +38,8 @@ import * as opheliaAgent from "../agents/opheliaAgent.js";
       return stepsDb.find((s) => s.task_id === taskId && s.status === "pending");
     },
   };
-  const publishes = [];
   const mockBus = { publish: async (e) => publishes.push(e) };
+  const publishes = [];
 
   const task = { id: "task-1", type: "deep_reply", topic_id: "t1" };
   await opheliaAgent.onTask(task, { store: mockStore, bus: mockBus });

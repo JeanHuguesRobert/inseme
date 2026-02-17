@@ -1,7 +1,8 @@
+/* eslint-env node */
 import crypto from "crypto";
 import axios from "axios";
 import { createClient } from "@supabase/supabase-js";
-import { loadConfig, getConfig } from "../../../../../cop-host/src/scripts/config";
+import { loadConfig, getConfig } from "../../../../../cop-host/src/scripts/config.js";
 
 // Load configuration
 await loadConfig();

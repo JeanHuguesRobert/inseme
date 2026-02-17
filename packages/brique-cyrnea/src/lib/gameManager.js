@@ -46,7 +46,7 @@ export const GAME_PACKS = {
       valid_move('GUESS', _Actor, _Payload).
       valid_move('IA_JUDGE', 'IA', _Payload).
       valid_move('SYSTEM_TICK', 'SYSTEM', _Payload).
-      
+
       % Condition de victoire : score >= 100
       game_over(Score) :- Score >= 100.
     `,
@@ -91,7 +91,7 @@ export const GAME_PACKS = {
       grid_size(5).
       valid_move('FILL_CELL', _Actor, _Payload).
       valid_move('SYSTEM_TICK', 'SYSTEM', _Payload).
-      
+
       % Fin si plus de cases 'empty'
       game_over(Grid) :- \\+ member(empty, Grid).
     `,
@@ -244,7 +244,7 @@ function applyBusinessLogic(state, event, gamePack) {
 export const GAMES = GAME_PACKS;
 
 export function startChallenge(gameId, tableId) {
-  console.log(`Challenge ${gameId} lancé à la table ${tableId}`);
+  console.debug(`Challenge ${gameId} lancé à la table ${tableId}`);
   const gamePack = GAME_PACKS[gameId];
   return {
     success: true,

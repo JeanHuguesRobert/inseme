@@ -53,7 +53,7 @@ app.post("/ask", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3030;
+const PORT = import.meta.env?.PORT || 3030;
 
 (async () => {
   try {

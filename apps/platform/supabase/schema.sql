@@ -677,14 +677,13 @@ CREATE TABLE public.inseme_messages (
   CONSTRAINT inseme_messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.inseme_rooms (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  slug text NOT NULL UNIQUE,
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug text NOT NULL,
   owner_id uuid,
-  name text NOT NULL,
   settings jsonb DEFAULT '{}'::jsonb,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT inseme_rooms_pkey PRIMARY KEY (id),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  CONSTRAINT uniq_inseme_rooms_slug UNIQUE (slug),
   CONSTRAINT inseme_rooms_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.instance_config (
@@ -845,7 +844,7 @@ CREATE TABLE public.municipal_poi (
   description text,
   latitude double precision,
   longitude double precision,
-  geom USER-DEFINED DEFAULT 
+  geom USER-DEFINED DEFAULT
 CASE
     WHEN ((latitude IS NOT NULL) AND (longitude IS NOT NULL)) THEN st_setsrid(st_makepoint(longitude, latitude), 4326)
     ELSE NULL::geometry

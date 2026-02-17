@@ -111,6 +111,18 @@ export default function Transparence() {
     fetchData();
   }, []);
 
+  const nationalAverage = useMemo(() => {
+    const eligible = communes.filter((commune) => (commune.population ?? 0) >= 3500);
+    if (!eligible.length) return null;
+    const total = eligible.reduce((sum, commune) => sum + (commune.score ?? 0), 0);
+    return (total / eligible.length).toFixed(1);
+  }, [communes]);
+
+  const cityScore = useMemo(() => {
+    const city = communes.find((commune) => commune.name === COMMUNITY_NAME);
+    return city?.score ?? null;
+  }, [communes]);
+
   if (!isCorte) {
     return (
       <div className="min-h-screen ">
@@ -133,22 +145,6 @@ export default function Transparence() {
       </div>
     );
   }
-
-  const nationalAverage = useMemo(() => {
-    const eligible = communes.filter((commune) => (commune.population ?? 0) >= 3500);
-    if (!eligible.length) return null;
-    const total = eligible.reduce((sum, commune) => sum + (commune.score ?? 0), 0);
-    return (total / eligible.length).toFixed(1);
-  }, [communes]);
-
-  const cityScore = useMemo(() => {
-    if (!communes.length) return null;
-    const target = String(CITY_NAME || "").toLowerCase();
-    const commune = communes.find(
-      (entry) => entry.commune_name && entry.commune_name.toLowerCase() === target
-    );
-    return commune ? commune.score : null;
-  }, [communes]);
 
   const handleCommuneSelection = (name) => {
     setSearchTerm(name);

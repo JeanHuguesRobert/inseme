@@ -2,7 +2,13 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getSupabase } from "../lib/supabase.js";
 import { isDeleted } from "../../../../packages/cop-host/src/lib/metadata.js";
-import { getDisplayName, getUserInitials } from "@inseme/cop-host";
+import {
+  getDisplayName,
+  getUserInitials,
+  isAnonymousUserId,
+  createAnonymousUserObject,
+  isValidSupabaseUserId,
+} from "@inseme/cop-host";
 import { getUserRole, ROLE_ADMIN } from "@inseme/cop-host";
 import { useCurrentUser } from "@inseme/cop-host";
 import SubscribeButton from "../components/common/SubscribeButton";
@@ -18,6 +24,7 @@ export default function UserPage() {
   const [loading, setLoading] = useState(true);
   const [counts, setCounts] = useState({ posts: 0, followers: 0, following: 0 });
   const [isFollowingYou, setIsFollowingYou] = useState(false);
+  const [avatarSrc, setAvatarSrc] = useState("");
 
   const {
     isSubscribed: isYouSubscribedToProfile,
@@ -33,11 +40,35 @@ export default function UserPage() {
   async function loadUser() {
     setLoading(true);
     try {
+      // Handle anonymous users - don't query Supabase
+      if (isAnonymousUserId(id)) {
+        const anonUser = createAnonymousUserObject(id);
+        setUser(anonUser);
+        setLoading(false);
+        return;
+      }
+
+      // Validate that this is a proper Supabase user ID before querying
+      if (!isValidSupabaseUserId(id)) {
+        throw new Error(`Invalid user ID format: ${id}. Cannot query Supabase users table.`);
+      }
+
       const { data, error } = await getSupabase().from("users").select("*").eq("id", id).single();
-      if (error) throw error;
+      if (error) {
+        console.error(`[UserPage] Supabase user query failed for userId: ${id}`, {
+          error: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          userId: id,
+          isAnonymous: isAnonymousUserId(id),
+          isValidUuid: isValidSupabaseUserId(id),
+        });
+        throw error;
+      }
       setUser(data);
 
-      const { data: postsData, error: postsError } = await supabase
+      const { data: postsData, error: postsError } = await getSupabase()
         .from("posts")
         .select("id, content, created_at, metadata")
         .eq("author_id", id)
@@ -93,14 +124,13 @@ export default function UserPage() {
     }
   }
 
-  if (loading) return <div className="py-8 text-center">Chargement...</div>;
-  if (!user) return <div className="py-8 text-center">Utilisateur introuvable</div>;
-
   const metadata = user?.metadata || {};
-  const [avatarSrc, setAvatarSrc] = useState("");
+  const bio = metadata.bio || user.interests || metadata.about || "";
 
+  // Resolve avatar source from metadata.avatarUrl or fallback to Facebook
   useEffect(() => {
-    // Resolve avatar source from metadata.avatarUrl or fallback to Facebook
+    if (!user) return;
+
     let cancelled = false;
     (async function resolveAvatar() {
       try {
@@ -142,7 +172,8 @@ export default function UserPage() {
     };
   }, [metadata?.avatarUrl, metadata?.facebookId]);
 
-  const bio = metadata.bio || user.interests || metadata.about || "";
+  if (loading) return <div className="py-8 text-center">Chargement...</div>;
+  if (!user) return <div className="py-8 text-center">Utilisateur introuvable</div>;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">

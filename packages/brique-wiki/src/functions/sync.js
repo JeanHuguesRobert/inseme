@@ -123,7 +123,7 @@ export default async (req, context) => {
 
     // 2. Vérifier si déjà synced aujourd'hui
     const today = new Date().toISOString().split("T")[0];
-    const { data: lastSync } = await supabase
+    const { data: lastSync } = await _supabase
       .from("git_sync_log")
       .select("*")
       .eq("page_id", page.id)
@@ -165,13 +165,13 @@ export default async (req, context) => {
 
     // 4. Commit sur GitHub
     const wikiPath = getConfig("");
-    const filePath = `${GITHUB_CONFIG.wikiPath}/${page.slug}.md`;
+    const filePath = `${getConfig("GITHUB_WIKI_PATH")}/${page.slug}.md`;
     const commitSha = await commitToGitHub(filePath, content, page.title);
 
     // 4.1. Générer et sauvegarder le résumé de la page
     const summary = await generatePageSummary(page.content, page.title);
     if (summary) {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await _supabase
         .from("wiki_pages")
         .update({ summary: summary })
         .eq("id", page.id);

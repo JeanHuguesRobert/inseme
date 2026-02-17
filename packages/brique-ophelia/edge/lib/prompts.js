@@ -163,6 +163,22 @@ export async function buildSystemPrompt(identity, role, context = {}, runtime = 
         prompt += `- Questions en suspens : ${sw.questions_ouvertes.join(", ")}\n`;
       }
     }
+
+    // --- Presence Awareness ---
+    const connectedUsers = context.connectedUsers || context.context?.connectedUsers || [];
+    if (connectedUsers.length > 0) {
+      const crowdInfo = connectedUsers
+        .filter((u) => u.name && u.name !== "Ophélia" && !u.is_ai)
+        .map(
+          (u) =>
+            `- **${u.name || "Anonyme"}** (${u.zone || "Zone inconnue"}) [${u.status || "online"}]`
+        )
+        .join("\n");
+
+      if (crowdInfo) {
+        prompt += `\n\n👥 **Présence actuelle dans le bar :**\n${crowdInfo}`;
+      }
+    }
   }
 
   // 6. Surcharges distantes (Optionnel, pour personnalisation par instance sans toucher au code)

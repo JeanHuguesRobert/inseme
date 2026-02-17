@@ -1,23 +1,35 @@
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { getSupabase } from "../client/supabase.js";
 import { useDataLoader } from "../lib/useStatusOperations.js";
-
-export const CurrentUserContext = createContext({
-  currentUser: null,
-  session: null,
-  loading: true,
-  error: null,
-  userStatus: "signed_out",
-  updateProfile: async () => {},
-});
+import { CurrentUserContext } from "./CurrentUserContext.js";
+import { getUserRole } from "../lib/permissions.js";
 
 export function CurrentUserProvider({ children }) {
+  // Helper to check if user is barman (localStorage only - Cyrnea local flag)
+  const isUserBarman = useCallback((user) => {
+    if (!user || typeof window === "undefined") return false;
+
+    // Only check local Cyrnea flag (no leak)
+    return localStorage.getItem("cyrnea_is_barman") === "true";
+  }, []);
+
+  // Helper to create permissions object based on user role (simplified: Client vs Barman)
+  const createPermissions = useCallback(
+    (user) => {
+      if (!user) return {};
+
+      const isBarman = isUserBarman(user);
+
+      // Simple logic: Barman has all permissions, Client has none
+      return {
+        moderate: isBarman,
+        speak: isBarman,
+        configure: isBarman,
+        moderate_vibe: isBarman,
+      };
+    },
+    [isUserBarman]
+  );
   const [currentUser, setCurrentUser] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -106,10 +118,7 @@ export function CurrentUserProvider({ children }) {
         .single();
 
       if (error) {
-        console.error(
-          "[CurrentUserContext] Error creating profile from OAuth:",
-          error
-        );
+        console.error("[CurrentUserContext] Error creating profile from OAuth:", error);
         return null;
       }
 
@@ -124,10 +133,7 @@ export function CurrentUserProvider({ children }) {
   // Centralized profile fetch logic
   const handleProfileFetch = useCallback(
     async (authUser) => {
-      console.log(
-        "[CurrentUserContext] handleProfileFetch called with:",
-        authUser
-      );
+      console.log("[CurrentUserContext] handleProfileFetch called with:", authUser);
       if (!authUser || !authUser.id) {
         console.log("[CurrentUserContext] No authUser or missing id");
         setError("Impossible de charger le profil utilisateur (id manquant)");
@@ -138,27 +144,15 @@ export function CurrentUserProvider({ children }) {
         hasProfileRef.current = false;
         return;
       }
-      if (
-        lastFetchedUserIdRef.current === authUser.id &&
-        hasProfileRef.current
-      ) {
-        console.log(
-          "[CurrentUserContext] Profile already loaded for userId:",
-          authUser.id
-        );
+      if (lastFetchedUserIdRef.current === authUser.id && hasProfileRef.current) {
+        console.log("[CurrentUserContext] Profile already loaded for userId:", authUser.id);
         setLoading(false);
         setUserStatus("signed_in");
         isSigningInRef.current = false;
         return;
       }
-      if (
-        isSigningInRef.current &&
-        lastFetchedUserIdRef.current === authUser.id
-      ) {
-        console.log(
-          "[CurrentUserContext] Already signing in for userId:",
-          authUser.id
-        );
+      if (isSigningInRef.current && lastFetchedUserIdRef.current === authUser.id) {
+        console.log("[CurrentUserContext] Already signing in for userId:", authUser.id);
         return;
       }
       setLoading(true);
@@ -174,39 +168,37 @@ export function CurrentUserProvider({ children }) {
           setLoading(false);
           // alert is browser only
           if (typeof window !== "undefined") {
-            alert(
-              "Désolé, la connexion a pris trop de temps. Veuillez réessayer plus tard."
-            );
+            alert("Désolé, la connexion a pris trop de temps. Veuillez réessayer plus tard.");
           }
-          console.log(
-            "[CurrentUserContext] Profile fetch timed out for userId:",
-            authUser.id
-          );
+          console.log("[CurrentUserContext] Profile fetch timed out for userId:", authUser.id);
         }
       }, 10000);
       // Fetch profile
       let profile = null,
         fetchError = null;
-      try {
-        console.log(
-          "[CurrentUserContext] Fetching profile from users table for userId:",
-          authUser.id
-        );
-        const promise = getSupabase()
-          .from("users")
-          .select("*")
-          .eq("id", authUser.id)
-          .maybeSingle();
-        const { data, error } = await promise;
-        if (error) throw error;
-        profile = data;
-        console.log("[CurrentUserContext] Profile fetch result:", profile);
-      } catch (err) {
-        fetchError = err.message || String(err);
-        console.error(
-          "[CurrentUserContext] Error fetching profile:",
-          fetchError
-        );
+
+      // Skip profile fetch for anonymous users
+      if (authUser.id && authUser.id.startsWith("anon_")) {
+        console.log("[CurrentUserContext] Skipping profile fetch for anonymous user:", authUser.id);
+      } else {
+        try {
+          console.log(
+            "[CurrentUserContext] Fetching profile from users table for userId:",
+            authUser.id
+          );
+          const promise = getSupabase()
+            .from("users")
+            .select("*")
+            .eq("id", authUser.id)
+            .maybeSingle();
+          const { data, error } = await promise;
+          if (error) throw error;
+          profile = data;
+          console.log("[CurrentUserContext] Profile fetch result:", profile);
+        } catch (err) {
+          fetchError = err.message || String(err);
+          console.error("[CurrentUserContext] Error fetching profile:", fetchError);
+        }
       }
       isSigningInRef.current = false;
       clearTimeout(timeoutId);
@@ -215,31 +207,29 @@ export function CurrentUserProvider({ children }) {
         // Ensure critical auth fields are not overwritten by potentially stale/empty profile data
         if (authUser.email) userWithEmail.email = authUser.email;
         if (authUser.id) userWithEmail.id = authUser.id;
+        // Add permissions based on role
+        userWithEmail.can = createPermissions(userWithEmail);
         setCurrentUser(userWithEmail);
         setUserStatus("signed_in");
         setError(null);
         setLoading(false);
         hasProfileRef.current = true;
-        console.log(
-          "[CurrentUserContext] User signed in and profile set:",
-          userWithEmail
-        );
+        console.log("[CurrentUserContext] User signed in and profile set:", userWithEmail);
       } else if (!timedOut) {
         // No profile found - check if this is an OAuth login
         const metadata = authUser.user_metadata || {};
         const isOAuthLogin =
-          metadata.provider &&
-          (metadata.avatar_url || metadata.picture || metadata.name);
+          metadata.provider && (metadata.avatar_url || metadata.picture || metadata.name);
 
         if (isOAuthLogin) {
-          console.log(
-            "[CurrentUserContext] OAuth login detected, creating profile"
-          );
+          console.log("[CurrentUserContext] OAuth login detected, creating profile");
           const newProfile = await createProfileFromOAuth(authUser);
           if (newProfile) {
             const userWithProfile = { ...authUser, ...newProfile };
             if (authUser.email) userWithProfile.email = authUser.email;
             if (authUser.id) userWithProfile.id = authUser.id;
+            // Add permissions based on role
+            userWithProfile.can = createPermissions(userWithProfile);
             setCurrentUser(userWithProfile);
             setUserStatus("signed_in");
             setError(null);
@@ -247,17 +237,19 @@ export function CurrentUserProvider({ children }) {
             hasProfileRef.current = true;
             console.log("[CurrentUserContext] Profile created, user signed in");
           } else {
-            setCurrentUser(authUser);
+            const userWithPermissions = { ...authUser };
+            userWithPermissions.can = createPermissions(userWithPermissions);
+            setCurrentUser(userWithPermissions);
             setUserStatus("signed_in");
             setError(null);
             setLoading(false);
             hasProfileRef.current = false;
           }
         } else {
-          console.log(
-            "[CurrentUserContext] No profile found, using authUser only"
-          );
-          setCurrentUser(authUser);
+          console.log("[CurrentUserContext] No profile found, using authUser only");
+          const userWithPermissions = { ...authUser };
+          userWithPermissions.can = createPermissions(userWithPermissions);
+          setCurrentUser(userWithPermissions);
           setUserStatus("signed_in");
           setError(fetchError);
           setLoading(false);
@@ -265,8 +257,28 @@ export function CurrentUserProvider({ children }) {
         }
       }
     },
-    [createProfileFromOAuth]
+    [createProfileFromOAuth, createPermissions]
   );
+
+  // Listen for localStorage changes (barman flag)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleStorageChange = (e) => {
+      if (e.key === "cyrnea_is_barman") {
+        // Barman status changed, recalculate permissions
+        setCurrentUser((prev) => {
+          if (!prev) return prev;
+          const updatedUser = { ...prev };
+          updatedUser.can = createPermissions(updatedUser);
+          return updatedUser;
+        });
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [createPermissions]);
 
   // Auth state management
   useEffect(() => {
@@ -281,15 +293,11 @@ export function CurrentUserProvider({ children }) {
     // Check for stored session
     const storedSession = getSessionViaLocalStorage();
     if (storedSession) {
-      console.log(
-        "[CurrentUserContext] Found stored session, fetching profile..."
-      );
+      console.log("[CurrentUserContext] Found stored session, fetching profile...");
       setSession(storedSession);
       handleProfileFetch(storedSession.user);
     } else {
-      console.log(
-        "[CurrentUserContext] No stored session, setting user to null"
-      );
+      console.log("[CurrentUserContext] No stored session, setting user to null");
       setCurrentUser(null);
       setUserStatus("signed_out");
       setLoading(false);
@@ -298,17 +306,11 @@ export function CurrentUserProvider({ children }) {
     const {
       data: { subscription },
     } = getSupabase().auth.onAuthStateChange(async (event, newSession) => {
-      console.log(
-        "[CurrentUserContext] Auth event:",
-        event,
-        "user:",
-        newSession?.user?.id
-      );
+      console.log("[CurrentUserContext] Auth event:", event, "user:", newSession?.user?.id);
       setSession(newSession);
       if (newSession?.user) {
         const newUserId = newSession.user.id;
-        const shouldFetch =
-          event === "SIGNED_IN" || lastFetchedUserIdRef.current !== newUserId;
+        const shouldFetch = event === "SIGNED_IN" || lastFetchedUserIdRef.current !== newUserId;
         if (shouldFetch) {
           console.log(
             "[CurrentUserContext] Auth event requires profile fetch for userId:",
@@ -318,9 +320,7 @@ export function CurrentUserProvider({ children }) {
         } else {
           setLoading(false);
           setUserStatus("signed_in");
-          console.log(
-            "[CurrentUserContext] User already signed in, no fetch needed"
-          );
+          console.log("[CurrentUserContext] User already signed in, no fetch needed");
         }
       } else {
         setCurrentUser(null);
@@ -346,14 +346,10 @@ export function CurrentUserProvider({ children }) {
 
       // Filter safe updates
       const safeUpdates = {};
-      if (updates.display_name !== undefined)
-        safeUpdates.display_name = updates.display_name;
-      if (updates.neighborhood !== undefined)
-        safeUpdates.neighborhood = updates.neighborhood;
-      if (updates.interests !== undefined)
-        safeUpdates.interests = updates.interests;
-      if (updates.metadata !== undefined)
-        safeUpdates.metadata = updates.metadata;
+      if (updates.display_name !== undefined) safeUpdates.display_name = updates.display_name;
+      if (updates.neighborhood !== undefined) safeUpdates.neighborhood = updates.neighborhood;
+      if (updates.interests !== undefined) safeUpdates.interests = updates.interests;
+      if (updates.metadata !== undefined) safeUpdates.metadata = updates.metadata;
 
       const { data, error } = await getSupabase()
         .from("users")
@@ -375,8 +371,13 @@ export function CurrentUserProvider({ children }) {
           error: "Aucune donnée modifiée, profil non mis à jour.",
         };
       }
-      // Merge updated profile into currentUser, preserving session info
-      setCurrentUser((prev) => (prev ? { ...prev, ...data } : data));
+      // Merge updated profile into currentUser, preserving session info and recalculating permissions
+      setCurrentUser((prev) => {
+        const updatedUser = prev ? { ...prev, ...data } : data;
+        // Recalculate permissions after role change
+        updatedUser.can = createPermissions(updatedUser);
+        return updatedUser;
+      });
       return { success: true, data };
     } catch (err) {
       setError(err.message);
@@ -408,11 +409,8 @@ export function CurrentUserProvider({ children }) {
     userStatus,
     updateProfile,
     refreshUser,
+    isUserBarman, // Export centralized barman detection
   };
 
-  return (
-    <CurrentUserContext.Provider value={contextValue}>
-      {children}
-    </CurrentUserContext.Provider>
-  );
+  return <CurrentUserContext.Provider value={contextValue}>{children}</CurrentUserContext.Provider>;
 }

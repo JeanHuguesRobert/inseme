@@ -7,8 +7,13 @@ import { ProxyAgent } from "undici";
 function getEnv(name) {
   // 1. Try Netlify.env (Newer Node/Edge runtimes)
   try {
-    if (typeof Netlify !== "undefined" && Netlify.env && typeof Netlify.env.get === "function") {
-      const v = Netlify.env.get(name);
+    if (
+      typeof globalThis !== "undefined" &&
+      globalThis.Netlify &&
+      globalThis.Netlify.env &&
+      typeof globalThis.Netlify.env.get === "function"
+    ) {
+      const v = globalThis.Netlify.env.get(name);
       if (typeof v === "string" && v) return v;
     }
   } catch (_e) {

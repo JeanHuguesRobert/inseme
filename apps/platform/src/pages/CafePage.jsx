@@ -4,6 +4,40 @@ import { useCurrentUser } from "@inseme/cop-host";
 import { useVoiceInterface } from "@inseme/room";
 import { getSupabase } from "../lib/supabase.js";
 
+const cafeApi = {
+  createSession: async (data) => {
+    const supabase = getSupabase();
+    const { data: result, error } = await supabase
+      .from("cafe_sessions")
+      .insert(data)
+      .select()
+      .single();
+    if (error) throw error;
+    return result;
+  },
+  joinSession: async (sessionId, participantData) => {
+    const supabase = getSupabase();
+    const { data: result, error } = await supabase
+      .from("cafe_participants")
+      .insert({ session_id: sessionId, ...participantData })
+      .select()
+      .single();
+    if (error) throw error;
+    return result;
+  },
+  updateParticipant: async (participantId, data) => {
+    const supabase = getSupabase();
+    const { data: result, error } = await supabase
+      .from("cafe_participants")
+      .update(data)
+      .eq("id", participantId)
+      .select()
+      .single();
+    if (error) throw error;
+    return result;
+  },
+};
+
 export default function CafePage() {
   const { currentUser } = useCurrentUser();
   const [session, setSession] = useState(null);

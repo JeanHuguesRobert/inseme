@@ -237,10 +237,12 @@ export function defineEdgeFunction(handler) {
     const env = {
       get: (key) => {
         try {
-          if (typeof Netlify !== "undefined" && Netlify.env) return Netlify.env.get(key);
+          if (typeof globalThis !== "undefined" && globalThis.Netlify && globalThis.Netlify.env)
+            return globalThis.Netlify.env.get(key);
         } catch (_e) {}
         try {
-          if (typeof Deno !== "undefined" && Deno.env) return Deno.env.get(key);
+          if (typeof globalThis !== "undefined" && globalThis.Deno && globalThis.Deno.env)
+            return globalThis.Deno.env.get(key);
         } catch (_e) {}
         return undefined;
       },

@@ -51,9 +51,6 @@ export default function FacebookEmbed({ url, className = "" }) {
         setHtml(data.html);
       } else if (typeof data === "string" && data.trim().startsWith("<")) {
         setHtml(data);
-      } else if (data?.embed_available === false && data?.is_fb_post === true) {
-        console.warn("facebook-oembed: unexpected response; falling back to iframe/link", data);
-        setFallback("iframe");
       } else if (data?.preview) {
         const htmlPreview = `<div style="border:1px solid #ccc; padding:8px;">Source : <a href="${data.preview.url}" target="_blank" rel="noopener noreferrer" style="text-decoration:none; color:inherit;">
           ${data.preview.thumbnail_url ? `<img src="${data.preview.thumbnail_url}" alt="${data.preview.title || "Preview"}" style="max-width:100%; height:auto; display:block; margin-bottom:8px;" />` : ""}

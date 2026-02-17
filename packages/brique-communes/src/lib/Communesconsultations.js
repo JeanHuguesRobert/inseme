@@ -29,7 +29,7 @@ function getNationalSupabase() {
 
   const url = getConfig("NATIONAL_API_URL", DEFAULT_NATIONAL_API_URL);
   const key = getConfig("NATIONAL_API_KEY", DEFAULT_NATIONAL_API_KEY);
-  
+
   // IS_NATIONAL_HUB est maintenant déterminé dynamiquement si possible
   const isHub = getConfig("IS_NATIONAL_HUB", DEFAULT_IS_NATIONAL_HUB);
 
@@ -171,7 +171,7 @@ export function validateResponses(responses, schema) {
             }
             break;
 
-          case "scale":
+          case "scale": {
             const numVal = typeof value === "number" ? value : parseInt(value);
             if (isNaN(numVal) || numVal < (q.min || 1) || numVal > (q.max || 5)) {
               errors.push({
@@ -180,6 +180,7 @@ export function validateResponses(responses, schema) {
               });
             }
             break;
+          }
 
           case "radio":
           case "select":
@@ -990,7 +991,9 @@ export async function getNationalStats(consultationSlug) {
       // Identifier la commune
       const commune =
         r._commune ||
-        (source?.startsWith("federated:") ? source.replace("federated:", "") : getConfig("COMMUNITY_NAME", DEFAULT_COMMUNITY_NAME));
+        (source?.startsWith("federated:")
+          ? source.replace("federated:", "")
+          : getConfig("COMMUNITY_NAME", DEFAULT_COMMUNITY_NAME));
 
       if (!byCommune[commune]) {
         byCommune[commune] = { count: 0, byField: {} };

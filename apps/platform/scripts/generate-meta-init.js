@@ -31,6 +31,7 @@ const content = `// Dynamic metadata initialization
 const CITY_NAME = ${JSON.stringify(CITY_NAME)};
 const PARTY_NAME = ${JSON.stringify(PARTY_NAME)};
 const SITE_URL = ${JSON.stringify(SITE_URL)};
+const SITE_URL_CLEAN = SITE_URL.endsWith("/") ? SITE_URL.slice(0, -1) : SITE_URL;
 const FACEBOOK_APP_ID = ${JSON.stringify(FACEBOOK_APP_ID)};
 
 // Mise à jour dynamique des métadonnées
@@ -57,7 +58,7 @@ if (ogDesc) {
 }
 
 // Ensure an explicit og:image is set (Facebook requires explicit image meta)
-const ogImageUrl = \`\${SITE_URL.replace(/\/$/, "")}/images/og-image.png\`;
+const ogImageUrl = \`\${SITE_URL_CLEAN}/images/og-image.png\`;
 const ogEl = document.getElementById("og-image");
 const twEl = document.getElementById("twitter-image");
 if (ogEl) ogEl.setAttribute("content", ogImageUrl);
@@ -65,7 +66,7 @@ if (twEl) twEl.setAttribute("content", ogImageUrl);
 
 // Set og:url explicitly for Facebook debugger
 const ogUrlEl = document.getElementById("og-url");
-if (ogUrlEl) ogUrlEl.setAttribute("content", SITE_URL.replace(/\/$/, ""));
+if (ogUrlEl) ogUrlEl.setAttribute("content", SITE_URL_CLEAN);
 
 // Set Facebook App ID
 const fbAppIdEl = document.getElementById("fb-app-id");
@@ -73,4 +74,6 @@ if (fbAppIdEl) fbAppIdEl.setAttribute("content", FACEBOOK_APP_ID);
 `;
 
 writeFileSync(outputPath, content, "utf-8");
-console.log(`✓ meta-init.js généré avec CITY_NAME="${CITY_NAME}", PARTY_NAME="${PARTY_NAME}", FB_ID="${FACEBOOK_APP_ID}"`);
+console.log(
+  `✓ meta-init.js généré avec CITY_NAME="${CITY_NAME}", PARTY_NAME="${PARTY_NAME}", FB_ID="${FACEBOOK_APP_ID}"`
+);

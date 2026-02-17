@@ -10,7 +10,7 @@ export function useSubscriptionNotifications(userId) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [channel, setChannel] = useState(null);
+  const [CHANNEL, setChannel] = useState(null); // TODO: Implement real-time channel usage
 
   // Charger le compteur initial
   const loadUnreadCount = useCallback(async () => {
@@ -20,6 +20,7 @@ export function useSubscriptionNotifications(userId) {
     }
 
     try {
+      const supabase = getSupabase();
       const { data, error } = await supabase.rpc("get_user_unread_count", {
         p_user_id: userId,
       });
@@ -56,7 +57,7 @@ export function useSubscriptionNotifications(userId) {
 
     try {
       setLoading(true);
-
+      const supabase = getSupabase();
       const { data, error } = await supabase
         .from("content_subscriptions")
         .select("*")
@@ -84,6 +85,7 @@ export function useSubscriptionNotifications(userId) {
 
       try {
         // Appel RPC si disponible
+        const supabase = getSupabase();
         const { error: rpcError } = await supabase.rpc("mark_subscription_read", {
           p_user_id: userId,
           p_content_type: contentType,
@@ -92,6 +94,7 @@ export function useSubscriptionNotifications(userId) {
 
         if (rpcError) {
           // Fallback: mise à jour directe
+          const supabase = getSupabase();
           await supabase
             .from("content_subscriptions")
             .update({
@@ -122,6 +125,7 @@ export function useSubscriptionNotifications(userId) {
     if (!userId) return;
 
     // Écouter les changements sur les commentaires pour mettre à jour les compteurs
+    const supabase = getSupabase();
     const subscriptionChannel = supabase
       .channel(`user-subscriptions:${userId}`)
       .on(
@@ -132,7 +136,7 @@ export function useSubscriptionNotifications(userId) {
           table: "content_subscriptions",
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        (_payload) => {
           // Recharger les données quand les abonnements changent
           loadUnreadCount();
           loadNotifications();
@@ -140,14 +144,15 @@ export function useSubscriptionNotifications(userId) {
       )
       .subscribe();
 
-    setChannel(subscriptionChannel);
+    setChannel(CHANNEL);
 
     return () => {
       if (subscriptionChannel) {
+        const supabase = getSupabase();
         supabase.removeChannel(subscriptionChannel);
       }
     };
-  }, [userId, loadUnreadCount, loadNotifications]);
+  }, [userId, loadUnreadCount, loadNotifications, CHANNEL]);
 
   // Charger les données initiales
   useEffect(() => {

@@ -1,10 +1,11 @@
+/* eslint-env deno */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 export default async (req, context) => {
   const method = req.method;
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrl = globalThis.Deno?.env.get("SUPABASE_URL");
+  const supabaseKey = globalThis.Deno?.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   if (method === "GET") {

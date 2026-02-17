@@ -830,6 +830,7 @@ function NewInstanceModal({ prefill, onClose, onCreated }) {
     setSaving(true);
 
     try {
+      const supabase = getSupabase();
       const { error } = await supabase.from("saas_instances").insert({
         commune_name: form.communeName,
         commune_insee: form.communeInsee || null,
@@ -1009,6 +1010,7 @@ function InstanceDetailModal({ instance, onClose, onUpdated }) {
     }
 
     // Update status
+    const supabase = getSupabase();
     await supabase.from("saas_instances").update({ status: "active" }).eq("id", instance.id);
 
     onUpdated();

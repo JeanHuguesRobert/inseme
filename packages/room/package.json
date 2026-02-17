@@ -16,7 +16,9 @@
     "@inseme/kudocracy": "workspace:*",
     "@inseme/cop-host": "workspace:*",
     "react-router-dom": "^6.20.0",
-    "lucide-react": "^0.562.0"
+    "lucide-react": "^0.562.0",
+    "@inseme/ui": "*",
+    "@inseme/brique-cyrnea": "*"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

@@ -21,7 +21,9 @@ const cleanMessage = (text) => {
   cleaned = cleaned.replace(/<Think>[\s\S]*?<\/Think>/gi, "");
   // 2. Remove __PROVIDERS_STATUS__...
   cleaned = cleaned.replace(/__PROVIDERS_STATUS__[\s\S]*/g, "");
-  // 3. Remove [VOCAL] : prefix
+  // 3. Remove __PROVIDER_INFO__...
+  cleaned = cleaned.replace(/__PROVIDER_INFO__[\s\S]*/g, "");
+  // 4. Remove [VOCAL] : prefix
   cleaned = cleaned.replace(/^\[VOCAL\]\s*:\s*/, "");
   return cleaned.trim();
 };
@@ -83,7 +85,7 @@ export default function VocalConversation() {
     let vocalUrl = null;
     try {
       if (uploadVocal) {
-        console.log("Uploading raw vocal for archive...");
+        console.debug("Uploading raw vocal for archive...");
         vocalUrl = await uploadVocal(blob);
       }
     } catch (e) {
@@ -117,7 +119,9 @@ export default function VocalConversation() {
         try {
           const url = new URL(opheliaUrl);
           transcribeUrl = `${url.origin}/api/transcribe`;
-        } catch (e) {}
+        } catch (e) {
+          // Silence errors if the component is unmounting
+        }
       }
 
       const resp = await fetch(transcribeUrl, {

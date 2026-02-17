@@ -1388,7 +1388,7 @@ async function start() {
   });
 
   // Keep process alive
-  /* eslint-disable no-constant-condition */
+
   while (true) await new Promise((r) => setTimeout(r, 60_000));
 }
 

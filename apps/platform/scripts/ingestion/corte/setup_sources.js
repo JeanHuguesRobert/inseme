@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { loadConfig, getConfig } from "../../lib/config.js";
+import process from "node:process";
 
 // Load environment variables
 await loadConfig();

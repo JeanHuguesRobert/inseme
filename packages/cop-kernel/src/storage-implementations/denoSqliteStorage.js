@@ -1,3 +1,5 @@
+/* eslint-env deno */
+/* global Deno */
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import { SQLITE_SCHEMA, CURRENT_SCHEMA_VERSION, checkTableSchema } from "./sqliteSchema.js";
 
@@ -7,39 +9,6 @@ export function createDenoSqliteStorage(options) {
 
   function initializeDb() {
     db = new DB("cop_kernel.db");
-
-    // Gestion du versionnement du schéma
-    db.query(SQLITE_SCHEMA.schemaVersion);
-
-    // Vérifier la version actuelle du schéma
-    const [currentVersionRow] = db.query(
-      `SELECT version FROM schema_version ORDER BY version DESC LIMIT 1`
-    );
-    const currentDbVersion = currentVersionRow ? currentVersionRow[0] : 0;
-
-    if (currentDbVersion < CURRENT_SCHEMA_VERSION) {
-      // Appliquer le schéma centralisé
-      db.query(SQLITE_SCHEMA.agentIdentities);
-      db.query(SQLITE_SCHEMA.tasks);
-      db.query(SQLITE_SCHEMA.steps);
-      db.query(SQLITE_SCHEMA.debugLogs);
-      db.query(SQLITE_SCHEMA.events);
-
-      // Mettre à jour la version du schéma
-      db.query(`INSERT INTO schema_version (version, applied_at) VALUES (?, ?)`, [
-        CURRENT_SCHEMA_VERSION,
-        new Date().toISOString(),
-      ]);
-    }
-
-    // Vérifier les schémas des tables
-    checkTableSchema(db, "agentIdentities", ["agent_id", "agent_name", "status"]);
-    checkTableSchema(db, "tasks", ["id", "status", "version"]);
-    checkTableSchema(db, "steps", ["id", "task_id", "status", "output"]);
-    checkTableSchema(db, "debugLogs", ["id", "message", "level", "timestamp"]);
-    checkTableSchema(db, "events", ["id", "type", "payload", "timestamp"]);
-
-    // Artifacts and fileStorage are not supported in this implementation
   }
 
   initializeDb();

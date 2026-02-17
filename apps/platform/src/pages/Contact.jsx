@@ -86,16 +86,14 @@ export default function Contact() {
         </div>
 
         {/* Section de questions et discussions */}
-        {true && (
-          <div className="mt-6">
-            <CommentSection
-              linkedType="contact_page"
-              linkedId="main"
-              currentUser={currentUser}
-              defaultExpanded={false}
-            />
-          </div>
-        )}
+        <div className="mt-6">
+          <CommentSection
+            linkedType="contact_page"
+            linkedId="main"
+            currentUser={currentUser}
+            defaultExpanded={false}
+          />
+        </div>
       </div>
 
       <footer className="bg-gray-800 text-bauhaus-white py-6 mt-12">

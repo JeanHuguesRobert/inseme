@@ -70,6 +70,42 @@ export default function CopAdmin() {
   const [traceLoading, setTraceLoading] = useState(false);
   const [traceError, setTraceError] = useState(null);
 
+  const loadTrace = useCallback(async () => {
+    setTraceError(null);
+    setTraceData(null);
+
+    const cid = traceCorrelationId.trim();
+    if (!cid) {
+      setTraceError("Veuillez saisir un correlation_id.");
+      return;
+    }
+
+    setTraceLoading(true);
+    try {
+      const res = await fetch(
+        `/cop-admin-registry?resource=trace&correlation_id=${encodeURIComponent(cid)}`
+      );
+      const text = await res.text();
+      let body;
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = text;
+      }
+
+      if (!res.ok || body.status === "error") {
+        setTraceError("Erreur trace : " + (body.error?.message || `HTTP ${res.status}`));
+        return;
+      }
+
+      setTraceData(body);
+    } catch (err) {
+      setTraceError("Erreur réseau (trace) : " + err.message);
+    } finally {
+      setTraceLoading(false);
+    }
+  }, [traceCorrelationId]);
+
   // loadTrace moved inside component
 
   // Envoi d'un COP_MESSAGE vers /cop
@@ -521,42 +557,6 @@ export default function CopAdmin() {
     </div>
   );
 }
-
-const loadTrace = useCallback(async () => {
-  setTraceError(null);
-  setTraceData(null);
-
-  const cid = traceCorrelationId.trim();
-  if (!cid) {
-    setTraceError("Veuillez saisir un correlation_id.");
-    return;
-  }
-
-  setTraceLoading(true);
-  try {
-    const res = await fetch(
-      `/cop-admin-registry?resource=trace&correlation_id=${encodeURIComponent(cid)}`
-    );
-    const text = await res.text();
-    let body;
-    try {
-      body = JSON.parse(text);
-    } catch {
-      body = text;
-    }
-
-    if (!res.ok || body.status === "error") {
-      setTraceError("Erreur trace : " + (body.error?.message || `HTTP ${res.status}`));
-      return;
-    }
-
-    setTraceData(body);
-  } catch (err) {
-    setTraceError("Erreur réseau (trace) : " + err.message);
-  } finally {
-    setTraceLoading(false);
-  }
-}, [traceCorrelationId]);
 
 function AgentIdentityAdmin() {
   const [identities, setIdentities] = useState([]);

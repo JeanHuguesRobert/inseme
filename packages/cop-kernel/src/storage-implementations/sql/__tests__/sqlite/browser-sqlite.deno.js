@@ -1,3 +1,5 @@
+/* eslint-env deno */
+/* global Deno */
 import {
   assertEquals,
   assertStrictEquals,

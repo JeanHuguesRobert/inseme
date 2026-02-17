@@ -36,15 +36,16 @@ import {
   storage,
 } from "@inseme/cop-host";
 import { GOVERNANCE_MODELS, getGovernanceModel, calculateResults } from "@inseme/kudocracy";
-import { OPHELIA_ID } from "../constants";
+import { OPHELIA_ID } from "../constants.js";
 
-import { useSilenceTrigger } from "./useSilenceTrigger";
-import { useOpheliaAgent } from "./useOpheliaAgent";
-import { useGovernance } from "./useGovernance";
-import { useReporting } from "./useReporting";
-import { useVoiceHandler } from "./useVoiceHandler";
+import { useSilenceTrigger } from "./useSilenceTrigger.js";
+import { useOpheliaAgent } from "./useOpheliaAgent.js";
+import { useGovernance } from "./useGovernance.js";
+import { useReporting } from "./useReporting.js";
+import { useVoiceHandler } from "./useVoiceHandler.js";
+import { sendMessage as sendBusMessage } from "../lib/messageBus.js";
 
-const PROFILE_TABLE = "inseme_profiles";
+const PROFILE_TABLE = "users";
 
 /**
  * Applique une anonymisation comportementale aux messages d'une salle éphémère.
@@ -107,14 +108,20 @@ export function applyBehavioralAnonymization(messages, baseName = "Participant")
 }
 
 import { BRIQUES, CONSOLIDATED_PROMPTS } from "../generated/brique-registry.js";
+import { User } from "@inseme/cop-host";
 
-export function useInseme(roomName, user, supabase, config = {}, isSpectator = false) {
-  // --- RATIONALE ---
-  // useInseme is the central hub for room-based interaction.
-  // It orchestrates specialized hooks (Governance, Reporting, Voice, Agent)
-  // to maintain a clean separation of concerns while providing a unified API to the UI.
-  // It handles two distinct identity modes: Formal (authenticated) and Informal (anonymous/local).
-
+/**
+ * 🛡️ INSEME ROOM STRATEGY: HYBRID (TYPE 1, 2, & 3)
+ *
+ * This hook manages the complexity of ephemeral rooms where all user types coexist.
+ *
+ * 1. Starts with TYPE 1 (Local Identity) from localStorage (`inseme_local_identity_${roomName}`).
+ * 2. Can upgrade to TYPE 2 (Guest) via `signInAnonymously`.
+ * 3. Can be fully TYPE 3 (Authenticated) if the user logs in.
+ *
+ * The `localIdentity` state preserves the user's chosen pseudo even before they exist in Supabase.
+ */
+export function useInseme(roomName, user, supabase, config, isSpectator) {
   // 0. Configuration Management
   // Stabilizes the configuration object to avoid unnecessary re-renders in sub-hooks.
   const effectiveConfig = useMemo(() => {
@@ -145,10 +152,14 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
       const legacyPseudo =
         localStorage.getItem("inseme_client_pseudo") || localStorage.getItem("inseme_guest_pseudo");
 
-      // Generate a unique UID for this anonymous user to avoid presence collision
+      // For Anonymous Users: We use a UUID for local identification (Presence, React keys)
+      // but sendMessage will send NULL to the DB user_id column.
       const newIdentity = {
         pseudo: legacyPseudo || "",
-        uid: "anon_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now(),
+        uid:
+          typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : "00000000-0000-4000-b000-" + Math.random().toString(16).slice(2, 14),
       };
       localStorage.setItem(`inseme_local_identity_${roomName}`, JSON.stringify(newIdentity));
       return newIdentity;
@@ -171,6 +182,7 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
   const [isHandsFree, setIsHandsFree] = useState(false); // Vocal input toggle
   const [presenceMetadata, setPresenceMetadata] = useState({});
   const [currentSessionId, selectSession] = useState(null);
+  const [sessionStatus, setSessionStatus] = useState("closed"); // "open" | "closed"
 
   // Audio State managed by useVoiceHandler hook
 
@@ -213,9 +225,26 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
         .order("created_at", { ascending: true })
         .limit(100);
 
-      if (data) setMessages(data);
+      if (data) {
+        setMessages(data);
+        try {
+          // Mirror messages into the Bar singleton (recent session messages)
+          const { TheBar } = await import("../../models/index.js");
+          if (TheBar) {
+            data.forEach((m) => {
+              try {
+                TheBar.addMessage(m);
+                TheBar.attachMessageToUser(m);
+              } catch (e) {
+                /* ignore individual failures */
+              }
+            });
+          }
+        } catch (e) {
+          // Dynamic import might fail in edge contexts; ignore
+        }
+      }
     };
-
     fetchMessages();
 
     const msgChannel = supabase
@@ -232,6 +261,20 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
           setMessages((prev) => {
             // Avoid duplicates
             if (prev.find((m) => m.id === payload.new.id)) return prev;
+            // Mirror to TheBar singleton
+            try {
+              // dynamic import to avoid circular deps
+              import("../../models/index.js").then(({ TheBar }) => {
+                if (TheBar) {
+                  try {
+                    TheBar.addMessage(payload.new);
+                    TheBar.attachMessageToUser(payload.new);
+                  } catch (e) {}
+                }
+              });
+            } catch (e) {
+              // ignore
+            }
             return [...prev, payload.new];
           });
         }
@@ -248,35 +291,51 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
     const isEphemeral = !!roomMetadata?.settings?.ephemeral;
 
     // Informal Mode / Anonymous Fallback: Local Identity > "Visiteur"
-    if (isEphemeral || !user) {
-      return {
+    // Informal Mode / Anonymous Fallback: Local Identity > "Visiteur"
+    if (
+      isEphemeral ||
+      !user ||
+      (user.isAnonymous && !user.id) || // Handle generic object with isAnonymous
+      !user.id ||
+      user.id === "null" ||
+      (typeof user.id === "string" && user.id.startsWith("anon_"))
+    ) {
+      const effectiveName = localIdentity.pseudo || "Visiteur";
+
+      // Return Type 1 User
+      return new User({
         id: localIdentity.uid || "guest_" + roomName,
-        name: localIdentity.pseudo || "Visiteur",
-        pseudo: localIdentity.pseudo || "",
-        summary: "Visiteur",
-        avatar_url: localIdentity.avatar_url,
-        color: localIdentity.color || "#000000",
-        isAnonymous: true,
-        metadata: {},
-      };
+        pseudo: effectiveName,
+        type: 1,
+        metadata: {
+          is_anonymous: true,
+          avatarUrl: localIdentity.avatar_url,
+          color: localIdentity.color || "#000000",
+          summary: "Visiteur",
+        },
+      });
     }
 
     // Formal Mode: Managed Account
     // Prioritize userProfile (from DB) > Supabase metadata > Email
-    const dbPseudo = userProfile?.pseudo;
+    const dbPseudo = userProfile?.display_name || userProfile?.pseudo;
     const metaName = user.user_metadata?.full_name || user.user_metadata?.name;
     const emailName = user.email?.split("@")[0];
+    const effectiveName = dbPseudo || metaName || emailName || user.pseudo || "Utilisateur";
 
-    return {
-      ...user,
+    // Return Type 2 or 3 User
+    return new User({
+      ...user, // Inherit existing properties
       id: user.id,
-      name: dbPseudo || metaName || emailName || "Utilisateur",
-      pseudo: dbPseudo || metaName || emailName || "Utilisateur",
-      summary: userProfile?.summary || "Membre",
-      avatar_url: userProfile?.avatar_url || user.user_metadata?.avatar_url,
-      color: userProfile?.color || "#000000",
-      isAnonymous: false,
-    };
+      pseudo: effectiveName,
+      type: user.is_anonymous || user.user_metadata?.is_anonymous ? 2 : 3,
+      metadata: {
+        ...user.user_metadata,
+        avatarUrl: userProfile?.avatar_url || user.user_metadata?.avatar_url || user.avatarUrl,
+        color: userProfile?.color || user.color || "#000000",
+        summary: userProfile?.summary || user.summary || "Membre",
+      },
+    });
   }, [user, userProfile, localIdentity, roomMetadata, roomName]);
 
   // 2. Computed Identity & Roles
@@ -327,7 +386,7 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
 
   // Fetch formal profile if user is authenticated
   useEffect(() => {
-    if (!user?.id || !supabase || !!roomMetadata?.settings?.ephemeral) return;
+    if (!user?.id || !supabase || !!roomMetadata?.settings?.ephemeral || user?.isAnonymous) return;
 
     const fetchProfile = async () => {
       const { data, error } = await supabase
@@ -341,6 +400,73 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
 
     fetchProfile();
   }, [user?.id, supabase, roomMetadata?.settings?.ephemeral]);
+
+  // Listen for profile updates from Cyrnea system
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleProfileUpdate = (event) => {
+      const { userId, pseudo } = event.detail;
+      console.log("[useInseme] Received profile update event:", {
+        userId,
+        pseudo,
+        currentUserId: user?.id,
+        currentProfile: userProfile,
+      });
+
+      // Only update if this matches the current user
+      if (user?.id === userId && userProfile?.display_name !== pseudo) {
+        console.log(
+          "[useInseme] Updating userProfile from",
+          userProfile?.display_name,
+          "to",
+          pseudo
+        );
+        setUserProfile((prev) => ({ ...prev, display_name: pseudo }));
+        console.log("[useInseme] Profile updated from Cyrnea system:", { userId, pseudo });
+      } else {
+        console.log("[useInseme] Not updating profile - conditions not met");
+      }
+    };
+
+    window.addEventListener("inseme-profile-updated", handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener("inseme-profile-updated", handleProfileUpdate);
+    };
+  }, [user?.id, userProfile?.display_name]);
+
+  // Listen for anonymous profile updates from Cyrnea system
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleAnonymousProfileUpdate = (event) => {
+      const { pseudo } = event.detail;
+      console.log("[useInseme] Received anonymous profile update event:", {
+        pseudo,
+        currentLocalIdentity: localIdentity,
+      });
+
+      // Update localIdentity for anonymous users
+      setLocalIdentity((prev) => {
+        const next = { ...prev, pseudo: pseudo.trim() };
+        console.log("[useInseme] Updating localIdentity from", prev.pseudo, "to", pseudo);
+
+        // Also update localStorage
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`inseme_local_identity_${roomName}`, JSON.stringify(next));
+        }
+
+        return next;
+      });
+    };
+
+    window.addEventListener("inseme-anonymous-profile-updated", handleAnonymousProfileUpdate);
+
+    return () => {
+      window.removeEventListener("inseme-anonymous-profile-updated", handleAnonymousProfileUpdate);
+    };
+  }, [roomName]);
 
   const updateAnonymousIdentity = useCallback(
     async (newPseudo) => {
@@ -358,12 +484,14 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
 
       // 2. If formal mode (authenticated and not ephemeral), also update the DB profile
       if (!isEphemeral && user?.id && supabase) {
-        const { error } = await supabase
-          .from(PROFILE_TABLE)
-          .upsert({ id: user.id, pseudo: newPseudo.trim() });
+        const { error } = await supabase.from(PROFILE_TABLE).upsert({
+          id: user.id,
+          display_name: newPseudo.trim(),
+          updated_at: new Date().toISOString(),
+        });
 
         if (!error) {
-          setUserProfile((prev) => ({ ...prev, pseudo: newPseudo.trim() }));
+          setUserProfile((prev) => ({ ...prev, display_name: newPseudo.trim() }));
         }
       }
     },
@@ -424,30 +552,26 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
       }
 
       // 4.3 Persistence
-      let contentObj = {
-        room_id: roomMetadata?.id || roomName,
-        user_id:
-          metadata.is_ai || isEphemeral
-            ? null
-            : effectiveUser.isAnonymous
-              ? null
-              : effectiveUser.id,
-        name: metadata.is_ai ? "Ophélia" : metadata.pseudonym || effectiveUser.name || "Anonyme",
-        message: text,
-        type: metadata.type || "chat",
-        metadata: {
-          ...metadata,
-          user_name: effectiveUser.name, // Preserve effective name for history
-        },
-      };
+      try {
+        const isAnon =
+          effectiveUser.isAnonymous ||
+          (typeof effectiveUser.id === "string" && effectiveUser.id.startsWith("anon_"));
+        const userId = metadata.is_ai || isEphemeral || isAnon ? null : effectiveUser.id;
 
-      const { data, error } = await supabase
-        .from("inseme_messages")
-        .insert([contentObj])
-        .select()
-        .single();
-
-      if (error) console.error("Send Error", error);
+        await sendBusMessage(supabase, {
+          roomId: roomMetadata?.id || roomName,
+          userId,
+          name: metadata.is_ai ? "Ophélia" : metadata.pseudonym || effectiveUser.name || "Anonyme",
+          message: text,
+          type: metadata.type || "chat",
+          metadata: {
+            ...metadata,
+            user_name: effectiveUser.name, // Preserve effective name for history
+          },
+        });
+      } catch (error) {
+        console.error("Send Error", error);
+      }
     },
     [supabase, roomMetadata, roomName, effectiveUser, canInteract, isEphemeral]
   );
@@ -655,18 +779,66 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
     [canVote]
   );
 
+  // Unified system message generator
+  const createSystemMessage = useCallback(
+    (action, details = {}) => {
+      const sessionName = terminology.session || "Session";
+      const messages = {
+        open: {
+          command: "inseme open",
+          text: `*La ${sessionName} commence.*`,
+          broadcast: `🔔 La ${sessionName} est ouverte !`,
+        },
+        close: {
+          command: "inseme close",
+          text: `*La ${sessionName} est désormais close.*`,
+          broadcast: `🔔 La ${sessionName} est close.`,
+        },
+        barman_declared: {
+          command: null,
+          text: null,
+          broadcast: `🔔 ${(details.barmanName || "").toUpperCase()} A PRIS LE SERVICE AU BAR !`,
+          type: "role_announcement",
+        },
+        barman_relieved: {
+          command: null,
+          text: null,
+          broadcast: `🔔 ${(details.barmanName || "").toUpperCase()} A QUITTÉ LE SERVICE AU BAR !`,
+          type: "role_announcement",
+        },
+      };
+
+      const message = messages[action];
+      if (!message) return null;
+
+      return {
+        command: message.command,
+        text: message.text,
+        broadcast: message.broadcast,
+        type: message.type,
+      };
+    },
+    [terminology]
+  );
+
   const startSession = useCallback(() => {
-    const sessionName = terminology.session || "Session";
-    sendMessageRef.current?.(`inseme open\n*La ${sessionName} commence.*`, {
-      type: "system_summary",
-    });
-  }, [terminology]);
+    setSessionStatus("open");
+    const message = createSystemMessage("open");
+    if (message) {
+      sendMessageRef.current?.(`${message.command}\n${message.text}`, {
+        type: message.type,
+      });
+    }
+  }, [createSystemMessage]);
 
   const endSession = useCallback(async () => {
-    const sessionName = terminology.session || "Session";
-    sendMessageRef.current?.(`inseme close\n*La ${sessionName} est désormais close.*`, {
-      type: "system_summary",
-    });
+    setSessionStatus("closed");
+    const message = createSystemMessage("close");
+    if (message) {
+      sendMessageRef.current?.(`${message.command}\n${message.text}`, {
+        type: message.type,
+      });
+    }
 
     if (generateReportRef.current) {
       await generateReportRef.current();
@@ -674,7 +846,7 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
     if (isEphemeral && cleanupEphemeralLogsRef.current) {
       await cleanupEphemeralLogsRef.current(3);
     }
-  }, [terminology, isEphemeral]);
+  }, [createSystemMessage, isEphemeral]);
 
   const updateRoomSettings = useCallback(
     async (newSettings) => {
@@ -705,10 +877,41 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
     channel
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
-        const users = [];
+        const rawUsers = [];
         for (const id in state) {
-          users.push(...state[id]);
+          rawUsers.push(...state[id]);
         }
+
+        // Normalize presence entries to a consistent shape
+        const users = rawUsers.map((u) => ({
+          id: u.user_id || u.id || u.uid || u.userId || null,
+          user_id: u.user_id || u.id || u.userId || u.uid || null,
+          name: u.name || u.pseudo || "",
+          role: u.role || "client",
+          zone: u.zone || u.zone_id || "indoor",
+          status: u.status || (u.online ? "online" : "offline"),
+          public_links: u.public_links || u.publicLinks || [],
+          metadata: u.metadata || {},
+        }));
+
+        // Ensure current effectiveUser is included at least locally
+        try {
+          const currentId = effectiveUser?.id || null;
+          if (currentId && !users.find((x) => x.id === currentId)) {
+            users.push({
+              id: currentId,
+              user_id: currentId,
+              name: effectiveUser.name || effectiveUser.pseudo || "",
+              role: effectiveUser.role || "client",
+              zone: effectiveUser.zone || "indoor",
+              status: "online",
+              metadata: effectiveUser.metadata || {},
+            });
+          }
+        } catch (err) {
+          // Ignore if effectiveUser not available
+        }
+
         setRoomData((prev) => ({ ...prev, connectedUsers: users }));
       })
       .on("broadcast", { event: "agenda_update" }, ({ payload }) => {
@@ -769,10 +972,36 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
 
   // --- DERIVED STATE ---
   // presentPeople is the refined list of real participants (excluding AI and spectators)
+  // Enrich with TheBar data (messages/lastMessage) when available
   const presentPeople = useMemo(() => {
-    return (roomData.connectedUsers || []).filter(
-      (u) => u.name && u.name !== "Ophélia" && !u.is_ai && u.status === "online"
-    );
+    const raw = (roomData.connectedUsers || []).filter((u) => u && u.name && u.status === "online");
+
+    let enriched = raw.map((u) => {
+      try {
+        // Try to get TheBar data synchronously if available
+        if (typeof window !== "undefined" && window.TheBar) {
+          const barUser = window.TheBar?.getUser?.(u.id || u.user_id) || null;
+          return barUser ? { ...u, ...barUser } : u;
+        }
+        return u;
+      } catch (e) {
+        return u;
+      }
+    });
+
+    // Ensure Ophélia appears as a virtual user when available
+    try {
+      if (typeof window !== "undefined" && window.TheBar) {
+        const oph = window.TheBar?.getUser?.("ophélia");
+        if (oph && !enriched.find((x) => x.id === oph.id)) {
+          enriched.push(oph);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    return enriched;
   }, [roomData.connectedUsers]);
 
   const toggleManualDisconnect = useCallback(async () => {
@@ -830,6 +1059,8 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
     archiveReport,
     startSession,
     endSession,
+    sessionStatus,
+    createSystemMessage,
     updateAgenda,
     sendBroadcast: (event, payload) => {
       channelRef.current?.send({
@@ -845,8 +1076,8 @@ export function useInseme(roomName, user, supabase, config = {}, isSpectator = f
     onDelegate,
     // Vocal stuff managed by hook
     uploadVocal,
-    playVocal: null,
-    stopVocal: null,
+    playVocal: () => {},
+    stopVocal: () => {},
     microMode: "default",
     changeMicroMode: () => {},
     isHandsFree, // toggled locally

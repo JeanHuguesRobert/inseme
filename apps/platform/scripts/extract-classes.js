@@ -417,7 +417,7 @@ function extractClassesFromJsx(filePath) {
 function extractDefinitionsFromCss(filePath) {
   const content = fs.readFileSync(filePath, "utf8");
   const classes = new Set();
-  const cssRegex = /\.([a-zA-Z0-9\-_]+)(?=\s*[\{,:\.])/g;
+  const cssRegex = /\.([a-zA-Z0-9-_]+)(?=\s*[{,:.])/g;
   let match;
   while ((match = cssRegex.exec(content)) !== null) {
     classes.add(match[1]);
@@ -443,7 +443,7 @@ function extractCssBlocksFromJsxContent(content) {
   }
 
   // heuristic: template literal containing ".class {" patterns
-  const anyTemplateRe = /`([\s\S]*?\.[a-zA-Z0-9_\-]+\s*\{[\s\S]*?)`/g;
+  const anyTemplateRe = /`([\s\S]*?\.[a-zA-Z0-9_-]+\s*\{[\s\S]*?)`/g;
   while ((m = anyTemplateRe.exec(content)) !== null) {
     if (m[1] && m[1].trim()) blocks.push(m[1]);
   }
@@ -594,7 +594,7 @@ BEHAVIOR
     • use --generate-tailwind-dump to attempt generating a dump via the Tailwind CLI (npx tailwindcss).
   - Inline CSS:
     • the analyzer detects <style> blocks, styled-components tagged templates and style objects in JSX.
-  
+
 EXAMPLES
   # Generate full report
   node scripts/extract-classes.js
@@ -1342,6 +1342,50 @@ mdReport = mdReport.replace(/(# CSS Class Analysis Report\n_Generated on: .+_\n\
 // Write Markdown output
 fs.writeFileSync(outputFileMarkdown, mdReport);
 console.log(`Markdown report generated: ${outputFileMarkdown}`);
+
+// --- BEGIN: Tailwind dump generation ---
+async function generateTailwindDump(outputPath) {
+  console.log("Generating Tailwind CSS dump...");
+  try {
+    const { execSync } = await import("child_process");
+
+    // Try to generate Tailwind dump using npx tailwindcss
+    const configPath = path.join(__dirname, "..", "tailwind.config.js");
+    const inputPath = path.join(__dirname, "..", "src", "index.css");
+
+    let command = `npx tailwindcss --config ${configPath} --input ${inputPath} --output ${outputPath}`;
+
+    // If config doesn't exist, try without it
+    if (!fs.existsSync(configPath)) {
+      command = `npx tailwindcss --input ${inputPath} --output ${outputPath}`;
+    }
+
+    // If input doesn't exist, try with a minimal CSS
+    if (!fs.existsSync(inputPath)) {
+      const minimalCss = "@tailwind base; @tailwind components; @tailwind utilities;";
+      const tempInputPath = path.join(__dirname, "..", "temp-tailwind-input.css");
+      fs.writeFileSync(tempInputPath, minimalCss);
+      command = `npx tailwindcss --input ${tempInputPath} --output ${outputPath}`;
+
+      try {
+        execSync(command, { stdio: "inherit" });
+      } finally {
+        // Clean up temp file
+        if (fs.existsSync(tempInputPath)) {
+          fs.unlinkSync(tempInputPath);
+        }
+      }
+    } else {
+      execSync(command, { stdio: "inherit" });
+    }
+
+    console.log(`✅ Tailwind dump generated: ${outputPath}`);
+  } catch (error) {
+    console.warn("⚠️  Failed to generate Tailwind dump:", error.message);
+    console.warn("   Make sure Tailwind CSS is installed: npm install -D tailwindcss");
+    // Don't throw error, just continue without the dump
+  }
+}
 
 // --- BEGIN: Coordinator / exported runner ---
 export async function runAll(opts = {}) {

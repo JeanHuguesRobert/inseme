@@ -72,7 +72,7 @@ function findRoot(startDir) {
       );
     }
 
-    const pathParts = current.toLowerCase().split(/[\\\/]/);
+    const pathParts = current.toLowerCase().split(/[/]/);
     const isInsideApps = pathParts.includes("apps");
 
     if (hasWorkspace || (hasApps && hasPackages)) {
@@ -140,7 +140,7 @@ async function compile() {
   ).sort();
 
   const hostApps = hostAppsGlob
-    .map((p) => p.split(/[\\\/]/)[0])
+    .map((p) => p.split(/[\\/]/)[0])
     .filter((v, i, a) => a.indexOf(v) === i)
     .filter((appName) => appName.toLowerCase() !== "apps");
 
@@ -174,13 +174,60 @@ async function compile() {
 
           const handlerContent = readFileSync(handlerPath, "utf-8");
           const isAlreadyWrapped = handlerContent.includes("defineFunction(");
+          const isAlreadyLoggingWrapped = handlerContent.includes("defineNodeFunctionWithLogging(");
 
-          const wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
+          // Import paths for logging
+          const nodeWrapperPath = resolve(
+            ROOT,
+            "packages/cop-host/src/lib/logging/node-wrapper.js"
+          );
+          const relNodeWrapperPath = relative(genDir, nodeWrapperPath).replace(/\\/g, "/");
+
+          let wrapperContent;
+          if (isAlreadyLoggingWrapped) {
+            // Already has logging, just use it as-is
+            wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
+import handler from "${relHandlerPath}";
+
+export default handler;
+`;
+          } else if (isAlreadyWrapped) {
+            // Has defineFunction but not logging, wrap with logging
+            wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
+import { defineNodeFunctionWithLogging } from "${relNodeWrapperPath}";
 import { defineFunction as DEFINE_FUNCTION } from "${relRuntimePath}";
 import handler from "${relHandlerPath}";
 
-export default ${isAlreadyWrapped ? "handler" : "DEFINE_FUNCTION(handler)"};
+export default defineNodeFunctionWithLogging(${isAlreadyWrapped ? "handler" : "DEFINE_FUNCTION(handler)"}, {
+  name: '${config.id}-${funcName}',
+  logRequest: true,
+  logResponse: true,
+  logErrors: true,
+  defaultLogData: {
+    briqueId: '${config.id}',
+    functionName: '${funcName}'
+  }
+});
 `;
+          } else {
+            // No wrapper at all, add logging wrapper
+            wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
+import { defineNodeFunctionWithLogging } from "${relNodeWrapperPath}";
+import { defineFunction as DEFINE_FUNCTION } from "${relRuntimePath}";
+import handler from "${relHandlerPath}";
+
+export default defineNodeFunctionWithLogging(DEFINE_FUNCTION(handler), {
+  name: '${config.id}-${funcName}',
+  logRequest: true,
+  logResponse: true,
+  logErrors: true,
+  defaultLogData: {
+    briqueId: '${config.id}',
+    functionName: '${funcName}'
+  }
+});
+`;
+          }
           const targetFile = join(genDir, `gen-${config.id}-${funcName}.js`);
           generatedFiles.add(targetFile);
           writeIfChanged(targetFile, wrapperContent);
@@ -200,17 +247,70 @@ export default ${isAlreadyWrapped ? "handler" : "DEFINE_FUNCTION(handler)"};
 
           const handlerContent = readFileSync(handlerPath, "utf-8");
           const isAlreadyWrapped = handlerContent.includes("defineEdgeFunction(");
+          const isAlreadyLoggingWrapped = handlerContent.includes("defineEdgeFunctionWithLogging(");
 
-          const wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
-import { defineEdgeFunction } from "${relRuntimePath}";
+          // Import paths for logging
+          const edgeWrapperPath = resolve(
+            ROOT,
+            "packages/cop-host/src/lib/logging/edge-wrapper.js"
+          );
+          const relEdgeWrapperPath = relative(genDir, edgeWrapperPath).replace(/\\/g, "/");
+
+          let wrapperContent;
+          if (isAlreadyLoggingWrapped) {
+            // Already has logging, just use it as-is
+            wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
 import handler from "${relHandlerPath}";
 
-export default ${isAlreadyWrapped ? "handler" : "defineEdgeFunction(handler)"};
+export default handler;
 
 export const config = {
   path: "${funcConfig.path}"
 };
 `;
+          } else if (isAlreadyWrapped) {
+            // Has defineEdgeFunction but not logging, wrap with logging
+            wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
+import { defineEdgeFunctionWithLogging } from "${relEdgeWrapperPath}";
+import handler from "${relHandlerPath}";
+
+export default defineEdgeFunctionWithLogging(handler, {
+  name: '${config.id}-${funcName}',
+  logRequest: true,
+  logResponse: true,
+  logErrors: true,
+  defaultLogData: {
+    briqueId: '${config.id}',
+    functionName: '${funcName}'
+  }
+});
+
+export const config = {
+  path: "${funcConfig.path}"
+};
+`;
+          } else {
+            // No wrapper at all, add logging wrapper
+            wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
+import { defineEdgeFunctionWithLogging } from "${relEdgeWrapperPath}";
+import handler from "${relHandlerPath}";
+
+export default defineEdgeFunctionWithLogging(handler, {
+  name: '${config.id}-${funcName}',
+  logRequest: true,
+  logResponse: true,
+  logErrors: true,
+  defaultLogData: {
+    briqueId: '${config.id}',
+    functionName: '${funcName}'
+  }
+});
+
+export const config = {
+  path: "${funcConfig.path}"
+};
+`;
+          }
           const targetFile = join(genDir, `gen-${config.id}-${funcName}.js`);
           generatedFiles.add(targetFile);
           writeIfChanged(targetFile, wrapperContent);
@@ -231,13 +331,41 @@ export const config = {
             const handlerPath = resolve(briqueDir, tool.handler);
             const relHandlerPath = relative(genDir, handlerPath).replace(/\\/g, "/");
 
+            // Import paths for logging
+            const edgeWrapperPath = resolve(
+              ROOT,
+              "packages/cop-host/src/lib/logging/edge-wrapper.js"
+            );
+            const relEdgeWrapperPath = relative(genDir, edgeWrapperPath).replace(/\\/g, "/");
+
             const wrapperContent = `// GENERATED AUTOMATICALLY BY COP-HOST COMPILER
-import { defineEdgeFunction } from "${relRuntimePath}";
+import { defineEdgeFunctionWithLogging } from "${relEdgeWrapperPath}";
 import handler from "${relHandlerPath}";
 
-// Tool wrappers always use defineEdgeFunction for consistent runtime access
-export default defineEdgeFunction(async (runtime, args) => {
+// Tool wrappers always use defineEdgeFunctionWithLogging for consistent runtime access and logging
+export default defineEdgeFunctionWithLogging(async (request, runtime, _context) => {
+  // Tools use a different signature - they expect (runtime, args) not (request, runtime, context)
+  // We need to extract args from the request body
+  let args = {};
+  try {
+    if (request.body) {
+      args = await request.json();
+    }
+  } catch (e) {
+    // If JSON parsing fails, use empty args
+  }
+
   return await handler(runtime, args);
+}, {
+  name: 'tool-${config.id}-${toolName}',
+  logRequest: true,
+  logResponse: true,
+  logErrors: true,
+  defaultLogData: {
+    briqueId: '${config.id}',
+    toolName: '${toolName}',
+    toolType: 'brique-tool'
+  }
 });
 
 export const config = {

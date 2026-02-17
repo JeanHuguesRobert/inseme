@@ -22,8 +22,11 @@ export default function ActeList() {
         if (!mounted) return;
         setError(err);
       } finally {
-        if (!mounted) return;
-        setLoading(false);
+        if (!mounted) {
+          setLoading(false);
+        } else {
+          setLoading(false);
+        }
       }
     }
     load();
@@ -33,8 +36,7 @@ export default function ActeList() {
   }, [session]);
 
   if (loading) return <div className="p-4">Loading actes…</div>;
-  if (error)
-    return <div className="p-4 text-red-600">Error: {error.message}</div>;
+  if (error) return <div className="p-4 text-red-600">Error: {error.message}</div>;
 
   return (
     <div className="p-4">

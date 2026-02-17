@@ -4,10 +4,13 @@ let writeClient = null;
 let readClient = null;
 
 export async function initBus({ supabaseUrl, serviceKey, anonKey } = {}) {
-  const url = supabaseUrl || process.env.SUPABASE_URL;
+  const url = supabaseUrl || import.meta.env?.SUPABASE_URL;
   const sKey =
-    serviceKey || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-  const aKey = anonKey || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    serviceKey ||
+    import.meta.env?.SUPABASE_SERVICE_ROLE_KEY ||
+    import.meta.env?.SUPABASE_SERVICE_KEY;
+  const aKey =
+    anonKey || import.meta.env?.SUPABASE_ANON_KEY || import.meta.env?.VITE_SUPABASE_ANON_KEY;
   if (!url || !sKey)
     throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required for mcp/cop supabaseBus");
   writeClient = createClient(url, sKey);

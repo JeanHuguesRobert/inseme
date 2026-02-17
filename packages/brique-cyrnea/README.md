@@ -46,6 +46,88 @@ engagement data and roles.
 
 ---
 
+## 🗄️ Storage Architecture & Privacy Design
+
+### 📱 User Data Storage (Client-Side)
+
+**Design Philosophy: User Privacy & Anonymity First**
+
+User-related data is **intentionally stored in localStorage** on the client device, not in Supabase
+authentication. This is a deliberate architectural decision for:
+
+- **Privacy Protection**: No personal data is stored in centralized databases
+- **Anonymity by Design**: Users interact without creating accounts or providing personal
+  information
+- **Local Sovereignty**: Each user's device is their own data source of truth
+- **No Authentication Barrier**: Instant access without registration process
+
+**What's stored in localStorage:**
+
+- User pseudonym and display preferences
+- Zone selection and navigation state
+- Public links and social connections
+- Session state and UI preferences
+- Temporary interaction history
+
+**What's NOT stored:**
+
+- Personal identifiers (email, phone, etc.)
+- Authentication tokens or credentials
+- Cross-session tracking data
+- Personal behavioral analytics
+
+### 🏠 Bar Data Storage (Supabase)
+
+**Bar configuration and state** are persisted in the `metadata` column of the `inseme_rooms` table:
+
+```sql
+-- inseme_rooms table structure
+CREATE TABLE inseme_rooms (
+  id UUID PRIMARY KEY,
+  slug TEXT UNIQUE,
+  metadata JSONB, -- ← Bar configuration, settings, state
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
+```
+
+**Stored in room metadata:**
+
+- Bar name and description
+- WiFi configuration and network settings
+- Service availability (Ophelia, Gabriel, music)
+- Zone definitions and layout
+- Ritual configurations and game packs
+- Barman permissions and sesame codes
+- Session state (open/closed, active rituals)
+
+### 💬 Message Storage (Supabase)
+
+**All user interactions and messages** are stored in the `inseme_messages` table:
+
+```sql
+-- inseme_messages table structure
+CREATE TABLE inseme_messages (
+  id UUID PRIMARY KEY,
+  room_id UUID REFERENCES inseme_rooms(id),
+  user_id TEXT, -- Pseudonym or identifier
+  message TEXT,
+  metadata JSONB, -- Message type, attachments, zone info
+  type TEXT, -- 'chat', 'legend', 'tip', 'ritual', etc.
+  created_at TIMESTAMP
+);
+```
+
+**Message types stored:**
+
+- Chat messages and visual signals
+- Legend declarations and promotions
+- Tip declarations and ritual participation
+- Game interactions and challenges
+- After-party proposals and invitations
+
+---
+
 ## 🧠 Philosophy: "Barman Friendly" & Gift Theory
 
 Cyrnea is built with a **Barman-First** and **Anthropological** approach:

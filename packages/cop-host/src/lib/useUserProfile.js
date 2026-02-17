@@ -1,6 +1,11 @@
 // packages/cop-host/src/lib/useUserProfile.js
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getSupabase } from "../client/supabase.js";
+import {
+  isAnonymousUserId,
+  createAnonymousUserObject,
+  isValidSupabaseUserId,
+} from "./userUtils.js";
 
 /**
  * Hook pour récupérer et gérer le profil utilisateur complet
@@ -20,18 +25,42 @@ export function useUserProfile(userId) {
     }
 
     fetchProfile();
-  }, [userId]);
+  }, [userId, fetchProfile]);
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
+
+      // Handle anonymous users - don't query Supabase
+      if (isAnonymousUserId(userId)) {
+        const anonUser = createAnonymousUserObject(userId);
+        setProfile(anonUser);
+        return;
+      }
+
+      // Validate that this is a proper Supabase user ID before querying
+      if (!isValidSupabaseUserId(userId)) {
+        throw new Error(`Invalid user ID format: ${userId}. Cannot query Supabase users table.`);
+      }
+
       const { data, error } = await getSupabase()
         .from("users")
         .select("*")
         .eq("id", userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error(`[useUserProfile] Supabase query failed for userId: ${userId}`, {
+          error: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          userId: userId,
+          isAnonymous: isAnonymousUserId(userId),
+          isValidUuid: isValidSupabaseUserId(userId),
+        });
+        throw error;
+      }
       setProfile(data);
     } catch (err) {
       console.error("Error fetching profile:", err);
@@ -39,11 +68,22 @@ export function useUserProfile(userId) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   const updateProfile = async (updates) => {
     try {
       setLoading(true);
+
+      // Anonymous users cannot update profiles in Supabase
+      if (isAnonymousUserId(userId)) {
+        throw new Error("Anonymous users cannot update database profiles");
+      }
+
+      // Validate that this is a proper Supabase user ID before updating
+      if (!isValidSupabaseUserId(userId)) {
+        throw new Error(`Invalid user ID format: ${userId}. Cannot update Supabase users table.`);
+      }
+
       const { data, error } = await getSupabase()
         .from("users")
         .update({

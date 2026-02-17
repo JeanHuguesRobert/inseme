@@ -9,7 +9,7 @@ export function useVoiceRecorder(onTranscription, options = {}) {
   const durationRef = useRef(0);
   const recognitionRef = useRef(null);
   const startTimeRef = useRef(null);
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(300);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
@@ -126,7 +126,7 @@ export function useVoiceRecorder(onTranscription, options = {}) {
       setTranscriptionPreview("");
       durationRef.current = 0;
       startTimeRef.current = Date.now();
-      setTimeLeft(30);
+      setTimeLeft(300);
 
       // Local Transcription Preview (Web Speech API)
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -170,7 +170,7 @@ export function useVoiceRecorder(onTranscription, options = {}) {
         }
         // We don't stop tracks here anymore to allow reuse and avoid flickering
         if (!isCancelledRef.current && chunksRef.current.length > 0) {
-          const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+          const blob = new Blob(chunksRef.current, { type: "audio/webm;codecs=opus" });
 
           // OpenAI Whisper requires at least 0.1s.
           // We calculate the precise duration to avoid 400 errors.
@@ -224,7 +224,7 @@ export function useVoiceRecorder(onTranscription, options = {}) {
   }, [onTranscription, stopRecording, autoStopDelay, options]);
 
   const addTime = useCallback(() => {
-    setTimeLeft(30);
+    setTimeLeft(300);
   }, []);
 
   const cancelRecording = useCallback(() => {

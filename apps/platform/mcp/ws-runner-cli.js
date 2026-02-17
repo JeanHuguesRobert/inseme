@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { initRunner, init, opheliaAgent } from "./ws-runner.js";
+import process from "node:process";
 
-if (process.argv[2] === "--quick-test") {
+if (import.meta.env?.argv?.[2] === "--quick-test") {
   (async () => {
     await init();
     await opheliaAgent?.onEvent?.(
@@ -14,11 +15,15 @@ if (process.argv[2] === "--quick-test") {
       { store: undefined, bus: undefined }
     );
     console.log("quick test: done");
-    process.exit(0);
+    if (typeof process !== "undefined") {
+      process.exit(0);
+    }
   })();
 } else {
   initRunner().catch((e) => {
     console.error("initRunner failure", e);
-    process.exit(1);
+    if (typeof process !== "undefined") {
+      process.exit(1);
+    }
   });
 }

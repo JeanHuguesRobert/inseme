@@ -1,3 +1,5 @@
+/* eslint-env deno */
+/* global Deno */
 import { assert, assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { afterEach, beforeEach } from "https://deno.land/std@0.208.0/testing/bdd.ts";
 import * as path from "https://deno.land/std@0.208.0/path/mod.ts";

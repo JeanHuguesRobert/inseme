@@ -50,7 +50,27 @@ export default defineConfig(({ mode }) => {
         "@inseme/cop-host": path.resolve(__dirname, "../../packages/cop-host/src"),
         "@inseme/ophelia": path.resolve(__dirname, "../../packages/ophelia/index.js"),
         "@inseme/kudocracy": path.resolve(__dirname, "../../packages/kudocracy"),
-        "@inseme/brique-cyrnea": path.resolve(__dirname, "../../packages/brique-cyrnea/src"),
+        "@inseme/brique-cyrnea": path.resolve(__dirname, "../../packages/brique-cyrnea"),
+        "@inseme/brique-cyrnea/pages": path.resolve(
+          __dirname,
+          "../../packages/brique-cyrnea/src/pages"
+        ),
+        "@inseme/brique-cyrnea/screens": path.resolve(
+          __dirname,
+          "../../packages/brique-cyrnea/src/screens"
+        ),
+        "@inseme/brique-cyrnea/hooks": path.resolve(
+          __dirname,
+          "../../packages/brique-cyrnea/src/hooks"
+        ),
+        "@inseme/brique-cyrnea/components": path.resolve(
+          __dirname,
+          "../../packages/brique-cyrnea/src/components"
+        ),
+        "@inseme/brique-cyrnea/entities": path.resolve(
+          __dirname,
+          "../../packages/brique-cyrnea/src/entities"
+        ),
         "@inseme/brique-kudocracy": path.resolve(__dirname, "../../packages/brique-kudocracy/src"),
       },
     },

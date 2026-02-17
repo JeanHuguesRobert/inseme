@@ -1,3 +1,4 @@
+/* global process, Buffer */
 import crypto from "crypto";
 import axios from "axios";
 import { createClient } from "@supabase/supabase-js";

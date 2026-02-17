@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getSupabase } from "../../lib/supabase.js";
+import { getThreadPath } from "../../lib/threads.js";
 import {
   isDeleted,
   getMetadata,
@@ -72,6 +73,7 @@ export default function PostView({ currentUser }) {
 
   async function loadThreadPath() {
     try {
+      const supabase = getSupabase();
       const path = await getThreadPath(id, supabase);
       setThreadPath(path);
     } catch (err) {

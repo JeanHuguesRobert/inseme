@@ -1,7 +1,7 @@
 import supabaseBus from "./supabaseBus.js";
 import wsBus from "./wsBus.js";
 
-export default function createBus({ type = process.env.COP_BUS || "supabase" } = {}) {
+export default function createBus({ type = import.meta.env?.COP_BUS || "supabase" } = {}) {
   switch (type) {
     case "ws":
       return wsBus();
