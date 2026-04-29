@@ -1,0 +1,26 @@
+{
+  "name": "@inseme/magistral",
+  "version": "1.0.0",
+  "description": "Magistral Pilot and Router for Inseme",
+  "main": "src/router.js",
+  "type": "module",
+  "exports": {
+    ".": "./src/router.js",
+    "./router": "./src/router.js"
+  },
+  "bin": {
+    "magistral": "./bin/magistral.js"
+  },
+  "scripts": {
+    "check": "node --check src/router.js && node --check bin/magistral.js && node --check scripts/launcher.js",
+    "test": "node --test tests/*.test.js",
+    "start": "node bin/magistral.js start",
+    "stop": "node bin/magistral.js stop",
+    "status": "node bin/magistral.js status",
+    "metrics": "node bin/magistral.js metrics",
+    "logs": "node bin/magistral.js logs"
+  },
+  "dependencies": {
+    "node-fetch": "^3.0.0"
+  }
+}

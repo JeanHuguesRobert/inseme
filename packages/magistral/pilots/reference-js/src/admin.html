@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Magistral Administration</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #0f172a;
+        color: #f8fafc;
+        padding: 20px;
+        font-size: 14px;
+      }
+      h1 {
+        color: #38bdf8;
+        font-size: 20px;
+        margin-bottom: 5px;
+      }
+      .subtitle {
+        color: #94a3b8;
+        font-size: 12px;
+        margin-bottom: 20px;
+      }
+
+      /* Tabs */
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #334155;
+      }
+      .tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        color: #94a3b8;
+        border-bottom: 2px solid transparent;
+      }
+      .tab.active {
+        color: #38bdf8;
+        border-bottom-color: #38bdf8;
+        font-weight: 500;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+
+      /* Tables */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        background: #1e293b;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      th {
+        text-align: left;
+        padding: 12px;
+        background: #0f172a;
+        border-bottom: 1px solid #334155;
+        color: #94a3b8;
+        font-weight: 500;
+        font-size: 13px;
+      }
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #334155;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      /* Pills */
+      .pill {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .pill.active {
+        background: #064e3b;
+        color: #34d399;
+      }
+      .pill.disabled {
+        background: #713f12;
+        color: #facc15;
+      }
+      .pill.exhausted {
+        background: #7f1d1d;
+        color: #f87171;
+      }
+      .pill.fast {
+        background: #1e3a8a;
+        color: #60a5fa;
+      }
+      .pill.strong {
+        background: #4c1d95;
+        color: #c084fc;
+      }
+      .pill.fallback {
+        background: #3f3f46;
+        color: #a1a1aa;
+      }
+
+      .error {
+        color: #fca5a5;
+        font-size: 12px;
+      }
+      .code {
+        font-family: monospace;
+        color: #cbd5e1;
+        font-size: 12px;
+      }
+
+      /* Forms & Buttons */
+      input,
+      select {
+        background: #334155;
+        border: 1px solid #475569;
+        color: white;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+      button {
+        background: #38bdf8;
+        color: #0f172a;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 13px;
+      }
+      button:hover {
+        background: #0ea5e9;
+      }
+      button.secondary {
+        background: #334155;
+        color: #e2e8f0;
+      }
+      button.secondary:hover {
+        background: #475569;
+      }
+      button.danger {
+        background: #ef4444;
+        color: white;
+      }
+      button.danger:hover {
+        background: #dc2626;
+      }
+      button.sm {
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+
+      /* Layouts */
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        align-items: center;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .log-detail {
+        background: #0f172a;
+        padding: 10px;
+        margin-top: 5px;
+        border-radius: 4px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        font-size: 11px;
+        color: #94a3b8;
+        display: none;
+      }
+      tr.expanded .log-detail {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Magistral Pilot Metrics</h1>
+    <div class="subtitle">
+      Decoupled Arbitration Layer &bull; Real-time node status via
+      <code>/v1/magistral/metrics</code>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('metrics')">Metrics</div>
+      <div class="tab" onclick="switchTab('explore')">Explore</div>
+      <div class="tab" onclick="switchTab('logs')">Logs</div>
+    </div>
+
+    <!-- METRICS TAB -->
+    <div id="tab-metrics" class="tab-content active">
+      <table>
+        <thead>
+          <tr>
+            <th>Node ID</th>
+            <th>Tier</th>
+            <th>Status</th>
+            <th>Rate (Succ/Req)</th>
+            <th>Avg Latency</th>
+            <th>Target Model</th>
+            <th>Last Error</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="metrics-body">
+          <tr>
+            <td colspan="8" style="text-align: center; color: #94a3b8">
+              Loading Magistral Metrics...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- EXPLORE TAB -->
+    <div id="tab-explore" class="tab-content">
+      <div class="toolbar">
+        <input
+          type="text"
+          id="probe-url"
+          placeholder="Base URL (e.g. https://api.groq.com/openai/v1)"
+          style="width: 300px"
+        />
+        <input
+          type="password"
+          id="probe-key"
+          placeholder="API Key (optional)"
+          style="width: 200px"
+        />
+        <button onclick="probeProvider()">Probe Models</button>
+        <button class="secondary" onclick="addManualNode()">➕ Add Manually</button>
+      </div>
+
+      <div id="probe-results" style="display: none">
+        <div class="toolbar" style="justify-content: space-between">
+          <h3>Available Models</h3>
+          <button class="secondary" onclick="saveMap()">💾 Save Map</button>
+        </div>
+        <table id="probe-table">
+          <thead>
+            <tr>
+              <th>Model ID</th>
+              <th>Owned By</th>
+              <th>Tier Guess</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LOGS TAB -->
+    <div id="tab-logs" class="tab-content">
+      <div class="toolbar">
+        <select id="log-node-filter" onchange="loadLogs()">
+          <option value="">All Nodes</option>
+        </select>
+        <select id="log-status-filter" onchange="loadLogs()">
+          <option value="">All Status</option>
+          <option value="200">200 OK</option>
+          <option value="429">429 Exhausted</option>
+          <option value="500">500 Error</option>
+        </select>
+        <button class="secondary" onclick="toggleAutoRefresh()" id="auto-refresh-btn">
+          ⏸ Pause Auto
+        </button>
+        <button class="danger" onclick="clearLogs()">🗑 Clear Logs</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Node</th>
+            <th>Status</th>
+            <th>Tier</th>
+            <th>Latency</th>
+            <th>Tokens</th>
+          </tr>
+        </thead>
+        <tbody id="logs-body"></tbody>
+      </table>
+    </div>
+
+    <script>
+      // --- TABS ---
+      function switchTab(name) {
+        document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach((c) => c.classList.remove("active"));
+        document.querySelector(`.tab[onclick="switchTab('${name}')"]`).classList.add("active");
+        document.getElementById(`tab-${name}`).classList.add("active");
+      }
+
+      // --- METRICS ---
+      async function loadMetrics() {
+        if (!document.getElementById("tab-metrics").classList.contains("active")) return;
+        try {
+          const res = await fetch("/v1/magistral/metrics");
+          const data = await res.json();
+          const tbody = document.getElementById("metrics-body");
+
+          let html = "";
+          const nodeSelect = document.getElementById("log-node-filter");
+          const currentFilter = nodeSelect.value;
+          const options = ['<option value="">All Nodes</option>'];
+
+          data.nodes
+            .sort((a, b) => b.weight - a.weight)
+            .forEach((n) => {
+              options.push(
+                `<option value="${n.id}" ${n.id === currentFilter ? "selected" : ""}>${n.id}</option>`
+              );
+
+              const pct = n.requests > 0 ? Math.round((n.successes / n.requests) * 100) : 0;
+              const latency = n.avgLatencyMs > 0 ? n.avgLatencyMs + " ms" : "-";
+              const error = n.lastError
+                ? `<span class="error" title="${n.lastError}">${n.lastError}</span>`
+                : "-";
+
+              const actionBtn =
+                n.status === "disabled"
+                  ? `<button class="sm" onclick="enableNode('${n.id}')">Enable</button>`
+                  : `<button class="sm secondary" onclick="disableNode('${n.id}')">Disable</button>`;
+
+              html += `<tr>
+            <td><strong>${n.id}</strong></td>
+            <td><span class="pill ${n.tier}">${n.tier}</span></td>
+            <td><span class="pill ${n.status}">${n.status}</span></td>
+            <td>${n.successes} / ${n.requests} <span style="color:#64748b;font-size:12px;">(${pct}%)</span></td>
+            <td>${latency}</td>
+            <td class="code">${n.model}</td>
+            <td>${error}</td>
+            <td>${actionBtn}</td>
+          </tr>`;
+            });
+          tbody.innerHTML = html;
+          if (nodeSelect.innerHTML !== options.join("")) nodeSelect.innerHTML = options.join("");
+        } catch {
+          // ignore
+        }
+      }
+
+      async function disableNode(id) {
+        await fetch(`/v1/magistral/nodes/${id}/disable`, { method: "POST" });
+        loadMetrics();
+      }
+
+      async function enableNode(id) {
+        await fetch(`/v1/magistral/nodes/${id}/enable`, { method: "POST" });
+        loadMetrics();
+      }
+
+      // --- EXPLORE ---
+      async function probeProvider() {
+        const baseUrl = document.getElementById("probe-url").value;
+        const apiKey = document.getElementById("probe-key").value;
+        if (!baseUrl) return alert("Base URL required");
+
+        const btn = document.querySelector("#tab-explore button");
+        btn.innerText = "Probing...";
+        btn.disabled = true;
+
+        try {
+          const res = await fetch("/v1/magistral/probe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ baseUrl, apiKey }),
+          });
+          const json = await res.json();
+          if (json.error) throw new Error(json.error);
+
+          const tbody = document.querySelector("#probe-table tbody");
+          let html = "";
+          (json.data || []).forEach((m) => {
+            let tier = "strong";
+            if (m.id.includes("8b") || m.id.includes("7b") || m.id.includes("instant"))
+              tier = "fast";
+
+            html += `<tr>
+            <td class="code">${m.id}</td>
+            <td>${m.owned_by || "-"}</td>
+            <td>${tier}</td>
+            <td><button class="sm" onclick="addToMap('${m.id}', '${tier}', '${baseUrl}')">Add to Map</button></td>
+          </tr>`;
+          });
+          tbody.innerHTML = html;
+          document.getElementById("probe-results").style.display = "block";
+        } catch (e) {
+          alert("Probe failed: " + e.message);
+        } finally {
+          btn.innerText = "Probe Models";
+          btn.disabled = false;
+        }
+      }
+
+      async function addToMap(modelId, tier, baseUrl) {
+        const id = prompt("Enter ID for this node:", modelId.split("-").slice(0, 2).join("-"));
+        if (!id) return;
+
+        try {
+          const res = await fetch("/v1/magistral/map/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id,
+              url: baseUrl.replace(/\/$/, "") + "/chat/completions",
+              model: modelId,
+              tier,
+              weight: 1,
+            }),
+          });
+          const json = await res.json();
+          if (json.error) throw new Error(json.error);
+          alert("Node added to active map!");
+          loadMetrics();
+        } catch (e) {
+          alert("Failed to add: " + e.message);
+        }
+      }
+
+      async function addManualNode() {
+        const id = prompt('Enter Node ID (e.g. "my-gpt4"):');
+        if (!id) return;
+
+        const url = prompt('Enter Base URL (e.g. "http://localhost:11434/v1"):');
+        if (!url) return;
+
+        const model = prompt('Enter Model Name (e.g. "llama3"):');
+        if (!model) return;
+
+        const tier = prompt("Enter Tier (fast, strong, fallback):", "fast");
+        const apiKey = prompt("Enter API Key (optional):", "");
+
+        let fullUrl = url;
+        if (!fullUrl.endsWith("/chat/completions")) {
+          fullUrl = fullUrl.replace(/\/$/, "") + "/chat/completions";
+        }
+
+        try {
+          const res = await fetch("/v1/magistral/map/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id,
+              url: fullUrl,
+              model,
+              tier: tier || "fast",
+              weight: 1,
+              apiKey: apiKey || undefined,
+            }),
+          });
+          const json = await res.json();
+          if (json.error) throw new Error(json.error);
+          alert("Node added!");
+          loadMetrics();
+        } catch (e) {
+          alert("Error: " + e.message);
+        }
+      }
+
+      async function saveMap() {
+        if (!confirm("Save current map to registry/maps/default-new.json?")) return;
+        try {
+          const res = await fetch("/v1/magistral/map/save", { method: "POST" });
+          const json = await res.json();
+          if (json.error) throw new Error(json.error);
+          alert("Map saved to " + json.path);
+        } catch (e) {
+          alert("Save failed: " + e.message);
+        }
+      }
+
+      // --- LOGS ---
+      let autoRefresh = true;
+
+      function toggleAutoRefresh() {
+        autoRefresh = !autoRefresh;
+        const btn = document.getElementById("auto-refresh-btn");
+        btn.innerText = autoRefresh ? "⏸ Pause Auto" : "▶ Resume Auto";
+        btn.classList.toggle("secondary", autoRefresh);
+      }
+
+      async function loadLogs() {
+        if (!document.getElementById("tab-logs").classList.contains("active")) return;
+        if (!autoRefresh) return;
+
+        const nodeId = document.getElementById("log-node-filter").value;
+        const status = document.getElementById("log-status-filter").value;
+
+        const qs = new URLSearchParams({ n: 50 });
+        if (nodeId) qs.set("nodeId", nodeId);
+        if (status) qs.set("status", status);
+
+        try {
+          const res = await fetch(`/v1/magistral/logs?${qs}`);
+          const { logs } = await res.json();
+          const tbody = document.getElementById("logs-body");
+
+          let html = "";
+          logs.forEach((l) => {
+            const date = new Date(l.ts).toLocaleTimeString();
+            const statusIcon = l.status === 200 ? "✅" : l.status === 0 ? "⚠️" : "❌";
+            const streamBadge = l.stream
+              ? '<span style="color:#38bdf8; font-size:10px;">⚡</span>'
+              : "";
+
+            html += `<tr onclick="this.classList.toggle('expanded')" style="cursor:pointer">
+            <td class="code">${date}</td>
+            <td>${l.nodeId}</td>
+            <td>${statusIcon} ${l.status || "-"} ${streamBadge}</td>
+            <td><span class="pill ${l.tier}">${l.tier}</span></td>
+            <td>${l.latencyMs}ms</td>
+            <td>${l.completionTokens || "-"}</td>
+          </tr>
+          <tr style="display:none"><td colspan="6" style="padding:0;">
+             <div class="log-detail">${JSON.stringify(l, null, 2)}</div>
+          </td></tr>`; // Detail row handled by CSS
+          });
+          tbody.innerHTML = html;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      async function clearLogs() {
+        await fetch("/v1/magistral/logs", { method: "DELETE" });
+        loadLogs();
+      }
+
+      // Init
+      setInterval(loadMetrics, 2000);
+      setInterval(loadLogs, 3000);
+      loadMetrics();
+      loadLogs();
+    </script>
+  </body>
+</html>

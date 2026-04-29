@@ -79,14 +79,22 @@ async function compressHistoryWithAI(messages, runtime) {
   console.log(`[Ophelia] 🧠 Compressing history: ${contentToCompress.length} messages`);
 
   try {
-    const { createAIClient, buildProviderOrder, resolveModel } = await import("./providers.js");
-    const providers = buildProviderOrder(runtime);
-    const provider = providers[0];
-    const model = resolveModel(provider, "fast");
-    const ai = createAIClient(runtime, provider);
+    let ai;
+    let model;
 
-    const prompt = `Tu es le module de Mémoire d'Ophélia. 
-Résume de manière très concise mais fidèle les échanges passés suivants. 
+    if (runtime.openai) {
+      ai = runtime.openai;
+      model = "gpt-3.5-turbo"; // Default fast model for compression if using generic client
+    } else {
+      const { createAIClient, buildProviderOrder, resolveModel } = await import("./providers.js");
+      const providers = buildProviderOrder(runtime);
+      const provider = providers[0];
+      model = resolveModel(provider, "fast");
+      ai = createAIClient(runtime, provider);
+    }
+
+    const prompt = `Tu es le module de Mémoire d'Ophélia.
+Résume de manière très concise mais fidèle les échanges passés suivants.
 Conserve les décisions prises, les thèmes abordés, les questions en suspens et les points de tension.
 
 Échanges à résumer :
@@ -132,12 +140,20 @@ export async function runOperator(runtime, body, options = {}) {
     console.log("[DEBUG][Operator] Role:", role.id);
   }
 
+  // On enrichit le runtime avec les outils nécessaires
+  const fullRuntime = {
+    ...runtime,
+    supabase: options.supabase || runtime.supabase,
+    sql: options.sql || runtime.sql,
+    openai: options.openai,
+  };
+
   const { messages, question, room_id, model: userModel } = body;
   const idleTimeoutMs = 30000;
 
   // Compression de l'historique si nécessaire
   const originalMessagesCount = messages?.length || 0;
-  const processedMessages = await compressHistoryWithAI(messages || [], runtime);
+  const processedMessages = await compressHistoryWithAI(messages || [], fullRuntime);
   if (processedMessages.length < originalMessagesCount) {
     controller.enqueue(
       encoder.encode(
@@ -173,14 +189,6 @@ export async function runOperator(runtime, body, options = {}) {
       content: instruction,
     });
   }
-
-  // On enrichit le runtime avec les outils nécessaires
-  const fullRuntime = {
-    ...runtime,
-    supabase: options.supabase || runtime.supabase,
-    sql: options.sql || runtime.sql,
-    openai: options.openai,
-  };
 
   const tools = await getAuthorizedTools(fullRuntime, role, identity, body.brique_tools);
   console.log(

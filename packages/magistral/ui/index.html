@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inseme AI Control</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='%230f172a'/%3E%3Ctext%20x='50%25'%20y='50%25'%20dy='.35em'%20text-anchor='middle'%20font-size='28'%20fill='%2322c55e'%20font-family='system-ui%2C%20-apple-system%2C%20BlinkMacSystemFont%2C%20Segoe%20UI%2C%20sans-serif'%3EAI%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+    <!-- Common Header -->
+    <header class="border-b border-slate-800 bg-black/80 backdrop-blur flex items-center justify-between px-4 py-3 sticky top-0 z-50">
+        <div class="flex items-center gap-2">
+            <div class="h-7 w-7 rounded bg-emerald-500 flex items-center justify-center text-black font-bold text-xs">AI</div>
+            <div>
+                <div class="text-xs font-semibold tracking-tight text-slate-300">INSEME</div>
+                <div class="text-xs text-slate-500" id="header-subtitle">Unified AI Interface</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 text-xs">
+            <!-- Endpoint Selector -->
+            <div class="relative group">
+                <button id="settings-btn" class="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <div class="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-3 hidden group-hover:block hover:block z-50">
+                    <label class="block text-[10px] font-medium text-slate-400 mb-1">API Endpoint</label>
+                    <div class="flex gap-1">
+                        <input type="text" id="api-endpoint" class="flex-1 bg-black/40 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300" placeholder="http://localhost:8880">
+                        <button id="save-endpoint" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded text-xs">Save</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="status-pill" class="flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 py-1">
+                <span class="relative flex h-2 w-2">
+                    <span id="status-ping" class="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-50 animate-ping"></span>
+                    <span id="status-dot" class="relative inline-flex h-2 w-2 rounded-full bg-amber-400"></span>
+                </span>
+                <span id="status-text" class="font-medium text-amber-300">Connecting...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 px-4 py-4 grid gap-4 md:grid-cols-3" id="main-container">
+        <!-- Sidebar / Status Panel (Common + Specifics) -->
+        <section class="md:col-span-1 space-y-3" id="sidebar-container">
+            <!-- Injected by modules -->
+        </section>
+
+        <!-- Main Panel -->
+        <section class="space-y-4 md:col-span-2" id="content-container">
+            <!-- Tabs Navigation -->
+            <div class="flex space-x-1 border-b border-slate-800 pb-2 mb-2" id="tabs-nav">
+                <!-- Injected by modules -->
+            </div>
+
+            <!-- Tab Contents -->
+            <div id="tabs-content">
+                <!-- Injected by modules -->
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -51,6 +51,7 @@ export default defineConfig([
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "no-empty": ["error", { allowEmptyCatch: true }],
+      "no-useless-escape": "off",
     },
   },
   // Node and Deno runtime files (server, scripts, runtime) should be linted with their respective globals
@@ -59,6 +60,8 @@ export default defineConfig([
       "packages/**/src/**",
       "packages/**/scripts/**",
       "packages/**/scripts/**/*.js",
+      "packages/**/bin/**",
+      "packages/**/bin/**/*.js",
       "scripts/**",
       "**/runtime/**",
       "**/__tests__/**",

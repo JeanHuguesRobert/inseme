@@ -8,6 +8,7 @@ import { SOVEREIGN_MODELS, REMOTE_MODELS } from "../../../models/registry.js";
 import { providerMetrics } from "./provider-metrics.js";
 
 export const PROVIDERS = [
+  "magistral",
   "openai",
   "mistral",
   "anthropic",
@@ -25,7 +26,8 @@ export const PROVIDER_ENDPOINTS = {
   groq: "https://api.groq.com/openai/v1",
   grok: "https://api.x.ai/v1",
   huggingface: "https://router.huggingface.co/v1",
-  sovereign: "http://localhost:8080/v1",
+  sovereign: "http://localhost:8081/v1",
+  magistral: "http://localhost:8082/v1",
 };
 
 export const MODEL_MODES = {
@@ -75,6 +77,12 @@ export const MODEL_MODES = {
     strong: SOVEREIGN_MODELS["llama-3.2-3b"].filename,
     reasoning: SOVEREIGN_MODELS["qwen-2.5-coder-1.5b"].filename,
   },
+  magistral: {
+    main: "main",
+    fast: "fast",
+    strong: "strong",
+    reasoning: "reasoning",
+  },
 };
 
 export const DEFAULT_MODEL_MODES = {
@@ -86,6 +94,7 @@ export const DEFAULT_MODEL_MODES = {
   groq: "main",
   grok: "main",
   sovereign: "main",
+  magistral: "main",
 };
 
 /**
@@ -120,7 +129,16 @@ export function shouldSkipProvider(runtime, provider) {
  * Construit l'ordre de passage des fournisseurs.
  */
 export function buildProviderOrder(runtime, enforcedProvider = null) {
-  let order = [...PROVIDERS];
+  const { getConfig } = runtime;
+  const magistralKey = getConfig("MAGISTRAL_API_KEY");
+
+  // Force exclusive magistral provider if configured
+  if (magistralKey === "sesame") {
+    return ["magistral"];
+  }
+
+  let order = [...PROVIDERS].filter((p) => p !== "magistral"); // remove magistral from standard shuffle
+
   if (enforcedProvider && order.includes(enforcedProvider)) {
     order = [enforcedProvider, ...order.filter((p) => p !== enforcedProvider)];
   } else {
@@ -183,7 +201,10 @@ export function createAIClient(runtime, provider) {
     baseURL = "https://api.x.ai/v1";
   } else if (provider === "sovereign") {
     apiKey = "sovereign-key"; // Placeholder
-    baseURL = "http://localhost:8080/v1";
+    baseURL = "http://localhost:8081/v1";
+  } else if (provider === "magistral") {
+    apiKey = getConfig("MAGISTRAL_API_KEY") || "sesame";
+    baseURL = "http://localhost:8082/v1";
   } else {
     apiKey = getConfig("OPENAI_API_KEY");
     baseURL = "https://api.openai.com/v1";

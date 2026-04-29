@@ -459,6 +459,7 @@ export const config = {
     if (promptsRegistryPath) generatedFiles.add(promptsRegistryPath);
   }
 
+  await generateMagistralMaps();
   console.log("✅ Compilation finished.");
 }
 
@@ -783,6 +784,33 @@ ${tests
 
   writeIfChanged(registryPath, content);
   return registryPath;
+}
+
+async function generateMagistralMaps() {
+  const mapsDir = resolve(ROOT, "packages/magistral/registry/maps");
+  if (!existsSync(mapsDir)) return;
+
+  const mapFiles = await glob("*.json", { cwd: mapsDir });
+  for (const file of mapFiles) {
+    const jsonPath = join(mapsDir, file);
+    const jsPath = jsonPath.replace(".json", ".js");
+    const content = readFileSync(jsonPath, "utf-8");
+
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (e) {
+      console.warn(`⚠️ Invalid JSON in map ${file}: ${e.message}`);
+      continue;
+    }
+
+    const jsContent = `// GENERATED AUTOMATICALLY BY BRIQUE COMPILER
+// Source: ${file}
+
+export default ${JSON.stringify(parsed, null, 2)};
+`;
+    writeIfChanged(jsPath, jsContent);
+  }
 }
 
 compile().catch((err) => {

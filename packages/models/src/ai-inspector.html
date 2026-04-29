@@ -2,10 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Inseme AI Control</title>
     <link
       rel="icon"
@@ -25,14 +22,8 @@
           AI
         </div>
         <div>
-          <div
-            class="text-xs font-semibold tracking-tight text-slate-300"
-          >
-            INSEME
-          </div>
-          <div class="text-xs text-slate-500">
-            Local Sovereign AI + Kokoro
-          </div>
+          <div class="text-xs font-semibold tracking-tight text-slate-300">INSEME</div>
+          <div class="text-xs text-slate-500">Local Sovereign AI + Kokoro</div>
         </div>
       </div>
       <div class="flex items-center gap-3 text-xs">
@@ -50,11 +41,7 @@
               class="relative inline-flex h-2 w-2 rounded-full bg-amber-400"
             ></span>
           </span>
-          <span
-            id="status-text"
-            class="font-medium text-amber-300"
-            >Checking...</span
-          >
+          <span id="status-text" class="font-medium text-amber-300">Checking...</span>
         </div>
         <button
           id="stop-btn"
@@ -67,50 +54,24 @@
 
     <main class="flex-1 px-4 py-4 grid gap-4 md:grid-cols-3">
       <section class="md:col-span-1 space-y-3">
-        <div
-          class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3"
-        >
-          <h2
-            class="text-xs font-semibold uppercase tracking-wide text-slate-400"
-          >
-            Status
-          </h2>
+        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+          <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">Status</h2>
           <div class="grid grid-cols-2 gap-3 text-xs">
             <div class="space-y-1">
               <div class="text-slate-500">Server</div>
-              <div
-                id="status-summary"
-                class="text-sm font-semibold text-slate-100"
-              >
-                -
-              </div>
+              <div id="status-summary" class="text-sm font-semibold text-slate-100">-</div>
             </div>
             <div class="space-y-1">
               <div class="text-slate-500">Port</div>
-              <div
-                id="status-port"
-                class="text-sm font-mono text-slate-200"
-              >
-                -
-              </div>
+              <div id="status-port" class="text-sm font-mono text-slate-200">-</div>
             </div>
             <div class="space-y-1">
               <div class="text-slate-500">LLM backend</div>
-              <div
-                id="status-llm"
-                class="text-sm font-mono text-slate-200"
-              >
-                -
-              </div>
+              <div id="status-llm" class="text-sm font-mono text-slate-200">-</div>
             </div>
             <div class="space-y-1">
               <div class="text-slate-500">TTS</div>
-              <div
-                id="status-tts"
-                class="text-sm font-mono text-slate-200"
-              >
-                -
-              </div>
+              <div id="status-tts" class="text-sm font-mono text-slate-200">-</div>
             </div>
           </div>
           <button
@@ -131,95 +92,230 @@
       </section>
 
       <section class="space-y-4 md:col-span-2">
-        <div
-          class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3"
-        >
-          <div class="flex items-center justify-between gap-2">
-            <h2
-              class="text-xs font-semibold uppercase tracking-wide text-slate-400"
-            >
-              Quick LLM check
-            </h2>
-            <button
-              id="run-llm-btn"
-              class="inline-flex items-center gap-1 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/20 transition-colors"
-            >
-              <span>Ask</span>
-            </button>
-          </div>
-          <textarea
-            id="llm-input"
-            class="mt-1 w-full rounded-md border border-slate-700 bg-black/40 px-2 py-2 text-xs text-slate-100 outline-none focus:ring-1 focus:ring-emerald-500"
-            rows="3"
+        <!-- Tabs -->
+        <div class="flex space-x-1 border-b border-slate-800 pb-2 mb-2">
+          <button
+            onclick="switchView('playground')"
+            id="tab-playground"
+            class="px-3 py-1 text-xs font-medium rounded-md bg-slate-800 text-white transition-colors"
           >
-Explain in one sentence what this local AI service does.</textarea
+            Playground
+          </button>
+          <button
+            onclick="switchView('nodes')"
+            id="tab-nodes"
+            class="px-3 py-1 text-xs font-medium rounded-md text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
           >
-          <pre
-            id="llm-output"
-            class="mt-2 h-32 overflow-auto rounded-md border border-slate-800 bg-black/60 p-2 text-[11px] text-slate-100"
-          ></pre>
+            Nodes
+          </button>
+          <button
+            onclick="switchView('logs')"
+            id="tab-logs"
+            class="px-3 py-1 text-xs font-medium rounded-md text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+          >
+            Logs
+          </button>
         </div>
 
-        <div
-          class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3"
-        >
-          <div class="flex items-center justify-between gap-2">
-            <h2
-              class="text-xs font-semibold uppercase tracking-wide text-slate-400"
-            >
-              Talk
-            </h2>
-            <div class="flex items-center gap-2">
-              <select
-                id="voice-select"
-                class="h-6 rounded border border-slate-700 bg-black/40 px-2 text-[10px] text-slate-300 outline-none focus:border-slate-500"
-              >
-                <option value="af_bella">af_bella</option>
-                <option value="af_sarah">af_sarah</option>
-                <option value="am_adam">am_adam</option>
-                <option value="am_michael">am_michael</option>
-                <option value="bf_emma">bf_emma</option>
-                <option value="bf_isabella">bf_isabella</option>
-                <option value="bm_george">bm_george</option>
-                <option value="bm_lewis">bm_lewis</option>
-              </select>
+        <!-- VIEW: Playground -->
+        <div id="view-playground" class="view-content space-y-4">
+          <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Quick LLM check
+              </h2>
               <button
-                id="stop-stream-btn"
-                class="hidden inline-flex items-center gap-1 rounded-md border border-red-500/60 bg-red-500/10 px-3 py-1 text-[11px] font-semibold text-red-300 hover:bg-red-500/20 transition-colors"
-              >
-                <span>Stop</span>
-              </button>
-              <button
-                id="run-llm2tts-btn"
+                id="run-llm-btn"
                 class="inline-flex items-center gap-1 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/20 transition-colors"
               >
-                <span>Ask &amp; Speak</span>
-              </button>
-              <button
-                id="run-tts-btn"
-                class="inline-flex items-center gap-1 rounded-md border border-sky-500/60 bg-sky-500/10 px-3 py-1 text-[11px] font-semibold text-sky-300 hover:bg-sky-500/20 transition-colors"
-              >
-                <span>Speak</span>
+                <span>Ask</span>
               </button>
             </div>
-          </div>
-          <div
-            id="tts-status"
-            class="text-[11px] text-slate-400"
-          ></div>
-          <div class="mt-2 flex items-center gap-2">
-            <audio
-              id="tts-audio"
-              class="w-full"
-              controls
-            ></audio>
-            <a
-              id="tts-download"
-              href="#"
-              class="text-[11px] font-medium text-sky-400 opacity-40 pointer-events-none"
+            <textarea
+              id="llm-input"
+              class="mt-1 w-full rounded-md border border-slate-700 bg-black/40 px-2 py-2 text-xs text-slate-100 outline-none focus:ring-1 focus:ring-emerald-500"
+              rows="3"
             >
-              Download
-            </a>
+Explain in one sentence what this local AI service does.</textarea
+            >
+            <pre
+              id="llm-output"
+              class="mt-2 h-32 overflow-auto rounded-md border border-slate-800 bg-black/60 p-2 text-[11px] text-slate-100"
+            ></pre>
+          </div>
+
+          <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">Talk</h2>
+              <div class="flex items-center gap-2">
+                <select
+                  id="voice-select"
+                  class="h-6 rounded border border-slate-700 bg-black/40 px-2 text-[10px] text-slate-300 outline-none focus:border-slate-500"
+                >
+                  <option value="af_bella">af_bella</option>
+                  <option value="af_sarah">af_sarah</option>
+                  <option value="am_adam">am_adam</option>
+                  <option value="am_michael">am_michael</option>
+                  <option value="bf_emma">bf_emma</option>
+                  <option value="bf_isabella">bf_isabella</option>
+                  <option value="bm_george">bm_george</option>
+                  <option value="bm_lewis">bm_lewis</option>
+                </select>
+                <button
+                  id="stop-stream-btn"
+                  class="hidden inline-flex items-center gap-1 rounded-md border border-red-500/60 bg-red-500/10 px-3 py-1 text-[11px] font-semibold text-red-300 hover:bg-red-500/20 transition-colors"
+                >
+                  <span>Stop</span>
+                </button>
+                <button
+                  id="run-llm2tts-btn"
+                  class="inline-flex items-center gap-1 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+                >
+                  <span>Ask &amp; Speak</span>
+                </button>
+                <button
+                  id="run-tts-btn"
+                  class="inline-flex items-center gap-1 rounded-md border border-sky-500/60 bg-sky-500/10 px-3 py-1 text-[11px] font-semibold text-sky-300 hover:bg-sky-500/20 transition-colors"
+                >
+                  <span>Speak</span>
+                </button>
+              </div>
+            </div>
+            <div id="tts-status" class="text-[11px] text-slate-400"></div>
+            <div class="mt-2 flex items-center gap-2">
+              <audio id="tts-audio" class="w-full" controls></audio>
+              <a
+                id="tts-download"
+                href="#"
+                class="text-[11px] font-medium text-sky-400 opacity-40 pointer-events-none"
+                >Download</a
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW: Nodes -->
+        <div id="view-nodes" class="view-content hidden space-y-4">
+          <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Magistral Nodes
+              </h2>
+              <div class="flex gap-2">
+                <button
+                  onclick="addCurrentNodeToMap()"
+                  class="text-[10px] text-sky-400 hover:text-sky-300"
+                >
+                  Add to Map
+                </button>
+                <button onclick="saveMap()" class="text-[10px] text-sky-400 hover:text-sky-300">
+                  Save Map
+                </button>
+                <button
+                  onclick="loadMetrics()"
+                  class="text-[10px] text-slate-500 hover:text-slate-300"
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-[11px]">
+                <thead class="text-slate-500 border-b border-slate-800">
+                  <tr>
+                    <th class="pb-2 font-medium">ID</th>
+                    <th class="pb-2 font-medium">Tier</th>
+                    <th class="pb-2 font-medium">Status</th>
+                    <th class="pb-2 font-medium">Succ/Req</th>
+                    <th class="pb-2 font-medium">Latency</th>
+                    <th class="pb-2 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="metrics-body" class="text-slate-300 divide-y divide-slate-800/50">
+                  <tr>
+                    <td colspan="6" class="py-2 text-center text-slate-600">Loading...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Probe Section -->
+          <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Probe Provider
+            </h2>
+            <div class="flex gap-2">
+              <input
+                type="text"
+                id="probe-url"
+                placeholder="Base URL"
+                class="flex-1 bg-black/40 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300"
+              />
+              <input
+                type="password"
+                id="probe-key"
+                placeholder="API Key"
+                class="w-24 bg-black/40 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300"
+              />
+              <button
+                onclick="probeProvider()"
+                class="bg-slate-700 text-slate-200 px-3 py-1 rounded text-xs hover:bg-slate-600"
+              >
+                Probe
+              </button>
+            </div>
+            <div id="probe-results" class="hidden mt-2">
+              <table class="w-full text-left text-[11px]">
+                <thead class="text-slate-500 border-b border-slate-800">
+                  <tr>
+                    <th class="pb-1">Model ID</th>
+                    <th class="pb-1">Owner</th>
+                  </tr>
+                </thead>
+                <tbody id="probe-body" class="text-slate-300 divide-y divide-slate-800/50"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW: Logs -->
+        <div id="view-logs" class="view-content hidden space-y-4">
+          <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Traffic Logs
+              </h2>
+              <div class="flex gap-2">
+                <button onclick="clearLogs()" class="text-[10px] text-red-400 hover:text-red-300">
+                  Clear
+                </button>
+                <button
+                  onclick="toggleAutoRefresh()"
+                  id="auto-refresh-btn"
+                  class="text-[10px] text-emerald-500"
+                >
+                  Auto: ON
+                </button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-[11px]">
+                <thead class="text-slate-500 border-b border-slate-800">
+                  <tr>
+                    <th class="pb-2 font-medium">Time</th>
+                    <th class="pb-2 font-medium">Node</th>
+                    <th class="pb-2 font-medium">Status</th>
+                    <th class="pb-2 font-medium">Latency</th>
+                  </tr>
+                </thead>
+                <tbody id="logs-body" class="text-slate-300 divide-y divide-slate-800/50">
+                  <tr>
+                    <td colspan="4" class="py-2 text-center text-slate-600">No logs</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
@@ -323,8 +419,7 @@ Explain in one sentence what this local AI service does.</textarea
           return;
         }
         browserUtterance = new SpeechSynthesisUtterance(text);
-        const voices =
-          window.speechSynthesis.getVoices() || browserVoices || [];
+        const voices = window.speechSynthesis.getVoices() || browserVoices || [];
         const voice = voices.find((v) => v.name === voiceId);
         if (voice) {
           browserUtterance.voice = voice;
@@ -352,6 +447,234 @@ Explain in one sentence what this local AI service does.</textarea
         }
       }
 
+      // --- Magistral UI Logic ---
+      let autoRefreshLogs = true;
+      let autoRefreshTimer = null;
+
+      function switchView(viewId) {
+        document.querySelectorAll(".view-content").forEach((el) => el.classList.add("hidden"));
+        document.getElementById("view-" + viewId).classList.remove("hidden");
+
+        // Update tabs
+        ["playground", "nodes", "logs"].forEach((id) => {
+          const btn = document.getElementById("tab-" + id);
+          if (id === viewId) {
+            btn.classList.remove("text-slate-400", "hover:bg-slate-800", "hover:text-white");
+            btn.classList.add("bg-slate-800", "text-white");
+          } else {
+            btn.classList.add("text-slate-400", "hover:bg-slate-800", "hover:text-white");
+            btn.classList.remove("bg-slate-800", "text-white");
+          }
+        });
+
+        if (viewId === "nodes") loadMetrics();
+        if (viewId === "logs") loadLogs();
+      }
+
+      async function loadMetrics() {
+        const tbody = document.getElementById("metrics-body");
+        try {
+          const data = await fetchJSON("/magistral/metrics");
+          if (!data) throw new Error("No data");
+
+          tbody.innerHTML = "";
+          data.forEach((node) => {
+            const tr = document.createElement("tr");
+            tr.className = "border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors";
+
+            const isOk = node.status === "active";
+            const statusColor = isOk ? "text-emerald-400" : "text-red-400";
+
+            const succRate =
+              node.requests > 0 ? Math.round((node.successes / node.requests) * 100) + "%" : "-";
+
+            const latency = node.latency > 0 ? Math.round(node.latency) + "ms" : "-";
+
+            const actionBtn = isOk
+              ? `<button onclick="toggleNode('${node.id}', 'disable')" class="text-red-400 hover:text-red-300">Disable</button>`
+              : `<button onclick="toggleNode('${node.id}', 'enable')" class="text-emerald-400 hover:text-emerald-300">Enable</button>`;
+
+            tr.innerHTML = `
+              <td class="py-2 font-mono text-slate-400">${node.id}</td>
+              <td class="py-2 text-slate-500">${node.tier}</td>
+              <td class="py-2 ${statusColor} font-medium">${node.status}</td>
+              <td class="py-2 text-slate-300">${succRate}</td>
+              <td class="py-2 text-slate-300">${latency}</td>
+              <td class="py-2 text-[10px] font-medium">${actionBtn}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch (e) {
+          tbody.innerHTML = `<tr><td colspan="6" class="py-2 text-center text-red-400">Error loading metrics</td></tr>`;
+        }
+      }
+
+      async function addCurrentNodeToMap() {
+        // For now, this just adds a placeholder or prompts user
+        // Ideally, we would inspect the current server status and add it
+        const id = prompt("Enter Node ID (e.g. 'my-remote-gpt4'):");
+        if (!id) return;
+
+        const url = prompt("Enter Base URL:", "http://localhost:11434/v1");
+        if (!url) return;
+
+        const model = prompt("Enter Model Name:", "llama3");
+        if (!model) return;
+
+        const apiKey = prompt("Enter API Key (optional):", "");
+
+        const node = {
+          id,
+          provider: "openai-compatible",
+          url,
+          model,
+          apiKey: apiKey || undefined,
+          tier: "standard",
+        };
+
+        try {
+          const res = await fetch("/magistral/map/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ node }),
+          });
+          if (!res.ok) throw new Error("Failed to add node");
+          loadMetrics();
+          alert("Node added!");
+        } catch (e) {
+          alert("Error: " + e.message);
+        }
+      }
+
+      async function saveMap() {
+        if (!confirm("Save current map to disk?")) return;
+        try {
+          const res = await fetch("/magistral/map/save", { method: "POST" });
+          if (!res.ok) throw new Error("Failed to save map");
+          const data = await res.json();
+          alert("Map saved to " + data.path);
+        } catch (e) {
+          alert("Error: " + e.message);
+        }
+      }
+
+      async function clearLogs() {
+        if (!confirm("Clear all traffic logs?")) return;
+        try {
+          const res = await fetch("/magistral/logs", { method: "DELETE" });
+          if (!res.ok) throw new Error("Failed to clear logs");
+          loadLogs();
+        } catch (e) {
+          alert("Error: " + e.message);
+        }
+      }
+
+      async function toggleNode(id, action) {
+        try {
+          await fetch("/magistral/nodes/" + id + "/" + action, { method: "POST" });
+          loadMetrics();
+        } catch (e) {
+          console.error(e);
+          alert("Failed to " + action + " node");
+        }
+      }
+
+      async function probeProvider() {
+        const url = document.getElementById("probe-url").value;
+        const key = document.getElementById("probe-key").value;
+        const tbody = document.getElementById("probe-body");
+        const results = document.getElementById("probe-results");
+
+        if (!url) return;
+
+        tbody.innerHTML =
+          '<tr><td colspan="2" class="py-2 text-center text-slate-500">Probing...</td></tr>';
+        results.classList.remove("hidden");
+
+        try {
+          const res = await fetch("/magistral/probe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ baseUrl: url, apiKey: key }),
+          });
+
+          if (!res.ok) throw new Error("Probe failed");
+
+          const data = await res.json();
+          tbody.innerHTML = "";
+
+          if (data.data && Array.isArray(data.data)) {
+            data.data.forEach((m) => {
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+                <td class="py-1 font-mono text-emerald-400">${m.id}</td>
+                <td class="py-1 text-slate-500">${m.owned_by || "-"}</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          } else {
+            tbody.innerHTML =
+              '<tr><td colspan="2" class="py-2 text-center text-slate-500">No models found</td></tr>';
+          }
+        } catch (e) {
+          tbody.innerHTML = `<tr><td colspan="2" class="py-2 text-center text-red-400">Error: ${e.message}</td></tr>`;
+        }
+      }
+
+      async function loadLogs() {
+        const tbody = document.getElementById("logs-body");
+        try {
+          const res = await fetch("/magistral/logs?limit=50");
+          const data = await res.json();
+
+          if (!data.logs || !data.logs.length) {
+            tbody.innerHTML =
+              '<tr><td colspan="4" class="py-2 text-center text-slate-600">No logs</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = "";
+          // Newest first
+          [...data.logs].reverse().forEach((log) => {
+            const tr = document.createElement("tr");
+            tr.className = "border-b border-slate-800/50 text-[10px]";
+
+            const time = new Date(log.ts).toLocaleTimeString();
+            const isErr = log.status >= 400 || log.error;
+            const statusColor = isErr ? "text-red-400" : "text-emerald-400";
+            const statusText = log.error ? "ERR" : log.status;
+
+            tr.innerHTML = `
+              <td class="py-1 text-slate-500">${time}</td>
+              <td class="py-1 font-mono text-slate-300">${log.nodeId}</td>
+              <td class="py-1 ${statusColor}">${statusText}</td>
+              <td class="py-1 text-slate-500">${log.latencyMs}ms</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      function toggleAutoRefresh() {
+        autoRefreshLogs = !autoRefreshLogs;
+        const btn = document.getElementById("auto-refresh-btn");
+        if (autoRefreshLogs) {
+          btn.textContent = "Auto: ON";
+          btn.className = "text-[10px] text-emerald-500";
+          loadLogs();
+          if (!autoRefreshTimer) autoRefreshTimer = setInterval(loadLogs, 2000);
+        } else {
+          btn.textContent = "Auto: OFF";
+          btn.className = "text-[10px] text-slate-500";
+          if (autoRefreshTimer) {
+            clearInterval(autoRefreshTimer);
+            autoRefreshTimer = null;
+          }
+        }
+      }
+
       function updateStatusView(data) {
         const pill = document.getElementById("status-pill");
         const ping = document.getElementById("status-ping");
@@ -366,8 +689,7 @@ Explain in one sentence what this local AI service does.</textarea
           pill.className =
             "flex items-center gap-2 rounded-full border border-red-600/70 bg-red-950 px-3 py-1";
           ping.className = "";
-          dot.className =
-            "relative inline-flex h-2 w-2 rounded-full bg-red-400";
+          dot.className = "relative inline-flex h-2 w-2 rounded-full bg-red-400";
           text.textContent = "Offline";
           summary.textContent = "Server not responding";
           port.textContent = "-";
@@ -379,9 +701,7 @@ Explain in one sentence what this local AI service does.</textarea
         const isOk = data.status === "ok" || data.status === "active";
         pill.className =
           "flex items-center gap-2 rounded-full border " +
-          (isOk
-            ? "border-emerald-500/70 bg-emerald-950"
-            : "border-amber-500/70 bg-amber-950") +
+          (isOk ? "border-emerald-500/70 bg-emerald-950" : "border-amber-500/70 bg-amber-950") +
           " px-3 py-1";
 
         ping.className =
@@ -389,8 +709,7 @@ Explain in one sentence what this local AI service does.</textarea
           (isOk ? "bg-emerald-400" : "bg-amber-300") +
           " opacity-50 animate-ping";
         dot.className =
-          "relative inline-flex h-2 w-2 rounded-full " +
-          (isOk ? "bg-emerald-400" : "bg-amber-300");
+          "relative inline-flex h-2 w-2 rounded-full " + (isOk ? "bg-emerald-400" : "bg-amber-300");
 
         text.textContent = isOk ? "Online" : "Degraded";
         summary.textContent = data.status || "-";
@@ -460,16 +779,14 @@ Explain in one sentence what this local AI service does.</textarea
                     (json.choices &&
                       json.choices[0] &&
                       (json.choices[0].text ||
-                        (json.choices[0].delta &&
-                          json.choices[0].delta.content))) ||
+                        (json.choices[0].delta && json.choices[0].delta.content))) ||
                     "";
                   if (token) {
                     assembled += token;
                     output.textContent = assembled;
                     output.scrollTop = output.scrollHeight;
                   }
-                } catch (e) {
-                }
+                } catch (e) {}
               }
             }
           }
@@ -529,8 +846,7 @@ Explain in one sentence what this local AI service does.</textarea
 
       function ensureAudioContext() {
         if (!aiAudioContext || aiAudioContext.state === "closed") {
-          aiAudioContext = new (window.AudioContext ||
-            window.webkitAudioContext)();
+          aiAudioContext = new (window.AudioContext || window.webkitAudioContext)();
           llm2ttsNextStart = aiAudioContext.currentTime;
         }
       }
@@ -614,10 +930,7 @@ Explain in one sentence what this local AI service does.</textarea
         const proto = window.location.protocol === "https:" ? "wss://" : "ws://";
         const wsUrl = proto + window.location.host + "/ws/llm_tts";
         const localCtx = aiAudioContext;
-        let localNextStart = Math.max(
-          llm2ttsNextStart,
-          localCtx.currentTime
-        );
+        let localNextStart = Math.max(llm2ttsNextStart, localCtx.currentTime);
 
         const ws = new WebSocket(wsUrl);
         llm2ttsSocket = ws;
@@ -675,24 +988,12 @@ Explain in one sentence what this local AI service does.</textarea
         setTimeout(refreshStatus, 1000);
       }
 
-      document
-        .getElementById("refresh-btn")
-        .addEventListener("click", refreshStatus);
-      document
-        .getElementById("run-llm-btn")
-        .addEventListener("click", runLLMTest);
-      document
-        .getElementById("run-tts-btn")
-        .addEventListener("click", runTTSTest);
-      document
-        .getElementById("run-llm2tts-btn")
-        .addEventListener("click", runLLM2TTSTest);
-      document
-        .getElementById("stop-stream-btn")
-        .addEventListener("click", stopLLM2TTSStream);
-      document
-        .getElementById("stop-btn")
-        .addEventListener("click", stopServer);
+      document.getElementById("refresh-btn").addEventListener("click", refreshStatus);
+      document.getElementById("run-llm-btn").addEventListener("click", runLLMTest);
+      document.getElementById("run-tts-btn").addEventListener("click", runTTSTest);
+      document.getElementById("run-llm2tts-btn").addEventListener("click", runLLM2TTSTest);
+      document.getElementById("stop-stream-btn").addEventListener("click", stopLLM2TTSStream);
+      document.getElementById("stop-btn").addEventListener("click", stopServer);
 
       populateVoiceSelect();
       if (window.speechSynthesis) {
@@ -703,4 +1004,3 @@ Explain in one sentence what this local AI service does.</textarea
     </script>
   </body>
 </html>
-

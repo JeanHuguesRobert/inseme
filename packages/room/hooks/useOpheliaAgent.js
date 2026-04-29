@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { performWebSearch } from "../../models/index.js";
+import { performWebSearch } from "../../ophelia/index.js";
 import { safeEval } from "../utils/SafeEval.proxy.js";
 import { BRIQUES } from "../generated/brique-registry.js";
 import { getConfig } from "@inseme/cop-host";

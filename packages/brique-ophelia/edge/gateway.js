@@ -10,6 +10,8 @@ import { createAIClient, buildProviderOrder, resolveModel } from "./lib/provider
 import { handleOpenAIRequest } from "./lib/openai_compat.js";
 import { providerMetrics } from "./lib/provider-metrics.js";
 import { handleMCPRequest } from "./mcp_handler.js";
+import OpenAI from "https://esm.sh/openai@4";
+import { createEmbeddedMagistral } from "./lib/magistral_adapter.js";
 import { resolveIdentity } from "./identity.js";
 import { ALL_BRIQUE_PROMPTS } from "./lib/gen-all-prompts.js";
 import { getRole } from "./roles/registry.js";
@@ -18,7 +20,7 @@ import { getSQL, loadInstanceConfig } from "../../cop-host/src/config/instanceCo
 
 const MODEL_DIRECTIVE_REGEX = /model\s*=\s*([^\s;]+)/i;
 const PROVIDER_DIRECTIVE_REGEX =
-  /provider\s*=\s*(anthropic|openai|huggingface|mistral|google|groq|grok)/i;
+  /provider\s*=\s*(anthropic|openai|huggingface|mistral|google|groq|grok|sovereign|magistral)/i;
 const MODE_DIRECTIVE_REGEX = /mode\s*=\s*(debug)/i;
 
 /**
@@ -389,117 +391,101 @@ export default defineEdgeFunction(async (request, runtime, context) => {
 
     const readable = new ReadableStream({
       async start(controller) {
-        let handled = false;
+        let client;
+        let providerName;
+        let modelName = resolvedMode;
 
-        for (const provider of providerOrder) {
-          try {
-            const model = resolveModel(provider, resolvedMode, directiveModel || body.model);
-            const openai = createAIClient(runtime, provider);
-
-            // Metadata initiales
-            controller.enqueue(
-              encoder.encode(
-                `__PROVIDER_INFO__${JSON.stringify({ provider, model, role: role.id, voice, identity: identity.name, debugMode })}\n`
-              )
-            );
-
-            const sql = getSQL(runtime);
-            const dbUrl = runtime.getConfig("DATABASE_URL") || "NOT_FOUND";
-            const sslMode = runtime.getConfig("DB_SSL_MODE") || "NOT_FOUND";
-            const maskedUrl = dbUrl.replace(/:[^:@]+@/, ":***@");
-
-            controller.enqueue(
-              encoder.encode(
-                `<Think>DEBUG: Gateway Version 2026-01-09 11:45 (SQL: ${!!sql}, DB_URL: ${maskedUrl}, SSL: ${sslMode})</Think>\n`
-              )
-            );
-
-            console.log(`[DEBUG][Gateway] Calling runOperator with SQL: ${!!sql}`);
-            const providerStart = Date.now();
-            await runOperator(
-              runtime,
-              { ...body, question: userQuestion, model },
-              {
-                provider,
-                openai,
-                supabase,
-                sql,
-                identity,
-                role,
-                encoder,
-                controller,
-              }
-            );
-            handled = true;
-            providerMetrics.recordSuccess(provider, model, Date.now() - providerStart);
-            break;
-          } catch (err) {
-            providerMetrics.recordError(provider, null, err);
-            console.error(`[Gateway] Provider ${provider} failed, trying next...`, err.message);
-            controller.enqueue(
-              encoder.encode(
-                `<Think>Échec de ${provider} : ${err.message}. Tentative suivante...</Think>\n`
-              )
-            );
+        // 1. Directive Override
+        if (directiveProvider) {
+          providerName = directiveProvider;
+          modelName = resolveModel(directiveProvider, resolvedMode, directiveModel);
+          if (directiveProvider === "magistral") {
+            client = createEmbeddedMagistral(runtime);
+          } else {
+            client = createAIClient(runtime, directiveProvider);
           }
         }
+        // 2. Sovereign Check
+        else {
+          const sovereignUrl = await getLocalAiServerUrlForRoom(supabase, getConfig, body.room_id);
+          if (sovereignUrl) {
+            providerName = "sovereign";
+            client = new OpenAI({
+              baseURL: `${sovereignUrl.replace(/\/+$/, "")}/v1`,
+              apiKey: "sovereign",
+            });
+            modelName = directiveModel || "default";
+          }
+          // 3. Magistral (Cloud Fallback)
+          else {
+            providerName = "magistral";
 
-        if (!handled) {
-          let fallbackUsed = false;
-          try {
-            const localAiUrl = await getLocalAiServerUrlForRoom(supabase, getConfig, body.room_id);
-            if (localAiUrl) {
-              const cleanBase = localAiUrl.replace(/\/+$/, "");
-              controller.enqueue(
-                encoder.encode(
-                  `<Think>Tous les fournisseurs cloud ont échoué, recours au modèle local...</Think>\n`
-                )
-              );
-              const response = await fetch(`${cleanBase}/v1/llm`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  prompt: userQuestion,
-                  max_tokens: body.max_tokens || 512,
-                  temperature: typeof body.temperature === "number" ? body.temperature : 0.7,
-                }),
-              });
-              if (response.ok) {
-                const data = await response.json();
-                const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || "";
-                if (text) {
-                  controller.enqueue(encoder.encode(text));
-                  fallbackUsed = true;
-                }
-              } else {
-                const errText = await response.text().catch(() => "");
-                console.error("[Gateway] Local AI fallback HTTP error", response.status, errText);
+            // Try to load custom map from config
+            const customMapJson = getConfig("magistral_map");
+            let map = null;
+            if (customMapJson) {
+              try {
+                map = JSON.parse(customMapJson);
+                console.log("[Gateway] Loaded custom Magistral map from config");
+              } catch (e) {
+                console.error("[Gateway] Failed to parse custom Magistral map:", e);
               }
             }
-          } catch (fallbackError) {
-            console.error("[Gateway] Local AI fallback failed:", fallbackError);
-          }
 
-          if (!fallbackUsed) {
-            controller.enqueue(
-              encoder.encode(
-                `\n❌ Tous les fournisseurs d'IA ont échoué. Veuillez réessayer plus tard.\n`
-              )
-            );
+            client = createEmbeddedMagistral(runtime, { map });
+            // modelName remains resolvedMode (e.g. "strong")
           }
         }
 
-        // Final Providers Status
-        const statusList = providerOrder.map((p) => {
-          const entry = providerMetrics.get(p, null);
-          return {
-            name: p,
-            status: entry?.status || "available",
-          };
-        });
-        controller.enqueue(
-          encoder.encode(`__PROVIDERS_STATUS__${JSON.stringify({ providers: statusList })}\n`)
-        );
+        try {
+          // Metadata initiales
+          controller.enqueue(
+            encoder.encode(
+              `__PROVIDER_INFO__${JSON.stringify({
+                provider: providerName,
+                model: modelName,
+                role: role.id,
+                voice,
+                identity: identity.name,
+                debugMode,
+              })}\n`
+            )
+          );
+
+          const sql = getSQL(runtime);
+          const dbUrl = runtime.getConfig("DATABASE_URL") || "NOT_FOUND";
+          const sslMode = runtime.getConfig("DB_SSL_MODE") || "NOT_FOUND";
+          const maskedUrl = dbUrl.replace(/:[^:@]+@/, ":***@");
+
+          controller.enqueue(
+            encoder.encode(
+              `<Think>DEBUG: Gateway V3 (Magistral) (SQL: ${!!sql}, DB_URL: ${maskedUrl}, SSL: ${sslMode})</Think>\n`
+            )
+          );
+
+          console.log(`[DEBUG][Gateway] Calling runOperator with provider: ${providerName}`);
+
+          await runOperator(
+            runtime,
+            { ...body, question: userQuestion, model: modelName },
+            {
+              provider: providerName,
+              openai: client,
+              supabase,
+              sql,
+              identity,
+              role,
+              encoder,
+              controller,
+            }
+          );
+        } catch (err) {
+          console.error(`[Gateway] Operator failed:`, err);
+          controller.enqueue(
+            encoder.encode(`<Think>Erreur critique (${providerName}) : ${err.message}</Think>\n`)
+          );
+          controller.enqueue(encoder.encode(`\n❌ Une erreur est survenue. Veuillez réessayer.\n`));
+        }
 
         controller.close();
       },

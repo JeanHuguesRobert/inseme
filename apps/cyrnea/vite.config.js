@@ -72,6 +72,7 @@ export default defineConfig(({ mode }) => {
           "../../packages/brique-cyrnea/src/entities"
         ),
         "@inseme/brique-kudocracy": path.resolve(__dirname, "../../packages/brique-kudocracy/src"),
+        "@inseme/brique-blog": path.resolve(__dirname, "../../packages/brique-blog"),
       },
     },
     define: {

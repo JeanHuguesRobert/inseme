@@ -1,11 +1,12 @@
 /**
  * packages/brique-ophelia/edge/lib/provider-metrics.js
- * Implementation of provider metrics for in-memory tracking in Edge Functions.
+ * Implementation of provider metrics using Magistral's NodeRegistry.
  */
 
-// Use a global variable to persist metrics across requests on the same worker node
-// (Works best-effort in Netlify/Deno Edge Functions)
-const providerStore = new Map();
+import { DEFAULT_EXHAUSTION_TTL_MS, NodeRegistry } from "../../../magistral/src/router.js";
+
+// Global registry instance (persisted across requests in same worker)
+export const registry = new NodeRegistry();
 let syncHandler = null;
 
 export const providerMetrics = {
@@ -13,165 +14,131 @@ export const providerMetrics = {
     syncHandler = handler;
   },
 
-  hasData: () => providerStore.size > 0,
+  hasData: () => registry.isDirty(),
 
   hydrate: (rows) => {
     if (!Array.isArray(rows)) return;
-    for (const row of rows) {
-      const key = `${row.provider}:${row.model}`;
-      const metrics = row.metrics || {};
-      providerStore.set(key, {
-        status: row.status,
-        lastSync: Date.now(),
-        metrics: {
-          consecutiveErrors: 0,
-          requestCount: metrics.request_count || 0,
-          successCount: metrics.success_count || 0,
-          avgResponseTime: metrics.avg_latency || null,
-          lastUsed: row.last_checked_at ? new Date(row.last_checked_at).getTime() : null,
-          lastError: row.last_error,
-        },
-      });
-    }
+    // Map Supabase rows to NodeRegistry format
+    const nodes = rows.map((row) => ({
+      id: `${row.provider}:${row.model || "default"}`,
+      status: row.status,
+      requests: row.metrics?.request_count || 0,
+      successes: row.metrics?.success_count || 0,
+      failures: 0,
+      totalLatencyMs: (row.metrics?.avg_latency || 0) * (row.metrics?.success_count || 0),
+      lastError: row.last_error,
+      exhaustedAt: null, // We'd need to persist this if we want strict continuity
+    }));
+    registry.loadFrom({ nodes });
   },
 
   get: (provider, modelName) => {
-    const key = `${provider}:${modelName || "default"}`;
-    if (!providerStore.has(key)) {
-      providerStore.set(key, {
-        status: "available",
-        lastSync: 0,
-        metrics: {
-          consecutiveErrors: 0,
-          requestCount: 0,
-          successCount: 0,
-          avgResponseTime: null,
-          lastUsed: null,
-          lastError: null,
-        },
-      });
-    }
-    return providerStore.get(key);
+    const id = `${provider}:${modelName || "default"}`;
+    const node = registry.get(id);
+
+    // Adapt NodeRegistry format to old providerMetrics format for compatibility
+    return {
+      status: node.status === "active" ? "available" : node.status,
+      lastSync: 0, // managed internally
+      metrics: {
+        consecutiveErrors: 0, // NodeRegistry tracks failures but not consecutive explicitly in public prop
+        requestCount: node.requests,
+        successCount: node.successes,
+        avgResponseTime: node.successes > 0 ? node.totalLatencyMs / node.successes : 0,
+        lastUsed: Date.now(), // NodeRegistry doesn't expose lastUsed publically yet, assuming now
+        lastError: node.lastError,
+      },
+    };
   },
 
   recordSuccess: (provider, modelName, duration) => {
-    const entry = providerMetrics.get(provider, modelName);
-    const oldStatus = entry.status;
+    const id = `${provider}:${modelName || "default"}`;
+    const startTime = Date.now() - (duration || 0);
+    registry.recordStart(id);
+    registry.recordSuccess(id, startTime);
+  },
 
-    entry.status = "available";
-    entry.metrics.consecutiveErrors = 0;
-    entry.metrics.requestCount++;
-    entry.metrics.successCount++;
-    entry.metrics.lastUsed = Date.now();
-    if (duration) {
-      entry.metrics.avgResponseTime = entry.metrics.avgResponseTime
-        ? entry.metrics.avgResponseTime * 0.8 + duration * 0.2
-        : duration;
+  recordError: (provider, modelName, error) => {
+    const id = `${provider}:${modelName || "default"}`;
+    const errorMsg = error?.message || String(error);
+    const status = error?.status || (errorMsg.match(/\b(\d{3})\b/) || [])[1];
+
+    registry.recordStart(id);
+    registry.recordError(id, errorMsg);
+
+    if (status) {
+      const s = parseInt(status);
+      if (s === 429 || s === 402 || s === 403) {
+        registry.markExhausted(id, `HTTP ${s}`);
+      }
     }
 
-    // Heuristic: Sync if status recovered OR heartbeat every 5 minutes
-    const now = Date.now();
-    if (oldStatus !== "available" || now - (entry.lastSync || 0) > 300000) {
+    if (syncHandler) {
+      const entry = providerMetrics.get(provider, modelName);
       providerMetrics.triggerSync(provider, modelName, entry);
     }
   },
 
-  recordError: (provider, modelName, error) => {
-    const entry = providerMetrics.get(provider, modelName);
-    const oldStatus = entry.status;
-    const errorMsg = error?.message || String(error);
-    const status = error?.status || (errorMsg.match(/\b(\d{3})\b/) || [])[1];
+  shouldSkip: (provider, modelName) => {
+    const id = `${provider}:${modelName || "default"}`;
+    const node = registry.get(id);
 
-    entry.metrics.consecutiveErrors++;
-    entry.metrics.requestCount++;
-    entry.metrics.lastUsed = Date.now();
-    entry.metrics.lastError = {
-      message: errorMsg,
-      timestamp: Date.now(),
-      status: status ? parseInt(status) : null,
-    };
-
-    // Analyse du statut 4xx / 5xx
-    if (status) {
-      const s = parseInt(status);
-      if (s === 429) {
-        entry.status = "rate_limited";
-        // Tentative de parsing de retry-after
-        const retryMatch = errorMsg.match(/(?:retry|wait|try\s+again).*?(\d+)/i);
-        entry.metrics.lastError.retryAfter = retryMatch ? parseInt(retryMatch[1]) : 60;
-      } else if (s === 401 || s === 403) {
-        entry.status = "auth_error";
-      } else if (s >= 400 && s < 500) {
-        // Autres erreurs 4xx (quota, invalid request, etc)
-        if (/quota|balance|credit|insufficient/i.test(errorMsg)) {
-          entry.status = "quota_exceeded";
-        } else {
-          entry.status = "error";
-        }
-      } else if (s >= 500) {
-        entry.status = "degraded";
+    // Check if exhausted (NodeRegistry handles cooldown internally in buildRoutingSequence,
+    // but here we just check raw status or we need to check exhaustedAt)
+    if (node.status === "exhausted") {
+      if (node.exhaustedAt && Date.now() - node.exhaustedAt < DEFAULT_EXHAUSTION_TTL_MS) {
+        return true;
       }
-    } else {
-      // Pas de status explicite, on check le message
-      if (/rate.?limit/i.test(errorMsg)) {
-        entry.status = "rate_limited";
-        entry.metrics.lastError.retryAfter = 30;
-      } else if (/quota|balance|credit/i.test(errorMsg)) {
-        entry.status = "quota_exceeded";
-      } else if (entry.metrics.consecutiveErrors >= 3) {
-        entry.status = "degraded";
-      }
+      node.status = "active";
+      node.exhaustedAt = null;
+      return false;
     }
 
-    // Heuristic: Sync immediately if status changed to something worse
-    if (entry.status !== oldStatus) {
-      providerMetrics.triggerSync(provider, modelName, entry);
-    }
+    if (node.status === "disabled") return true;
+
+    return false;
   },
 
   triggerSync: (provider, modelName, entry) => {
     if (syncHandler) {
-      // Fire and forget (don't await) to avoid blocking response,
-      // but we catch errors to avoid crashing
       try {
-        const result = syncHandler(provider, modelName || "default", {
-          ...entry,
-        });
+        const result = syncHandler(provider, modelName || "default", { ...entry });
         if (result && typeof result.then === "function") {
           result.catch((err) => console.error("[ProviderMetrics] Sync failed:", err));
         }
-        entry.lastSync = Date.now();
       } catch (e) {
         console.error("[ProviderMetrics] Sync error:", e);
       }
     }
   },
+};
 
-  shouldSkip: (provider, modelName) => {
-    const entry = providerMetrics.get(provider, modelName);
-
-    // Si le fournisseur est marqué comme épuisé (quota), on le saute
-    if (entry.status === "quota_exceeded" || entry.status === "auth_error") return true;
-
-    // Gestion du Rate Limit
-    if (entry.status === "rate_limited") {
-      const lastError = entry.metrics.lastError;
-      if (lastError && lastError.retryAfter) {
-        const retryTime = lastError.timestamp + lastError.retryAfter * 1000;
-        if (Date.now() < retryTime) return true;
-      }
-      // Si le temps est passé, on repasse en available pour retenter
-      entry.status = "available";
+// Monkey-patch registry to trigger sync on internal updates (from Magistral Router)
+const _originalRS = registry.recordSuccess.bind(registry);
+registry.recordSuccess = (id, startTime) => {
+  _originalRS(id, startTime);
+  const parts = id.split(":");
+  if (parts.length >= 2) {
+    const provider = parts[0];
+    const model = parts.slice(1).join(":");
+    // Only trigger sync if handler configured
+    if (providerMetrics.triggerSync) {
+      const entry = providerMetrics.get(provider, model);
+      providerMetrics.triggerSync(provider, model, entry);
     }
+  }
+};
 
-    // Gestion des erreurs consécutives (Cool down)
-    if (entry.metrics.consecutiveErrors >= 5) {
-      // On attend 5 minutes après 5 erreurs consécutives
-      if (Date.now() - entry.metrics.lastUsed < 300000) return true;
-      // Reset partiel après cool down
-      entry.metrics.consecutiveErrors = 3;
+const _originalRE = registry.recordError.bind(registry);
+registry.recordError = (id, error) => {
+  _originalRE(id, error);
+  const parts = id.split(":");
+  if (parts.length >= 2) {
+    const provider = parts[0];
+    const model = parts.slice(1).join(":");
+    if (providerMetrics.triggerSync) {
+      const entry = providerMetrics.get(provider, model);
+      providerMetrics.triggerSync(provider, model, entry);
     }
-
-    return false;
-  },
+  }
 };

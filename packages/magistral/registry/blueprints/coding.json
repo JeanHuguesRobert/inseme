@@ -1,0 +1,5 @@
+{
+  "id": "coding",
+  "capabilities": ["thinking", "tools", "coding"],
+  "context_window": 128000
+}

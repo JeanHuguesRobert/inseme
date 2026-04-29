@@ -6,13 +6,8 @@ import {
   VocalConversation,
   RadioView,
   getRoomIdFromURL,
-} from "../../platform/netlify/edge-functions/lib/document_search/index.js";
-import {
-  BlogHome,
-  BlogPost,
-  BlogEditor,
-  GazettePage,
-} from "../../platform/netlify/edge-functions/lib/document_search/index.js";
+} from "@inseme/brique-cyrnea";
+import { BlogHome, BlogPost, BlogEditor, GazettePage } from "@inseme/brique-blog";
 import LegalPage from "./pages/LegalPage";
 import { useCurrentUser, isDeleted } from "@inseme/cop-host";
 import { InsemeProvider } from "@inseme/room";

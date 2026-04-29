@@ -1,0 +1,59 @@
+body {
+  background-color: #020617; /* Slate 950 */
+  color: #f8fafc; /* Slate 50 */
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+.view-content {
+  display: none;
+}
+.view-content.active {
+  display: block;
+}
+
+/* Tab Active State */
+.tab-btn.active {
+  background-color: #1e293b; /* Slate 800 */
+  color: #f8fafc; /* White */
+}
+.tab-btn:not(.active) {
+  color: #94a3b8; /* Slate 400 */
+}
+.tab-btn:not(.active):hover {
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+
+/* Status Pill Animations */
+@keyframes ping {
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+.animate-ping {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Table styles */
+table th {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}

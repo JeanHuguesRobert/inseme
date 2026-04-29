@@ -100,3 +100,21 @@ export function normalizeUserObject(user) {
     ...user,
   };
 }
+
+/**
+ * Create a default anonymous user object for a given ID (Type 1 legacy)
+ * @param {string} userId - The anonymous user ID
+ * @returns {Object} A default anonymous user object
+ */
+export function createAnonymousUserObject(userId) {
+  return {
+    id: userId,
+    display_name: "Anonyme",
+    pseudo: "Anonyme",
+    is_anonymous: true,
+    isAnonymous: true,
+    metadata: {
+      avatarUrl: `https://api.dicebear.com/7.x/notionists/svg?seed=${userId}&backgroundColor=transparent`,
+    },
+  };
+}

@@ -4,9 +4,12 @@
   "description": "Registry and manager for Kudocracy AI models",
   "main": "index.js",
   "type": "module",
+  "bin": {
+    "sovereign": "./bin/sovereign.js"
+  },
   "scripts": {
-    "sovereign:up": "node src/ai.js --port 8880 --llama-port 8080 --model Qwen2.5-Coder",
-    "sovereign:dev": "node src/ai.js --port 8880 --llama-port 8080 --model Qwen2.5-Coder",
+    "sovereign:up": "node src/ai.js --port 8880 --llama-port 8081 --model Qwen2.5-Coder",
+    "sovereign:dev": "node src/ai.js --port 8880 --llama-port 8081 --model Qwen2.5-Coder",
     "sovereign:down": "node src/ai.js --stop --port 8880",
     "sovereign:status": "node src/ai.js --status --port 8880",
     "sovereign:tts": "node ../../scripts/tts.js",

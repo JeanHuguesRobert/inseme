@@ -29,7 +29,11 @@ packages/**/package-lock.json
 
 # --- Logs & Debug ---
 *.log
+*.out
+*.err
 *.pid
+.metrics-cache.json
+.magistral-traffic.log*
 logs/
 npm-debug.log*
 yarn-debug.log*
