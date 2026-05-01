@@ -14,3 +14,5 @@ export { default as EventsLayer } from "./components/layers/EventsLayer";
 export { default as IncidentsLayer } from "./components/layers/IncidentsLayer";
 export { default as MunicipalEventsLayer } from "./components/layers/MunicipalEventsLayer";
 export { default as MunicipalPoiLayer } from "./components/layers/MunicipalPoiLayer";
+export { default as BiodiversityLayer } from "./components/layers/BiodiversityLayer";
+export { default as BiodiversityFilters } from "./components/BiodiversityFilters";

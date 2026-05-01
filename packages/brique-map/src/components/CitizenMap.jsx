@@ -6,6 +6,7 @@ import LocateControl from "./LocateControl";
 import GeoportalControls from "./GeoportalControls";
 import MunicipalPoiLayer from "./layers/MunicipalPoiLayer";
 import MunicipalEventsLayer from "./layers/MunicipalEventsLayer";
+import BiodiversityLayer from "./layers/BiodiversityLayer";
 import { getConfig } from "@inseme/cop-host";
 
 // Fix pour les icônes Leaflet manquantes
@@ -46,7 +47,13 @@ function MapController({ center, zoom }) {
   return null;
 }
 
-export default function CitizenMap({ center, zoom = 13, children, className = "h-full w-full" }) {
+export default function CitizenMap({
+  center,
+  zoom = 13,
+  children,
+  className = "h-full w-full",
+  biodiversityFilters = {},
+}) {
   const defaultCenter = getDefaultCenter();
   const defaultZoom = getConfig("map_default_zoom", zoom);
 
@@ -67,6 +74,9 @@ export default function CitizenMap({ center, zoom = 13, children, className = "h
         </LayersControl.Overlay>
         <LayersControl.Overlay checked name="Événements">
           <MunicipalEventsLayer />
+        </LayersControl.Overlay>
+        <LayersControl.Overlay name="Biodiversité">
+          <BiodiversityLayer filters={biodiversityFilters} />
         </LayersControl.Overlay>
       </LayersControl>
 
