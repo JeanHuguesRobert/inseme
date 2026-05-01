@@ -39,10 +39,19 @@ components of the ecosystem:
 The ecosystem is composed of several specialized packages:
 
 - **`packages/cop-*`**: Cognitive Orchestration Protocol (Kernel, CLI, Host).
-- **`packages/brique-*`**: Functional modules (Wiki, Blog, Tasks, Group, etc.).
+- **`packages/brique-*`**: Functional modules (Wiki, Blog, Tasks, Group, **Map**, etc.).
 - **`packages/models`**: Sovereign LLM controller for local inference.
 - **`packages/kudocracy`**: Core governance models and liquid democracy logic.
 - **`packages/ui`**: Shared design system and component library.
+
+#### 🗺️ Brique-Map Module
+
+The `packages/brique-map` package provides the complete GIS infrastructure:
+
+- **CitizenMap**: Interactive mapping component with IGN integration
+- **BiodiversityLayer**: Specialized layer for biodiversity observations
+- **BiodiversityFilters**: Real-time filtering UI components
+- **Location Services**: Geocoding, address search, and coordinate parsing
 
 ---
 
@@ -58,7 +67,22 @@ processes, and facilitates consensus during debates without ever imposing hersel
 Allows users to submit proposals, vote, and delegate their voice to a trusted person on a specific
 topic. The Agora (`apps/inseme`) pushes this concept further with real-time digital gestures.
 
-### 3. 🛡️ Digital Sovereignty
+### 3. 🌿 Atlas of Biodiversity
+
+A comprehensive Geographic Information System (GIS) for biodiversity observation and citizen
+science. Features interactive mapping, real-time filtering, GBIF data integration, and citizen
+contribution tools.
+
+- **Interactive Maps**: Leaflet-based with IGN layers and custom biodiversity markers
+- **Citizen Contributions**: Submit and validate wildlife observations
+- **Data Integration**: GBIF/INPN import with spatial-temporal filtering
+- **Real-time Filtering**: By species, date, location, and validation status
+- **Open Data**: GeoJSON API for external integrations
+
+> **[📋 Full Documentation](docs/biodiversite-guide-demarrage.md)** |
+> **[🧪 Testing Guide](docs/biodiversite-tests-validation.md)**
+
+### 4. 🛡️ Digital Sovereignty
 
 Built-in support for local LLMs via `@kudocracy/models`, ensuring that sensitive data and democratic
 deliberations stay within your infrastructure.
@@ -69,6 +93,7 @@ deliberations stay within your infrastructure.
 
 - **Frontend**: React (v18/v19) + Vite + Tailwind CSS.
 - **Backend Realtime**: Supabase (PostgreSQL, Realtime, Auth).
+- **GIS & Mapping**: Leaflet + React-Leaflet + PostGIS + IGN Geoportal.
 - **AI Orchestration**: Multi-provider support (OpenAI, Local LLMs via GGUF).
 - **Multi-Instance**: Dynamic subdomain-based resolution for per-commune deployment.
   [See Multi-Instance Doc](packages/cop-host/docs/MULTI_INSTANCE.md).
@@ -106,6 +131,21 @@ deliberations stay within your infrastructure.
    # For the Inseme Agora
    pnpm run inseme:dev
    ```
+
+4. **Setup the Biodiversity Atlas** (optional):
+
+   ```bash
+   # Apply database migrations
+   supabase db push
+
+   # Import sample data from GBIF
+   node scripts/import_gbif.js
+
+   # Test the API
+   curl "http://localhost:8888/api/biodiversity/observations"
+   ```
+
+   > **[📋 Complete Setup Guide](docs/biodiversite-guide-demarrage.md)**
 
 ---
 
