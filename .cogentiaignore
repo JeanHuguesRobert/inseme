@@ -1,0 +1,50 @@
+# Inseme — non-research markdown files.
+# Built-in defaults (README, LICENSE, TODO, CHANGELOG, …) are always applied.
+#
+# Inseme is the deployable platform; most of its markdown is engineering
+# documentation, not research. Only the platform-architecture documents
+# (catalogued in research/index.md) are research-grade.
+
+# Apps are platforms/products built on the briques — not research deliverables.
+apps/**
+
+# Editor / AI-tool config files at the repo root.
+.gemini.md
+.ai-rules.md
+.rules.md
+.api-docs.md
+
+# Engineering-internal documents at the repo root.
+BIGPLAN.md
+ROADMAP-TECH.md
+AGENTS.md
+ARCHITECTURE.md
+docs/PROXY_TUNNEL.md
+
+# Biodiversité guides — operational documentation for the GIS layer.
+docs/biodiversite-tests-validation.md
+docs/biodiversite-guide-demarrage.md
+docs/atlas-biodiversite-contexte-sig.md
+
+# Brique- packages — engineering modules, not research deliverables.
+# (Their READMEs are covered by the default README.md rule. Their internal
+#  specs / roadmaps / changelogs are engineering documentation.)
+packages/brique-*/**
+
+# Other engineering packages — same reasoning. The cop-core package stays
+# visible because its Architecture.md is research-grade (catalogued in
+# research/index.md as the canonical COP protocol spec).
+packages/cop-cli/**
+packages/cop-chat/**
+packages/cop-host/docs/**
+packages/cop-kernel/**
+packages/cop-prolog/**
+packages/kudocracy/**
+packages/magistral/**
+packages/models/**
+packages/ophelia/**
+packages/room/**
+packages/ui/**
+
+# Subdirectories of cop-core that are not the canonical spec.
+packages/cop-core/Architecture.types.md
