@@ -1,3 +1,8 @@
+---
+canonical_url: https://github.com/virteal/inseme/blob/master/packages/cop-core/Architecture.md
+last_stamped_at: 2026-05-13
+---
+
 # Cognitive Orchestration Protocol (COP)
 
 # Architecture and Specification – Version 1.0

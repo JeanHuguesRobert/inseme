@@ -1,3 +1,8 @@
+---
+canonical_url: https://github.com/virteal/inseme/blob/master/packages/cop-core/FAQ.md
+last_stamped_at: 2026-05-13
+---
+
 # **FAQ.md**
 
 ## _Frequently Asked Questions about the Cognitive Orchestration Protocol (COP)_

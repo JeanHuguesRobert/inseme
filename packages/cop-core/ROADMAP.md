@@ -1,3 +1,8 @@
+---
+canonical_url: https://github.com/virteal/inseme/blob/master/packages/cop-core/ROADMAP.md
+last_stamped_at: 2026-05-13
+---
+
 # ROADMAP — Cognitive Orchestration Protocol (COP)
 
 This roadmap describes the **evolution of the COP ecosystem**, not a product delivery plan.

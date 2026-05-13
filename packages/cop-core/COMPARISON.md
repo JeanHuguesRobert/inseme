@@ -1,3 +1,8 @@
+---
+canonical_url: https://github.com/virteal/inseme/blob/master/packages/cop-core/COMPARISON.md
+last_stamped_at: 2026-05-13
+---
+
 # COMPARISON.md
 
 ## Positioning COP within the AI Orchestration and Distributed Systems Landscape

@@ -1,3 +1,8 @@
+---
+canonical_url: https://github.com/virteal/inseme/blob/master/packages/cop-core/Invariants.md
+last_stamped_at: 2026-05-13
+---
+
 # COP Protocol Invariants
 
 This document defines the **non-negotiable invariants** of the Cognitive Orchestration Protocol
