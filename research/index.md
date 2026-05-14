@@ -44,17 +44,18 @@ _A map of what is, what is in progress, and what could be._ _See sibling indexes
 
 _Platform-level specifications and architectural documents._
 
-| Title                                                                                                                     | Location  | Date    |
-| ------------------------------------------------------------------------------------------------------------------------- | --------- | ------- |
-| [COP — Cognitive Orchestration Protocol (Architecture)](../packages/cop-core/Architecture.md) _(canonical protocol spec)_ | this repo | 2025-12 |
-| [COP Invariants — non-negotiable rules of the protocol](../packages/cop-core/Invariants.md)                               | this repo | 2025-12 |
-| [COP Manifesto](../packages/cop-core/Manifesto.md)                                                                        | this repo | 2025-12 |
-| [COP FAQ](../packages/cop-core/FAQ.md)                                                                                    | this repo | 2025-12 |
-| [COP Comparison with other orchestration frameworks](../packages/cop-core/COMPARISON.md)                                  | this repo | 2025-12 |
-| [COP Roadmap](../packages/cop-core/ROADMAP.md)                                                                            | this repo | 2025-12 |
-| [Modular System Architecture — the Brique pattern](../docs/MODULAR_SYSTEM.md)                                             | this repo | 2025-12 |
-| [BRIQUE_SPEC — the brique manifest contract](../packages/cop-host/BRIQUE_SPEC.md)                                         | this repo | 2025-12 |
-| [Multi-Instance Architecture](../packages/cop-host/docs/MULTI_INSTANCE.md)                                                | this repo | 2025-12 |
+| Title                                                                                                                     | Location  | Date        |
+| ------------------------------------------------------------------------------------------------------------------------- | --------- | ----------- |
+| [COP — Cognitive Orchestration Protocol (Architecture)](../packages/cop-core/Architecture.md) _(canonical protocol spec)_ | this repo | 2025-12     |
+| [COP Invariants — non-negotiable rules of the protocol](../packages/cop-core/Invariants.md)                               | this repo | 2025-12     |
+| [COP Manifesto](../packages/cop-core/Manifesto.md)                                                                        | this repo | 2025-12     |
+| [COP FAQ](../packages/cop-core/FAQ.md)                                                                                    | this repo | 2025-12     |
+| [COP Comparison with other orchestration frameworks](../packages/cop-core/COMPARISON.md)                                  | this repo | 2025-12     |
+| [COP Roadmap](../packages/cop-core/ROADMAP.md)                                                                            | this repo | 2025-12     |
+| [Modular System Architecture — the Brique pattern](../docs/MODULAR_SYSTEM.md)                                             | this repo | 2025-12     |
+| [BRIQUE_SPEC — the brique manifest contract](../packages/cop-host/BRIQUE_SPEC.md)                                         | this repo | 2025-12     |
+| [Multi-Instance Architecture](../packages/cop-host/docs/MULTI_INSTANCE.md)                                                | this repo | 2025-12     |
+| [Corpus Status](corpus-status.md) _(living view — auto-refreshed by `cogentia.js corpus-status`)_                         | this repo | refreshable |
 
 ---
 
