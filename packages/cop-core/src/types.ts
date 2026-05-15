@@ -46,13 +46,7 @@ export type TopicStatus = "open" | "in_progress" | "exhausted" | "closed";
 /**
  * Standard status lifecycle for Tasks.
  */
-export type TaskStatus =
-  | "pending"
-  | "running"
-  | "needs_input"
-  | "done"
-  | "failed"
-  | "cancelled";
+export type TaskStatus = "pending" | "running" | "needs_input" | "done" | "failed" | "cancelled";
 
 /**
  * Standard status lifecycle for Steps.
@@ -140,7 +134,7 @@ export interface COPTopic {
 
   /** Computed from aggregation of events. */
   title?: string;
-  
+
   created_at: ISODateTime; // Often derived from the first event
   updated_at: ISODateTime; // derived from last event
 
@@ -180,7 +174,7 @@ export interface COPStep {
   taskId: UUID;
 
   status: StepStatus;
-  
+
   /** Artifacts produced or consumed by this step. */
   artifactIds?: UUID[];
 
@@ -200,12 +194,33 @@ export interface COPStep {
 export const ARTIFACT_TYPE_CONTINUATION = "cop/continuation";
 
 /**
+ * Reserved wildcard value for the Continuation `agent` field.
+ * Means "any compliant agent may resume" — capability-bound resumption,
+ * as opposed to identity-bound (`agent: "<specific-name>"`).
+ * See Architecture.md §2.7.4.
+ */
+export const CONTINUATION_AGENT_ANY = "*";
+
+/**
  * Standard payload for a Continuation Artifact.
  * Represents suspended or deferred work.
  */
 export type ContinuationPayload = {
-  /** The Agent responsible for resuming work. */
-  agent: string;
+  /**
+   * The Agent responsible for resuming work. OPTIONAL.
+   *
+   * - Identity-bound: a specific agent name (e.g. "claude-3", "ophelia").
+   *   Schedulers route the Continuation to that agent.
+   * - Capability-bound: the reserved value `"*"` (CONTINUATION_AGENT_ANY) or
+   *   omission. Any agent whose capabilities match the resumption schema MAY
+   *   pick up the work. Used by provider-neutral profiles such as
+   *   cogentia.continuation.v1 to keep the orchestration contract free of
+   *   embedded provider dependencies.
+   *
+   * Implementations that route by identity SHOULD treat `"*"` and omission
+   * as equivalent. See Architecture.md §2.7.4.
+   */
+  agent?: string;
 
   /** Context identifiers. */
   topicId: UUID;
@@ -229,7 +244,7 @@ export type ContinuationPayload = {
 
   label?: string;
   meta?: Record<string, JsonValue>;
-  
+
   /** Allow arbitrary extra fields for specific profiles. */
   [key: string]: JsonValue | undefined;
 };
@@ -265,12 +280,12 @@ export interface COPAgent {
 export interface AgentContext {
   bus: COPBus;
   store: COPStore;
-  
+
   /** Current wall-clock time (ISO). */
   now(): ISODateTime;
 
   /**
-   * Publish an event. 
+   * Publish an event.
    * The implementation MUST ensure strict topicSeq ordering constraints.
    */
   emit(event: COPEvent): Promise<void>;
@@ -283,11 +298,7 @@ export interface COPBus {
   publish(event: COPEvent): Promise<void>;
 
   /** Fetch events for replay. */
-  fetchFromSeq(params: { 
-    topicId: UUID; 
-    fromSeq: number; 
-    limit?: number 
-  }): Promise<COPEvent[]>;
+  fetchFromSeq(params: { topicId: UUID; fromSeq: number; limit?: number }): Promise<COPEvent[]>;
 }
 
 /**

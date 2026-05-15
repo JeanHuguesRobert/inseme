@@ -776,7 +776,7 @@ A **Continuation** is represented as a reserved Artifact type with a specific pa
   "type": "cop/continuation",
   "format": "application/json",
   "payload": {
-    "agent": "string",
+    "agent": "string (optional; reserved value \"*\" = any compliant agent)",
     "topicId": "string",
     "taskId": "string",
     "stepId": "string",
@@ -805,6 +805,8 @@ A Continuation expresses:
 - under which conditions (`waitForEvents`, `resumeAfter`, `resumeBefore`),
 - retry hints (`retry`).
 
+The `agent` field is OPTIONAL. See Section 2.7.4 on agent identity and the wildcard reserved value.
+
 Continuation execution semantics are defined in Section 5.5.
 
 ### 2.7.3 Reserved Type Name
@@ -816,6 +818,33 @@ type = "cop/continuation"
 ```
 
 All implementations MUST support this Artifact schema.
+
+### 2.7.4 Agent Identity and the Wildcard Reserved Value
+
+The `agent` field names the Agent expected to resume the Continuation. It MAY be omitted, and the
+reserved value `"*"` (asterisk) is interpreted as **any compliant agent**.
+
+```json
+{ "agent": "*" }      // any agent that conforms to the resumption schema
+{ }                    // equivalent: agent unspecified
+{ "agent": "claude-3" } // identity-bound: only this agent should resume
+```
+
+This supports two complementary deployment modes:
+
+- **Identity-bound resumption** (`agent: "claude-3"`, `agent: "ophelia"`): the Scheduler routes the
+  Continuation to a specific Agent. Standard COP/HITL.
+
+- **Capability-bound resumption** (`agent: "*"` or omitted): any Agent whose capabilities match the
+  Continuation's `expected_result_schema` and constraints MAY resume. This is the
+  **provider-neutral** mode used by profiles such as `cogentia.continuation.v1` to guarantee that no
+  specific AI provider is embedded in the orchestration contract.
+
+A profile MAY restrict which form it accepts. COP/Core MUST accept both.
+
+Implementations that route Continuations by agent identity SHOULD treat `"*"` and the absent field
+as equivalent: a signal that routing is open and the next qualifying Agent (human or automated) may
+pick up the work.
 
 ## 2.8 Identifiers (IDs, URNs, IRIs)
 
