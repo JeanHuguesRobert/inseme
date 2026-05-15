@@ -6,6 +6,16 @@ dedicated to citizen participation, augmented deliberation, and democratic trans
 This project brings together the tools of the **#PERTITELLU** citizen movement (Corte, Corsica) and
 aims to provide free solutions to empower citizens.
 
+_Inseme is also the **platform layer** (COP runtime + briques + civic applications) of a
+five-repository sovereignty corpus, alongside
+[MareNostrum](https://github.com/JeanHuguesRobert/marenostrum) (strategic framework),
+[FractaVolta](https://github.com/JeanHuguesRobert/FractaVolta) (engineering firm and stack
+operator), [Cogentia](https://github.com/JeanHuguesRobert/cogentia) (cognitive infrastructure
+tooling), and [barons-Mariani](https://github.com/JeanHuguesRobert/barons-Mariani)
+(political/institutional framework). Inseme keeps its own identity — neutral, MIT-licensed, governed
+by its citizen community. The five-repo framing simply names where it interoperates with the rest of
+the corpus. See [fractavolta.com](https://fractavolta.com) for the integrated picture._
+
 ---
 
 ## 🏗️ Modular Architecture
