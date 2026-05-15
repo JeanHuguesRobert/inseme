@@ -5,10 +5,10 @@ description:
   possible"
 layout: default
 nav_order: 2
-last_modified_at: 2026-05-13
-repository: "github.com/virteal/inseme"
-canonical_url: https://github.com/virteal/inseme/blob/master/research/corpus-status.md
-last_stamped_at: 2026-05-13
+last_modified_at: 2026-05-15
+repository: "github.com/JeanHuguesRobert/inseme"
+canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/corpus-status.md
+last_stamped_at: 2026-05-15
 ---
 
 # Corpus Status — inseme
@@ -26,11 +26,11 @@ Objections_ — _are manually curated and preserved across refreshes._
 
 | Repository     | research/index.md | Branch | Last commit |
 | -------------- | ----------------- | ------ | ----------- |
-| cogentia       | ✅                | main   | 2026-05-13  |
-| FractaVolta    | ✅                | main   | 2026-05-13  |
-| marenostrum    | ✅                | main   | 2026-05-13  |
-| barons-Mariani | ✅                | main   | 2026-05-13  |
-| inseme         | ✅                | master | 2026-05-13  |
+| cogentia       | ✅                | main   | 2026-05-14  |
+| FractaVolta    | ✅                | main   | 2026-05-14  |
+| marenostrum    | ✅                | main   | 2026-05-14  |
+| barons-Mariani | ✅                | main   | 2026-05-14  |
+| inseme         | ✅                | main   | 2026-05-14  |
 
 <!-- END_AUTO: registered_repos -->
 

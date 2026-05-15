@@ -1,6 +1,6 @@
 ---
-canonical_url: https://github.com/virteal/inseme/blob/master/packages/cop-core/Manifesto.md
-last_stamped_at: 2026-05-13
+canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/packages/cop-core/Manifesto.md
+last_stamped_at: 2026-05-15
 ---
 
 # **The COP Manifesto**

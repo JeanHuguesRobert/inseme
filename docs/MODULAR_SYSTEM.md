@@ -1,6 +1,6 @@
 ---
-canonical_url: https://github.com/virteal/inseme/blob/master/docs/MODULAR_SYSTEM.md
-last_stamped_at: 2026-05-13
+canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/docs/MODULAR_SYSTEM.md
+last_stamped_at: 2026-05-15
 ---
 
 # 🏗️ Inseme Modular System Architecture
