@@ -9,6 +9,7 @@
 import { randomUUID } from "node:crypto";
 import { createCopEventEnvelope } from "./cop-event-envelope.js";
 import { normalizeResourceAssessments } from "./resource-assessment.js";
+import { evaluateMeasuredRisk } from "./measured-risk.js";
 
 /**
  * @typedef {object} GovernedActInput
@@ -67,6 +68,7 @@ export function recordGovernedAct(store, input) {
       capability: input.capability,
       input: input.invocation_input || {},
       resource_assessments: normalizeResourceAssessments(input.resource_assessments || []),
+      measured_risk: input.measured_risk || null,
     },
     idempotency_key: `${correlation}:invocation`,
   });
@@ -104,6 +106,7 @@ export function recordGovernedAct(store, input) {
       effect: input.effect || null,
       outcome,
       resource_assessments: normalizeResourceAssessments(input.resource_assessments || []),
+      observed_exposure: input.observed_exposure || null,
     },
     idempotency_key: `${correlation}:trace`,
   });
@@ -128,6 +131,7 @@ export function recordGovernedAct(store, input) {
       packet_id: input.packet_id || input.packet?.packet_id || null,
       provisional_cost: input.provisional_cost || null,
       resource_assessments: normalizeResourceAssessments(input.resource_assessments || []),
+      observed_exposure: input.observed_exposure || null,
     },
     idempotency_key: `${correlation}:imputation`,
   });
@@ -253,6 +257,11 @@ export async function invokeGovernedCapability(options) {
     resource_assessments = [],
     packet_id = null,
     portable_bundle = null,
+    measured_risk = null,
+    risk_profile = null,
+    exposure = null,
+    observed_prior_exposure = null,
+    observed_exposure = null,
   } = options;
 
   if (!store || typeof store.append !== "function") throw new TypeError("store.append is required");
@@ -265,6 +274,10 @@ export async function invokeGovernedCapability(options) {
 
   const topicId = identity.topic_id || `governed:${randomUUID()}`;
   const keyBase = idempotency_key || `gov-inv:${randomUUID()}`;
+  const effectiveRisk =
+    measured_risk || risk_profile || identity.measured_risk || identity.risk_profile || null;
+  const effectiveExposure = exposure || identity.exposure || null;
+  const priorExposure = observed_prior_exposure || identity.observed_prior_exposure || null;
 
   // 0. Portable bundle rebinding check
   const bundle = portable_bundle || input?._portable_bundle;
@@ -302,6 +315,9 @@ export async function invokeGovernedCapability(options) {
     action_category: identity.action_category || "mandate",
     demand,
     parent_mandate: identity.parent_mandate,
+    measured_risk: effectiveRisk,
+    exposure: effectiveExposure,
+    observed_prior_exposure: priorExposure,
   });
 
   if (!grant.granted) {
@@ -410,6 +426,9 @@ export async function invokeGovernedCapability(options) {
     action_category: identity.action_category || "mandate",
     demand,
     parent_mandate: identity.parent_mandate,
+    measured_risk: effectiveRisk,
+    exposure: effectiveExposure,
+    observed_prior_exposure: priorExposure,
   });
 
   if (!preCallGrant.granted) {
@@ -497,6 +516,8 @@ export async function invokeGovernedCapability(options) {
     packet_id,
     provisional_cost,
     resource_assessments: combinedAssessments,
+    measured_risk: effectiveRisk,
+    observed_exposure: observed_exposure || effect?.observed_exposure || null,
   });
 
   return {
@@ -701,6 +722,10 @@ export function evaluateMandate(store, options) {
     action_category = "mandate",
     demand = null,
     parent_mandate = null,
+    measured_risk = null,
+    risk_profile = null,
+    exposure = null,
+    observed_prior_exposure = null,
     at_time = new Date(),
   } = options;
 
@@ -1196,6 +1221,92 @@ export function evaluateMandate(store, options) {
           };
         }
       }
+    }
+  }
+
+  // 9b. Measured Risk and Exposure Evaluation (Issue #51)
+  const effectiveRisk = measured_risk || risk_profile;
+  if (effectiveRisk) {
+    const riskEval = evaluateMeasuredRisk({
+      mandate,
+      measured_risk: effectiveRisk,
+      observed_prior_exposure,
+      capability,
+      at_time: nowTime,
+    });
+    if (!riskEval.admissible) {
+      return {
+        granted: false,
+        decision: "refused",
+        error: riskEval.error || "measured_risk_inadmissible",
+        reason: riskEval.reason,
+        mandate_ref: mandateRef,
+        mandate_version: mandateVersion,
+        principal_ref: principalRef,
+        logical_agent_ref: logicalAgentRef,
+        capability,
+        evaluated_at: nowTime.toISOString(),
+        diagnostic: {
+          discovered: true,
+          reachable: true,
+          healthy: true,
+          admissible: false,
+          selected_or_funded: false,
+          authorized: false,
+          invoked: false,
+          committed: false,
+        },
+        risk_evaluation: riskEval,
+      };
+    }
+  } else if (exposure) {
+    const expObj =
+      typeof exposure === "object"
+        ? exposure
+        : { max_cost: exposure, scope: "sandbox", external_effects: "none" };
+    const dummyRisk = {
+      objective: { kind: "routine", expected_value: "exposure_check" },
+      risk: { class: "routine", uncertainty: "low", tail: "bounded" },
+      exposure: expObj,
+      recovery: {
+        state_reversal: "full",
+        compensation: "available",
+        repairability: "high",
+        expected_residue: "none",
+      },
+      responsibility: { loss_bearer_principal_ref: principalRef },
+    };
+    const riskEval = evaluateMeasuredRisk({
+      mandate,
+      measured_risk: dummyRisk,
+      observed_prior_exposure,
+      capability,
+      at_time: nowTime,
+    });
+    if (!riskEval.admissible) {
+      return {
+        granted: false,
+        decision: "refused",
+        error: riskEval.error || "exposure_inadmissible",
+        reason: riskEval.reason,
+        mandate_ref: mandateRef,
+        mandate_version: mandateVersion,
+        principal_ref: principalRef,
+        logical_agent_ref: logicalAgentRef,
+        capability,
+        evaluated_at: nowTime.toISOString(),
+        diagnostic: {
+          discovered: true,
+          reachable: true,
+          healthy: true,
+          admissible: false,
+          selected_or_funded: false,
+          authorized: false,
+          invoked: false,
+          committed: false,
+        },
+        risk_evaluation: riskEval,
+      };
     }
   }
 

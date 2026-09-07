@@ -315,8 +315,100 @@ export interface MandateScope {
   authorized_capabilities?: string[];
   forbidden_actions?: string[];
   budget_ceiling?: Record<string, number>;
-  max_exposure?: string;
+  max_exposure?: string | ExposureEnvelope;
   [key: string]: unknown;
+}
+
+// ----------------------------------------------------------------------
+// 2b. Measured Risk and Exposure (@since 1.2 / Issue #51)
+// ----------------------------------------------------------------------
+
+/** Objective descriptor specifying value, learning, or exploration intent */
+export interface ObjectiveDescriptor {
+  kind: "experiment" | "routine" | "exploration" | "remediation" | "dispositive";
+  expected_value: string;
+  discriminating_power?: "low" | "medium" | "high";
+  learning_hypothesis?: string;
+  [key: string]: unknown;
+}
+
+/** Risk descriptor classifying uncertainty and tail risk */
+export interface RiskDescriptor {
+  class: "experimental" | "routine" | "high_uncertainty" | "critical";
+  uncertainty: "low" | "medium" | "high" | "unknown";
+  tail: "negligible" | "bounded" | "unknown" | "catastrophic";
+  risk_level_scalar?: "low" | "medium" | "high" | "critical";
+  [key: string]: unknown;
+}
+
+/** Exposure envelope specifying what is put at stake and reachable blast radius */
+export interface ExposureEnvelope {
+  max_cost?: string | number;
+  affected_subjects?: number;
+  scope: "sandbox" | "local_internal" | "shared_internal" | "external_public" | "third_party";
+  external_effects: "none" | "bounded" | "propagating" | "irreversible";
+  consequential_ceiling?: Record<string, number | string>;
+  [key: string]: unknown;
+}
+
+/** Reversibility envelope defining rollback, compensation, repair, and residue */
+export interface ReversibilityEnvelope {
+  state_reversal: "full" | "partial" | "none";
+  compensation: "available" | "partial" | "none";
+  restitutability?: "full" | "partial" | "none";
+  repairability: "high" | "medium" | "low" | "none";
+  expected_residue: "none" | "low" | "material";
+  recovery_cost?: "negligible" | "cheap" | "expensive" | "prohibitive";
+  option_loss?: "none" | "bounded" | "high";
+  stop_conditions?: string[];
+  [key: string]: unknown;
+}
+
+/** Damage control state for exceptional containment regime */
+export interface DamageControlState {
+  active: boolean;
+  trigger_reason?: string;
+  containment_mode?: string;
+  entered_at?: ISODateTime;
+  expires_at?: ISODateTime;
+  [key: string]: unknown;
+}
+
+/** Full Measured Risk Profile governing bounded consequential experimentation */
+export interface MeasuredRiskProfile {
+  objective: ObjectiveDescriptor;
+  risk: RiskDescriptor;
+  exposure: ExposureEnvelope;
+  recovery: ReversibilityEnvelope;
+  responsibility: {
+    beneficiary_principal_ref?: string;
+    loss_bearer_principal_ref: string;
+    third_parties_affected?: boolean;
+    [key: string]: unknown;
+  };
+  damage_control?: DamageControlState;
+  [key: string]: unknown;
+}
+
+/** Observed Exposure recording actual measured impact and triggered stop conditions */
+export interface ObservedExposure {
+  observed_cost?: string | number;
+  observed_affected_subjects?: number;
+  observed_external_effects?: "none" | "bounded" | "propagating" | "irreversible";
+  stop_condition_triggered?: string | null;
+  residue?: string[];
+  recorded_at: ISODateTime;
+  [key: string]: unknown;
+}
+
+/** Result of evaluating a Measured Risk profile against a Mandate */
+export interface MeasuredRiskEvaluation {
+  admissible: boolean;
+  decision: "admissible" | "refused";
+  error?: string | null;
+  reason?: string | null;
+  damage_control_triggered?: boolean;
+  evaluated_profile?: MeasuredRiskProfile;
 }
 
 /** Explicit Mandate object under COP/Identity and COP/Mandated Agent Security */
@@ -366,6 +458,8 @@ export interface EvaluateMandateOptions {
   action_category?: "suggestion" | "recommendation" | "authorization" | "mandate";
   demand?: Record<string, number> | null;
   parent_mandate?: MandateObject | null;
+  exposure?: ExposureEnvelope | string | null;
+  measured_risk?: MeasuredRiskProfile | null;
   at_time?: string | Date;
 }
 

@@ -12,6 +12,7 @@
  */
 
 import { ExactQuantity, AccountIdentifier, DisclosureClass, GovernanceContext } from "./accounting";
+import { MeasuredRiskProfile, ObservedExposure } from "./types.js";
 
 /**
  * Single routing hop entry recorded on the Cognitive Packet.
@@ -255,6 +256,14 @@ export interface CognitivePacket {
    * (@since 1.1 / Issue #58)
    */
   effects?: Array<EffectIntent | EffectReceipt>;
+  /**
+   * Governed Measured Risk profile (@since 1.2 / Issue #51).
+   */
+  measured_risk?: MeasuredRiskProfile;
+  /**
+   * Observed Exposure during execution (@since 1.2 / Issue #51).
+   */
+  observed_exposure?: ObservedExposure;
   /** Residue: unrepresented observations during packet execution. */
   residue?: string[];
 }
