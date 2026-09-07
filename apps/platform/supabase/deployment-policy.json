@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "superseded_migration_versions": ["20260901110000"],
+  "allow_pending_by_default": false,
+  "notes": {
+    "20260901110000": "Inseme #59 audit: unsafe, incomplete civic baseline; retained under supabase/superseded and must not be deployed."
+  }
+}

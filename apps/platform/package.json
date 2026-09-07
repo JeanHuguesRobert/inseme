@@ -44,6 +44,7 @@
     "test:jhn:cogentia": "node mcp/test/cogentiaMcpClient.test.js && node mcp/test/jhnCogentiaTurn.test.js",
     "verify:jhn:local-cop": "node scripts/verify-jhn-cop-local.js",
     "schema:check": "node scripts/check-schema-versions.js",
+    "supabase:preflight": "node scripts/check-supabase-migration-plan.js",
     "test:cop:portable": "node --test mcp/test/portableRuntimeGateway.test.js mcp/test/portableRuntimeRouter.test.js mcp/test/signedCapability.test.js mcp/test/localRuntimeServer.test.js mcp/test/jhnLocalAgent.test.js",
     "test:cop:host-runtime": "node --test mcp/test/hostRuntimeClient.test.js",
     "test:schema:portable": "node scripts/test-portable-cop-schema.js",
