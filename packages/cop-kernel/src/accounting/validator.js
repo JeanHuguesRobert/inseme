@@ -473,6 +473,96 @@ export function validateAccountEvent(event, context = {}) {
 }
 
 /**
+ * Validate a reconciliation event (provisional -> actual truth).
+ *
+ * @param {Object} event - Reconciliation event payload
+ * @param {Object} context - Validation context
+ * @returns {Object} Validation result {valid, errors, warnings}
+ */
+export function validateReconciliationEvent(event, context = {}) {
+  const errors = [];
+  const warnings = [];
+
+  // Required fields
+  if (!event.reconciliation_id) errors.push("reconciliation_id is required");
+  if (!event.provisional_spending_id) errors.push("provisional_spending_id is required");
+  if (!event.provider) errors.push("provider is required");
+  if (!event.provisional_cost) errors.push("provisional_cost is required");
+  if (!event.actual_cost) errors.push("actual_cost is required");
+  if (!event.adjustment) errors.push("adjustment is required");
+  if (!event.reason) errors.push("reason is required for reconciliation");
+  if (!event.governance) errors.push("governance is required");
+  if (!event.idempotency_key) errors.push("idempotency_key is required");
+
+  // Validate quantities
+  let provValid = false;
+  let actValid = false;
+  let adjValid = false;
+
+  if (event.provisional_cost) {
+    const qv = validateQuantity(event.provisional_cost);
+    if (!qv.valid) errors.push(...qv.errors.map((e) => `provisional_cost.${e}`));
+    else provValid = true;
+  }
+  if (event.actual_cost) {
+    const qv = validateQuantity(event.actual_cost);
+    if (!qv.valid) errors.push(...qv.errors.map((e) => `actual_cost.${e}`));
+    else actValid = true;
+  }
+  if (event.adjustment) {
+    const qv = validateQuantity(event.adjustment);
+    if (!qv.valid) errors.push(...qv.errors.map((e) => `adjustment.${e}`));
+    else adjValid = true;
+  }
+
+  // Unit match and arithmetic invariant check: adjustment = actual_cost - provisional_cost
+  if (provValid && actValid && adjValid) {
+    const uProv = event.provisional_cost.unit;
+    const uAct = event.actual_cost.unit;
+    const uAdj = event.adjustment.unit;
+    if (uProv && uAct && uProv !== uAct) {
+      errors.push(`provisional_cost unit (${uProv}) and actual_cost unit (${uAct}) must match`);
+    }
+    if (uProv && uAdj && uProv !== uAdj) {
+      errors.push(`adjustment unit (${uAdj}) and provisional_cost unit (${uProv}) must match`);
+    }
+
+    try {
+      const expectedAdjustment = subtractQuantities(event.actual_cost, event.provisional_cost);
+      const diff = subtractQuantities(event.adjustment, expectedAdjustment);
+      if (!isZero(diff)) {
+        errors.push(
+          "Reconciliation adjustment invariant violated: adjustment must equal actual_cost - provisional_cost"
+        );
+      }
+    } catch (e) {
+      errors.push(`Reconciliation arithmetic validation failed: ${e.message}`);
+    }
+  }
+
+  // Governance validation
+  if (event.governance) {
+    if (!event.governance.actor_subject_id) {
+      errors.push("governance.actor_subject_id is required");
+    }
+    if (!event.governance.principal_subject_id) {
+      errors.push("governance.principal_subject_id is required");
+    }
+  }
+
+  // Duplicate idempotency check
+  if (context.processedIdempotencyKeys?.has(event.idempotency_key)) {
+    errors.push("Duplicate idempotency key detected");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
+/**
  * Generic accounting event validator.
  *
  * @param {Object} event - Accounting event with eventType field
@@ -499,6 +589,8 @@ export function validateAccountingEvent(event, context = {}) {
       return validateReversalEvent(event, context);
     case "accounting/account":
       return validateAccountEvent(event, context);
+    case "accounting/reconciliation":
+      return validateReconciliationEvent(event, context);
     default:
       return {
         valid: false,

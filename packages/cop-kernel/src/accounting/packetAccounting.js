@@ -20,7 +20,13 @@
  * @module accounting/packetAccounting
  */
 
-import { addQuantities, fromDecimal, toDecimal } from "./quantity.js";
+import {
+  addQuantities,
+  subtractQuantities,
+  fromDecimal,
+  toDecimal,
+  normalizeToCommonScale,
+} from "./quantity.js";
 import { getModelRateCard } from "@inseme/cop-core";
 
 /** Default fiat unit for provisional LLM/provider cost (providers bill in USD). */
@@ -341,7 +347,8 @@ export function calculatePacketOwnSpending(packet) {
   let total = fromDecimal("0.00000000", unit);
   for (const s of packet?.spending || []) {
     if (s.provisional_cost) {
-      total = addQuantities(total, s.provisional_cost);
+      const [a, b] = normalizeToCommonScale(total, s.provisional_cost);
+      total = addQuantities(a, b);
     }
   }
   return total;
@@ -424,10 +431,11 @@ export function calculatePacketConsolidatedSpending(packet, resolvePacket, opts 
  * @returns {{ ok: boolean, duplicate_keys: string[], own_by_packet: Record<string, string> }}
  */
 export function auditPacketSpendNoDoubleCount(packets) {
+  const list = Array.isArray(packets) ? packets : packets ? [packets] : [];
   const seen = new Map();
   const duplicate_keys = [];
   const own_by_packet = {};
-  for (const p of packets || []) {
+  for (const p of list) {
     const keys = listOwnSpendKeys(p);
     own_by_packet[p.packet_id] = toDecimal(calculatePacketOwnSpending(p));
     for (const k of keys) {
@@ -500,4 +508,71 @@ export function replayPacketAccountingSpool(pipeline, opts = {}) {
     return { ok: false, error: "no_spool_pipeline" };
   }
   return pipeline.replaySpool(opts);
+}
+
+/**
+ * Create an authoritative reconciliation event adjusting a provisional spend against actual provider cost.
+ * Historical provisional events are NEVER rewritten; difference is recorded as an explicit compensating entry.
+ *
+ * @param {object} params
+ * @param {string} [params.reconciliation_id]
+ * @param {string} params.provisional_spending_id
+ * @param {string} [params.packet_id]
+ * @param {string} params.provider
+ * @param {string} [params.model]
+ * @param {string} [params.billing_period]
+ * @param {import("./quantity.js").ExactQuantity} params.provisional_cost
+ * @param {import("./quantity.js").ExactQuantity} params.actual_cost
+ * @param {string} params.reason
+ * @param {object} params.governance
+ * @param {string} [params.idempotency_key]
+ * @param {object} [params.evidence]
+ * @returns {object} ReconciliationEvent
+ */
+export function createReconciliationAdjustment({
+  reconciliation_id,
+  provisional_spending_id,
+  packet_id,
+  provider,
+  model,
+  billing_period,
+  provisional_cost,
+  actual_cost,
+  reason,
+  governance,
+  idempotency_key,
+  evidence,
+}) {
+  if (!provisional_spending_id) throw new TypeError("provisional_spending_id is required");
+  if (!provider) throw new TypeError("provider is required");
+  if (!provisional_cost) throw new TypeError("provisional_cost is required");
+  if (!actual_cost) throw new TypeError("actual_cost is required");
+  if (!reason) throw new TypeError("reason is required");
+  if (!governance) throw new TypeError("governance is required");
+
+  // Invariant: adjustment = actual_cost - provisional_cost
+  const adjustment = subtractQuantities(actual_cost, provisional_cost);
+  const recId =
+    reconciliation_id ||
+    `urn:cop:reconciliation:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  const key = idempotency_key || `recon:${provisional_spending_id}:${recId}`;
+
+  return {
+    eventType: "accounting/reconciliation",
+    schemaVersion: "1.0",
+    reconciliation_id: recId,
+    provisional_spending_id,
+    packet_id: packet_id || null,
+    provider,
+    model: model || null,
+    billing_period: billing_period || null,
+    provisional_cost,
+    actual_cost,
+    adjustment,
+    reason,
+    evidence_references: evidence ? [evidence] : [],
+    governance,
+    idempotency_key: key,
+    effective_at: new Date().toISOString(),
+  };
 }

@@ -305,6 +305,7 @@ export function createRouter({
   log = console.warn,
   registry = new NodeRegistry(),
   invokeNode = null,
+  onAccountingError = null,
 }) {
   const trafficLog = new TrafficLog();
 
@@ -407,17 +408,17 @@ export function createRouter({
           logEntry.preview = content.slice(0, 200);
 
           // Strict Cognitive Packet Accounting Trace
+          const providerName =
+            node.adapter === "acp_stdio"
+              ? "codex-acp"
+              : node.url?.includes("openai.com")
+                ? "openai"
+                : node.url?.includes("groq.com")
+                  ? "groq"
+                  : node.url?.includes("mistral.ai")
+                    ? "mistral"
+                    : "provider";
           try {
-            const providerName =
-              node.adapter === "acp_stdio"
-                ? "codex-acp"
-                : node.url?.includes("openai.com")
-                  ? "openai"
-                  : node.url.includes("groq.com")
-                    ? "groq"
-                    : node.url.includes("mistral.ai")
-                      ? "mistral"
-                      : "provider";
             const packet =
               payload._packet ||
               createCognitivePacket({
@@ -439,9 +440,25 @@ export function createRouter({
             });
             logEntry.provisionalCostUsd = spendingEntry.provisional_cost.coefficient;
             logEntry.packetId = packet.packet_id;
+            logEntry.accountingStatus = "recorded";
             data._cop_packet_id = packet.packet_id;
             data._cop_provisional_cost_usd = spendingEntry.provisional_cost.coefficient;
-          } catch (e) {}
+          } catch (e) {
+            logEntry.accountingStatus = "failed_degraded";
+            logEntry.accountingError = e.message;
+            logEntry.unaccountedEffect = {
+              provider: providerName,
+              model: node.model,
+              prompt_tokens: logEntry.promptTokens || 0,
+              completion_tokens: logEntry.completionTokens || 0,
+            };
+            log(`[Magistral] ⚠️ CRITICAL ACCOUNTING FAILURE for ${node.id}: ${e.message}`);
+            if (typeof onAccountingError === "function") {
+              try {
+                onAccountingError(e, logEntry);
+              } catch (_) {}
+            }
+          }
 
           trafficLog.append(logEntry);
           log(
@@ -455,6 +472,13 @@ export function createRouter({
               "X-COP-Provisional-Cost-USD",
               (Number(logEntry.provisionalCostUsd) / 1e8).toFixed(8)
             );
+          if (logEntry.accountingStatus === "failed_degraded") {
+            resHeaders.set("X-COP-Accounting-Status", "failed_degraded");
+            resHeaders.set(
+              "X-COP-Accounting-Error",
+              logEntry.accountingError || "unknown_accounting_error"
+            );
+          }
 
           return new Response(JSON.stringify(data), {
             status: res.status,
@@ -511,17 +535,17 @@ export function createRouter({
               logEntry.preview = previewBuffer.slice(0, 200);
 
               // Strict Cognitive Packet Accounting Trace for Stream
+              const providerName =
+                node.adapter === "acp_stdio"
+                  ? "codex-acp"
+                  : node.url?.includes("openai.com")
+                    ? "openai"
+                    : node.url.includes("groq.com")
+                      ? "groq"
+                      : node.url.includes("mistral.ai")
+                        ? "mistral"
+                        : "provider";
               try {
-                const providerName =
-                  node.adapter === "acp_stdio"
-                    ? "codex-acp"
-                    : node.url?.includes("openai.com")
-                      ? "openai"
-                      : node.url.includes("groq.com")
-                        ? "groq"
-                        : node.url.includes("mistral.ai")
-                          ? "mistral"
-                          : "provider";
                 const packet =
                   payload._packet ||
                   createCognitivePacket({
@@ -540,7 +564,25 @@ export function createRouter({
                 });
                 logEntry.provisionalCostUsd = spendingEntry.provisional_cost.coefficient;
                 logEntry.packetId = packet.packet_id;
-              } catch (e) {}
+                logEntry.accountingStatus = "recorded";
+              } catch (e) {
+                logEntry.accountingStatus = "failed_degraded";
+                logEntry.accountingError = e.message;
+                logEntry.unaccountedEffect = {
+                  provider: providerName,
+                  model: node.model,
+                  prompt_tokens: logEntry.promptTokens || 0,
+                  completion_tokens: logEntry.completionTokens || 0,
+                };
+                log(
+                  `[Magistral] ⚠️ CRITICAL ACCOUNTING FAILURE for stream ${node.id}: ${e.message}`
+                );
+                if (typeof onAccountingError === "function") {
+                  try {
+                    onAccountingError(e, logEntry);
+                  } catch (_) {}
+                }
+              }
 
               trafficLog.append(logEntry);
               log(

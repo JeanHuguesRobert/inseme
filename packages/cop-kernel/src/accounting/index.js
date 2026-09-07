@@ -15,6 +15,7 @@ export * from "./validator.js";
 export * from "./projector.js";
 export * from "./packetAccounting.js";
 export * from "./supabaseAccountingStore.js";
+export * from "./followTheMoney.js";
 
 /**
  * Main entry point for accounting operations.

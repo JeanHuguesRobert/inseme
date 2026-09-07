@@ -16,7 +16,8 @@
     "./accounting/packetAccounting": "./src/accounting/packetAccounting.js"
   },
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "test:accounting": "node --test test/accounting.test.js test/packetAccounting.test.js test/packetAccountingSpool.test.js test/strict-accounting-adversarial.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.0.0",

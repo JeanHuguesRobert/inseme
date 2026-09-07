@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Build & Test (Strict Accounting Enforcement)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build COP Core
+        run: pnpm --filter @inseme/cop-core run build
+
+      - name: Syntax Check Magistral
+        run: pnpm --filter @inseme/magistral run check
+
+      - name: Lint Accounting Packages
+        run: pnpm run lint:accounting
+
+      - name: Strict Accounting Adversarial Suite (Issue #45)
+        run: pnpm run test:accounting
+
+      - name: Run Test Suites (cop-core, cop-kernel, magistral)
+        run: pnpm run test

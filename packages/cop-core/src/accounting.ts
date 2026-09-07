@@ -471,6 +471,56 @@ export interface AccountEvent {
 }
 
 // ----------------------------------------------------------------------
+// 6b. Reconciliation Events (Provisional -> Actual Truth)
+// ----------------------------------------------------------------------
+
+/**
+ * Reconciliation event payload.
+ *
+ * Reconciles provisional usage/cost with external provider-confirmed truth.
+ * Historical provisional events are NEVER rewritten; difference is recorded
+ * via this explicit compensating reconciliation event.
+ */
+export interface ReconciliationEvent {
+  /** Event type identifier. */
+  eventType: "accounting/reconciliation";
+  /** Schema version. */
+  schemaVersion: "1.0";
+  /** Unique identifier for the reconciliation. */
+  reconciliation_id: string;
+  /** Identifier of the provisional spending or event being reconciled. */
+  provisional_spending_id: string;
+  /** Related Cognitive Packet ID if applicable. */
+  packet_id?: string;
+  /** Provider name (e.g. 'openai', 'groq'). */
+  provider: string;
+  /** Model or capability. */
+  model?: string;
+  /** External billing period or cycle. */
+  billing_period?: string;
+  /** Initial provisional cost. */
+  provisional_cost: ExactQuantity;
+  /** Final provider-confirmed actual cost. */
+  actual_cost: ExactQuantity;
+  /** Signed difference: actual_cost - provisional_cost. */
+  adjustment: ExactQuantity;
+  /** Explanatory reason for adjustment. */
+  reason: string;
+  /** Supporting external invoice/report evidence. */
+  evidence_references?: EvidenceReference[];
+  /** Governance context for accountability. */
+  governance: GovernanceContext;
+  /** Disclosure class. */
+  disclosure_class?: DisclosureClass;
+  /** Idempotency key. */
+  idempotency_key: string;
+  /** When reconciliation was determined or confirmed. */
+  effective_at?: string;
+  /** Additional metadata. */
+  metadata?: Record<string, unknown>;
+}
+
+// ----------------------------------------------------------------------
 // 7. Union Type for All Accounting Events
 // ----------------------------------------------------------------------
 
@@ -482,7 +532,8 @@ export type AccountingEvent =
   | ReservationEvent
   | TransactionEvent
   | ReversalEvent
-  | AccountEvent;
+  | AccountEvent
+  | ReconciliationEvent;
 
 /**
  * Type guard for budget events.
@@ -517,6 +568,13 @@ export function isReversalEvent(event: AccountingEvent): event is ReversalEvent 
  */
 export function isAccountEvent(event: AccountingEvent): event is AccountEvent {
   return event.eventType === "accounting/account";
+}
+
+/**
+ * Type guard for reconciliation events.
+ */
+export function isReconciliationEvent(event: AccountingEvent): event is ReconciliationEvent {
+  return event.eventType === "accounting/reconciliation";
 }
 
 // ----------------------------------------------------------------------
