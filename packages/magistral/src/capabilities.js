@@ -68,6 +68,29 @@ export function codexAcpCapabilityOffer({
   });
 }
 
+export function openCodeMagistralCapabilityOffer({
+  id = "capability:local:opencode-magistral",
+  runtime_id = "runtime:local:opencode-magistral",
+  host_ref = "host:local",
+  handler_instance_ref = "handler:local:opencode-magistral",
+  attraction = 60,
+  enabled = true,
+} = {}) {
+  return normalizeOffer({
+    id,
+    runtime_id,
+    host_ref,
+    handler_instance_ref,
+    capability: "coding.assist.read",
+    execution_surface: "cli",
+    context_inheritance: "cop-artifact",
+    attraction,
+    enabled,
+    dependencies: ["opencode", "magistral-gateway", "cop-continuation"],
+    recovery: "terminal-continuation-after-timeout",
+  });
+}
+
 function normalizeOffer(value) {
   if (!value?.id || !value?.runtime_id || !value?.host_ref || !value?.handler_instance_ref) {
     throw new TypeError("offer id, runtime_id, host_ref, and handler_instance_ref are required");

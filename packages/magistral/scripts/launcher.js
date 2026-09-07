@@ -67,6 +67,8 @@ const config = {
       GROQ_API_KEY: process.env.GROQ_API_KEY || process.env.groq_api_key || "",
       TOGETHER_API_KEY: process.env.TOGETHER_API_KEY || process.env.together_api_key || "",
       OPENAI_API_KEY: process.env.OPENAI_API_KEY || process.env.openai_api_key || "",
+      OPENROUTER_API_KEY:
+        process.env.OPENROUTER_API_KEY || process.env.openrouter_api_key || "",
       MAGISTRAL_API_KEY: process.env.MAGISTRAL_API_KEY || "",
     },
   },

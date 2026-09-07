@@ -271,6 +271,7 @@ function getApiKeyForNode(node, apiKeys) {
     return bag.COGENTIA_API_KEY || bag.AGENT_GATEWAY_TOKEN;
   }
   if (url.includes("groq.com")) return bag.GROQ_API_KEY;
+  if (url.includes("openrouter.ai")) return bag.OPENROUTER_API_KEY;
   if (url.includes("together.xyz") || url.includes("together.ai")) return bag.TOGETHER_API_KEY;
   if (url.includes("openai.com")) return bag.OPENAI_API_KEY;
   if (url.includes("anthropic.com")) return bag.ANTHROPIC_API_KEY;

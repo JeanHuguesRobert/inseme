@@ -75,6 +75,44 @@ export function createHostRuntimeClient({ runtimes = [], spawnImpl = nodeSpawn }
           permission_trace: result.permission_trace,
         };
       }
+      if (runtime.adapter === "opencode_run_json") {
+        const result = await runProcess(
+          spawnImpl,
+          runtime.command,
+          [
+            "run",
+            "--pure",
+            "--dir",
+            working_directory,
+            "--model",
+            runtime.model,
+            "--agent",
+            runtime.agent,
+            "--format",
+            "json",
+            prompt,
+          ],
+          { timeout_ms: runtime.invoke_timeout_ms, cwd: working_directory, env: runtime.env }
+        );
+        const status = result.timed_out
+          ? "timed_out"
+          : result.exit_code === 0
+            ? "completed"
+            : "failed";
+        return {
+          text: openCodeText(result.stdout),
+          status,
+          terminal: true,
+          exit_code: result.exit_code,
+          error: status === "completed" ? null : compactText(result.stderr || result.stdout),
+          handler_profile_ref: runtime.handler_profile_ref,
+          handler_instance_ref: runtime.handler_instance_ref,
+          execution_surface: runtime.execution_surface,
+          context_inheritance: runtime.context_inheritance,
+          runtime_id: runtime.id,
+          execution_usage: { max_steps: 1, max_elapsed_ms: result.elapsed_ms },
+        };
+      }
       if (runtime.adapter !== "codex_exec_jsonl") {
         throw new Error(`unsupported_runtime_adapter:${runtime.adapter}`);
       }
@@ -211,6 +249,36 @@ export function fractaCodexRuntime({
   };
 }
 
+export function openCodeMagistralRuntime({
+  command = "opencode",
+  id = "runtime:local:opencode-magistral",
+  host_ref = "host:local",
+  handler_instance_ref = "handler:local:opencode-magistral",
+  model = "magistral/fallback",
+  agent = "magistral-once",
+  env = {},
+  invoke_timeout_ms = 45_000,
+} = {}) {
+  return {
+    id,
+    command,
+    env,
+    handler_instance_ref,
+    handler_profile_ref: "handler-profile:coding-agent-cli-opencode",
+    host_ref,
+    execution_surface: "cli",
+    adapter: "opencode_run_json",
+    context_inheritance: "cop-artifact",
+    model,
+    agent,
+    capabilities: ["coding.assist.read"],
+    probe_args: ["--version"],
+    probe_timeout_ms: 5_000,
+    invoke_timeout_ms,
+    enabled: true,
+  };
+}
+
 function normalizeRuntime(value) {
   if (!value?.id || !value?.command || !value?.handler_instance_ref)
     throw new TypeError("runtime id, command and handler_instance_ref are required");
@@ -258,13 +326,18 @@ function compactText(value) {
     .trim();
 }
 
-function runProcess(spawnImpl, command, args, { timeout_ms }) {
+function runProcess(spawnImpl, command, args, { timeout_ms, cwd, env = {} }) {
   return new Promise((resolve, reject) => {
     const started = Date.now();
-    const child = spawnImpl(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawnImpl(command, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      ...(cwd ? { cwd } : {}),
+      env: { ...process.env, ...env },
+    });
     let stdout = "";
     let stderr = "";
     let timed_out = false;
+    let killTimer;
     const capture = (target, chunk) => `${target}${chunk}`.slice(0, MAX_CAPTURE_BYTES);
     child.stdout?.on("data", (chunk) => {
       stdout = capture(stdout, chunk);
@@ -274,14 +347,17 @@ function runProcess(spawnImpl, command, args, { timeout_ms }) {
     });
     const timer = setTimeout(() => {
       timed_out = true;
+      killTimer = setTimeout(() => child.kill("SIGKILL"), 2_000);
       child.kill("SIGTERM");
     }, timeout_ms);
     child.once("error", (error) => {
       clearTimeout(timer);
+      clearTimeout(killTimer);
       reject(error);
     });
     child.once("close", (code, signal) => {
       clearTimeout(timer);
+      clearTimeout(killTimer);
       resolve({
         exit_code: Number.isInteger(code) ? code : 1,
         signal: signal || null,
@@ -339,6 +415,23 @@ function runAcpSession(spawnImpl, runtime, { prompt, working_directory }) {
 
 function appendCapture(target, value) {
   return `${target}${String(value || "")}`.slice(0, MAX_CAPTURE_BYTES);
+}
+
+function openCodeText(stdout) {
+  return compactText(
+    String(stdout || "")
+      .split("\n")
+      .map((line) => {
+        if (!line.trim()) return "";
+        try {
+          const value = JSON.parse(line);
+          return acpText(value.part ?? value);
+        } catch {
+          return line;
+        }
+      })
+      .join("")
+  );
 }
 
 function acpText(value) {

@@ -1,5 +1,13 @@
 [
   {
+    "id": "openrouter-free",
+    "url": "https://openrouter.ai/api/v1/chat/completions",
+    "model": "openrouter/free",
+    "tier": "fallback",
+    "blueprint_id": "coding",
+    "weight": 5
+  },
+  {
     "id": "groq-fast",
     "url": "https://api.groq.com/openai/v1/chat/completions",
     "model": "llama-3.1-8b-instant",

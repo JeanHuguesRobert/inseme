@@ -521,6 +521,4 @@ layering constraint clearly and produces concrete artifact types.
 - [COP Reactive Cognitive Extension](../packages/cop-core/REACTIVE_COGNITIVE_EXTENSION.md)
 - [Packet Attractor — Fractanet Distributed Demand and Capability Routing](packet_attractor_fractanet.md)
 - [Research Index — Inseme](index.md)
-- [Concept Index — FractaVolta](https://github.com/JeanHuguesRobert/JeanHuguesRobert/blob/main/FractaVolta-concepts.md)
-- [Research Index — Inox](https://github.com/JeanHuguesRobert/JeanHuguesRobert/blob/main/Inox-index.md)
 <!-- END_AUTO: backlinks -->
