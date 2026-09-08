@@ -14,6 +14,7 @@ import {
 } from "./cop-event-envelope.js";
 import { externalizeRawBody } from "./cop-event-artifacts.js";
 import { mapDeliveryToCopEvent } from "./github-ingress.js";
+import { fractalogRecordToCopEnvelope, validateFractalogActRecord } from "./fractalog.js";
 
 /**
  * @param {object} options
@@ -200,6 +201,79 @@ export function createCopEventPersistPipeline(options) {
         error: appended.error || "store_append_failed",
         errors: appended.errors,
         spooled: false,
+      };
+    },
+
+    /**
+     * Persist a FractaLog act record into COP events with offline spool fallback.
+     *
+     * @param {object} input
+     * @param {object} input.record - validated fractalog.act-record/v1 document
+     * @param {string} [input.idempotency_key]
+     * @param {string} [input.visibility]
+     * @param {string} [input.topic_id]
+     */
+    async persistFractalogRecord(input) {
+      const record = input?.record || input;
+      const validation = validateFractalogActRecord(record);
+      if (!validation.ok) {
+        return {
+          ok: false,
+          error: "invalid_fractalog_record",
+          errors: validation.errors,
+          spooled: false,
+        };
+      }
+
+      const envelope = fractalogRecordToCopEnvelope(record, {
+        idempotency_key: input?.idempotency_key,
+        visibility: input?.visibility,
+        topic_id: input?.topic_id,
+      });
+
+      const envValidation = validateCopEventEnvelope(envelope, {
+        requirePositiveSeq: false,
+      });
+      if (!envValidation.ok) {
+        return {
+          ok: false,
+          error: "invalid_envelope",
+          errors: envValidation.errors,
+          spooled: false,
+        };
+      }
+
+      const appended = store.append(envelope);
+      if (appended.ok) {
+        return {
+          ok: true,
+          duplicate: Boolean(appended.duplicate),
+          event: appended.event,
+          record,
+          spooled: false,
+        };
+      }
+
+      // Degraded: spool for later replay
+      if (spool) {
+        const q = spool.enqueue(envelope);
+        return {
+          ok: false,
+          error: appended.error || "store_append_failed",
+          errors: appended.errors,
+          spooled: q.ok,
+          spool_error: q.ok ? null : q.error,
+          event: envelope,
+          record,
+        };
+      }
+
+      return {
+        ok: false,
+        error: appended.error || "store_append_failed",
+        errors: appended.errors,
+        spooled: false,
+        record,
       };
     },
   };

@@ -5,11 +5,18 @@
  * phase. SQL columns are deliberately treated as projections of this document.
  */
 
-import { hashPayload } from "./cop-event-envelope.js";
+import { createCopEventEnvelope, COP_EVENT_SCHEMA, hashPayload } from "./cop-event-envelope.js";
 
 export const FRACTALOG_ACT_RECORD_SCHEMA = "fractalog.act-record/v1";
 
 const ACT_PHASES = new Set(["attempt", "committed", "failed", "refused", "observed"]);
+const ACT_PHASE_TO_EPISTEMIC = {
+  attempt: "declared",
+  committed: "decided",
+  failed: "decided",
+  refused: "decided",
+  observed: "observed",
+};
 
 function isObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -125,5 +132,246 @@ export function fractalogProjection(record) {
     idempotency_key: record.idempotency_key || null,
     correlation_id: record.correlation_id || null,
     visibility: record.visibility || "restricted",
+  };
+}
+
+/**
+ * Transforms a canonical FractaLog document into a cop.event/v1 envelope.
+ * Preserves the canonical document inside envelope.payload and binds its
+ * document_hash as payload_hash.
+ *
+ * @param {object} record - validated FractaLog document
+ * @param {object} [options]
+ * @returns {object} COP event envelope
+ */
+export function fractalogRecordToCopEnvelope(record, options = {}) {
+  const validation = validateFractalogActRecord(record);
+  if (!validation.ok) {
+    throw new TypeError(`invalid_fractalog_record:${validation.errors.join(",")}`);
+  }
+
+  const epistemicStatus =
+    options.epistemic_status ||
+    options.epistemicStatus ||
+    ACT_PHASE_TO_EPISTEMIC[record.act_phase] ||
+    "observed";
+
+  const topicId =
+    options.topic_id ||
+    options.topicId ||
+    (record.act_id.startsWith("act:") ? record.act_id : `act:${record.act_id}`);
+
+  return createCopEventEnvelope({
+    event_type: options.event_type || options.eventType || FRACTALOG_ACT_RECORD_SCHEMA,
+    topic: { id: topicId },
+    epistemic_status: epistemicStatus,
+    origin_ref: options.origin_ref || options.originRef || record.record_id,
+    subject_ref:
+      options.subject_ref ||
+      options.subjectRef ||
+      record.governed_chain?.logical_agent_ref ||
+      record.owner_instance_ref,
+    actor_ref:
+      options.actor_ref ||
+      options.actorRef ||
+      record.governed_chain?.logical_agent_ref ||
+      record.owner_instance_ref,
+    mandate_ref:
+      options.mandate_ref || options.mandateRef || record.governed_chain?.mandate_ref || null,
+    correlation_id:
+      options.correlation_id ||
+      options.correlationId ||
+      record.correlation_id ||
+      `act:${record.act_id}`,
+    causation_id: options.causation_id || options.causationId || null,
+    visibility: record.visibility || options.visibility || "restricted",
+    time: {
+      occurred_at: record.time?.recorded_at || null,
+      recorded_at: record.time?.recorded_at || new Date().toISOString(),
+    },
+    payload: structuredClone(record),
+    payload_hash: hashPayload(record),
+    idempotency_key:
+      record.idempotency_key || options.idempotency_key || `fractalog:${record.record_id}`,
+    meta: {
+      fractalog_schema: record.schema,
+      document_hash: record.integrity.document_hash,
+      record_id: record.record_id,
+      act_id: record.act_id,
+      act_kind: record.act_kind,
+      act_phase: record.act_phase,
+      owner_instance_ref: record.owner_instance_ref,
+      on_behalf_of_instance_ref: record.on_behalf_of_instance_ref || null,
+      owner_instance_id: record.owner_instance_id || null,
+      on_behalf_of_instance_id: record.on_behalf_of_instance_id || null,
+      ...(options.meta || {}),
+    },
+  });
+}
+
+/**
+ * Extracts and validates a canonical FractaLog document from a COP event envelope.
+ *
+ * @param {object} envelope
+ * @returns {object} canonical FractaLog document
+ */
+export function copEnvelopeToFractalogRecord(envelope) {
+  if (!envelope || typeof envelope !== "object") {
+    throw new TypeError("envelope must be an object");
+  }
+  const candidate =
+    envelope.payload?.schema === FRACTALOG_ACT_RECORD_SCHEMA
+      ? envelope.payload
+      : envelope.payload &&
+          typeof envelope.payload === "object" &&
+          envelope.payload.record_id &&
+          envelope.payload.schema
+        ? envelope.payload
+        : null;
+
+  if (!candidate) {
+    throw new TypeError("envelope does not contain a FractaLog act record in payload");
+  }
+
+  const validation = validateFractalogActRecord(candidate);
+  if (!validation.ok) {
+    throw new TypeError(`invalid_fractalog_record:${validation.errors.join(",")}`);
+  }
+  return candidate;
+}
+
+/**
+ * Derives versioned FractaLog Act documents for each semantic phase of a governed Act chain
+ * (CapabilityInvocation -> Act -> Trace -> Imputation).
+ *
+ * @param {object} governedActResult - return value of recordGovernedAct
+ * @param {object} [context] - optional contextual overrides (owner_instance_id, on_behalf_of_instance_id, etc.)
+ * @returns {{ attempt: object, decided: object, observed: object | null, records: object[] }}
+ */
+export function createFractalogRecordsFromGovernedAct(governedActResult, context = {}) {
+  if (!governedActResult || typeof governedActResult !== "object") {
+    throw new TypeError("governedActResult is required");
+  }
+  const { act_id, correlation, receipt, events = [] } = governedActResult;
+  const actId = act_id || receipt?.act_id;
+  if (!actId) throw new TypeError("governedActResult must contain an act_id");
+
+  const invEvent = events.find((e) => e?.payload?.kind === "CapabilityInvocation");
+  const actEvent = events.find((e) => e?.payload?.kind === "Act");
+  const traceEvent = events.find((e) => e?.payload?.kind === "Trace");
+  const imputationEvent = events.find((e) => e?.payload?.kind === "Imputation");
+
+  const outcome = receipt?.outcome || actEvent?.payload?.outcome || "ok";
+  const decidedPhase =
+    outcome === "ok" ? "committed" : outcome === "refused" ? "refused" : "failed";
+
+  const ownerRef = context.owner_instance_ref || "instance:jhn";
+  const onBehalfRef = context.on_behalf_of_instance_ref || null;
+  const ownerId = context.owner_instance_id || null;
+  const onBehalfId = context.on_behalf_of_instance_id || null;
+
+  const governedChain = {
+    principal_ref: receipt?.principal_ref || invEvent?.payload?.principal_ref || "twin:jhn",
+    owner_instance_id: ownerId,
+    on_behalf_of_instance_id: onBehalfId,
+    logical_agent_ref:
+      receipt?.logical_agent_ref || invEvent?.payload?.logical_agent_ref || "agent:jhn",
+    handler_instance_ref:
+      receipt?.handler_instance_ref || invEvent?.payload?.handler_instance_ref || "handler:unknown",
+    mandate_ref: receipt?.mandate_ref || invEvent?.payload?.mandate_ref || "mandate:default",
+    capability: receipt?.capability || invEvent?.payload?.capability || "unknown.capability",
+  };
+
+  const records = [];
+
+  // 1. Attempt phase
+  const attemptRecord = createFractalogActRecord({
+    record_id: `flr:${actId}:attempt`,
+    act_id: actId,
+    act_kind: governedChain.capability,
+    act_phase: "attempt",
+    owner_instance_ref: ownerRef,
+    on_behalf_of_instance_ref: onBehalfRef,
+    owner_instance_id: ownerId,
+    on_behalf_of_instance_id: onBehalfId,
+    correlation_id: correlation || `act:${actId}`,
+    idempotency_key: `${correlation || `act:${actId}`}:flr:attempt`,
+    visibility: invEvent?.visibility || "restricted",
+    time: {
+      recorded_at: invEvent?.time?.recorded_at || new Date().toISOString(),
+    },
+    governed_chain: governedChain,
+    trace: {
+      source: "governed-act",
+      event_id: invEvent?.event_id || null,
+      invocation_input: invEvent?.payload?.input || {},
+      resource_assessments: invEvent?.payload?.resource_assessments || [],
+      measured_risk: invEvent?.payload?.measured_risk || null,
+    },
+  });
+  records.push(attemptRecord);
+
+  // 2. Decided phase (committed, refused, or failed)
+  const decidedRecord = createFractalogActRecord({
+    record_id: `flr:${actId}:${decidedPhase}`,
+    act_id: actId,
+    act_kind: governedChain.capability,
+    act_phase: decidedPhase,
+    owner_instance_ref: ownerRef,
+    on_behalf_of_instance_ref: onBehalfRef,
+    owner_instance_id: ownerId,
+    on_behalf_of_instance_id: onBehalfId,
+    correlation_id: correlation || `act:${actId}`,
+    idempotency_key: `${correlation || `act:${actId}`}:flr:${decidedPhase}`,
+    visibility: actEvent?.visibility || "restricted",
+    time: {
+      recorded_at: actEvent?.time?.recorded_at || new Date().toISOString(),
+    },
+    governed_chain: governedChain,
+    effect: traceEvent?.payload?.effect || {},
+    trace: {
+      event_id: actEvent?.event_id || null,
+      outcome,
+    },
+    links: [{ ref: attemptRecord.record_id, rel: "attempt" }],
+  });
+  records.push(decidedRecord);
+
+  // 3. Observed phase (if trace observation exists)
+  let observedRecord = null;
+  if (traceEvent) {
+    observedRecord = createFractalogActRecord({
+      record_id: `flr:${actId}:observed`,
+      act_id: actId,
+      act_kind: governedChain.capability,
+      act_phase: "observed",
+      owner_instance_ref: ownerRef,
+      on_behalf_of_instance_ref: onBehalfRef,
+      owner_instance_id: ownerId,
+      on_behalf_of_instance_id: onBehalfId,
+      correlation_id: correlation || `act:${actId}`,
+      idempotency_key: `${correlation || `act:${actId}`}:flr:observed`,
+      visibility: traceEvent?.visibility || "restricted",
+      time: {
+        recorded_at: traceEvent?.time?.recorded_at || new Date().toISOString(),
+      },
+      governed_chain: governedChain,
+      effect: traceEvent?.payload?.effect || {},
+      trace: {
+        event_id: traceEvent?.event_id || null,
+        imputation_event_id: imputationEvent?.event_id || null,
+        observed_exposure: traceEvent?.payload?.observed_exposure || null,
+        resource_assessments: traceEvent?.payload?.resource_assessments || [],
+      },
+      links: [{ ref: decidedRecord.record_id, rel: decidedPhase }],
+    });
+    records.push(observedRecord);
+  }
+
+  return {
+    attempt: attemptRecord,
+    decided: decidedRecord,
+    observed: observedRecord,
+    records,
   };
 }
