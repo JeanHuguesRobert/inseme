@@ -1,20 +1,36 @@
 ---
-title: COP Terminology — Mandated Cognitive Handling
-document_role: source
-document_kind: protocol-terminology
-visibility: public
-lifecycle_state: active
-language: en
-update_policy: UP-DEFAULT-REVIEWED
+title: "COP Terminology — Mandated Cognitive Handling"
+subtitle: "Normative vocabulary for COP authority, execution, traceability, and accountability"
+author: "Jean Hugues Noël Robert, baron Mariani"
+affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
+date: "2026-08-01"
+last_modified_at: "2026-09-08"
+version: "1.0"
+status: "stable — normative"
+license: "CC BY-SA 4.0"
+language: "en"
+document_role: "source"
+document_kind: "protocol-terminology"
+document_function: "vocabulary"
+visibility: "public"
+lifecycle_state: "active"
+update_policy: "UP-DEFAULT-REVIEWED"
+canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/packages/cop-core/Terminology.md"
+classification_source: "cogentia.js"
+classification_version: "1"
+classification_rule: "explicit-metadata"
+classification_confidence: "strong"
 provenance:
-  origin_type: repository
-  origin_repository: JeanHuguesRobert/inseme
-  origin_issue: 31
+  origin_type: "repository"
+  origin_repository: "JeanHuguesRobert/inseme"
+  origin_ref: "https://github.com/JeanHuguesRobert/inseme/issues/31"
   origin_date: "2026-08-01"
+  derived_from: []
 review:
-  status: human-validated
+  status: "verified"
   reviewed_by:
-    - Jean Hugues Noël Robert
+    - "Jean Hugues Noël Robert"
+  reviewed_at: "2026-09-08"
 ---
 
 # COP Terminology — Mandated Cognitive Handling
@@ -70,9 +86,11 @@ execution, or the protocol used to communicate with an executor.
 | **CapabilityRequirement**  | A transport- and provider-neutral description of work that requires one or more capabilities, together with relevant constraints such as locality, cost, latency, trust, quality, deadline, or execution class.                                 |
 | **CapabilityInvocation**   | One recorded attempt or execution of a Capability by a HandlerInstance.                                                                                                                                                                         |
 | **Act**                    | A meaningful operation or effect asserted by COP. An Act MAY be proposed, authorized, attempted, completed, refused, compensated, or observed; these states MUST NOT be conflated.                                                              |
+| **FractaLog Document**     | A canonical, versioned JSON document (`fractalog.act-record/v1`) containing the complete durable account of one semantic Act phase (`attempt`, `committed`, `failed`, `refused`, `observed`). Relational database columns are strictly projections of this document. |
 | **Trace**                  | The general causal or evidential primitive. Any physical, digital, external, or internal imprint left by an occurrence in reality. A Trace is not itself a truth claim. FractaLog is a governed trace projection, not merely runtime telemetry. |
 | **TraceRef**               | A canonical, immutable, content-addressed cryptographic pointer (`cop.trace-ref/v1`) identifying a trace independently of network location (`locator`) and physical custody (`custody`).                                                        |
 | **TraceDescriptor**        | Structured observational metadata (`cop.trace-descriptor/v1`) recording trace origin, custody, visibility, valid-time, and classification without embedding subjective confidence scalars.                                                      |
+| **Governed Erasure Receipt** | An opaque, non-reconstructive event (`TraceLifecycleErasure` / `GovernedErasureReceipt`) confirming that payload content was removed under a specified governance policy or legal authority without altering prior causal history or event existence. |
 | **Event**                  | A COP-native procedural representation of an occurrence within the COP runtime (e.g. `TaskStepExecuted`, `TraceObservation`, `ExecutionBudgetGrant`). An Event is a procedural specialization of Trace (`Event ⊂ Trace`).                       |
 | **Artifact**               | An immutable computational object (document, code, data structure, binary blob) identified by content digest (SHA-256). An Artifact may embody a Trace or be referenced by a Trace.                                                             |
 | **Assertion**              | A proposition or claim held by the Corpus (`cop.assertion/v1`) with explicit epistemic status (`hypothesized`, `inferred`, `declared`, `verified`, `normative`, `disputed`). An Assertion remains distinct from the Traces that evidence it.    |

@@ -1,11 +1,47 @@
 ---
 title: "FractaLog Act catalogue"
+subtitle: "Versioned scope, semantic act taxonomy, and reality test profiles for FractaLog"
+author: "Jean Hugues Noël Robert, baron Mariani"
+affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
 date: "2026-09-07"
-status: experimental
-document_role: implementation-profile
-document_kind: protocol-profile
-visibility: public
-related_issue: "https://github.com/JeanHuguesRobert/inseme/issues/59"
+last_modified_at: "2026-09-08"
+version: "0.2"
+status: "working-paper — Batch 0 verified"
+license: "CC BY-SA 4.0"
+language: "en"
+ai_assisted_by:
+  - "Antigravity (catalogue structuring and reality test documentation)"
+human_arbitration_by: "Jean Hugues Noël Robert"
+document_role: "operational"
+document_kind: "documentation"
+document_function: "protocol-profile"
+visibility: "public"
+lifecycle_state: "working"
+update_policy: "UP-DEFAULT-REVIEWED"
+last_stamped_at: "unknown"
+canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/docs/fractalog-act-catalog.md"
+classification_source: "cogentia.js"
+classification_version: "1"
+classification_rule: "explicit-metadata"
+classification_confidence: "strong"
+provenance:
+  origin_type: "conversation"
+  origin_repository: "JeanHuguesRobert/inseme"
+  origin_ref: "https://github.com/JeanHuguesRobert/inseme/issues/59"
+  origin_date: "2026-09-07"
+  derived_from:
+    - "research/cop_fractalog_profile.md"
+    - "packages/cop-core/src/fractalog.js"
+related_documents:
+  - "research/cop_fractalog_profile.md"
+  - "packages/cop-core/src/fractalog.js"
+  - "apps/platform/supabase/migrations/20260908043211_fractalog_act_records_and_ingress.sql"
+  - "apps/platform/mcp/cop/fractalogSqliteStore.js"
+review:
+  status: "verified"
+  reviewed_by:
+    - "Jean Hugues Noël Robert"
+  reviewed_at: "2026-09-08"
 ---
 
 # FractaLog Act catalogue
@@ -121,6 +157,10 @@ The first vertical test is intentionally non-engaging: import the already observ
 appearance plus a bounded Navigation Assistant observation through Batch 0. It verifies the local
 outbox, central ingress, projected identities, idempotency, and receipt path without publishing
 anything new.
+
+**Status (2026-09-08): Verified.**
+- Implemented and passing in [`apps/platform/mcp/test/fractalogSqliteStore.test.js`](../apps/platform/mcp/test/fractalogSqliteStore.test.js) and [`packages/cop-core/test/fractalog.test.js`](../packages/cop-core/test/fractalog.test.js).
+- Demonstrates local SQLite outbox append (`fractalogSqliteStore`), store-and-forward to central ingress, conversion into valid `cop.event/v1` envelopes (`fractalogRecordToCopEnvelope`), persistence fallback spooling, and idempotent receipt confirmation.
 
 External publication instrumentation follows only in Batch 2. It must preserve the distinction
 between a local draft, an insertion into a compose field, a publish request, and a verified public

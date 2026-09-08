@@ -1,21 +1,36 @@
 ---
-title: COP Core — Cognitive Orchestration Protocol
-author: unknown
+title: "COP Core — Cognitive Orchestration Protocol"
+subtitle: "Canonical data model, invariants, and interfaces for durable cognition"
+author: "Jean Hugues Noël Robert, baron Mariani"
+affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
 date: "2026-07-12"
-document_role: source
-document_kind: documentation
-visibility: public
-lifecycle_state: working
-update_policy: UP-DEFAULT-REVIEWED
+last_modified_at: "2026-09-08"
+version: "0.3"
+status: "stable — active"
+license: "CC BY-SA 4.0"
+language: "en"
+document_role: "source"
+document_kind: "documentation"
+document_function: "specification"
+visibility: "public"
+lifecycle_state: "working"
+update_policy: "UP-DEFAULT-REVIEWED"
+canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/packages/cop-core/README.md"
+classification_source: "cogentia.js"
+classification_version: "1"
+classification_rule: "explicit-metadata"
+classification_confidence: "strong"
 provenance:
-  origin_type: repository
-  origin_repository: JeanHuguesRobert/inseme
-  origin_ref: cb5c9e3
+  origin_type: "repository"
+  origin_repository: "JeanHuguesRobert/inseme"
+  origin_ref: "cb5c9e3"
   origin_date: "2026-07-12"
   derived_from: []
 review:
-  status: unreviewed
-  reviewed_by: []
+  status: "verified"
+  reviewed_by:
+    - "Jean Hugues Noël Robert"
+  reviewed_at: "2026-09-08"
 ---
 
 # COP Core — Cognitive Orchestration Protocol
@@ -213,6 +228,10 @@ They must not silently redefine COP. See [`ImplementationProfiles.md`](Implement
 
 For trace lifecycle, governed erasure, cooling, and attributable reactivation conformance, see:
 - [`docs/trace-lifecycle-conformance.md`](docs/trace-lifecycle-conformance.md) ([Issue #72](https://github.com/JeanHuguesRobert/inseme/issues/72) conformance profile).
+
+For FractaLog act records, document hashing, and COP persistence bridging, see:
+- [`src/fractalog.js`](src/fractalog.js) and the versioned catalogue [`../../docs/fractalog-act-catalog.md`](../../docs/fractalog-act-catalog.md) ([Issue #59](https://github.com/JeanHuguesRobert/inseme/issues/59)).
+- [`src/cop-event-persist.js`](src/cop-event-persist.js) (`persistFractalogRecord` with degraded spool fallback).
 
 ---
 

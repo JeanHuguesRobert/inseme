@@ -38,8 +38,9 @@ related_documents:
   - "packages/cop-core/docs/measured-risk-and-exposure.md"
   - "research/cop_fractalog_profile.md"
 review:
-  review_status: "verified"
-  reviewed_by: "Jean Hugues Noël Robert"
+  status: "verified"
+  reviewed_by:
+    - "Jean Hugues Noël Robert"
   reviewed_at: "2026-09-08"
 ---
 
