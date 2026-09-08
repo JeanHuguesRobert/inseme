@@ -487,7 +487,10 @@ export async function invokeGovernedCapability(options) {
         idempotency_key: `${keyBase}:release`,
       });
     } else {
-      const usage = effect?.execution_usage || effect?.usage || reservation.demand;
+      const usage =
+        effect?.execution_usage ||
+        (effect?.usage && typeof effect.usage.max_steps === "number" ? effect.usage : null) ||
+        reservation.demand;
       settlement = ledger.settle({
         reservation_id: reservation.reservation_id,
         expected_version: snap.version,

@@ -2,12 +2,22 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createJhnDelegatingAgent } from "../cop/jhnDelegatingAgent.js";
 import { createMemoryCopEventStore } from "../../../../packages/cop-core/src/cop-event-spool.js";
+import { recordMandateDeclaration } from "../../../../packages/cop-core/src/governed-act.js";
 
 test("JHN Delegating Agent Governed Delegation & Packet Tracing (#33, #31)", async (t) => {
   await t.test(
     "delegates under mandate and attaches packet_id and provisional_cost to Imputation",
     async () => {
       const store = createMemoryCopEventStore();
+      recordMandateDeclaration(store, {
+        mandate_id: "mandate:jhn:active-001",
+        principal_subject_id: "principal:jhn",
+        representative_subject_id: "agent:jhn",
+        status: "active",
+        scope: {
+          allowed_capabilities: ["*"],
+        },
+      });
 
       // Mock handler returning completion result with token usage
       const mockHandler = {
@@ -130,6 +140,15 @@ test("JHN delegation fails closed without a bounded execution budget", async () 
 
 test("JHN delegation releases its reservation when the handler fails", async () => {
   const store = createMemoryCopEventStore();
+  recordMandateDeclaration(store, {
+    mandate_id: "mandate:jhn:active-001",
+    principal_subject_id: "principal:jhn",
+    representative_subject_id: "agent:jhn",
+    status: "active",
+    scope: {
+      allowed_capabilities: ["*"],
+    },
+  });
   const agent = createJhnDelegatingAgent({
     store,
     handler: {
