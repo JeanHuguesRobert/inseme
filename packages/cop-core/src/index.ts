@@ -17,6 +17,7 @@ export * from "./closure.js";
 export * from "./packet-store.js";
 export * from "./effect.js";
 export * from "./trace.js";
+export * from "./fractalog.js";
 export * from "./local-trace-consolidation.js";
 export * from "./execution-budget.js";
 export * from "./reactive-corpus.js";
