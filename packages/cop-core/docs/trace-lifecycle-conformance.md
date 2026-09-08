@@ -31,8 +31,10 @@ provenance:
   origin_date: "2026-09-08"
   derived_from:
     - "https://github.com/JeanHuguesRobert/inseme/issues/71"
+    - "https://github.com/JeanHuguesRobert/inseme/issues/73"
     - "research/cop_fractalog_profile.md"
     - "packages/cop-core/test/trace-lifecycle-conformance.test.js"
+    - "packages/cop-core/test/trace-lifecycle-verifier.test.js"
 related_documents:
   - "packages/cop-core/docs/trace-contradiction-review.md"
   - "packages/cop-core/docs/measured-risk-and-exposure.md"
@@ -102,3 +104,55 @@ The conformance invariants are verified by the automated Vitest test suite locat
 | **Reactivation Guards** | Reactivation without an active mandate or missing reason is rejected. |
 | **Attributable Reactivation** | Valid reactivation emits a traceable event with causal link to prior expiry and current mandate. |
 | **Routing vs. Imputation** | Cooling severs forward routing without retroactively altering past imputations or event timestamps. |
+
+---
+
+## 4. Runtime Invariant Verifier Engine & CLI Tooling
+
+The verification of trace logs, event outboxes, and stream replays against the 5 COP invariants is exposed by `@inseme/cop-core` for programmatic consumption, pipeline validation, and degraded FractaLog spool monitoring ([Issue #73](https://github.com/JeanHuguesRobert/inseme/issues/73)).
+
+### 4.1 Programmatic Verification (`verifyTraceLogConformance`)
+
+```javascript
+import {
+  verifyTraceLogConformance,
+  verifyTraceLogFile,
+  formatTraceConformanceReport
+} from "@inseme/cop-core";
+
+// In-memory array of events, JSONL string, or MemoryTraceStore / TraceLog:
+const report = verifyTraceLogConformance(events, { strict: true });
+
+if (!report.valid) {
+  console.error(`Detected ${report.violations.length} conformance violations:`);
+  console.log(formatTraceConformanceReport(report));
+}
+```
+
+#### Monitored Invariants & Error Codes:
+1. **Append-Only History & Immutability (`APPEND_ONLY_VIOLATION`, `CAUSAL_INVERSION_DETECTED`)**:
+   Enforces distinct event IDs (or idempotent identical duplicates). Forbids in-place mutation of past events with divergent content. Enforces chronological monotonicity across causal links (`causation_id`, `parent_event_id`, `prior_expiry_event_id`).
+2. **Governed Erasure Receipts (`INVALID_ERASURE_RECEIPT`)**:
+   Verifies that erasure markers provide `target_trace_ref`, `authority_ref`, explicit `effect: "redacted" | "erased"`, declare `non_reconstructive: true`, and never retain raw payload text or structured objects.
+3. **Expired Guidance Signal Refusal (`EXPIRED_GUIDANCE_EXECUTION`)**:
+   Tracks stigmergic signal decay from `hot` to `cold` or `frozen` (as well as explicit `valid_until` / TTL). Intercepts and flags any Act execution that claimed authority under an expired guidance signal without prior reactivation.
+4. **Attributable Reactivation (`UNATTRIBUTABLE_REACTIVATION`)**:
+   Requires reactivation events to declare `source_trace_ref`, specify an explicit non-empty `reason`, reference an active `mandate_ref`, and link causally to the `prior_expiry_event_id`.
+5. **Routing vs. Imputation Decoupling (`PAST_IMPUTATION_MUTATED`, `RETROACTIVE_REPUDIATION`)**:
+   Ensures that signal cooling, expiry, or redaction never rewrites prior historical imputations or event timestamps.
+
+### 4.2 Standalone CLI Tooling (`cop-trace-verify`)
+
+A standalone CLI utility (`cop-trace-verify`) is bundled with `@inseme/cop-core`:
+
+```bash
+# Verify a JSON array or JSONL trace log file:
+npx cop-trace-verify ./path/to/trace.jsonl
+
+# Pipe directly from stdin (e.g. from FractaLog spool drain or tailing daemon):
+cat outbox.jsonl | npx cop-trace-verify --stdin
+
+# Machine-readable JSON output for CI/CD gates:
+npx cop-trace-verify ./audit.json --json
+```
+

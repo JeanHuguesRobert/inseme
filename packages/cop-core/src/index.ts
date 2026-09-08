@@ -22,3 +22,4 @@ export * from "./local-trace-consolidation.js";
 export * from "./execution-budget.js";
 export * from "./reactive-corpus.js";
 export * from "./measured-risk.js";
+export * from "./trace-lifecycle-verifier.js";
