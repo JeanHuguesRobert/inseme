@@ -119,10 +119,10 @@ COP is defined by a small number of **non-negotiable invariants**:
 7. Reconstructible causal attribution
 
 The seventh invariant means that transport trust never replaces identity. Whether an event travels
-inside a local process, a controlled Tailscale VPN, a private Fractanet segment, or across the public
-Internet, a durable consequential event should retain enough identity and lineage to reconstruct who
-or what caused it: the relevant Actor / LogicalAgent, execution HandlerInstance when material,
-applicable mandate or authority source, and causal predecessor events.
+inside a local process, a controlled Tailscale VPN, a private Fractanet segment, or across the
+public Internet, a durable consequential event should retain enough identity and lineage to
+reconstruct who or what caused it: the relevant Actor / LogicalAgent, execution HandlerInstance when
+material, applicable mandate or authority source, and causal predecessor events.
 
 These invariants are normative and MUST be preserved by all implementations.
 
@@ -167,20 +167,26 @@ boundaries.
 
 A useful implementation principle is:
 
-> **Keep security friction proportional to the measured consequence profile; keep identity, mandate and causal lineage durable.**
+> **Keep security friction proportional to the measured consequence profile; keep identity, mandate
+> and causal lineage durable.**
 
 And for experimentation:
 
-> **Take the smallest sufficient risk for useful progress, not the smallest attainable risk regardless of usefulness.**
+> **Take the smallest sufficient risk for useful progress, not the smallest attainable risk
+> regardless of usefulness.**
 
 See:
 
+- [`COP_MEASURED_RISK.md`](COP_MEASURED_RISK.md) for the normative protocol profile, schema
+  definitions, and gating evaluation functions (`evaluateMeasuredRisk`, `attenuateMeasuredRisk`);
+- [`docs/measured-risk-and-exposure.md`](docs/measured-risk-and-exposure.md) for architecture notes,
+  state machines, and implementation guidance;
 - [`COP_MANDATED_AGENT_SECURITY.md`](COP_MANDATED_AGENT_SECURITY.md) for normative authority,
-  Measured Risk and recovery semantics;
-- [Inseme issue #51](https://github.com/JeanHuguesRobert/inseme/issues/51) for the experimental
-  `Exposure` representation;
+  Measured Risk conformance criteria (AC13/AC14), and recovery semantics;
 - [Cogentia Measured Risk](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/measured_risk.md)
-  for the source doctrine.
+  for the source doctrine;
+- [Inseme issue #51](https://github.com/JeanHuguesRobert/inseme/issues/51) for the parent tracking
+  issue.
 
 ---
 
@@ -188,9 +194,9 @@ See:
 
 Profiles extend COP without modifying the core.
 
-Normative authority and execution terminology is defined in
-[`Terminology.md`](Terminology.md). In particular, COP distinguishes a `LogicalAgent` that
-holds a mandate from a `Handler` and its potentially ephemeral `HandlerInstance` that execute work.
+Normative authority and execution terminology is defined in [`Terminology.md`](Terminology.md). In
+particular, COP distinguishes a `LogicalAgent` that holds a mandate from a `Handler` and its
+potentially ephemeral `HandlerInstance` that execute work.
 
 Examples:
 
