@@ -22,7 +22,11 @@ function sample(overrides = {}) {
 }
 
 test("FractaLog retains unknown document fields and derives projections", () => {
-  const record = sample({ on_behalf_of_instance_ref: "instance:pertitellu-corte" });
+  const record = sample({
+    owner_instance_id: "00000000-0000-0000-0000-000000000001",
+    on_behalf_of_instance_ref: "instance:pertitellu-corte",
+    on_behalf_of_instance_id: "00000000-0000-0000-0000-000000000010",
+  });
   assert.equal(validateFractalogActRecord(record).ok, true);
   assert.equal(record.unknown_future_field.retained, true);
   assert.deepEqual(fractalogProjection(record), {
@@ -34,6 +38,8 @@ test("FractaLog retains unknown document fields and derives projections", () => 
     act_phase: "observed",
     owner_instance_ref: "instance:jhn",
     on_behalf_of_instance_ref: "instance:pertitellu-corte",
+    owner_instance_id: "00000000-0000-0000-0000-000000000001",
+    on_behalf_of_instance_id: "00000000-0000-0000-0000-000000000010",
     recorded_at: "2026-09-08T10:00:00.000Z",
     idempotency_key: null,
     correlation_id: null,

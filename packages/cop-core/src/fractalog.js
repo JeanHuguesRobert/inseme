@@ -53,6 +53,8 @@ export function createFractalogActRecord(input = {}) {
     act_phase: input.act_phase || "observed",
     owner_instance_ref: requireText(input.owner_instance_ref, "owner_instance_ref"),
     on_behalf_of_instance_ref: input.on_behalf_of_instance_ref || null,
+    owner_instance_id: input.owner_instance_id || null,
+    on_behalf_of_instance_id: input.on_behalf_of_instance_id || null,
     time: {
       ...structuredClone(input.time || {}),
       recorded_at: input.time?.recorded_at || now,
@@ -117,6 +119,8 @@ export function fractalogProjection(record) {
     act_phase: record.act_phase,
     owner_instance_ref: record.owner_instance_ref,
     on_behalf_of_instance_ref: record.on_behalf_of_instance_ref,
+    owner_instance_id: record.owner_instance_id,
+    on_behalf_of_instance_id: record.on_behalf_of_instance_id,
     recorded_at: record.time.recorded_at,
     idempotency_key: record.idempotency_key || null,
     correlation_id: record.correlation_id || null,
