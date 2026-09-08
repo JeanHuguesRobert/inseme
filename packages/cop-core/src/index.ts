@@ -23,3 +23,4 @@ export * from "./execution-budget.js";
 export * from "./reactive-corpus.js";
 export * from "./measured-risk.js";
 export * from "./trace-lifecycle-verifier.js";
+export * from "./fractalog-spool.js";

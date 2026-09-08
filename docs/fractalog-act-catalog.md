@@ -32,9 +32,11 @@ provenance:
   derived_from:
     - "research/cop_fractalog_profile.md"
     - "packages/cop-core/src/fractalog.js"
+    - "https://github.com/JeanHuguesRobert/inseme/issues/74"
 related_documents:
   - "research/cop_fractalog_profile.md"
   - "packages/cop-core/src/fractalog.js"
+  - "packages/cop-core/src/fractalog-spool.js"
   - "apps/platform/supabase/migrations/20260908043211_fractalog_act_records_and_ingress.sql"
   - "apps/platform/mcp/cop/fractalogSqliteStore.js"
 review:
@@ -161,6 +163,7 @@ anything new.
 **Status (2026-09-08): Verified.**
 - Implemented and passing in [`apps/platform/mcp/test/fractalogSqliteStore.test.js`](../apps/platform/mcp/test/fractalogSqliteStore.test.js) and [`packages/cop-core/test/fractalog.test.js`](../packages/cop-core/test/fractalog.test.js).
 - Demonstrates local SQLite outbox append (`fractalogSqliteStore`), store-and-forward to central ingress, conversion into valid `cop.event/v1` envelopes (`fractalogRecordToCopEnvelope`), persistence fallback spooling, and idempotent receipt confirmation.
+- Degraded offline fallback spooling is monitored and drained via `inspectFractalogSpool` / `drainFractalogSpool` and CLI `fractalog-spool` ([`packages/cop-core/src/fractalog-spool.js`](../packages/cop-core/src/fractalog-spool.js), [Issue #74](https://github.com/JeanHuguesRobert/inseme/issues/74)), providing age tracking, idempotent forwarding, and quarantine for corrupted records.
 
 External publication instrumentation follows only in Batch 2. It must preserve the distinction
 between a local draft, an insertion into a compose field, a publish request, and a verified public

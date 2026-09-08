@@ -6,12 +6,14 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "cop-trace-verify": "./bin/verify-trace-lifecycle.js"
+    "cop-trace-verify": "./bin/verify-trace-lifecycle.js",
+    "fractalog-spool": "./bin/fractalog-spool.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
-    "trace:verify": "node bin/verify-trace-lifecycle.js"
+    "trace:verify": "node bin/verify-trace-lifecycle.js",
+    "spool": "node bin/fractalog-spool.js"
   },
   "keywords": [
     "cop",

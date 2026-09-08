@@ -232,6 +232,7 @@ For trace lifecycle, governed erasure, cooling, and attributable reactivation co
 For FractaLog act records, document hashing, and COP persistence bridging, see:
 - [`src/fractalog.js`](src/fractalog.js) and the versioned catalogue [`../../docs/fractalog-act-catalog.md`](../../docs/fractalog-act-catalog.md) ([Issue #59](https://github.com/JeanHuguesRobert/inseme/issues/59)).
 - [`src/cop-event-persist.js`](src/cop-event-persist.js) (`persistFractalogRecord` with degraded spool fallback).
+- [`src/fractalog-spool.js`](src/fractalog-spool.js) and CLI [`bin/fractalog-spool.js`](bin/fractalog-spool.js) (`inspectFractalogSpool`, `drainFractalogSpool`, and `fractalog-spool status / drain` monitor and forwarder for degraded offline fallback recovery, [Issue #74](https://github.com/JeanHuguesRobert/inseme/issues/74)).
 
 ---
 
