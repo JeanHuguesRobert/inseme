@@ -1,10 +1,32 @@
 ---
-Issue: https://github.com/JeanHuguesRobert/inseme/issues/25
-Title: Implement the day-one COP/Accounting conformance kernel
-Status: Complete
-Completion Date: 2026-07-23
-Git-status: Ready for commit (all changes in working directory)
-language: en
+title: "Issue #25 Completion Report: COP/Accounting Conformance Kernel"
+author: "Jean Hugues Robert"
+affiliation: "Institut Mariani / C.O.R.S.I.C.A."
+license: "CC BY-SA 4.0"
+language: "en"
+date: "2026-07-23"
+last_modified_at: "2026-09-08"
+status: "stable"
+document_role: "operational"
+document_kind: "completion-report"
+visibility: "public"
+lifecycle_state: "active"
+update_policy: "UP-DEFAULT-REVIEWED"
+canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/ISSUE_25_COMPLETION_REPORT.md"
+related_issues:
+  - "https://github.com/JeanHuguesRobert/inseme/issues/25"
+provenance:
+  origin_type: "repository"
+  origin_repository: "JeanHuguesRobert/inseme"
+  origin_ref: "67741c8"
+  origin_date: "2026-07-23"
+  derived_from:
+    - "packages/cop-core/COP_ACCOUNTING.md"
+review:
+  status: "human-validated"
+  reviewed_by:
+    - "Jean Hugues Robert"
+  reviewed_at: "2026-09-08"
 ---
 
 # Issue #25 Completion Report: COP/Accounting Conformance Kernel
