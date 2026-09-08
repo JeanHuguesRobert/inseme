@@ -12,12 +12,13 @@ for (const input of files) {
   const file = path.resolve(input);
   const source = await fs.readFile(file, "utf8");
 
-  // Cogentia owns the exact representation of generated sections. Formatting
-  // the surrounding Markdown would also rewrite those sections and create drift.
-  if (path.extname(file).toLowerCase() === ".md" && /<!--\s*BEGIN_AUTO:/.test(source)) {
+  // Markdown is authored corpus material. Rewrapping prose or re-aligning
+  // tables during an unrelated commit obscures the intended diff. Markdown
+  // syntax and frontmatter are validated by their scoped checks instead.
+  if (path.extname(file).toLowerCase() === ".md") {
     preserved++;
     console.log(
-      `prettier-staged: preserve Cogentia document ${path.relative(process.cwd(), file)}`
+      `prettier-staged: preserve authored Markdown ${path.relative(process.cwd(), file)}`
     );
     continue;
   }

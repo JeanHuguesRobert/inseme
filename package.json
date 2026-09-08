@@ -56,7 +56,7 @@
       "eslint --fix",
       "prettier --write"
     ],
-    "*.{css,md}": "node scripts/prettier-staged.js"
+    "*.css": "node scripts/prettier-staged.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
