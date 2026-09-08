@@ -211,6 +211,9 @@ Profiles define **additional semantics**, not new execution rules.
 Implementation profiles document concrete runtimes or surfaces that realize COP responsibilities.
 They must not silently redefine COP. See [`ImplementationProfiles.md`](ImplementationProfiles.md).
 
+For trace lifecycle, governed erasure, cooling, and attributable reactivation conformance, see:
+- [`docs/trace-lifecycle-conformance.md`](docs/trace-lifecycle-conformance.md) ([Issue #72](https://github.com/JeanHuguesRobert/inseme/issues/72) conformance profile).
+
 ---
 
 ## Interoperability
