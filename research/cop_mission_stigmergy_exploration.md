@@ -5,7 +5,7 @@ author: "Jean Hugues Noël Robert, baron Mariani"
 affiliation: "Institut Mariani / C.O.R.S.I.C.A."
 license: "CC BY-SA 4.0"
 date: "2026-07-10"
-last_modified_at: "2026-08-16"
+last_modified_at: "2026-09-08"
 status: "working-note"
 document_role: "source"
 document_kind: "technical-architecture-note"
@@ -185,6 +185,13 @@ Stigmergic traces are guidance artifacts, not conclusions and not substitutes fo
 Stigmergy needs forgetting. Policies may include `no_decay`, `fixed_ttl`, `decay_unless_reinforced`, `legal_hold`, `until_superseded` and `review_required`.
 
 A trace that becomes central should be promoted into an Artifact or map projection while preserving provenance to its source.
+
+Decay applies to a stigmergic trace's default routing and attentional influence,
+not to the source-trace history of the act or observation it summarizes. An
+expired or cold guidance signal must not continue to authorize action merely
+because it once mattered. Conversely, reactivation of a cold or frozen signal
+for a current Mission should record its present reason and remain admissible
+only under the current mandate, evidence, and risk regime.
 
 ## 10. Mission lifecycle
 

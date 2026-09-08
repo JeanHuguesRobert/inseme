@@ -16,6 +16,7 @@ classification_source: "cogentia.js"
 classification_version: "1"
 classification_rule: "working-note"
 classification_confidence: "medium"
+last_modified_at: "2026-09-08"
 ---
 
 # COP Memory Profile
@@ -121,6 +122,12 @@ decayed  = degraded, superseded or low-confidence trace
 Temperature is not truth. It is retrieval priority.
 
 A false trace may be hot. A true trace may be cold. COP must keep temperature separate from confidence and probative value.
+
+Temperature is also not authority or imputation. Cooling a trace may reduce its
+default influence on routing and attention; it does not erase the occurrence,
+responsibility, or evidential history it records. Reheating a cold or frozen
+trace for operational use should be explainable by current context, freshness,
+or a new observation, and remains subject to the active mandate.
 
 ## 6. Capacity limits
 

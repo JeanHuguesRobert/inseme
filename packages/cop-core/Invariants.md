@@ -3,7 +3,7 @@ canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/packages/cop
 author: "Jean Hugues Noël Robert, baron Mariani"
 affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
 license: "CC BY-SA 4.0"
-last_modified_at: 2026-08-24
+last_modified_at: 2026-09-08
 last_stamped_at: 2026-06-01
 ---
 
@@ -38,6 +38,23 @@ Immutability guarantees:
 - causal reasoning,
 - deterministic replay and reconstructibility,
 - long-term integrity.
+
+### 1.1 Retention, visibility, and governed erasure
+
+Immutability protects the authoritative causal record. It does not require
+unbounded retention or public exposure of every payload that a record may
+reference. Privacy, confidentiality, safety, and applicable legal duties
+remain independent constraints.
+
+Where an explicitly authorized erasure, redaction, or destruction of sensitive
+content is necessary, it MUST NOT silently mutate the retained COP record or
+rewrite the historical sequence. The operation MUST leave a proportionate,
+non-reconstructive trace of its authority, scope, time, and effect, while
+avoiding renewed disclosure of the protected content.
+
+Trace temperature, indexing, caching, visibility, and payload availability are
+therefore lifecycle concerns. They do not change the identity, occurrence, or
+imputation of a retained Event, Trace, Artifact, or EvidenceRelation.
 
 ---
 
