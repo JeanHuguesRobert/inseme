@@ -48,6 +48,8 @@ export function buildCopEventAppendArgs({
   visibility = "restricted",
   epistemicStatus = "observed",
   eventType = "cop.event/v1",
+  eventId = null,
+  onBehalfOfInstanceId = "00000000-0000-0000-0000-000000000001",
 }) {
   return {
     p_topic_id: topicId,
@@ -65,6 +67,8 @@ export function buildCopEventAppendArgs({
         : null,
     p_artifact_ref: artifactRef,
     p_visibility: visibility,
+    ...(eventId ? { p_event_id: eventId } : {}),
+    p_on_behalf_of_instance_id: onBehalfOfInstanceId,
   };
 }
 

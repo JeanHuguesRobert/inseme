@@ -196,6 +196,7 @@ const args = buildCopEventAppendArgs({
   visibility: "restricted",
 });
 assert.equal(args.p_topic_id, "github:a/b");
+assert.equal(args.p_on_behalf_of_instance_id, "00000000-0000-0000-0000-000000000001");
 assert.equal(shouldExternalizeRawBody(9000), true);
 assert.equal(shouldExternalizeRawBody(100), false);
 assert.ok(artifactStoragePath("aa".repeat(32), "del").includes("github-webhooks/"));

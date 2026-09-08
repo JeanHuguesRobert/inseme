@@ -62,6 +62,39 @@ if (fs.existsSync(envelopeMig)) {
   console.log("  ✓ Envelope columns + cop_event_append migration present.");
 }
 
+// 3b. Verify represented instance attribution migration
+const onBehalfMig = path.join(
+  process.cwd(),
+  "apps/platform/supabase/migrations/20260907045153_add_cop_event_on_behalf_instance.sql"
+);
+if (fs.existsSync(onBehalfMig)) {
+  console.log("\n[Test 3b] Verifying Represented Instance Migration (on_behalf_of_instance_id)...");
+  const onBehalfSql = fs.readFileSync(onBehalfMig, "utf8");
+  assert.ok(
+    onBehalfSql.includes("on_behalf_of_instance_id uuid NOT NULL"),
+    "Migration must add on_behalf_of_instance_id column"
+  );
+  assert.ok(
+    onBehalfSql.includes("REFERENCES public.instances(id)"),
+    "Migration must foreign-key to public.instances"
+  );
+  assert.ok(
+    onBehalfSql.includes("idx_cop_event_log_on_behalf_created_at"),
+    "Migration must define idx_cop_event_log_on_behalf_created_at"
+  );
+  assert.ok(
+    onBehalfSql.includes(
+      "p_on_behalf_of_instance_id uuid DEFAULT '00000000-0000-0000-0000-000000000001'::uuid"
+    ),
+    "cop_event_append must accept p_on_behalf_of_instance_id defaulting to JHN root"
+  );
+  assert.ok(
+    onBehalfSql.includes("GRANT EXECUTE ON FUNCTION public.cop_event_append"),
+    "Execute permission must be granted to service_role"
+  );
+  console.log("  ✓ Represented instance (on_behalf_of_instance_id) migration verified.");
+}
+
 // 4. Assert Topic Sequence Uniqueness Constraint
 console.log("\n[Test 4] Verifying Topic Sequence Uniqueness Constraint...");
 assert.ok(
