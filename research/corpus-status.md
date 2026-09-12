@@ -72,24 +72,24 @@ graph LR
   r_github[".github"]
   r_acorsica_org["acorsica.org"]
   r_structenv["StructEnv"]
-  r_cogentia -->|110| r_barons_mariani
+  r_cogentia -->|116| r_barons_mariani
   r_jeanhuguesrobert -->|91| r_barons_mariani
-  r_barons_mariani -->|71| r_cogentia
+  r_barons_mariani -->|84| r_cogentia
   r_jeanhuguesrobert -->|53| r_cogentia
   r_fractavolta -->|52| r_cogentia
-  r_inseme -->|40| r_cogentia
+  r_inseme -->|42| r_cogentia
   r_jeanhuguesrobert -->|39| r_marenostrum
   r_fractavolta -->|37| r_marenostrum
   r_cogentia -->|30| r_inseme
   r_jeanhuguesrobert -->|26| r_fractavolta
   r_jeanhuguesrobert -->|26| r_inseme
-  r_barons_mariani -->|22| r_marenostrum
+  r_barons_mariani -->|23| r_marenostrum
   r_fractavolta -->|22| r_inseme
+  r_fractavolta -->|21| r_barons_mariani
   r_inseme -->|20| r_barons_mariani
   r_jeanhuguesrobert -->|20| r_inox
   r_barons_mariani -->|19| r_fractavolta
   r_cogentia -->|19| r_marenostrum
-  r_fractavolta -->|19| r_barons_mariani
   r_barons_mariani -->|18| r_inseme
   r_inox -->|16| r_cogentia
   r_marenostrum -->|16| r_cogentia
@@ -104,17 +104,18 @@ graph LR
   r_inox -->|8| r_marenostrum
   r_jeanhuguesrobert -->|8| r_ubikia
   r_ubikia -->|8| r_cogentia
+  r_barons_mariani -->|7| r_inox
   r_cogentia -->|7| r_jeanhuguesrobert
   r_inseme -->|7| r_jeanhuguesrobert
+  r_barons_mariani -->|6| r_jeanhuguesrobert
   r_inseme -->|6| r_kudos
-  r_barons_mariani -->|5| r_inox
-  r_barons_mariani -->|5| r_jeanhuguesrobert
+  r_operium -->|6| r_cogentia
   r_cogentia -->|5| r_fractavolta
-  r_operium -->|5| r_cogentia
   r_ubikia -->|5| r_barons_mariani
   r_barons_mariani -->|4| r_ubikia
   r_fractavolta -->|4| r_jeanhuguesrobert
   r_marianivillage -->|4| r_fractavolta
+  r_operium -->|4| r_inseme
   r_operium -->|4| r_marenostrum
   r_ubikia -->|4| r_jeanhuguesrobert
   r_github -->|3| r_gouvernance
@@ -122,7 +123,6 @@ graph LR
   r_jeanhuguesrobert -->|3| r_institut_mariani
   r_kudos -->|3| r_barons_mariani
   r_operium -->|3| r_barons_mariani
-  r_operium -->|3| r_inseme
   r_cogentia -->|2| r_inox
   r_gouvernance -->|2| r_barons_mariani
   r_gouvernance -->|2| r_fractavolta
