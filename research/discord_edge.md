@@ -16,6 +16,10 @@ related:
   - "research/activitypub_edge.md"
   - "https://github.com/JeanHuguesRobert/cogentia/issues/84"
   - "https://github.com/JeanHuguesRobert/inseme/issues/36"
+classification_source: "cogentia.js"
+classification_version: "1"
+classification_rule: "explicit-metadata"
+classification_confidence: "medium"
 ---
 
 # Discord Edge — BYOC Reality Test for Personal and Collective Twins

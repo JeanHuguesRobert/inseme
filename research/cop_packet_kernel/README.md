@@ -12,6 +12,14 @@ issue: "https://github.com/JeanHuguesRobert/inseme/issues/21"
 source_hypothesis: "../cop_zero_draft.md"
 human_validation_required: true
 review_status: "pending-human-validation"
+document_role: "source"
+document_kind: "experiment-log"
+visibility: "public"
+lifecycle_state: "active"
+classification_source: "cogentia.js"
+classification_version: "1"
+classification_rule: "experiment-log"
+classification_confidence: "medium"
 ---
 
 # COP Experimental Packet Kernel

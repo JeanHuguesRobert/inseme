@@ -4,7 +4,7 @@ author: Jean Hugues Noël Robert, baron Mariani
 date: "2026-08-24"
 last_modified_at: "2026-08-24"
 version: "0.1"
-document_role: checkpoint
+document_role: "source"
 document_kind: research-checkpoint
 visibility: public
 lifecycle_state: stable
@@ -25,6 +25,11 @@ review:
     - Jean Hugues Noël Robert
 changelog:
   - "v0.1 (2026-08-24) — conversation checkpoint before returning control to implementation and empirical feedback."
+classification_source: "cogentia.js"
+classification_version: "1"
+classification_rule: "explicit-metadata"
+classification_confidence: "medium"
+legacy_document_role: "checkpoint"
 ---
 
 # Checkpoint — Mandated Agents, Harness and capability resolution

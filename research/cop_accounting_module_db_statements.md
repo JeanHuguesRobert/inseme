@@ -3,7 +3,7 @@ title: "Module accounting durable — DB, plans comptables, bilans & analytique"
 subtitle: "Map corpus + issues + path from packet spend to legal statements"
 date: "2026-08-13"
 version: "0.1"
-document_role: research
+document_role: "source"
 document_kind: architecture
 visibility: public
 lifecycle_state: working
@@ -12,6 +12,11 @@ related:
   - research/cogentia_accounting_architecture.md
   - packages/cop-kernel/docs/packet-strict-accounting-cascade.md
   - inseme#25, #38, #39, #45
+classification_source: "cogentia.js"
+classification_version: "1"
+classification_rule: "explicit-metadata"
+classification_confidence: "medium"
+legacy_document_role: "research"
 ---
 
 # Module accounting durable — DB, plans comptables, bilans & analytique
