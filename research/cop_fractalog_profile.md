@@ -1,37 +1,32 @@
 ---
-title: "COP FractaLog Profile"
-subtitle: "Packet-local source traces, federated projections, custody and delayed transparency"
-description:
-  "Source profile for integrating FractaLog semantics into COP, with Cognitive Packets as the
-  preferred source location for packet-borne trace facts and higher-level FractaLog views as
-  governed projections."
-author: "Jean Hugues Noël Robert, baron Mariani"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A. / Inseme"
-canonical_path: "inseme/research/cop_fractalog_profile.md"
-canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/research/cop_fractalog_profile.md"
-version: "0.2-draft"
-status: "source profile draft — human validation required before COP-core extraction"
-date: "2026-07-06"
-last_modified_at: "2026-08-16"
-last_stamped_at: "2026-08-16"
-license: "CC BY-SA 4.0"
-language: "en"
-type: "source-document"
-source_or_derived: "source-document"
-repository: "inseme"
+title: COP FractaLog Profile
+subtitle: Packet-local source traces, federated projections, custody and delayed transparency
+description: Source profile for integrating FractaLog semantics into COP, with Cognitive Packets as the preferred source location for packet-borne trace facts and higher-level FractaLog views as governed projections.
+author: Jean Hugues Noël Robert, baron Mariani
+affiliation: Institut Mariani / C.O.R.S.I.C.A. / Inseme
+canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/cop_fractalog_profile.md
+version: 0.2-draft
+status: source profile draft — human validation required before COP-core extraction
+date: '2026-07-06'
+last_modified_at: '2026-08-16'
+last_stamped_at: '2026-08-16'
+license: CC BY-SA 4.0
+language: en
+type: source-document
+source_or_derived: source-document
 related_repositories:
-  - "JeanHuguesRobert/inseme"
-  - "JeanHuguesRobert/FractaVolta"
-  - "JeanHuguesRobert/barons-Mariani"
-  - "JeanHuguesRobert/cogentia"
+  - JeanHuguesRobert/inseme
+  - JeanHuguesRobert/FractaVolta
+  - JeanHuguesRobert/barons-Mariani
+  - JeanHuguesRobert/cogentia
 related_documents:
-  - "inseme/research/cop_trace_model.md"
-  - "FractaVolta/research/fractalog.md"
-  - "inseme/packages/cop-kernel/docs/packet-strict-accounting-cascade.md"
-  - "inseme/packages/cop-core/Architecture.md"
-  - "inseme/packages/cop-core/Invariants.md"
-  - "inseme/research/cop_memory_profile.md"
-  - "barons-Mariani/research/traceabilite_des_actes.md"
+  - inseme/research/cop_trace_model.md
+  - FractaVolta/research/fractalog.md
+  - inseme/packages/cop-kernel/docs/packet-strict-accounting-cascade.md
+  - inseme/packages/cop-core/Architecture.md
+  - inseme/packages/cop-core/Invariants.md
+  - inseme/research/cop_memory_profile.md
+  - barons-Mariani/research/traceabilite_des_actes.md
 tags:
   - cop
   - fractalog
@@ -42,15 +37,26 @@ tags:
   - delayed-transparency
   - auditability
 human_validation_required: true
-document_role: "source"
-document_kind: "protocol-profile"
-visibility: "public"
-lifecycle_state: "working"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+document_role: source
+document_kind: protocol-profile
+visibility: public
+lifecycle_state: working
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP FractaLog Profile
 

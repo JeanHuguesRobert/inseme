@@ -11,17 +11,22 @@ provenance:
   origin_type: conversation
   origin_repository: JeanHuguesRobert/inseme
   origin_ref: main
-  origin_date: "2026-07-31"
+  origin_date: '2026-07-31'
   derived_from:
     - JeanHuguesRobert/cogentia/research/mneme_memory_architecture.md
 review:
   status: unreviewed
   reviewed_by: []
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+status: working-paper
 ---
+
 
 # COP Mneme Memory Profile
 

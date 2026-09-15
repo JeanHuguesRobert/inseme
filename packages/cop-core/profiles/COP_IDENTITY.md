@@ -1,16 +1,14 @@
 ---
-title: "COP/Identity Profile"
-subtitle: "Subject, capacity and mandate semantics for governance-critical COP events"
-version: "0.1"
-status: "operational-note — derived from research/cop_identity_kudocracy_profile.md"
-date: "2026-06-19"
-author: "Jean Hugues Noël Robert"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A."
-license: "CC BY-SA 4.0"
-language: "en"
-repository: "JeanHuguesRobert/inseme"
-intended_path: "packages/cop-core/profiles/COP_IDENTITY.md"
-derived_from: "../../research/cop_identity_kudocracy_profile.md"
+title: COP/Identity Profile
+subtitle: Subject, capacity and mandate semantics for governance-critical COP events
+version: '0.1'
+status: operational-note — derived from research/cop_identity_kudocracy_profile.md
+date: '2026-06-19'
+author: Jean Hugues Noël Robert
+affiliation: Institut Mariani / C.O.R.S.I.C.A.
+license: CC BY-SA 4.0
+language: en
+derived_from: ../../research/cop_identity_kudocracy_profile.md
 tags:
   - cop
   - identity
@@ -18,7 +16,18 @@ tags:
   - capacity
   - mandate
   - traceability
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP/Identity Profile
 

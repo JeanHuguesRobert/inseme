@@ -1,25 +1,36 @@
 ---
-title: "COP Memory Metadata and Recursive Trace Layers"
-subtitle: "Practical boundaries for metadata, traces about traces, and agent access"
-author: "Jean Hugues Noël Robert"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A."
-date: "2026-06-21"
-license: "CC BY-SA 4.0"
-status: "seed working note"
-corpus_role: "source"
-language: "en"
-document_role: "source"
-document_kind: "working-note"
-visibility: "public"
-lifecycle_state: "working"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "working-note"
-classification_confidence: "medium"
+title: COP Memory Metadata and Recursive Trace Layers
+subtitle: Practical boundaries for metadata, traces about traces, and agent access
+author: Jean Hugues Noël Robert
+affiliation: Institut Mariani / C.O.R.S.I.C.A.
+date: '2026-06-21'
+license: CC BY-SA 4.0
+status: seed working note
+corpus_role: source
+language: en
+document_role: source
+document_kind: working-note
+visibility: public
+lifecycle_state: working
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: working-note
+classification_confidence: medium
 related:
-  - "./cop_memory_profile.md"
-  - "../packages/cop-core/COP_IDENTITY.md"
+  - ./cop_memory_profile.md
+  - ../packages/cop-core/COP_IDENTITY.md
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Memory Metadata and Recursive Trace Layers
 

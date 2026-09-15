@@ -1,37 +1,35 @@
 ---
-title: "COP Zero Draft — Mission-Bearing Cognitive Packet Kernel"
-subtitle: "A clean-slate exploratory hypothesis for the Cognitive Orchestration Protocol"
-version: "0.0.1"
-status: "exploratory-zero-draft"
+title: COP Zero Draft — Mission-Bearing Cognitive Packet Kernel
+subtitle: A clean-slate exploratory hypothesis for the Cognitive Orchestration Protocol
+version: 0.0.1
+status: exploratory-zero-draft
 normative: false
-date: "2026-07-20"
-author: "Jean Hugues Noël Robert, baron Mariani"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
-license: "CC BY-SA 4.0"
-language: "en"
-repository: "JeanHuguesRobert/inseme"
-intended_path: "research/cop_zero_draft.md"
-canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/research/cop_zero_draft.md"
-issue: "https://github.com/JeanHuguesRobert/inseme/issues/20"
-corpus_role: "source"
-document_role: "source"
-document_kind: "architecture-zero-draft"
-visibility: "public"
-lifecycle_state: "working"
+date: '2026-07-20'
+author: Jean Hugues Noël Robert, baron Mariani
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+license: CC BY-SA 4.0
+language: en
+canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/cop_zero_draft.md
+issue: https://github.com/JeanHuguesRobert/inseme/issues/20
+corpus_role: source
+document_role: source
+document_kind: architecture-zero-draft
+visibility: public
+lifecycle_state: working
 human_validation_required: true
-update_policy: "UP-DEFAULT-REVIEWED"
+update_policy: UP-DEFAULT-REVIEWED
 ai_assisted_by:
-  - "OpenAI Codex"
+  - OpenAI Codex
 provenance:
-  origin_type: "conversation-checkpoint"
-  origin_repository: "JeanHuguesRobert/inseme"
-  origin_ref: "issue-20"
-  origin_date: "2026-07-20"
+  origin_type: conversation-checkpoint
+  origin_repository: JeanHuguesRobert/inseme
+  origin_ref: issue-20
+  origin_date: '2026-07-20'
   derived_from:
-    - "Conversation checkpoints R31-R40 on agents, cognitive packets, Fractanet and COP"
-    - "https://github.com/JeanHuguesRobert/inseme/issues/20"
+    - Conversation checkpoints R31-R40 on agents, cognitive packets, Fractanet and COP
+    - https://github.com/JeanHuguesRobert/inseme/issues/20
 review:
-  status: "pending-human-validation"
+  status: pending-human-validation
   reviewed_by: []
 tags:
   - cop
@@ -43,11 +41,12 @@ tags:
   - control-plane
   - packet-attractor
   - fractanet
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
 ---
+
 
 # COP Zero Draft — Mission-Bearing Cognitive Packet Kernel
 

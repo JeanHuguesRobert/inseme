@@ -10,7 +10,7 @@ related:
   - ../cop-core/Invariants.md
   - ../cop-kernel/PROFILE.md
 title: '`cop-n8n` Feasibility Note'
-date: unknown
+date: null
 provenance:
   origin_type: unknown
   origin_repository: unknown
@@ -21,7 +21,9 @@ review:
   status: unreviewed
   reviewed_by: []
 update_policy: UP-DEFAULT-REVIEWED
+language: en
 ---
+
 
 # `cop-n8n` Feasibility Note
 

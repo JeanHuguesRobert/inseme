@@ -1,36 +1,32 @@
 ---
-title: "Instance personnelle, démocratie et match non achetable"
-subtitle:
-  "Positionnement stratégique — pluralisation cognitive sous mandat face à la course aux personal
-  agents"
-author: "Jean Hugues Noël Robert, baron Mariani"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
-date: "2026-07-19"
-version: "0.1"
-license: "CC BY-SA 4.0"
-language: "fr"
-status: "working-source — consolidé depuis exploration 2026-07, soumis à validation humaine"
-document_role: "source"
-source_authority: "sovereign"
-document_kind: "strategic-positioning-note"
-visibility: "public"
-lifecycle_state: "working"
-repository: "JeanHuguesRobert/inseme"
-canonical_path: "research/personal_instance_democracy_and_non_capturable_match.md"
-canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/research/personal_instance_democracy_and_non_capturable_match.md"
-continuation_status: "open"
+title: Instance personnelle, démocratie et match non achetable
+subtitle: Positionnement stratégique — pluralisation cognitive sous mandat face à la course aux personal agents
+author: Jean Hugues Noël Robert, baron Mariani
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+date: '2026-07-19'
+version: '0.1'
+license: CC BY-SA 4.0
+language: fr
+status: working-source — consolidé depuis exploration 2026-07, soumis à validation humaine
+document_role: source
+source_authority: sovereign
+document_kind: strategic-positioning-note
+visibility: public
+lifecycle_state: working
+canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/personal_instance_democracy_and_non_capturable_match.md
+continuation_status: open
 human_validation_required: true
 related_documents:
-  - "research/cop_identity_kudocracy_profile.md"
-  - "research/cop_mission_stigmergy_exploration.md"
-  - "packages/cop-core/Invariants.md"
-  - "https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/pluralisation_cognitive_sous_mandat.md"
-  - "https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/se_demultiplier_pour_explorer_le_possible_blogpost.md"
-  - "https://github.com/JeanHuguesRobert/cogentia/blob/main/research/digital_twin_ubiquity.md"
-  - "https://github.com/JeanHuguesRobert/cogentia/blob/main/research/individual_and_collective_digital_twins.md"
-  - "https://github.com/JeanHuguesRobert/inseme/issues/17"
+  - research/cop_identity_kudocracy_profile.md
+  - research/cop_mission_stigmergy_exploration.md
+  - packages/cop-core/Invariants.md
+  - https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/pluralisation_cognitive_sous_mandat.md
+  - https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/se_demultiplier_pour_explorer_le_possible_blogpost.md
+  - https://github.com/JeanHuguesRobert/cogentia/blob/main/research/digital_twin_ubiquity.md
+  - https://github.com/JeanHuguesRobert/cogentia/blob/main/research/individual_and_collective_digital_twins.md
+  - https://github.com/JeanHuguesRobert/inseme/issues/17
 related_issues:
-  - "JeanHuguesRobert/inseme#17"
+  - JeanHuguesRobert/inseme#17
 tags:
   - personal-instance
   - twin-root
@@ -42,11 +38,22 @@ tags:
   - openclaw
   - cop
   - agents-jhn
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Instance personnelle, démocratie et match non achetable
 

@@ -1,25 +1,28 @@
 ---
-title: "Forthia — Coding Brief for a COP/Inox Fractanet Router"
-author: "Jean Hugues Noël Robert, baron Mariani / drafted by ChatGPT"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A."
-date: "2026-06-12"
-status: "draft-for-coding-handler"
-version: "0.1.0"
-language: "en"
-corpus_role: "source"
-canonical_path: "inseme/research/forthia_coding_brief.md"
+title: Forthia — Coding Brief for a COP/Inox Fractanet Router
+author: Jean Hugues Noël Robert, baron Mariani / drafted by ChatGPT
+affiliation: Institut Mariani / C.O.R.S.I.C.A.
+date: '2026-06-12'
+status: draft-for-coding-handler
+version: 0.1.0
+language: en
+corpus_role: source
 implementation_target:
-  repository: "JeanHuguesRobert/inseme"
-  primary_package: "packages/cop-kernel"
-  possible_http_integration: "apps/platform/mcp/cop"
-  future_runtime: "Inox / Inox Core"
+  repository: JeanHuguesRobert/inseme
+  primary_package: packages/cop-kernel
+  possible_http_integration: apps/platform/mcp/cop
+  future_runtime: Inox / Inox Core
 related_documents:
-  - "FractaVolta/research/fractanet.md"
-  - "FractaVolta/research/generalized_packet_networks.md"
-  - "inseme/packages/cop-core/Architecture.md"
-  - "inseme/research/COP_STATE_OF_PLAY.md"
-  - "Inox/research/inox-spec.md"
-keywords:
+  - FractaVolta/research/fractanet.md
+  - FractaVolta/research/generalized_packet_networks.md
+  - inseme/packages/cop-core/Architecture.md
+  - inseme/research/COP_STATE_OF_PLAY.md
+  - Inox/research/inox-spec.md
+human_validation_required:
+  - Confirm final repository path.
+  - Confirm whether Forthia should start inside packages/cop-kernel or as a new packages/forthia package.
+  - Confirm whether the first implementation should use pure JavaScript strategy functions before Inox integration.
+tags:
   - Forthia
   - Fractanet
   - COP
@@ -33,11 +36,19 @@ keywords:
   - cognitive router
   - capability routing
   - envelope payload
-human_validation_required:
-  - "Confirm final repository path."
-  - "Confirm whether Forthia should start inside packages/cop-kernel or as a new packages/forthia package."
-  - "Confirm whether the first implementation should use pure JavaScript strategy functions before Inox integration."
+license: CC BY-SA 4.0
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Forthia — Coding Brief for a COP/Inox Fractanet Router
 

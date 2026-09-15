@@ -1,16 +1,14 @@
 ---
-title: "COP Reactive Cognitive Extension"
-subtitle: "Protocol surface for Packet Attractors, CogQueries and pressure strategies"
-version: "0.1"
-status: "operational-note — derived from research/reactive_cognitive_cop_extension.md"
-date: "2026-06-01"
-author: "Jean Hugues Noël Robert"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
-license: "CC BY-SA 4.0"
-language: "en"
-repository: "JeanHuguesRobert/inseme"
-intended_path: "packages/cop-core/REACTIVE_COGNITIVE_EXTENSION.md"
-derived_from: "research/reactive_cognitive_cop_extension.md"
+title: COP Reactive Cognitive Extension
+subtitle: Protocol surface for Packet Attractors, CogQueries and pressure strategies
+version: '0.1'
+status: operational-note — derived from research/reactive_cognitive_cop_extension.md
+date: '2026-06-01'
+author: Jean Hugues Noël Robert
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+license: CC BY-SA 4.0
+language: en
+derived_from: research/reactive_cognitive_cop_extension.md
 tags:
   - cop
   - reactive-cognitive
@@ -20,8 +18,19 @@ tags:
   - control-plane
   - data-plane
 canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/packages/cop-core/REACTIVE_COGNITIVE_EXTENSION.md
-last_stamped_at: 2026-06-01
+last_stamped_at: 2026-06-01T00:00:00.000Z
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Reactive Cognitive Extension
 

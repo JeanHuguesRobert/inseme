@@ -1,15 +1,13 @@
 ---
-title: "Packet Attractor — Fractanet Distributed Demand and Capability Routing"
-subtitle: "COP-side crystallization of reactive demand, legitimacy, and intermittent capable nodes"
-version: "0.1"
-status: "working-paper — source document"
-date: "2026-07-03"
-author: "Jean Hugues Noël Robert, baron Mariani"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
-license: "CC BY-SA 4.0"
-language: "en"
-intended_path: "research/packet_attractor_fractanet.md"
-repository: "JeanHuguesRobert/inseme"
+title: Packet Attractor — Fractanet Distributed Demand and Capability Routing
+subtitle: COP-side crystallization of reactive demand, legitimacy, and intermittent capable nodes
+version: '0.1'
+status: working-paper — source document
+date: '2026-07-03'
+author: Jean Hugues Noël Robert, baron Mariani
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+license: CC BY-SA 4.0
+language: en
 canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/packet_attractor_fractanet.md
 tags:
   - inseme
@@ -24,25 +22,36 @@ tags:
   - inox
   - cogentia
 related_projects:
-  - "COP"
-  - "Fractanet"
-  - "Inox"
-  - "Cogentia"
-  - "FractaVolta"
+  - COP
+  - Fractanet
+  - Inox
+  - Cogentia
+  - FractaVolta
 ai_assisted_by:
-  - "Grok"
-last_stamped_at: 2026-07-03
-corpus_role: "source"
-document_role: "source"
-document_kind: "research-paper"
-visibility: "public"
-lifecycle_state: "working"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "research-paper"
-classification_confidence: "medium"
+  - Grok
+last_stamped_at: 2026-07-03T00:00:00.000Z
+corpus_role: source
+document_role: source
+document_kind: research-paper
+visibility: public
+lifecycle_state: working
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: research-paper
+classification_confidence: medium
 human_validation_required: true
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Packet Attractor — Fractanet Distributed Demand and Capability Routing
 

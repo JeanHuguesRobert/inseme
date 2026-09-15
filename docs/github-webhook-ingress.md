@@ -1,13 +1,28 @@
 ---
-title: "GitHub webhook ingress for Digital Twin (Inseme #29)"
-date: "2026-08-07"
+title: 'GitHub webhook ingress for Digital Twin (Inseme #29)'
+date: '2026-08-07'
 document_role: operational
 document_kind: method
 visibility: public
 related_issues:
-  - "https://github.com/JeanHuguesRobert/inseme/issues/29"
-  - "https://github.com/JeanHuguesRobert/inseme/issues/28"
+  - https://github.com/JeanHuguesRobert/inseme/issues/29
+  - https://github.com/JeanHuguesRobert/inseme/issues/28
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+status: working-paper
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # GitHub webhook ingress (Digital Twin)
 

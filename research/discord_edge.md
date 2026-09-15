@@ -1,26 +1,38 @@
 ---
-title: "Discord Edge — BYOC Reality Test for Personal and Collective Twins"
-author: "Jean Hugues Noël Robert"
-date: "2026-09-06"
-license: "CC BY-SA 4.0"
-language: "en"
-status: "working-paper — implementation note"
-document_role: "operational"
-document_kind: "architecture-decision"
-visibility: "public"
-lifecycle_state: "working"
-canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/research/discord_edge.md"
+title: Discord Edge — BYOC Reality Test for Personal and Collective Twins
+author: Jean Hugues Noël Robert
+date: '2026-09-06'
+license: CC BY-SA 4.0
+language: en
+status: working-paper — implementation note
+document_role: operational
+document_kind: architecture-decision
+visibility: public
+lifecycle_state: working
+canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/discord_edge.md
 related:
-  - "https://github.com/JeanHuguesRobert/cogentia/blob/main/research/byoc_external_interaction_edges.md"
-  - "research/interactions_registry_and_multichannel_messaging.md"
-  - "research/activitypub_edge.md"
-  - "https://github.com/JeanHuguesRobert/cogentia/issues/84"
-  - "https://github.com/JeanHuguesRobert/inseme/issues/36"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+  - https://github.com/JeanHuguesRobert/cogentia/blob/main/research/byoc_external_interaction_edges.md
+  - research/interactions_registry_and_multichannel_messaging.md
+  - research/activitypub_edge.md
+  - https://github.com/JeanHuguesRobert/cogentia/issues/84
+  - https://github.com/JeanHuguesRobert/inseme/issues/36
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Discord Edge — BYOC Reality Test for Personal and Collective Twins
 

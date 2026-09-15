@@ -1,13 +1,25 @@
 ---
-title: "COP Persistence Service"
-subtitle: "Backend-independent persistence API for Events, Artifacts, descriptors, projections and memory views"
-author: "Jean Hugues Noël Robert"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A."
-license: "CC BY-SA 4.0"
-status: "seed specification"
-corpus_role: "source"
-language: "en"
+title: COP Persistence Service
+subtitle: Backend-independent persistence API for Events, Artifacts, descriptors, projections and memory views
+author: Jean Hugues Noël Robert
+affiliation: Institut Mariani / C.O.R.S.I.C.A.
+license: CC BY-SA 4.0
+status: seed specification
+corpus_role: source
+language: en
+date: '2026-09-15'
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Persistence Service
 

@@ -1,31 +1,42 @@
 ---
-title: "User ↔ Personal Twin link on collective instances"
-date: "2026-08-08"
-version: "0.1"
-license: "CC BY-SA 4.0"
+title: User ↔ Personal Twin link on collective instances
+date: '2026-08-08'
+version: '0.1'
+license: CC BY-SA 4.0
 document_role: operational
 document_kind: design-note
 visibility: public
-repository: "JeanHuguesRobert/inseme"
-canonical_path: "research/user_personal_twin_link.md"
 status: planned — not in schema yet
-github_issue: "https://github.com/JeanHuguesRobert/inseme/issues/34"
+github_issue: https://github.com/JeanHuguesRobert/inseme/issues/34
 related:
   - research/instance_map.md
   - research/personal_instance_democracy_and_non_capturable_match.md
   - research/cop_identity_kudocracy_profile.md
   - apps/platform/docs/ARCHITECTURE_MULTI_INSTANCE.md
   - apps/platform/docs/RUNBOOK_JHN_PERSONAL_INSTANCE.md
-  - "JeanHuguesRobert/inseme#34"
-  - "JeanHuguesRobert/inseme#17"
-  - "JeanHuguesRobert/inseme#30"
-  - "JeanHuguesRobert/inseme#33"
-lifecycle_state: "active"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+  - JeanHuguesRobert/inseme#34
+  - JeanHuguesRobert/inseme#17
+  - JeanHuguesRobert/inseme#30
+  - JeanHuguesRobert/inseme#33
+lifecycle_state: active
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # User ↔ Personal Twin link on collective instances
 

@@ -1,24 +1,16 @@
 ---
-title: "COOP — Tutorial and Near-Specification"
-subtitle:
-  "Cognitive Orchestration Protocol (COP) kernel, cognitive packet router, reusable policy helpers,
-  hybrid layer, and bac-à-sable usage — sufficient for extension, integration, or re-implementation"
-version: "0.1"
+title: COOP — Tutorial and Near-Specification
+subtitle: Cognitive Orchestration Protocol (COP) kernel, cognitive packet router, reusable policy helpers, hybrid layer, and bac-à-sable usage — sufficient for extension, integration, or re-implementation
+version: '0.1'
 status: working-paper — tutorial / near-functional specification
-date: "2026-06-04"
-author: "Jean Hugues Noël Robert, baron Mariani"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
-license: "CC BY-SA 4.0"
-language: "en"
-target_implementation: "inseme/packages/cop-kernel (post 2026-06 cognitive packet router work)"
+date: '2026-06-04'
+author: Jean Hugues Noël Robert, baron Mariani
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+license: CC BY-SA 4.0
+language: en
+target_implementation: inseme/packages/cop-kernel (post 2026-06 cognitive packet router work)
 derived_by: agent
-derived_from:
-  "inseme/packages/cop-kernel/src/* (cogentiaRouter.js, capabilityRegistry.js, jobScheduler.js,
-  bus.js, Cop-kerneltasks.js, scheduler.js, etc.); inseme/sandbox/cop-continuation-bac-a-sable/*
-  (cognitive-packet-router-demo.js, pipeline.js, cop-kernel-adapter.js, index.js);
-  inseme/packages/cop-kernel/docs/SESSION_RESUME_cognitive-packet-router-2026-06.md and related docs
-  (cognitive-packet-switching-compatibility.md); the cognitive packet router, hybrid policy,
-  emission, and reusable helper work"
+derived_from: inseme/packages/cop-kernel/src/* (cogentiaRouter.js, capabilityRegistry.js, jobScheduler.js, bus.js, Cop-kerneltasks.js, scheduler.js, etc.); inseme/sandbox/cop-continuation-bac-a-sable/* (cognitive-packet-router-demo.js, pipeline.js, cop-kernel-adapter.js, index.js); inseme/packages/cop-kernel/docs/SESSION_RESUME_cognitive-packet-router-2026-06.md and related docs (cognitive-packet-switching-compatibility.md); the cognitive packet router, hybrid policy, emission, and reusable helper work
 tags:
   - cop
   - coop
@@ -32,26 +24,37 @@ tags:
   - bac-a-sable
   - cogentia
 related_projects:
-  - "Inseme"
-  - "COP"
-  - "Cogentia Commons"
-  - "Cognitive Packets"
-  - "Continuation Protocol"
+  - Inseme
+  - COP
+  - Cogentia Commons
+  - Cognitive Packets
+  - Continuation Protocol
 ai_assisted_by:
-  - "Grok"
+  - Grok
 canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/coop_tutorial.md
-last_stamped_at: 2026-06-04
-corpus_role: "derived"
-derived_product_type: "tutorial"
-document_role: "derived"
-document_kind: "derived-product"
-visibility: "public"
-lifecycle_state: "working"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "derived-product"
-classification_confidence: "strong"
+last_stamped_at: 2026-06-04T00:00:00.000Z
+corpus_role: derived
+derived_product_type: tutorial
+document_role: derived
+document_kind: derived-product
+visibility: public
+lifecycle_state: working
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: derived-product
+classification_confidence: strong
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 > **Auto-generated tutorial.** This document was produced from the live COP kernel sources
 > (inseme/packages/cop-kernel), the bac-à-sable scenarios/pipeline/adapter (post 2026-06 restart

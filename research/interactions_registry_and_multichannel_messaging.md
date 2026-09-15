@@ -1,38 +1,49 @@
 ---
-title: "Interactions Registry & multichannel messaging (Personal Twin service)"
-date: "2026-08-08"
-version: "0.2"
-license: "CC BY-SA 4.0"
+title: Interactions Registry & multichannel messaging (Personal Twin service)
+date: '2026-08-08'
+version: '0.2'
+license: CC BY-SA 4.0
 document_role: operational
 document_kind: design-note
 visibility: public
-repository: "JeanHuguesRobert/inseme"
-canonical_path: "research/interactions_registry_and_multichannel_messaging.md"
 status: planned
 github_issues:
-  platform: "https://github.com/JeanHuguesRobert/inseme/issues/36"
-  personal_public: "https://github.com/JeanHuguesRobert/JeanHuguesRobert/issues/2"
-  method: "https://github.com/JeanHuguesRobert/cogentia/issues/84"
+  platform: https://github.com/JeanHuguesRobert/inseme/issues/36
+  personal_public: https://github.com/JeanHuguesRobert/JeanHuguesRobert/issues/2
+  method: https://github.com/JeanHuguesRobert/cogentia/issues/84
 related:
   - research/personal_twin_access_policy.md
   - research/user_personal_twin_link.md
   - research/instance_map.md
   - research/activitypub_edge.md
-  - "https://github.com/JeanHuguesRobert/cogentia/tree/main/interaction_packets"
-  - "https://github.com/JeanHuguesRobert/JeanHuguesRobert/tree/main/interaction_packets"
-  - "https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/presencology.md"
-  - "https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/presencology_digital_social_presence_twins.md"
-  - "JeanHuguesRobert/inseme#35"
-  - "JeanHuguesRobert/inseme#34"
-  - "JeanHuguesRobert/inseme#36"
-  - "JeanHuguesRobert/JeanHuguesRobert#2"
-  - "JeanHuguesRobert/cogentia#84"
-lifecycle_state: "active"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+  - https://github.com/JeanHuguesRobert/cogentia/tree/main/interaction_packets
+  - https://github.com/JeanHuguesRobert/JeanHuguesRobert/tree/main/interaction_packets
+  - https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/presencology.md
+  - https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/presencology_digital_social_presence_twins.md
+  - JeanHuguesRobert/inseme#35
+  - JeanHuguesRobert/inseme#34
+  - JeanHuguesRobert/inseme#36
+  - JeanHuguesRobert/JeanHuguesRobert#2
+  - JeanHuguesRobert/cogentia#84
+lifecycle_state: active
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Interactions Registry & multichannel messaging
 

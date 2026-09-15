@@ -1,28 +1,40 @@
 ---
-title: "Mandated Agent Security — Implementation Audit and Backlog"
-author: "Jean Hugues Noël Robert"
-date: "2026-08-24"
-last_modified_at: "2026-08-24"
-version: "0.1"
-status: "working audit — implementation gap analysis"
-license: "CC BY-SA 4.0"
-document_role: "source"
-document_kind: "implementation-audit"
-visibility: "public"
-lifecycle_state: "working"
-canonical_path: "inseme/packages/cop-core/MANDATED_AGENT_SECURITY_AUDIT_2026-08-24.md"
+title: Mandated Agent Security — Implementation Audit and Backlog
+author: Jean Hugues Noël Robert
+date: '2026-08-24'
+last_modified_at: '2026-08-24'
+version: '0.1'
+status: working audit — implementation gap analysis
+license: CC BY-SA 4.0
+document_role: source
+document_kind: implementation-audit
+visibility: public
+lifecycle_state: working
 related:
-  - "COP_MANDATED_AGENT_SECURITY.md"
-  - "COP_IDENTITY.md"
-  - "COP_ACCOUNTING.md"
-  - "src/governed-act.js"
-  - "src/execution-budget.js"
-  - "../magistral/CAPABILITY_RESOLUTION.md"
-  - "../../apps/platform/mcp/cop/jhnDelegatingAgent.js"
-  - "../../apps/platform/mcp/cop/magistralCapabilityResolver.js"
+  - COP_MANDATED_AGENT_SECURITY.md
+  - COP_IDENTITY.md
+  - COP_ACCOUNTING.md
+  - src/governed-act.js
+  - src/execution-budget.js
+  - ../magistral/CAPABILITY_RESOLUTION.md
+  - ../../apps/platform/mcp/cop/jhnDelegatingAgent.js
+  - ../../apps/platform/mcp/cop/magistralCapabilityResolver.js
 changelog:
-  - "v0.1 (2026-08-24) — first implementation audit against the twelve minimum conformance tests of COP/Mandated Agent Security; prioritized backlog added."
+  - v0.1 (2026-08-24) — first implementation audit against the twelve minimum conformance tests of COP/Mandated Agent Security; prioritized backlog added.
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Mandated Agent Security — Implementation Audit and Backlog
 

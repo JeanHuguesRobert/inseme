@@ -1,12 +1,26 @@
 ---
-title: "Matrice de Parité Survey → Inseme Platform — LePP / pertitellu-corte"
-date: "2026-08-31"
-version: "1.0.0"
-issue: "https://github.com/JeanHuguesRobert/inseme/issues/59"
-instance: "pertitellu-corte"
-canonical_domain: "lepp.fr"
-status: "active"
+title: Matrice de Parité Survey → Inseme Platform — LePP / pertitellu-corte
+date: '2026-08-31'
+version: 1.0.0
+issue: https://github.com/JeanHuguesRobert/inseme/issues/59
+instance: pertitellu-corte
+canonical_domain: lepp.fr
+status: active
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: fr
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Matrice de Parité Survey → Inseme Platform (pertitellu-corte)
 

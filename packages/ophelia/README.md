@@ -1,7 +1,7 @@
 ---
 title: Ophélia npm package
 author: unknown
-date: "2025-12-25"
+date: '2025-12-25'
 document_role: source
 document_kind: documentation
 visibility: public
@@ -11,12 +11,17 @@ provenance:
   origin_type: repository
   origin_repository: JeanHuguesRobert/inseme
   origin_ref: 5ce535d
-  origin_date: "2025-12-25"
+  origin_date: '2025-12-25'
   derived_from: []
 review:
   status: unreviewed
   reviewed_by: []
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+status: working-paper
 ---
+
 
 // packages/ophelia/README.md
 

@@ -1,14 +1,29 @@
 ---
-title: "COP append-only + GitHub webhook — MVP status (issues #28 / #29)"
-date: "2026-08-07"
+title: 'COP append-only + GitHub webhook — MVP status (issues #28 / #29)'
+date: '2026-08-07'
 document_role: operational
 document_kind: status
 visibility: public
 lifecycle_state: active
 related_issues:
-  - "https://github.com/JeanHuguesRobert/inseme/issues/28"
-  - "https://github.com/JeanHuguesRobert/inseme/issues/29"
+  - https://github.com/JeanHuguesRobert/inseme/issues/28
+  - https://github.com/JeanHuguesRobert/inseme/issues/29
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+status: working-paper
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP append-only + GitHub webhook — MVP status
 

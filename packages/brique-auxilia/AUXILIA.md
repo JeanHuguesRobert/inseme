@@ -1,5 +1,5 @@
 ---
-title: "Auxilia — brique d'hospitalité numérique (data & power)"
+title: Auxilia — brique d'hospitalité numérique (data & power)
 project: inseme
 component: auxilia
 upstream: FractaVolta
@@ -7,8 +7,22 @@ version: 0.6-draft
 status: spécification de travail
 license: CC BY-SA 4.0 (texte) — AGPL-3.0 (code, à confirmer)
 maintainer: jhr@baronsmariani.org
-last_updated: 2026-05-19 (rev. 5)
+last_modified_at: '2026-05-19'
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: fr
+date: '2026-09-15'
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Auxilia
 

@@ -1,39 +1,35 @@
 ---
-title: "COP Reference Runtime Plan"
-subtitle: "Make cop-kernel the executable reference profile for COP"
-description:
-  "Detailed implementation plan for hardening cop-kernel as the reference runtime of COP while
-  keeping cop-core normative and staying in pure JavaScript ESM."
-author: "OpenAI Codex"
-affiliation: "Codex / OpenAI"
-canonical_path: "inseme/research/cop_reference_runtime_plan.md"
-version: "0.1-draft"
-status: "implementation plan draft"
-date: "2026-07-18"
-last_modified_at: "2026-07-18"
-last_stamped_at: "2026-07-18"
-license: "CC BY-SA 4.0"
-language: "en"
-type: "source-document"
-source_or_derived: "source-document"
-repository: "inseme"
-document_role: "source"
-document_kind: "implementation-plan"
-visibility: "public"
-lifecycle_state: "working"
+title: COP Reference Runtime Plan
+subtitle: Make cop-kernel the executable reference profile for COP
+description: Detailed implementation plan for hardening cop-kernel as the reference runtime of COP while keeping cop-core normative and staying in pure JavaScript ESM.
+author: OpenAI Codex
+affiliation: Codex / OpenAI
+version: 0.1-draft
+status: implementation plan draft
+date: '2026-07-18'
+last_modified_at: '2026-07-18'
+last_stamped_at: '2026-07-18'
+license: CC BY-SA 4.0
+language: en
+type: source-document
+source_or_derived: source-document
+document_role: source
+document_kind: implementation-plan
+visibility: public
+lifecycle_state: working
 ai_assisted_by:
-  - "Codex"
+  - Codex
 related_repositories:
-  - "JeanHuguesRobert/inseme"
+  - JeanHuguesRobert/inseme
 related_documents:
-  - "inseme/packages/cop-core/README.md"
-  - "inseme/packages/cop-core/Architecture.md"
-  - "inseme/packages/cop-core/Invariants.md"
-  - "inseme/packages/cop-core/ImplementationProfiles.md"
-  - "inseme/packages/cop-core/ROADMAP.md"
-  - "inseme/packages/cop-kernel/README.md"
-  - "inseme/packages/cop-kernel/PROFILE.md"
-  - "inseme/packages/cop-kernel/src/index.js"
+  - inseme/packages/cop-core/README.md
+  - inseme/packages/cop-core/Architecture.md
+  - inseme/packages/cop-core/Invariants.md
+  - inseme/packages/cop-core/ImplementationProfiles.md
+  - inseme/packages/cop-core/ROADMAP.md
+  - inseme/packages/cop-kernel/README.md
+  - inseme/packages/cop-kernel/PROFILE.md
+  - inseme/packages/cop-kernel/src/index.js
 tags:
   - cop
   - cop-kernel
@@ -47,11 +43,22 @@ tags:
   - durability
   - traceability
 human_validation_required: true
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Reference Runtime Plan
 

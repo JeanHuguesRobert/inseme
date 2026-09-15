@@ -1,25 +1,34 @@
 ---
-title: "ActivityPub Edge — Inseme / Fractanet Federation Boundary"
-subtitle: "Derived publication, external interactions, and multi-tenant execution with Fedify"
-author: "Jean Hugues Noël Robert"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A."
-license: "CC BY-SA 4.0"
-status: "working-paper — source document"
-date: "2026-07-31"
-language: "en"
-repository: "JeanHuguesRobert/inseme"
-canonical_path: "research/activitypub_edge.md"
-canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/research/activitypub_edge.md"
-corpus_role: "source"
-document_role: "source"
-document_kind: "architecture-decision"
-visibility: "public"
-lifecycle_state: "working"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "architecture-decision"
-classification_confidence: "medium"
+title: ActivityPub Edge — Inseme / Fractanet Federation Boundary
+subtitle: Derived publication, external interactions, and multi-tenant execution with Fedify
+author: Jean Hugues Noël Robert
+affiliation: Institut Mariani / C.O.R.S.I.C.A.
+license: CC BY-SA 4.0
+status: working-paper — source document
+date: '2026-07-31'
+language: en
+canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/activitypub_edge.md
+corpus_role: source
+document_role: source
+document_kind: architecture-decision
+visibility: public
+lifecycle_state: working
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: architecture-decision
+classification_confidence: medium
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # ActivityPub Edge — Inseme / Fractanet Federation Boundary
 

@@ -1,28 +1,40 @@
 ---
-title: "DHITL — Pilotes de Corte"
-subtitle: "Constitution expérimentale par proximité, mandat réel et adhésion volontaire"
-author: "Jean Hugues Noël Robert"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
-date: "2026-07-20"
-version: "0.1"
-status: "working-note — protocole d'expérimentation"
-license: "CC BY-SA 4.0"
-canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/research/dhitl_pilots_corte.md"
-document_role: "source"
-document_kind: "implementation-note"
-visibility: "public"
-lifecycle_state: "working"
+title: DHITL — Pilotes de Corte
+subtitle: Constitution expérimentale par proximité, mandat réel et adhésion volontaire
+author: Jean Hugues Noël Robert
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+date: '2026-07-20'
+version: '0.1'
+status: working-note — protocole d'expérimentation
+license: CC BY-SA 4.0
+canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/dhitl_pilots_corte.md
+document_role: source
+document_kind: implementation-note
+visibility: public
+lifecycle_state: working
 related_documents:
-  - "https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/transition_possibiliste_vers_une_democratie_augmentee.md"
-  - "https://github.com/JeanHuguesRobert/cogentia/blob/main/research/ia_pour_tous_ia_pour_chacun.md"
-  - "https://github.com/JeanHuguesRobert/marenostrum/blob/main/research/DHITL.md"
-  - "https://github.com/JeanHuguesRobert/marenostrum/blob/main/research/dhitl-membership-and-federation.md"
-  - "../packages/cop-core/Invariants.md"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+  - https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/transition_possibiliste_vers_une_democratie_augmentee.md
+  - https://github.com/JeanHuguesRobert/cogentia/blob/main/research/ia_pour_tous_ia_pour_chacun.md
+  - https://github.com/JeanHuguesRobert/marenostrum/blob/main/research/DHITL.md
+  - https://github.com/JeanHuguesRobert/marenostrum/blob/main/research/dhitl-membership-and-federation.md
+  - ../packages/cop-core/Invariants.md
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+language: fr
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # DHITL — Pilotes de Corte
 

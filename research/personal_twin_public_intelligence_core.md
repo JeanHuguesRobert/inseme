@@ -1,35 +1,45 @@
 ---
-title: "Personal Twin public intelligence core — factorize Guide ⊃ John ⊃ surfaces"
-date: "2026-08-08"
-version: "0.1"
-license: "CC BY-SA 4.0"
+title: Personal Twin public intelligence core — factorize Guide ⊃ John ⊃ surfaces
+date: '2026-08-08'
+version: '0.1'
+license: CC BY-SA 4.0
 document_role: operational
 document_kind: design-note
 visibility: public
-repository: "JeanHuguesRobert/inseme"
-canonical_path: "research/personal_twin_public_intelligence_core.md"
 status: planned
 github_issues:
-  platform: "https://github.com/JeanHuguesRobert/inseme/issues/37"
-  corpus: "https://github.com/JeanHuguesRobert/cogentia/issues/85"
-# opened 2026-08-08
+  platform: https://github.com/JeanHuguesRobert/inseme/issues/37
+  corpus: https://github.com/JeanHuguesRobert/cogentia/issues/85
 related:
   - research/personal_twin_access_policy.md
   - research/interactions_registry_and_multichannel_messaging.md
   - research/user_personal_twin_link.md
   - research/instance_map.md
-  - "https://github.com/JeanHuguesRobert/FractaVolta/blob/main/docs/website/guide-chatbot-agile-plan.md"
-  - "https://github.com/JeanHuguesRobert/cogentia/blob/main/docs/digital-twin-agile-roadmap.md"
-  - "https://github.com/JeanHuguesRobert/cogentia/blob/main/docs/cogentia-corpus-navigator-contract.md"
-  - "JeanHuguesRobert/inseme#35"
-  - "JeanHuguesRobert/inseme#36"
-  - "JeanHuguesRobert/inseme#33"
-lifecycle_state: "active"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+  - https://github.com/JeanHuguesRobert/FractaVolta/blob/main/docs/website/guide-chatbot-agile-plan.md
+  - https://github.com/JeanHuguesRobert/cogentia/blob/main/docs/digital-twin-agile-roadmap.md
+  - https://github.com/JeanHuguesRobert/cogentia/blob/main/docs/cogentia-corpus-navigator-contract.md
+  - JeanHuguesRobert/inseme#35
+  - JeanHuguesRobert/inseme#36
+  - JeanHuguesRobert/inseme#33
+lifecycle_state: active
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Personal Twin public intelligence core
 

@@ -1,13 +1,28 @@
 ---
-title: "JHN usability gate (Inseme #33)"
-date: "2026-08-07"
+title: 'JHN usability gate (Inseme #33)'
+date: '2026-08-07'
 document_role: operational
 document_kind: status
 visibility: public
 related_issues:
-  - "https://github.com/JeanHuguesRobert/inseme/issues/33"
-  - "https://github.com/JeanHuguesRobert/inseme/issues/31"
+  - https://github.com/JeanHuguesRobert/inseme/issues/33
+  - https://github.com/JeanHuguesRobert/inseme/issues/31
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+status: working-paper
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # JHN usability gate — progress
 

@@ -1,10 +1,10 @@
 ---
-title: "Checkpoint — Mandated Agents, Harness and capability resolution"
+title: Checkpoint — Mandated Agents, Harness and capability resolution
 author: Jean Hugues Noël Robert, baron Mariani
-date: "2026-08-24"
-last_modified_at: "2026-08-24"
-version: "0.1"
-document_role: "source"
+date: '2026-08-24'
+last_modified_at: '2026-08-24'
+version: '0.1'
+document_role: source
 document_kind: research-checkpoint
 visibility: public
 lifecycle_state: stable
@@ -13,24 +13,29 @@ update_policy: UP-DEFAULT-REVIEWED
 provenance:
   origin_type: conversation
   origin_repository: JeanHuguesRobert/inseme
-  origin_date: "2026-08-24"
+  origin_date: '2026-08-24'
   derived_from:
     - packages/cop-core/COP_MANDATED_AGENT_SECURITY.md
     - packages/cop-core/MANDATED_AGENT_SECURITY_AUDIT_2026-08-24.md
     - packages/magistral/CAPABILITY_RESOLUTION.md
     - https://github.com/JeanHuguesRobert/inseme/issues/55
+  origin_ref: unknown
 review:
   status: conversation-approved
   reviewed_by:
     - Jean Hugues Noël Robert
 changelog:
-  - "v0.1 (2026-08-24) — conversation checkpoint before returning control to implementation and empirical feedback."
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
-legacy_document_role: "checkpoint"
+  - v0.1 (2026-08-24) — conversation checkpoint before returning control to implementation and empirical feedback.
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+legacy_document_role: checkpoint
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+status: working-paper
 ---
+
 
 # Checkpoint — Mandated Agents, Harness and capability resolution
 

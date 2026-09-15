@@ -1,23 +1,33 @@
 ---
-title: "COP Identity / Kudocracy Profile"
-subtitle: "Subjects, capacities, mandates and public civic acts"
-author: "Jean Hugues Noël Robert"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A."
-license: "CC BY-SA 4.0"
-status: "working-paper — source document"
-date: "2026-06-19"
-language: "en"
-repository: "JeanHuguesRobert/inseme"
-corpus_role: "source"
-document_role: "source"
-document_kind: "research-paper"
-visibility: "public"
-lifecycle_state: "working"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "research-paper"
-classification_confidence: "medium"
+title: COP Identity / Kudocracy Profile
+subtitle: Subjects, capacities, mandates and public civic acts
+author: Jean Hugues Noël Robert
+affiliation: Institut Mariani / C.O.R.S.I.C.A.
+license: CC BY-SA 4.0
+status: working-paper — source document
+date: '2026-06-19'
+language: en
+corpus_role: source
+document_role: source
+document_kind: research-paper
+visibility: public
+lifecycle_state: working
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: research-paper
+classification_confidence: medium
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Identity / Kudocracy Profile
 

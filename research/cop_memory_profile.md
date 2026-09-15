@@ -1,23 +1,34 @@
 ---
-title: "COP Memory Profile"
-subtitle: "Trace memory, content addressing, locality and cognitive orchestration"
-author: "Jean Hugues Noël Robert"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A."
-date: "2026-06-21"
-license: "CC BY-SA 4.0"
-status: "seed working note"
-corpus_role: "source"
-language: "en"
-document_role: "source"
-document_kind: "working-note"
-visibility: "public"
-lifecycle_state: "working"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "working-note"
-classification_confidence: "medium"
-last_modified_at: "2026-09-08"
+title: COP Memory Profile
+subtitle: Trace memory, content addressing, locality and cognitive orchestration
+author: Jean Hugues Noël Robert
+affiliation: Institut Mariani / C.O.R.S.I.C.A.
+date: '2026-06-21'
+license: CC BY-SA 4.0
+status: seed working note
+corpus_role: source
+language: en
+document_role: source
+document_kind: working-note
+visibility: public
+lifecycle_state: working
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: working-note
+classification_confidence: medium
+last_modified_at: '2026-09-08'
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Memory Profile
 

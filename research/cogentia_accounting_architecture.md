@@ -1,38 +1,37 @@
 ---
-title: "Cogentia Accounting Architecture — General, Statutory, Analytical, Budgetary, and Reconciliation Layers"
-author: "Jean Hugues Noël Robert"
+title: Cogentia Accounting Architecture — General, Statutory, Analytical, Budgetary, and Reconciliation Layers
+author: Jean Hugues Noël Robert
 language: en
-date: "2026-08-08"
-last_modified_at: "2026-08-08"
-version: "0.1"
-status: "working source — human-directed, review pending"
-document_role: "source"
-document_kind: "architecture"
-visibility: "public"
-lifecycle_state: "active"
-update_policy: "UP-DECISION-REVIEW"
+date: '2026-08-08'
+last_modified_at: '2026-08-08'
+version: '0.1'
+status: working source — human-directed, review pending
+document_role: source
+document_kind: architecture
+visibility: public
+lifecycle_state: active
+update_policy: UP-DECISION-REVIEW
 human_validation_required: true
-canonical_path: "inseme/research/cogentia_accounting_architecture.md"
-canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/research/cogentia_accounting_architecture.md"
+canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/cogentia_accounting_architecture.md
 provenance:
-  origin_type: "conversation"
-  origin_repository: "JeanHuguesRobert/inseme"
-  origin_ref: "inseme#39"
-  origin_date: "2026-08-08"
+  origin_type: conversation
+  origin_repository: JeanHuguesRobert/inseme
+  origin_ref: inseme#39
+  origin_date: '2026-08-08'
   derived_from:
-    - "packages/cop-core/COP_ACCOUNTING.md"
-    - "issues/25"
-    - "issues/38"
-    - "issues/39"
-    - "https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/traceabilite_des_actes.md"
+    - packages/cop-core/COP_ACCOUNTING.md
+    - issues/25
+    - issues/38
+    - issues/39
+    - https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/traceabilite_des_actes.md
 review:
-  status: "pending-human-review"
+  status: pending-human-review
   reviewed_by: []
 ai_assisted_by:
-  - name: "OpenAI ChatGPT"
-    role: "AI-assisted synthesis, structuring, and corpus integration"
-    principal: "Jean Hugues Noël Robert"
-    responsibility: "Human principal retains validation and publication authority"
+  - name: OpenAI ChatGPT
+    role: AI-assisted synthesis, structuring, and corpus integration
+    principal: Jean Hugues Noël Robert
+    responsibility: Human principal retains validation and publication authority
 tags:
   - cogentia
   - cop
@@ -43,11 +42,14 @@ tags:
   - reconciliation
   - digital-twins
   - archia
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
 ---
+
 
 # Cogentia Accounting Architecture
 

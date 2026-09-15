@@ -1,25 +1,36 @@
 ---
-title: "COP Memory — Necessity and Local Equilibrium"
-subtitle: "Situated judgment, constraints, local optima and attractors"
-author: "Jean Hugues Noël Robert"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A."
-date: "2026-06-21"
-license: "CC BY-SA 4.0"
-status: "seed working note"
-corpus_role: "source"
-language: "en"
-document_role: "source"
-document_kind: "working-note"
-visibility: "public"
-lifecycle_state: "working"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "working-note"
-classification_confidence: "medium"
+title: COP Memory — Necessity and Local Equilibrium
+subtitle: Situated judgment, constraints, local optima and attractors
+author: Jean Hugues Noël Robert
+affiliation: Institut Mariani / C.O.R.S.I.C.A.
+date: '2026-06-21'
+license: CC BY-SA 4.0
+status: seed working note
+corpus_role: source
+language: en
+document_role: source
+document_kind: working-note
+visibility: public
+lifecycle_state: working
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: working-note
+classification_confidence: medium
 related:
-  - "research/cop_memory_map_territory.md"
-  - "research/cop_memory_profile.md"
+  - research/cop_memory_map_territory.md
+  - research/cop_memory_profile.md
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Memory — Necessity and Local Equilibrium
 

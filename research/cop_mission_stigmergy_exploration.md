@@ -1,25 +1,25 @@
 ---
-title: "COP Mission Stigmergy and Rational Exploration"
-subtitle: "Technical bridge between Mission, The Possible, continuations, stigmergic traces, FractaLog, and corpus return"
-author: "Jean Hugues Noël Robert, baron Mariani"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A."
-license: "CC BY-SA 4.0"
-date: "2026-07-10"
-last_modified_at: "2026-09-08"
-status: "working-note"
-document_role: "source"
-document_kind: "technical-architecture-note"
-visibility: "public"
-lifecycle_state: "working"
-language: "en"
+title: COP Mission Stigmergy and Rational Exploration
+subtitle: Technical bridge between Mission, The Possible, continuations, stigmergic traces, FractaLog, and corpus return
+author: Jean Hugues Noël Robert, baron Mariani
+affiliation: Institut Mariani / C.O.R.S.I.C.A.
+license: CC BY-SA 4.0
+date: '2026-07-10'
+last_modified_at: '2026-09-08'
+status: working-note
+document_role: source
+document_kind: technical-architecture-note
+visibility: public
+lifecycle_state: working
+language: en
 related_documents:
-  - "packages/cop-core/Architecture.md"
-  - "packages/cop-kernel/docs/task-step-continuation-lineage.md"
-  - "research/cop_fractalog_profile.md"
-  - "barons-Mariani/research/rational_odysseys_the_possible.md"
-  - "barons-Mariani/research/presencology.md"
-  - "FractaVolta/research/fractalog.md"
-  - "FractaVolta/research/ownership_packets_and_cop.md"
+  - packages/cop-core/Architecture.md
+  - packages/cop-kernel/docs/task-step-continuation-lineage.md
+  - research/cop_fractalog_profile.md
+  - barons-Mariani/research/rational_odysseys_the_possible.md
+  - barons-Mariani/research/presencology.md
+  - FractaVolta/research/fractalog.md
+  - FractaVolta/research/ownership_packets_and_cop.md
 tags:
   - cop
   - mission
@@ -29,11 +29,22 @@ tags:
   - cognitive-packets
   - the-possible
   - rational-exploration
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "explicit-metadata"
-classification_confidence: "medium"
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: explicit-metadata
+classification_confidence: medium
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Mission Stigmergy and Rational Exploration
 

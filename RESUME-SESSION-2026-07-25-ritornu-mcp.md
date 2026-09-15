@@ -1,12 +1,26 @@
 ---
 title: Resume note — Ritornu M0/M1 + federated Inseme MCP
-date: 2026-07-25
+date: 2026-07-25T00:00:00.000Z
 issue: https://github.com/JeanHuguesRobert/inseme/issues/26
 status: committed locally on main as e29a07d — not pushed to origin yet
 repo: JeanHuguesRobert/inseme
 branch: main
 author_note: Safe handoff before PC reboot. Work is in local git; push after reboot when ready.
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Resume: Ritornu + Inseme MCP hub (issue #26)
 

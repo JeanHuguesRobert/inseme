@@ -1,38 +1,33 @@
 ---
-title: "COP Trace Model — Trace as Unified Epistemic and Computational Substrate"
-subtitle: "Normative trace-centric architecture for COP 2.x and the Reactive Corpus"
-description:
-  "Normative specification of the COP 2.x Trace-centric substrate, defining the distinction between
-  raw evidence (Trace), procedural history (Event), propositions (Assertion), evidence linkages
-  (EvidenceRelation), and derived views (Projection)."
-author: "Jean Hugues Noël Robert, baron Mariani"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A. / Inseme"
-canonical_path: "inseme/research/cop_trace_model.md"
-canonical_url: "https://github.com/JeanHuguesRobert/inseme/blob/main/research/cop_trace_model.md"
-version: "1.0"
-status: "normative architecture — approved under Epic #61 and Issue #62"
-date: "2026-09-06"
-last_modified_at: "2026-09-06"
-last_stamped_at: "2026-09-06"
-license: "CC BY-SA 4.0"
-language: "en"
-type: "source-document"
-source_or_derived: "source-document"
-repository: "inseme"
+title: COP Trace Model — Trace as Unified Epistemic and Computational Substrate
+subtitle: Normative trace-centric architecture for COP 2.x and the Reactive Corpus
+description: Normative specification of the COP 2.x Trace-centric substrate, defining the distinction between raw evidence (Trace), procedural history (Event), propositions (Assertion), evidence linkages (EvidenceRelation), and derived views (Projection).
+author: Jean Hugues Noël Robert, baron Mariani
+affiliation: Institut Mariani / C.O.R.S.I.C.A. / Inseme
+canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/cop_trace_model.md
+version: '1.0'
+status: 'normative architecture — approved under Epic #61 and Issue #62'
+date: '2026-09-06'
+last_modified_at: '2026-09-06'
+last_stamped_at: '2026-09-06'
+license: CC BY-SA 4.0
+language: en
+type: source-document
+source_or_derived: source-document
 related_repositories:
-  - "JeanHuguesRobert/inseme"
-  - "JeanHuguesRobert/FractaVolta"
-  - "JeanHuguesRobert/barons-Mariani"
-  - "JeanHuguesRobert/cogentia"
+  - JeanHuguesRobert/inseme
+  - JeanHuguesRobert/FractaVolta
+  - JeanHuguesRobert/barons-Mariani
+  - JeanHuguesRobert/cogentia
 related_documents:
-  - "inseme/packages/cop-core/Architecture.md"
-  - "inseme/packages/cop-core/Invariants.md"
-  - "inseme/packages/cop-core/Terminology.md"
-  - "inseme/packages/cop-core/docs/trace-contradiction-review.md"
-  - "inseme/packages/cop-core/docs/reactive-corpus-inox-mapping.md"
-  - "inseme/research/cop_fractalog_profile.md"
-  - "inseme/research/cop_memory_profile.md"
-  - "inseme/research/cop_memory_map_territory.md"
+  - inseme/packages/cop-core/Architecture.md
+  - inseme/packages/cop-core/Invariants.md
+  - inseme/packages/cop-core/Terminology.md
+  - inseme/packages/cop-core/docs/trace-contradiction-review.md
+  - inseme/packages/cop-core/docs/reactive-corpus-inox-mapping.md
+  - inseme/research/cop_fractalog_profile.md
+  - inseme/research/cop_memory_profile.md
+  - inseme/research/cop_memory_map_territory.md
 tags:
   - cop
   - cop-2.x
@@ -41,15 +36,26 @@ tags:
   - evidence-graph
   - temporal-projection
   - normative-architecture
-document_role: "source"
-document_kind: "architecture"
-visibility: "public"
-lifecycle_state: "active"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "architecture"
-classification_confidence: "medium"
+document_role: source
+document_kind: architecture
+visibility: public
+lifecycle_state: active
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: architecture
+classification_confidence: medium
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Trace Model — Trace as Unified Epistemic and Computational Substrate
 

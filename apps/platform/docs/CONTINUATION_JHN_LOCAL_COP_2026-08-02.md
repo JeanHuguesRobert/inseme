@@ -1,10 +1,24 @@
 ---
-title: "Continuation — JHN local COP runtime"
-date: "2026-08-02"
-status: "paused"
-commit: "f041466fdb8640adec78aedeba036cb06bcb7e4a"
-scope: "apps/platform local JHN personal instance"
+title: Continuation — JHN local COP runtime
+date: '2026-08-02'
+status: paused
+commit: f041466fdb8640adec78aedeba036cb06bcb7e4a
+scope: apps/platform local JHN personal instance
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Continuation — JHN local COP runtime
 

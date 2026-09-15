@@ -1,27 +1,38 @@
 ---
-title: "COP Memory — Map and Territory"
-subtitle: "Pragmatic projections without confusing memory views with reality"
-author: "Jean Hugues Noël Robert"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A."
-date: "2026-06-21"
-license: "CC BY-SA 4.0"
-status: "seed working note"
-corpus_role: "source"
-language: "en"
-document_role: "source"
-document_kind: "working-note"
-visibility: "public"
-lifecycle_state: "working"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "working-note"
-classification_confidence: "medium"
+title: COP Memory — Map and Territory
+subtitle: Pragmatic projections without confusing memory views with reality
+author: Jean Hugues Noël Robert
+affiliation: Institut Mariani / C.O.R.S.I.C.A.
+date: '2026-06-21'
+license: CC BY-SA 4.0
+status: seed working note
+corpus_role: source
+language: en
+document_role: source
+document_kind: working-note
+visibility: public
+lifecycle_state: working
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: working-note
+classification_confidence: medium
 related:
-  - "research/cop_trace_model.md"
-  - "research/cop_memory_profile.md"
-  - "research/cop_memory_metadata_recursion.md"
-  - "https://github.com/JeanHuguesRobert/cogentia/blob/main/research/Cogentia-and-Cogentigram.md"
+  - research/cop_trace_model.md
+  - research/cop_memory_profile.md
+  - research/cop_memory_metadata_recursion.md
+  - https://github.com/JeanHuguesRobert/cogentia/blob/main/research/Cogentia-and-Cogentigram.md
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Memory — Map and Territory
 

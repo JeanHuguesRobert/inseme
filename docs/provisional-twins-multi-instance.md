@@ -1,13 +1,27 @@
 ---
-title: "Provisional Twins & Fractal Multi-Instance Architecture"
+title: Provisional Twins & Fractal Multi-Instance Architecture
 document_role: specification
 document_kind: architecture
 visibility: public
 lifecycle_state: approved
 language: en
 update_policy: UP-DEFAULT-REVIEWED
-issue: "https://github.com/JeanHuguesRobert/inseme/issues/57"
+issue: https://github.com/JeanHuguesRobert/inseme/issues/57
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+date: '2026-09-15'
+status: working-paper
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Provisional Twins & Fractal Multi-Instance Architecture
 

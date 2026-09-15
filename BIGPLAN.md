@@ -1,10 +1,25 @@
 ---
 Author: Jean Hugues Robert, baron Mariani. email:jean_hugues_robert@yahoo.com
-Date: 2026-03-15
-Update: 2026-08-05
+Date: 2026-03-15T00:00:00.000Z
+Update: 2026-08-05T00:00:00.000Z
 Status: Obsolete
 language: fr
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+date: '2026-09-15'
+update_policy: UP-DEFAULT-REVIEWED
+status: working-paper
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Inseme – Documentation de l’architecture COP & Ophélia
 

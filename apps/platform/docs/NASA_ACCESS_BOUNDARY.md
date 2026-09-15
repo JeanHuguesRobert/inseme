@@ -1,8 +1,23 @@
 ---
-title: "La Nasa access boundary"
-status: "deployed authorization boundary; action bridge not configured"
-visibility: "public"
+title: La Nasa access boundary
+status: deployed authorization boundary; action bridge not configured
+visibility: public
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+date: '2026-09-15'
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # La Nasa access boundary
 

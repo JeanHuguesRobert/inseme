@@ -1,23 +1,33 @@
 ---
-title: "Runbook — Instance personnelle JHN"
-subtitle: "Priorité dogfooding : jhn.baronsmariani.org sur Inseme, sans toucher lepp.fr"
-author: "Jean Hugues Noël Robert, baron Mariani"
-date: "2026-07-19"
-version: "0.1"
-license: "CC BY-SA 4.0"
-language: "fr"
-status: "working-runbook"
-document_role: "operational"
-visibility: "public"
-repository: "JeanHuguesRobert/inseme"
-canonical_path: "apps/platform/docs/RUNBOOK_JHN_PERSONAL_INSTANCE.md"
+title: Runbook — Instance personnelle JHN
+subtitle: 'Priorité dogfooding : jhn.baronsmariani.org sur Inseme, sans toucher lepp.fr'
+author: Jean Hugues Noël Robert, baron Mariani
+date: '2026-07-19'
+version: '0.1'
+license: CC BY-SA 4.0
+language: fr
+status: working-runbook
+document_role: operational
+visibility: public
 related_documents:
-  - "../../research/instance_map.md"
-  - "../../research/personal_instance_democracy_and_non_capturable_match.md"
-  - "../instances/jhn.example.json"
-  - "../instances/QUICKSTART.md"
-  - "https://github.com/JeanHuguesRobert/inseme/issues/17"
+  - ../../research/instance_map.md
+  - ../../research/personal_instance_democracy_and_non_capturable_match.md
+  - ../instances/jhn.example.json
+  - ../instances/QUICKSTART.md
+  - https://github.com/JeanHuguesRobert/inseme/issues/17
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Runbook — Instance personnelle JHN
 

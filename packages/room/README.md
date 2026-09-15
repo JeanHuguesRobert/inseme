@@ -1,7 +1,7 @@
 ---
-title: "@inseme/room"
+title: '@inseme/room'
 author: unknown
-date: "2026-01-18"
+date: '2026-01-18'
 document_role: source
 document_kind: documentation
 visibility: public
@@ -11,12 +11,17 @@ provenance:
   origin_type: repository
   origin_repository: JeanHuguesRobert/inseme
   origin_ref: 8301d4f
-  origin_date: "2026-01-18"
+  origin_date: '2026-01-18'
   derived_from: []
 review:
   status: unreviewed
   reviewed_by: []
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+status: working-paper
 ---
+
 
 # @inseme/room
 

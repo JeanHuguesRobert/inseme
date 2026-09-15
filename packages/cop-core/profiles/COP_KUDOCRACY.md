@@ -1,17 +1,29 @@
 ---
-title: "COP/Kudocracy Profile"
-version: "0.1"
-status: "operational-note — seed"
-date: "2026-06-19"
-author: "Jean Hugues Noël Robert"
-license: "CC BY-SA 4.0"
-language: "en"
-derived_from: "../../research/cop_identity_kudocracy_profile.md"
+title: COP/Kudocracy Profile
+version: '0.1'
+status: operational-note — seed
+date: '2026-06-19'
+author: Jean Hugues Noël Robert
+license: CC BY-SA 4.0
+language: en
+derived_from: ../../research/cop_identity_kudocracy_profile.md
 requires:
-  - "COP/Core"
-  - "COP/HITL"
-  - "COP/Identity"
+  - COP/Core
+  - COP/HITL
+  - COP/Identity
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP/Kudocracy Profile
 

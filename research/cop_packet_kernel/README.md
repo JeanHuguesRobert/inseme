@@ -1,26 +1,38 @@
 ---
-title: "COP Experimental Packet Kernel"
-subtitle: "Executable formalization of the accepted mission-bearing Cognitive Packet hypothesis"
-version: "0.1.0-experimental"
-status: "experimental-formalization"
+title: COP Experimental Packet Kernel
+subtitle: Executable formalization of the accepted mission-bearing Cognitive Packet hypothesis
+version: 0.1.0-experimental
+status: experimental-formalization
 normative: false
-date: "2026-07-20"
-author: "Jean Hugues Noël Robert, baron Mariani"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
-repository: "JeanHuguesRobert/inseme"
-issue: "https://github.com/JeanHuguesRobert/inseme/issues/21"
-source_hypothesis: "../cop_zero_draft.md"
+date: '2026-07-20'
+author: Jean Hugues Noël Robert, baron Mariani
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+issue: https://github.com/JeanHuguesRobert/inseme/issues/21
+source_hypothesis: ../cop_zero_draft.md
 human_validation_required: true
-review_status: "pending-human-validation"
-document_role: "source"
-document_kind: "experiment-log"
-visibility: "public"
-lifecycle_state: "active"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "experiment-log"
-classification_confidence: "medium"
+review_status: pending-human-validation
+document_role: source
+document_kind: experiment-log
+visibility: public
+lifecycle_state: active
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: experiment-log
+classification_confidence: medium
+license: CC BY-SA 4.0
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Experimental Packet Kernel
 

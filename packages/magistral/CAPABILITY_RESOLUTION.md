@@ -2,9 +2,9 @@
 title: Magistral Capability Resolution Boundary
 subtitle: Generic interface between COP orchestration and heterogeneous work capabilities
 author: Jean Hugues Noël Robert, baron Mariani
-date: "2026-08-23"
-last_modified_at: "2026-08-24"
-version: "0.3"
+date: '2026-08-23'
+last_modified_at: '2026-08-24'
+version: '0.3'
 document_role: source
 document_kind: architecture-decision
 visibility: public
@@ -14,18 +14,23 @@ update_policy: UP-DEFAULT-REVIEWED
 provenance:
   origin_type: conversation
   origin_repository: JeanHuguesRobert/inseme
-  origin_date: "2026-08-15"
+  origin_date: '2026-08-15'
   derived_from:
     - packages/magistral/README.md
     - packages/cop-core/Terminology.md
     - packages/cop-core/COP_MANDATED_AGENT_SECURITY.md
+  origin_ref: unknown
 review:
   status: unreviewed
   reviewed_by: []
 changelog:
-  - "v0.3 (2026-08-24) — use-led integration strategy; CapabilityProvider/ExecutionBinding/TransportAdapter layering; Rule of Two; ownership and portable-state versus portable-privilege distinctions."
-  - "v0.2 (2026-08-24) — explicit binding to COP Mandated Agent Security; authority-preserving resolution and rebinding requirements."
+  - v0.3 (2026-08-24) — use-led integration strategy; CapabilityProvider/ExecutionBinding/TransportAdapter layering; Rule of Two; ownership and portable-state versus portable-privilege distinctions.
+  - v0.2 (2026-08-24) — explicit binding to COP Mandated Agent Security; authority-preserving resolution and rebinding requirements.
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+status: working-paper
 ---
+
 
 # Magistral Capability Resolution Boundary
 

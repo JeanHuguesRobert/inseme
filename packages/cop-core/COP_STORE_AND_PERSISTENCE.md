@@ -1,24 +1,24 @@
 ---
-title: "COP Store — Minimal Persistence Model"
-subtitle: "Occam consolidation of Events, Artifacts, Views, and adapters"
-author: "Jean Hugues Noël Robert, baron Mariani"
-affiliation: "Institut Mariani / C.O.R.S.I.C.A."
-license: "CC BY-SA 4.0"
-date: "2026-07-14"
-version: "0.2"
-status: "working-source — human validation required"
-document_role: "source"
-document_kind: "protocol-architecture-note"
-visibility: "public"
-lifecycle_state: "working"
+title: COP Store — Minimal Persistence Model
+subtitle: Occam consolidation of Events, Artifacts, Views, and adapters
+author: Jean Hugues Noël Robert, baron Mariani
+affiliation: Institut Mariani / C.O.R.S.I.C.A.
+license: CC BY-SA 4.0
+date: '2026-07-14'
+version: '0.2'
+status: working-source — human validation required
+document_role: source
+document_kind: protocol-architecture-note
+visibility: public
+lifecycle_state: working
 human_validation_required: true
 issue: 16
 related_documents:
-  - "packages/cop-core/Architecture.md"
-  - "packages/cop-core/Invariants.md"
-  - "packages/cop-core/COP_PERSISTENCE.md"
-  - "packages/cop-core/src/types.ts"
-  - "packages/cop-kernel/src/storage.js"
+  - packages/cop-core/Architecture.md
+  - packages/cop-core/Invariants.md
+  - packages/cop-core/COP_PERSISTENCE.md
+  - packages/cop-core/src/types.ts
+  - packages/cop-kernel/src/storage.js
 tags:
   - cop
   - store
@@ -26,7 +26,19 @@ tags:
   - occam
   - lean
   - event-sourcing
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # COP Store — Minimal Persistence Model
 

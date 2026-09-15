@@ -1,19 +1,31 @@
 ---
-title: "Instance map — locked names and regimes"
-date: "2026-07-29"
-version: "0.1"
-license: "CC BY-SA 4.0"
-document_role: "operational"
-document_kind: "operational-note"
-visibility: "public"
-lifecycle_state: "active"
-classification_source: "cogentia.js"
-classification_version: "1"
-classification_rule: "operational-note"
-classification_confidence: "medium"
-repository: "JeanHuguesRobert/inseme"
-canonical_path: "research/instance_map.md"
+title: Instance map — locked names and regimes
+date: '2026-07-29'
+version: '0.1'
+license: CC BY-SA 4.0
+document_role: operational
+document_kind: operational-note
+visibility: public
+lifecycle_state: active
+classification_source: cogentia.js
+classification_version: '1'
+classification_rule: operational-note
+classification_confidence: medium
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+status: working-paper
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Instance map — locked names and regimes
 

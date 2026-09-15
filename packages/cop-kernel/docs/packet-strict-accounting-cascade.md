@@ -1,8 +1,22 @@
 ---
-title: "Cognitive Packet strict accounting — own vs consolidated cascade"
-date: "2026-08-13"
+title: Cognitive Packet strict accounting — own vs consolidated cascade
+date: '2026-08-13'
 status: working
+license: CC BY-SA 4.0
+affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
+language: en
+update_policy: UP-DEFAULT-REVIEWED
+review:
+  status: unreviewed
+  reviewed_by: []
+provenance:
+  origin_type: unknown
+  origin_repository: unknown
+  origin_ref: unknown
+  origin_date: unknown
+  derived_from: []
 ---
+
 
 # Cognitive Packet strict accounting — own vs consolidated
 
