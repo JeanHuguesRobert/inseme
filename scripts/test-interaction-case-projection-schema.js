@@ -43,6 +43,18 @@ assert.ok(
   "No anonymous read policy should be introduced by this migration"
 );
 
+const v2Path = path.join(
+  process.cwd(),
+  "apps/platform/supabase/migrations/20260916220000_interaction_cases_projection_v2.sql"
+);
+assert.ok(fs.existsSync(v2Path), "v2 migration must exist");
+const v2 = fs.readFileSync(v2Path, "utf8");
+assert.ok(v2.includes("status_label"), "v2 must add status_label");
+assert.ok(v2.includes("channel_kind"), "v2 must add channel_kind");
+assert.ok(v2.includes("next_watch_count"), "v2 must add next_watch_count");
+assert.ok(v2.includes("interaction_cases_desk"), "v2 must add desk view");
+assert.ok(v2.includes("security_invoker = true"), "desk view must use security_invoker");
+
 // No premature CRM ontology
 for (const forbidden of [
   "CREATE TABLE IF NOT EXISTS public.interaction_actors",
@@ -50,8 +62,13 @@ for (const forbidden of [
   "CREATE TABLE IF NOT EXISTS public.interaction_artifacts",
 ]) {
   assert.ok(!sql.includes(forbidden), `Premature normalized table must not exist: ${forbidden}`);
+  assert.ok(
+    !v2.includes(forbidden),
+    `Premature normalized table must not exist in v2: ${forbidden}`
+  );
 }
 
 console.log("  ✓ interaction_cases + revisions + RLS + optimistic update present");
+console.log("  ✓ v2 status_label / channel_kind / next_watch_count / desk view present");
 console.log("  ✓ No premature actor/probe/artifact ontology");
 console.log("\nAll schema smoke checks passed.\n");

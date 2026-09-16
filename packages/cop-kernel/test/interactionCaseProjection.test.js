@@ -56,6 +56,9 @@ describe("interactionCase Packet-Backed Projection (#77)", () => {
     assert.equal(richRow.created_at, "2026-08-08");
     assert.equal(richRow.last_updated_at, "2026-08-11");
     assert.equal(richRow.next_followup_at, null); // not auto-derived from next_watch
+    assert.equal(richRow.channel_kind, "email");
+    assert.ok(richRow.next_watch_count > 0);
+    assert.ok(richRow.status_label); // from current_status.label when no statut
     assert.equal(richRow.projection_version, PROJECTION_VERSION);
     assert.equal(richRow.packet.historical_context.length, 3);
     assert.equal(richRow.source_ref.repository, "JeanHuguesRobert/JeanHuguesRobert");
@@ -64,6 +67,10 @@ describe("interactionCase Packet-Backed Projection (#77)", () => {
     // Older shape: French narrative statut, no machine status/created
     assert.equal(simpleRow.packet_id, "2026-05-04-001");
     assert.equal(simpleRow.status, null);
+    assert.equal(simpleRow.status_label, "réponse reçue : négative");
+    assert.equal(simpleRow.status_display, "réponse reçue : négative");
+    assert.equal(simpleRow.created_at, "2026-05-04"); // date_envoi fallback
+    assert.equal(simpleRow.channel_kind, "email");
     assert.equal(simpleRow.disclosure, "D3");
     assert.match(simpleRow.subject, /MareNostrum/);
     assert.equal(simpleRow.packet.statut, "réponse reçue : négative");

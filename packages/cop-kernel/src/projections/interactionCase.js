@@ -16,7 +16,7 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 
 /** Projection logic version embedded on every projected row. */
-export const PROJECTION_VERSION = "interaction_case.v1";
+export const PROJECTION_VERSION = "interaction_case.v2";
 
 /**
  * Explicit deletion marker for write-back.
@@ -32,17 +32,61 @@ export function isPacketDelete(value) {
 export const PROJECTED_PACKET_KEYS = Object.freeze({
   packet_id: ["id"],
   status: ["status"],
+  // Narrative French label — distinct from machine status.
+  status_label: ["statut"],
   disclosure: ["disclosure", "niveau_divulgation"],
   subject: ["sujet", "subject"],
   primary_channel: ["canal", "primary_channel"],
   counterparty_label: ["interlocuteur", "counterparty_label"],
-  created_at: ["created", "created_at"],
+  // date_envoi is a common older fallback when `created` is absent.
+  created_at: ["created", "created_at", "date_envoi"],
   last_updated_at: ["last_updated", "last_updated_at"],
-  // next_followup_at / superseded_by: columns exist for future pressure; not
-  // auto-derived from next_watch[] / narrative fields in this first slice.
+  // Scalar only when already present; next_watch[] stays Packet-only.
   next_followup_at: ["next_followup_at"],
   superseded_by: ["superseded_by"],
 });
+
+/**
+ * Coarse channel kind for filtering. Derived, not a second ontology.
+ * Returns null when canal is absent.
+ */
+export function deriveChannelKind(canal) {
+  if (canal === null || canal === undefined || canal === "") return null;
+  const text = String(canal).toLowerCase();
+  if (/whatsapp/.test(text)) return "whatsapp";
+  if (/github/.test(text)) return "github";
+  if (/discord/.test(text)) return "discord";
+  if (/activitypub|mastodon/.test(text)) return "activitypub";
+  if (/email|gmail|courriel|smtp|mail\b/.test(text)) return "email";
+  if (/postal|courrier|lettre/.test(text)) return "postal";
+  if (/rencontre|oral|visio|meeting|rendez-vous|rdv/.test(text)) return "meeting";
+  return "other";
+}
+
+/**
+ * Count next_watch entries without inventing a follow-up date.
+ */
+export function countNextWatch(packet) {
+  if (!packet || typeof packet !== "object") return null;
+  if (!Object.prototype.hasOwnProperty.call(packet, "next_watch")) return null;
+  if (!Array.isArray(packet.next_watch)) return null;
+  return packet.next_watch.length;
+}
+
+/**
+ * Narrative status label: prefer `statut`, else current_status.label when present.
+ */
+export function deriveStatusLabel(packet) {
+  if (!packet || typeof packet !== "object") return { key: null, value: null, present: false };
+  if (Object.prototype.hasOwnProperty.call(packet, "statut") && packet.statut !== "") {
+    return { key: "statut", value: String(packet.statut), present: true };
+  }
+  const current = packet.current_status;
+  if (current && typeof current === "object" && current.label) {
+    return { key: "current_status.label", value: String(current.label), present: true };
+  }
+  return { key: null, value: null, present: false };
+}
 
 /**
  * Pick the first present Packet property among aliases.
@@ -115,10 +159,12 @@ function deepClone(value) {
  * project(packet) -> columns (+ retained packet snapshot metadata)
  *
  * Reality notes baked into mapping:
- * - Prefer machine `status` over narrative French `statut` (not projected).
+ * - Machine `status` and narrative `statut` are distinct columns.
  * - Prefer `sujet` then English `subject`.
  * - Prefer `disclosure` then `niveau_divulgation`.
- * - Do not invent next_followup_at from next_watch[].
+ * - `created_at` may fall back to `date_envoi` when `created` is absent.
+ * - Do not invent next_followup_at from next_watch[]; project next_watch_count instead.
+ * - channel_kind is a derived coarse filter, not a closed taxonomy.
  */
 export function project(packet, options = {}) {
   if (!packet || typeof packet !== "object") {
@@ -127,6 +173,7 @@ export function project(packet, options = {}) {
 
   const packetId = pickPacketField(packet, PROJECTED_PACKET_KEYS.packet_id);
   const status = pickPacketField(packet, PROJECTED_PACKET_KEYS.status);
+  const statusLabel = deriveStatusLabel(packet);
   const disclosure = pickPacketField(packet, PROJECTED_PACKET_KEYS.disclosure);
   const subject = pickPacketField(packet, PROJECTED_PACKET_KEYS.subject);
   const channel = pickPacketField(packet, PROJECTED_PACKET_KEYS.primary_channel);
@@ -135,30 +182,44 @@ export function project(packet, options = {}) {
   const updated = pickPacketField(packet, PROJECTED_PACKET_KEYS.last_updated_at);
   const nextFollowup = pickPacketField(packet, PROJECTED_PACKET_KEYS.next_followup_at);
   const supersededBy = pickPacketField(packet, PROJECTED_PACKET_KEYS.superseded_by);
+  const nextWatchCount = countNextWatch(packet);
+  const primaryChannel = channel.present && channel.value !== "" ? String(channel.value) : null;
 
   const ambiguities = [];
-  if (!status.present && Object.prototype.hasOwnProperty.call(packet, "statut")) {
+  if (!status.present && statusLabel.present) {
     ambiguities.push({
       field: "status",
-      note: "Packet has narrative `statut` but no machine `status`; left SQL status NULL",
-      observed: packet.statut,
+      note: "Packet has narrative status_label but no machine `status`; SQL status left NULL",
+      observed: statusLabel.value,
+    });
+  }
+  if (created.key === "date_envoi") {
+    ambiguities.push({
+      field: "created_at",
+      note: "Projected created_at from date_envoi fallback (no created/created_at)",
+      observed: created.value,
     });
   }
 
   const retained = deepClone(packet);
   const projectedAt = options.projectedAt || new Date().toISOString();
+  const machineStatus = status.present && status.value !== "" ? String(status.value) : null;
 
   return {
     packet_id: packetId.present ? String(packetId.value) : null,
-    status: status.present && status.value !== "" ? String(status.value) : null,
+    status: machineStatus,
+    status_label: statusLabel.present ? statusLabel.value : null,
+    status_display: machineStatus || (statusLabel.present ? statusLabel.value : null),
     disclosure: disclosure.present ? normalizeDisclosure(disclosure.value) : null,
     subject: subject.present && subject.value !== "" ? String(subject.value) : null,
-    primary_channel: channel.present && channel.value !== "" ? String(channel.value) : null,
+    primary_channel: primaryChannel,
+    channel_kind: deriveChannelKind(primaryChannel),
     counterparty_label:
       counterparty.present && counterparty.value !== "" ? String(counterparty.value) : null,
     created_at: created.present ? coerceProjectedDate(created.value) : null,
     last_updated_at: updated.present ? coerceProjectedDate(updated.value) : null,
     next_followup_at: nextFollowup.present ? coerceProjectedDate(nextFollowup.value) : null,
+    next_watch_count: nextWatchCount,
     superseded_by:
       supersededBy.present && supersededBy.value !== "" ? String(supersededBy.value) : null,
     revision: options.revision ?? 1,
@@ -171,6 +232,7 @@ export function project(packet, options = {}) {
     projected_at: projectedAt,
     field_bindings: {
       status: status.key,
+      status_label: statusLabel.key,
       disclosure: disclosure.key,
       subject: subject.key,
       primary_channel: channel.key,
@@ -202,6 +264,7 @@ export function inflate(changedColumns, options = {}) {
 
   const bindings = {
     status: "status",
+    status_label: "statut",
     disclosure: "disclosure",
     subject: "sujet",
     primary_channel: "canal",
@@ -218,6 +281,8 @@ export function inflate(changedColumns, options = {}) {
 
   const mapScalar = (column, packetKey, transform) => {
     if (!Object.prototype.hasOwnProperty.call(changedColumns, column)) return;
+    // Derived-only columns are not written back into the Packet.
+    if (!packetKey) return;
     const raw = changedColumns[column];
     if (isPacketDelete(raw)) {
       partial[packetKey] = PACKET_DELETE;
@@ -237,6 +302,13 @@ export function inflate(changedColumns, options = {}) {
   };
 
   mapScalar("status", bindings.status || "status", (v) => String(v));
+  // Only write status_label back when binding is a real Packet key (e.g. statut),
+  // not a dotted derived path like current_status.label.
+  const statusLabelKey =
+    bindings.status_label && !String(bindings.status_label).includes(".")
+      ? bindings.status_label
+      : null;
+  mapScalar("status_label", statusLabelKey, (v) => String(v));
   mapScalar("disclosure", bindings.disclosure || "disclosure", normalizeDisclosure);
   mapScalar("subject", bindings.subject || "sujet", (v) => String(v));
   mapScalar("primary_channel", bindings.primary_channel || "canal", (v) => String(v));
