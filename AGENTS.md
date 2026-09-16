@@ -147,9 +147,19 @@ JeanHuguesRobert/registre-mariani
   [inseme#35](https://github.com/JeanHuguesRobert/inseme/issues/35).
 - **Interactions Registry / multichannel messaging**: prefer traceable interactions; email as
   durable spine; extend existing Interaction Packets (method in cogentia, public traces in
-  JeanHuguesRobert, private in registre-mariani); Personal Twin “desk” later. Plan:
+  JeanHuguesRobert, private in registre-mariani). **Agent JHN SQL desk projection exists**
+  (`interaction_cases` / `interaction_cases_desk` on JHN Supabase; Packet-Backed Projection,
+  [inseme#77](https://github.com/JeanHuguesRobert/inseme/issues/77)) — operational current-state
+  only, not a second SoT. Refresh:
+  `node scripts/refresh-interaction-cases-jhn.js`; query:
+  `node scripts/query-interaction-cases-jhn.js list|get` (also `cogentia.js interactions …`).
+  Full Twin desk UI / multichannel product remains [#36](https://github.com/JeanHuguesRobert/inseme/issues/36).
+  Descriptor:
+  [`research/interactions_registry_and_multichannel_messaging.registry.yaml`](research/interactions_registry_and_multichannel_messaging.registry.yaml).
+  Plan:
   [`research/interactions_registry_and_multichannel_messaging.md`](research/interactions_registry_and_multichannel_messaging.md).
   Tracking: [inseme#36](https://github.com/JeanHuguesRobert/inseme/issues/36),
+  [inseme#77](https://github.com/JeanHuguesRobert/inseme/issues/77),
   [JeanHuguesRobert#2](https://github.com/JeanHuguesRobert/JeanHuguesRobert/issues/2),
   [cogentia#84](https://github.com/JeanHuguesRobert/cogentia/issues/84).
 - **Public intelligence core (factorize):** John public chat is a **readonly superset** of the

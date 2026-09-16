@@ -34,7 +34,7 @@ const jhrPacketsDir = path.resolve(
   "2026"
 );
 
-dotenv.config({ path: path.join(root, ".env") });
+dotenv.config({ path: path.join(root, ".env"), quiet: true });
 
 function assertJhn() {
   const url = process.env.SUPABASE_URL || "";

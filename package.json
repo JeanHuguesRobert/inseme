@@ -36,7 +36,10 @@
     "compile:briques": "node packages/cop-host/scripts/compile-briques.js",
     "inseme:build": "pnpm --filter @inseme/app-inseme run build",
     "platform:build": "pnpm --filter platform run build",
-    "cyrnea:build": "pnpm --filter @inseme/app-cyrnea run build"
+    "cyrnea:build": "pnpm --filter @inseme/app-cyrnea run build",
+    "jhn:interactions:list": "node scripts/query-interaction-cases-jhn.js list",
+    "jhn:interactions:get": "node scripts/query-interaction-cases-jhn.js get",
+    "jhn:interactions:refresh": "node scripts/refresh-interaction-cases-jhn.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

@@ -19,17 +19,20 @@ registry:
     temporality:
       - append-only
       - versioned
+      - reconstructible-projection
     visibility: mixed
     substrate:
       - git-yaml
       - git-markdown
       - packet
+      - supabase-projection
     granularity:
       - person/twin
       - interaction
     mutation:
       - append-with-correction
       - agent-maintained-under-mandate
+      - projected-column-write-with-merge
 
   definition_source:
     repo: JeanHuguesRobert/cogentia
@@ -41,25 +44,59 @@ registry:
 
   record_authority:
     mode: subject-owned
-    description: Method lives in Cogentia; traces live with the subject. Public and private stores remain distinct projections or overlays.
+    description: >
+      Method lives in Cogentia; traces live with the subject. Public and private
+      stores remain distinct. The Agent JHN Supabase desk is a Packet-Backed
+      Projection (inseme#77), not a second source of truth.
 
   record_sources:
     - repo: JeanHuguesRobert/JeanHuguesRobert
       path: interaction_packets/
       visibility: public-or-redacted
+      role: subject-owned-public-traces
     - repo: JeanHuguesRobert/registre-mariani
       path: interaction_packets/
       visibility: private
+      role: subject-owned-private-overlay
+    - kind: operational-projection
+      twin: twin:jhn
+      instance: jhn
+      supabase_project_ref: ndiysuhzmztatpxbkezn
+      repo: JeanHuguesRobert/inseme
+      path: apps/platform/supabase/migrations/
+      tables:
+        - interaction_cases
+        - interaction_case_revisions
+      views:
+        - interaction_cases_desk
+      projection_version: interaction_case.v2
+      pattern: packet-backed-projection
+      refresh_command: node scripts/refresh-interaction-cases-jhn.js
+      query_command: node scripts/query-interaction-cases-jhn.js
+      cogentia_cli: interactions
+      authority: reconstructible-projection
+      visibility: service-role-restricted
+      tracking_issue: https://github.com/JeanHuguesRobert/inseme/issues/77
+      note: >
+        Current-state SQL desk for Agent JHN. Import/refresh from public JHR
+        YAML packets. Anonymous PostgREST cannot read rows. Does not replace
+        Git/YAML documentary traces.
 
   relations:
     - predicate: governed_by
       object: cogentia:interaction-packet-method
     - predicate: projects
       object: view:interaction-dashboard
+    - predicate: exposes_view
+      object: view:interaction-cases-desk
+    - predicate: operated_by
+      object: twin:jhn
     - predicate: depends_on
       object: policy:personal-twin-access
     - predicate: references
       object: cop:event
+    - predicate: references
+      object: pattern:packet-backed-projection
 
   freshness:
     mode: per-record
@@ -67,3 +104,4 @@ registry:
       - dates
       - status
       - follow-ups
+      - projected_at

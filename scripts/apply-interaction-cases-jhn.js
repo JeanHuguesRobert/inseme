@@ -25,7 +25,7 @@ const JHN_REF = "ndiysuhzmztatpxbkezn";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 
-dotenv.config({ path: path.join(root, ".env") });
+dotenv.config({ path: path.join(root, ".env"), quiet: true });
 
 function assertJhnTarget() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";

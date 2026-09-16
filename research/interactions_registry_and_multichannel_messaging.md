@@ -246,6 +246,19 @@ disclosure and COP mandate mechanics remain shared.
 - Keep external providers replaceable; no provider becomes the sole residence of identity, memory,
   mandate or canonical conversation state.
 
+**Reality update (2026-09-16 / #77):** Agent JHN already has a first Packet-Backed SQL
+projection of public Interaction Packets:
+
+```text
+JeanHuguesRobert/interaction_packets/packets/**/*.yaml
+        ↓ refresh (inseme script)
+JHN Supabase interaction_cases + interaction_cases_desk
+```
+
+This is an **operational projection**, not a migration of authority away from subject-owned
+Git/YAML traces. Private overlays remain in `registre-mariani`. See
+`interactions_registry_and_multichannel_messaging.registry.yaml` and issue #77.
+
 ## 6. Non-goals (v1)
 
 - Replacing WhatsApp / Telegram / Discord for users
