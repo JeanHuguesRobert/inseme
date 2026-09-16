@@ -1,0 +1,182 @@
+# Paquet interactionnel — métadonnées structurées
+# Méthode générique : https://github.com/JeanHuguesRobert/cogentia/tree/main/interaction_packets
+# Schéma de référence : interaction_packets/archive_policy.md
+
+id: "2026-08-08-001"
+type: "interaction_packet"
+status: "active"
+created: "2026-08-08"
+last_updated: "2026-08-11"
+disclosure: "D2"
+
+date_envoi: "2026-08-08"
+heure_envoi: "16:37"
+date_reponse: "2026-08-11"
+canal: "email (Gmail)"
+interlocuteur: "Mairie de La Gaude / Police municipale"
+sujet: "OLD — parcelle AT0045, 3169 avenue Marcel Pagnol — clarification technique, modalités de rendez-vous et correspondance électronique"
+niveau_divulgation: "D2"
+verifie_le: "2026-08-11"
+
+actor:
+  name: "Jean Hugues Noël Robert"
+  role: "Propriétaire de la parcelle AT0045 ; porteur du projet Mariani School of Autonomy / futur fonds de dotation Barons Mariani"
+
+institution:
+  name: "Commune de La Gaude"
+  body: "Mairie / Police municipale — interlocuteur opérationnel OLD"
+  country: "France"
+
+references:
+  municipal_letter:
+    date: "2026-07-30"
+    ref: "MC-2026/175 — OLD-2026/010"
+  parcel: "AT0045"
+  location: "3169 avenue Marcel Pagnol, 06610 La Gaude"
+
+contexte: >
+  La mairie a adressé un courrier relatif aux obligations légales de débroussaillement
+  applicables à la propriété AT0045, en mentionnant plusieurs zonages PLUm (Nb, UFb3)
+  et PPRIF (B1a, Rouge). Le site présente une configuration particulière, notamment
+  une piste historiquement identifiée comme « piste incendie » immédiatement en contrebas,
+  déjà signalée par écrit au cabinet du maire en 2017. Le projet de long terme pour le lieu
+  est une station expérimentale de la Mariani School of Autonomy, articulant art, paysage,
+  écologie, autonomie matérielle et résilience méditerranéenne. Ces éléments de projet ne
+  sont pas mobilisés dans le premier courriel comme arguments de confrontation : la réponse
+  privilégie une demande coopérative de détermination précise des obligations et modalités.
+  Le 11 août, la Police municipale a pris directement contact et demandé les coordonnées
+  téléphoniques du propriétaire afin de convenir d'un rendez-vous. Jean Hugues Robert étant
+  actuellement en Corse et sans date prévisible de présence à La Gaude, il a répondu par
+  écrit en demandant que les échanges restent tracés par courriel et que la Police précise
+  d'abord par écrit les points à examiner ainsi que la nature du rendez-vous envisagé.
+
+objet_de_l_acte: >
+  Accuser réception du courrier municipal, confirmer la volonté de satisfaire aux prescriptions
+  applicables, demander une cartographie et une détermination précises des modalités selon les
+  différentes parties du terrain, solliciter un interlocuteur technique et proposer, si utile,
+  une visite sur place avant travaux irréversibles. Demander en outre que le courriel devienne
+  le mode de correspondance privilégié. À la suite du contact de la Police municipale, maintenir
+  les échanges préparatoires par écrit, signaler l'éloignement géographique actuel et obtenir
+  une formulation écrite de l'objet et des modalités du rendez-vous avant toute organisation.
+
+timeline:
+  - date: "2026-07-30"
+    direction: "inbound"
+    channel: "courrier postal"
+    event: "Courrier municipal OLD"
+    reference: "MC-2026/175 — OLD-2026/010"
+    status: "received"
+  - date: "2026-08-08"
+    time: "16:37"
+    direction: "outbound"
+    channel: "email (Gmail)"
+    event: "Réponse à la mairie"
+    summary: >
+      Réponse volontairement diplomatique : prise en compte de l'objectif de sécurité,
+      demande de périmètre et modalités précises, demande d'interlocuteur technique,
+      proposition de visite sur place, maintien de l'entretien courant des abords,
+      demande de correspondance électronique privilégiée et d'accusé de réception.
+    status: "sent"
+  - date: "2026-08-10"
+    direction: "inbound"
+    channel: "email (Gmail)"
+    event: "Accusé de réception de la mairie"
+    summary: >
+      La mairie accuse réception du courriel et indique l'avoir transmis au service concerné,
+      qui doit reprendre contact.
+    status: "received"
+  - date: "2026-08-11"
+    time: "14:12"
+    direction: "inbound"
+    channel: "email (Gmail)"
+    event: "Prise de contact de la Police municipale"
+    interlocutor: "Nathalie Garopolo — Brigadier, Police municipale de La Gaude"
+    summary: >
+      La Police municipale demande les coordonnées téléphoniques de Jean Hugues Robert afin
+      de convenir d'un rendez-vous pour faire un point sur les Obligations Légales de
+      Débroussaillement.
+    status: "received"
+  - date: "2026-08-11"
+    time: "15:24"
+    direction: "outbound"
+    channel: "email (Gmail)"
+    event: "Réponse à la Police municipale"
+    recipients:
+      to: "police.municipale@lagaude.fr"
+      cc: "institutmariani@gmail.com"
+    summary: >
+      Jean Hugues Robert indique résider actuellement en Corse, ne pas être en mesure de
+      donner à ce stade une date de présence à La Gaude et souhaite privilégier les échanges
+      par courriel afin d'en conserver une trace précise. Il demande à la Police municipale
+      d'indiquer par écrit les points à examiner et, le cas échéant, la nature du rendez-vous
+      envisagé, afin de déterminer ensuite la modalité appropriée. Aucun engagement n'est pris
+      quant à une visite ni quant à une présence personnelle sur place.
+    gmail_message_id: "19ff0ff4785570f1"
+    status: "sent"
+
+recipients:
+  primary: "courrier@lagaude.fr"
+  operational_contact: "police.municipale@lagaude.fr"
+  cc:
+    - "institutmariani@gmail.com"
+  note: >
+    L'Institut Mariani est mis en copie des échanges sortants pour la traçabilité institutionnelle
+    et patrimoniale du dossier. La propriété est mise gratuitement à disposition dans le cadre
+    des activités incubées par l'Association C.O.R.S.I.C.A., notamment la Mariani School of
+    Autonomy et le projet de fonds de dotation Barons Mariani. Cette articulation n'est pas
+    spontanément développée dans les échanges avec la commune tant qu'elle n'est pas utile.
+
+historical_context:
+  - date: "2014-10-22"
+    event: "Échange antérieur avec la mairie sur l'entretien du 3169 avenue Marcel Pagnol"
+  - date: "2016-05-23"
+    event: "Courriel de la police municipale rappelant déjà l'obligation de débroussaillement"
+  - date: "2017-07-06"
+    event: "Signalement au cabinet du maire de la « piste incendie » ouverte en contrebas et de désordres du terrain"
+
+linked_documents:
+  - repository: "JeanHuguesRobert/barons-Mariani"
+    path: "research/mariani_school_sites_minesteggio_la_gaude.md"
+    role: "Cadrage patrimonial et expérimental de La Maison Blanche / La Gaude"
+
+current_status:
+  label: "Contact Police municipale reçu — réponse écrite envoyée ; précisions attendues"
+  interpretation: >
+    L'accusé de réception municipal est acquis et la Police municipale est désormais
+    l'interlocuteur opérationnel. Sa prise de contact rapide est un signal à surveiller mais
+    ne permet pas, à elle seule, de conclure à une procédure contentieuse ou coercitive.
+    L'existence générale de l'obligation n'est pas contestée ; aucune non-conformité
+    individualisée n'est reconnue. La stratégie immédiate consiste à conserver une trace
+    écrite, obtenir la formulation précise des points à examiner et ne préjuger ni de la
+    nécessité d'une visite ni de la présence personnelle du propriétaire. Celui-ci réside
+    actuellement en Corse et ne dispose pas à ce stade d'une date prévisible de présence à
+    La Gaude.
+
+next_watch:
+  - "Réponse écrite de la Police municipale aux points demandés"
+  - "Objet précis et nature du rendez-vous envisagé"
+  - "Réponse cartographique sur Nb / UFb3 et B1a / Rouge"
+  - "Toute demande de visite sur place ou d'accès à la propriété"
+  - "Toute demande de présence personnelle du propriétaire"
+  - "Toute prescription individualisée, procès-verbal, mise en demeure ou échéance"
+  - "Statut juridique et gestionnaire de la piste incendie / DFCI en contrebas"
+  - "Si une visite devient nécessaire : arbitrer entre représentation sur place, accès par une personne de confiance ou rendez-vous lors d'un déplacement ultérieur"
+
+resume_public: >
+  Le 8 août 2026, réponse adressée à la mairie de La Gaude à la suite de son courrier
+  OLD-2026/010 concernant la parcelle AT0045. Après transmission du dossier au service
+  compétent, la Police municipale a pris contact le 11 août pour proposer un rendez-vous et
+  demander des coordonnées téléphoniques. Le propriétaire, actuellement en Corse, a répondu
+  le même jour par courriel en demandant que les échanges restent écrits et que soient précisés
+  les points à examiner ainsi que la nature du rendez-vous envisagé. Réponse de la Police
+  municipale attendue.
+
+methodological_note:
+  ai_assistance: true
+  human_arbitration: "Jean Hugues Noël Robert"
+  responsibility: "exclusive human responsibility"
+  note: >
+    Analyse du courrier, recherche des antécédents Gmail/Drive, rédaction du brouillon et
+    inscription au registre assistées par IA, sous arbitrage et responsabilité exclusifs
+    de Jean Hugues Noël Robert. Niveau D2 retenu par prudence : métadonnées et résumé public,
+    contenu intégral des courriels non publié à ce stade.

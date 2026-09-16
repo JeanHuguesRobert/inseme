@@ -64,5 +64,8 @@ export * from "./accounting/index.js";
 // FractaBlog projections derived from Cognitive Packet Ground Truth
 export * from "./projections/fractaBlog.js";
 
+// Packet-Backed Projection for Interaction Cases (Inseme #77)
+export * from "./projections/interactionCase.js";
+
 // Cognitive Packet Composition combinators (copFork, copAll, copRace, copSequence, copCascadeCancel)
 export * from "./copComposition.js";

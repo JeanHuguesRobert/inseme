@@ -1,0 +1,35 @@
+# Paquet interactionnel — métadonnées structurées
+# Méthode générique : https://github.com/JeanHuguesRobert/cogentia/tree/main/interaction_packets
+# Schéma de référence : interaction_packets/archive_policy.md
+
+id: "2026-05-04-001"
+date_envoi: "2026-05-04"
+date_reponse: "2026-05-05"
+canal: "email"
+interlocuteur: "Université de Corse"
+sujet: "Session MareNostrum — confirmation souhaitée d'ici le 14 mai"
+contexte: >
+  Dans le cadre d'ICOME, une proposition MareNostrum avait été formulée
+  (énergie solaire insulaire, souveraineté computationnelle, inférence IA,
+  coopération méditerranéenne).
+demande: >
+  Après le refus d'intégrer MareNostrum au programme officiel, demande plus légère :
+  mise à disposition d'une salle un soir des 8, 9 ou 10 juin pour une table ronde
+  informelle (~90 min), hors programme officiel, sans demande de budget,
+  avec participation éventuelle de personnes présentes à ICOME.
+statut: "réponse reçue : négative"
+niveau_divulgation: "D3"
+resume_public: >
+  Un premier refus (8 avril 2026) avait été opposé à l'intégration de la session
+  spéciale MareNostrum au programme de la conférence. La nouvelle demande de salle
+  pour une table ronde informelle hors programme officiel a également reçu une
+  réponse défavorable le 2026-05-05.
+correction:
+  classement_initial: "aucune réponse détectée"
+  classement_corrige: "réponse reçue : négative"
+  note: >
+    Réponse retrouvée après inspection du fil Gmail. Le protocole Interaction Packets
+    documente les faits, même lorsqu'ils corrigent une impression initiale.
+copies:
+  lisible: "../../readable/2026/2026-05-04-session_marenostrum.md"
+  brute_masquee: "../../raw/2026/2026-05-04-session_marenostrum_redacted.eml.md"

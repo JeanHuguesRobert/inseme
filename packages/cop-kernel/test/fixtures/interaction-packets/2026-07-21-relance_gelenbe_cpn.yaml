@@ -1,0 +1,120 @@
+# Paquet interactionnel — métadonnées structurées
+# Méthode générique : https://github.com/JeanHuguesRobert/cogentia/tree/main/interaction_packets
+# Schéma de référence : interaction_packets/archive_policy.md
+
+id: "2026-07-21-002"
+type: "interaction_packet"
+status: "active"
+created: "2026-07-21"
+last_updated: "2026-07-21"
+disclosure: "D3"
+
+date_envoi: "2026-07-21"
+date_reponse: ""
+canal: "email (Gmail)"
+interlocuteur: "Erol Gelenbe / IITiS-PAN (Institut d'informatique théorique et appliquée, Académie polonaise des sciences)"
+sujet: "Relance — Cognitive Packet Networks (1999) inversés par « When Cognition Became Traffic » ; invitation comme hop humain décorrélé de l'expérience CPKT-2026-001"
+niveau_divulgation: "D3"
+verifie_le: "2026-07-21"
+
+title: "Relance Erol Gelenbe — CPN inversé et expérience de substitution"
+short_title: "Relance Gelenbe — CPN / CPKT-2026-001"
+
+actor:
+  name: "Jean Hugues Noël Robert"
+  role: "Chercheur indépendant, Institut Mariani"
+  affiliation:
+    - "Institut Mariani"
+    - "C.O.R.S.I.C.A."
+
+institution:
+  name: "Académie polonaise des sciences"
+  body: "IITiS-PAN, Gliwice"
+  country: "Pologne"
+
+contacts:
+  primary_request_recipient:
+    name: "Erol Gelenbe"
+    role: "Professeur, IITiS-PAN ; ex-chaire Dennis Gabor, Imperial College (2004-2020)"
+  note: >
+    Adresse professionnelle publiquement auto-publiée par l'intéressé (annonce de workshop,
+    2026) ; masquée dans ce paquet par cohérence D3.
+
+subject_tags:
+  - "Cognitive Packet Networks (1999)"
+  - "Energy Packet Networks (2012)"
+  - "When Cognition Became Traffic — claim C11"
+  - "Expérience de substitution CPKT-2026-001"
+  - "Hop humain décorrélé"
+
+contexte: >
+  Erol Gelenbe est cité aux deux pôles du corpus de paquétisation : EPN (énergie, dans
+  « The Unconscious Grid ») et CPN (cognition, dans « When Cognition Became Traffic »).
+  La claim C11 formule une inversion relative de son CPN de 1999. Un premier message lui
+  a été adressé antérieurement, resté sans réponse ; le canal exact de ce premier contact
+  est incertain (adresse institutionnelle jhr@baronsmariani.org ou messagerie LinkedIn) —
+  l'absence de trace dans le Gmail connecté a été vérifiée le 2026-07-21. Cette incertitude
+  de canal illustre le problème de fragmentation des canaux de contact documenté par
+  ailleurs dans le corpus.
+
+demande: >
+  Notifier la citation et l'inversion (C11 resserrée) ; informer que la claim a survécu,
+  avant envoi, à l'expérience de falsification multi-fournisseurs CPKT-2026-001 (publique) ;
+  inviter le destinataire à fournir le « hop humain décorrélé » manquant de l'expérience :
+  juger, depuis le siège de l'auteur, si la C11 resserrée est loyale envers CPN.
+
+timeline:
+  - date: "2026-07-21"
+    direction: "outbound"
+    channel: "email (Gmail)"
+    event: "Brouillon déposé dans Gmail (v2, neutre quant au canal du premier contact)"
+    summary: >
+      Brouillon rédigé et déposé, adressé à l'adresse professionnelle publiquement
+      auto-publiée. Envoi conditionné à la vérification du silence sur le canal du premier
+      contact (boîte institutionnelle et/ou messagerie LinkedIn).
+    status: "prepared"
+  - date: "2026-07-21"
+    direction: "outbound"
+    event: "Envoi"
+    status: "sent"
+
+documents:
+  article:
+    repository: "JeanHuguesRobert/FractaVolta"
+    path: "research/when_cognition_became_traffic.md"
+    url: "https://github.com/JeanHuguesRobert/FractaVolta/blob/main/research/when_cognition_became_traffic.md"
+  experience:
+    repository: "JeanHuguesRobert/FractaVolta"
+    path: "research/CPKT-2026-001_c11_substitution.md"
+    url: "https://github.com/JeanHuguesRobert/FractaVolta/blob/main/research/CPKT-2026-001_c11_substitution.md"
+
+core_claims:
+  - "La citation n'exige pas le consentement du cité ; la loyauté envers lui, si."
+  - "Une claim adressée à son sujet vaut d'être testée avant de lui être notifiée."
+  - "Le hop décorrélé d'une expérience LLM-convergente est humain — idéalement le sujet lui-même."
+
+statut: "brouillon Gmail déposé ; envoi après vérification du silence sur le premier canal"
+resume_public: >
+  Relance préparée le 2026-07-21 à destination d'Erol Gelenbe (IITiS-PAN), cité aux deux
+  pôles du corpus (EPN et CPN). Le message notifie l'inversion relative formulée par la
+  claim C11 de « When Cognition Became Traffic », précise que cette claim a été soumise
+  avant envoi à l'expérience de falsification publique CPKT-2026-001 (survécue, resserrée),
+  et invite le destinataire à fournir le hop humain décorrélé manquant de l'expérience.
+  Copie lisible publiable (D3) après envoi, adresses masquées.
+
+next_watch:
+  - "Vérification du silence sur le premier canal (baronsmariani / LinkedIn)"
+  - "Envoi effectif (mettre à jour date_envoi, timeline, statut)"
+  - "Réponse éventuelle — vaudrait hop décorrélé de CPKT-2026-001"
+  - "Publication de la copie lisible D3 dans readable/2026/"
+
+methodological_note:
+  ai_assistance: true
+  human_arbitration: "Jean Hugues Noël Robert"
+  responsibility: "exclusive human responsibility"
+  note: >
+    Recherche d'adresse, vérification d'absence de fil antérieur dans le Gmail connecté,
+    rédaction du brouillon et inscription au registre assistées par IA (Claude), sous
+    arbitrage et responsabilité exclusifs de Jean Hugues Noël Robert. La claim C11 elle-même
+    a été testée par l'expérience multi-fournisseurs CPKT-2026-001 avant toute notification
+    au principal intéressé.

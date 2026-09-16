@@ -20,11 +20,12 @@
     "test:accounting": "node --test test/accounting.test.js test/packetAccounting.test.js test/packetAccountingSpool.test.js test/strict-accounting-adversarial.test.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.0.0",
     "@inseme/cop-core": "workspace:*",
+    "@supabase/supabase-js": "^2.0.0",
     "mysql2": "^3.15.3",
+    "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
-    "sqlite": "^5.1.1"
+    "yaml": "^2.9.1"
   },
   "engines": {
     "node": ">=18.0.0"
