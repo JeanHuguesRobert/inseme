@@ -9,12 +9,17 @@
       "kind": "cop-orchestration",
       "required_packages": ["@inseme/cop-kernel", "@inseme/cop-host"]
     },
-    "routes": ["/", "/john", "/nasa", "/oleole"],
+    "routes": ["/", "/john", "/nasa", "/interactions", "/oleole"],
     "edge_functions": [
       {
         "function": "nasa-control",
         "path": "/api/nasa/control",
         "source": "netlify/edge-functions/nasa-control.js"
+      },
+      {
+        "function": "interactions-desk",
+        "path": "/api/interactions/desk",
+        "source": "netlify/edge-functions/interactions-desk.js"
       },
       {
         "function": "gen-ophelia-chat-stream",

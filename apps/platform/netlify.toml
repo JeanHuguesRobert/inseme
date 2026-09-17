@@ -30,6 +30,10 @@
   path = "/api/nasa/control"
 
 [[edge_functions]]
+  function = "interactions-desk"
+  path = "/api/interactions/desk"
+
+[[edge_functions]]
   function = "jhn-cop-events"
   path = "/api/jhn-cop-events"
 

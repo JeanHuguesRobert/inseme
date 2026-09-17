@@ -42,6 +42,12 @@ export default function JhnLandingPage() {
               to="/nasa"
               cta="Open La Nasa"
             />
+            <Card
+              title="Interactions Desk"
+              body="Read-only operational view of Interaction Packets (SQL projection). Principal or delegate only; no anonymous case data."
+              to="/interactions"
+              cta="Open the desk"
+            />
           </section>
 
           <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-sm text-slate-300">
