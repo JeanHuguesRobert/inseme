@@ -39,6 +39,7 @@
     "cyrnea:build": "pnpm --filter @inseme/app-cyrnea run build",
     "jhn:interactions:list": "node scripts/query-interaction-cases-jhn.js list",
     "jhn:interactions:get": "node scripts/query-interaction-cases-jhn.js get",
+    "jhn:interactions:update": "node scripts/update-interaction-case-jhn.js",
     "jhn:interactions:refresh": "node scripts/refresh-interaction-cases-jhn.js"
   },
   "devDependencies": {

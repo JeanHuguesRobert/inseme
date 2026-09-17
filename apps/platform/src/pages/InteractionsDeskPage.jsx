@@ -18,6 +18,14 @@ export default function InteractionsDeskPage() {
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState(null);
   const selectedId = searchParams.get("id");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editStatus, setEditStatus] = useState("open");
+  const [editStatusLabel, setEditStatusLabel] = useState("");
+  const [editNextWatch, setEditNextWatch] = useState([]);
+  const [newWatchInput, setNewWatchInput] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(null);
 
   const fetchList = useCallback(async () => {
     const token = session?.access_token;
@@ -81,6 +89,62 @@ export default function InteractionsDeskPage() {
     else setDetail(null);
   }, [selectedId, fetchDetail]);
 
+  useEffect(() => {
+    if (detail?.ok && detail.desk) {
+      setEditStatus(detail.desk.status || (detail.desk.is_open ? "open" : "closed"));
+      setEditStatusLabel(detail.desk.status_label || detail.desk.status_display || "");
+      setEditNextWatch(Array.isArray(detail.case?.next_watch) ? [...detail.case.next_watch] : []);
+      setIsEditing(false);
+      setSaveError(null);
+      setSaveSuccess(null);
+    }
+  }, [detail]);
+
+  const handleSave = async (e) => {
+    if (e) e.preventDefault();
+    const token = session?.access_token;
+    if (!token || !detail?.desk) return;
+
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(null);
+
+    try {
+      const payload = {
+        packet_id: detail.desk.packet_id,
+        expected_revision: detail.desk.revision,
+        patch: {
+          status: editStatus,
+          status_label: editStatusLabel.trim(),
+          next_watch: editNextWatch.map((s) => s.trim()).filter(Boolean),
+        },
+      };
+
+      const response = await fetch(DESK_ENDPOINT, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.error || body.message || `HTTP ${response.status}`);
+      }
+
+      setSaveSuccess(`Updated to revision ${body.revision}`);
+      setIsEditing(false);
+      await Promise.all([fetchDetail(detail.desk.packet_id), fetchList()]);
+    } catch (err) {
+      setSaveError(err.message || "Failed to update case");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const connected = Boolean(session?.access_token);
   const authorized = Boolean(list?.authorized);
   const cases = list?.cases || [];
@@ -94,8 +158,9 @@ export default function InteractionsDeskPage() {
             Interaction cases
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
-            Read-only operational projection of public Interaction Packets (Packet-Backed SQL,
-            Inseme #77). Git/YAML remains the documentary source. Anonymous visitors never see case
+            Operational desk projection of public Interaction Packets (Packet-Backed SQL, Inseme #77
+            / #36). Write-capable for authorized Principal/Delegates with optimistic revision
+            tracking. Git/YAML remains the documentary source. Anonymous visitors never see case
             rows.
           </p>
           <div className="mt-4 flex flex-wrap gap-3 text-sm">
@@ -232,13 +297,25 @@ export default function InteractionsDeskPage() {
                 <p className="text-amber-300">{detail?.error || "Loading…"}</p>
               ) : (
                 <div className="space-y-4">
-                  <div>
-                    <p className="font-mono text-xs text-emerald-300">{detail.desk.packet_id}</p>
-                    <h2 className="mt-1 text-lg font-semibold text-slate-100">
-                      {detail.desk.subject || "Untitled"}
-                    </h2>
-                    <p className="mt-1 text-slate-400">{detail.desk.status_display}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-mono text-xs text-emerald-300">{detail.desk.packet_id}</p>
+                      <h2 className="mt-1 text-lg font-semibold text-slate-100">
+                        {detail.desk.subject || "Untitled"}
+                      </h2>
+                      <p className="mt-1 text-slate-400">{detail.desk.status_display}</p>
+                    </div>
+                    {!isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700 hover:text-white"
+                      >
+                        Edit
+                      </button>
+                    )}
                   </div>
+
                   <dl className="grid grid-cols-2 gap-2 text-xs text-slate-400">
                     <div>
                       <dt className="uppercase tracking-wide">Disclosure</dt>
@@ -257,22 +334,160 @@ export default function InteractionsDeskPage() {
                       <dd className="text-slate-200">{detail.desk.is_open ? "yes" : "no"}</dd>
                     </div>
                   </dl>
-                  <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Next watch
-                    </h3>
-                    <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-300">
-                      {(detail.case.next_watch || []).map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                      {(detail.case.next_watch || []).length === 0 ? <li>None</li> : null}
-                    </ul>
-                  </div>
-                  {detail.case.source_ref?.path ? (
-                    <p className="break-all text-xs text-slate-500">
-                      source: {detail.case.source_ref.repository}/{detail.case.source_ref.path}
-                    </p>
-                  ) : null}
+
+                  {!isEditing ? (
+                    <>
+                      <div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          Next watch
+                        </h3>
+                        <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-300">
+                          {(detail.case.next_watch || []).map((item, i) => (
+                            <li key={i}>{item}</li>
+                          ))}
+                          {(detail.case.next_watch || []).length === 0 ? <li>None</li> : null}
+                        </ul>
+                      </div>
+                      {saveSuccess ? (
+                        <p className="rounded border border-emerald-800 bg-emerald-950/50 px-2 py-1 text-xs text-emerald-300">
+                          ✓ {saveSuccess}
+                        </p>
+                      ) : null}
+                      {detail.case.source_ref?.path ? (
+                        <p className="break-all text-xs text-slate-500">
+                          source: {detail.case.source_ref.repository}/{detail.case.source_ref.path}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <form
+                      onSubmit={handleSave}
+                      className="space-y-4 border-t border-slate-800 pt-4"
+                    >
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-400">
+                        Edit case (rev {detail.desk.revision})
+                      </h3>
+
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 mb-1">
+                          Status
+                        </label>
+                        <select
+                          value={editStatus}
+                          onChange={(e) => setEditStatus(e.target.value)}
+                          className="w-full rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 focus:border-emerald-500 focus:outline-none"
+                        >
+                          <option value="open">open</option>
+                          <option value="closed">closed</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 mb-1">
+                          Status label
+                        </label>
+                        <input
+                          type="text"
+                          value={editStatusLabel}
+                          onChange={(e) => setEditStatusLabel(e.target.value)}
+                          placeholder="e.g. En attente de réponse du TA"
+                          className="w-full rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 focus:border-emerald-500 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-slate-400 mb-1">
+                          Next watch items
+                        </label>
+                        <div className="space-y-1.5 mb-2">
+                          {editNextWatch.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={item}
+                                onChange={(e) => {
+                                  const updated = [...editNextWatch];
+                                  updated[idx] = e.target.value;
+                                  setEditNextWatch(updated);
+                                }}
+                                className="flex-1 rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-100 focus:border-emerald-500 focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditNextWatch(editNextWatch.filter((_, i) => i !== idx))
+                                }
+                                className="rounded px-2 py-1 text-xs text-rose-400 hover:bg-slate-800"
+                                title="Remove item"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                          {editNextWatch.length === 0 && (
+                            <p className="text-xs text-slate-500 italic">No watch items</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newWatchInput}
+                            onChange={(e) => setNewWatchInput(e.target.value)}
+                            placeholder="Add watch item..."
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                if (newWatchInput.trim()) {
+                                  setEditNextWatch([...editNextWatch, newWatchInput.trim()]);
+                                  setNewWatchInput("");
+                                }
+                              }
+                            }}
+                            className="flex-1 rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-100 focus:border-emerald-500 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (newWatchInput.trim()) {
+                                setEditNextWatch([...editNextWatch, newWatchInput.trim()]);
+                                setNewWatchInput("");
+                              }
+                            }}
+                            className="rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-700"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+
+                      {saveError ? (
+                        <p className="rounded border border-rose-800 bg-rose-950/50 px-2 py-1 text-xs text-rose-300">
+                          Error: {saveError}
+                        </p>
+                      ) : null}
+
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          type="submit"
+                          disabled={isSaving}
+                          className="flex-1 rounded-lg bg-emerald-600 py-1.5 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+                        >
+                          {isSaving ? "Saving…" : "Save changes"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isSaving}
+                          onClick={() => {
+                            setIsEditing(false);
+                            setSaveError(null);
+                          }}
+                          className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               )}
             </section>

@@ -23,12 +23,18 @@ const pageSrc = fs.readFileSync(page, "utf8");
 assert.ok(pageSrc.includes("/api/interactions/desk"));
 assert.ok(pageSrc.includes("Sign in to John"));
 assert.ok(pageSrc.includes("Open cases only"));
+assert.ok(pageSrc.includes("handleSave"));
+assert.ok(pageSrc.includes('"PATCH"'));
+assert.ok(pageSrc.includes("Save changes"));
 
 const edgeSrc = fs.readFileSync(edge, "utf8");
 assert.ok(edgeSrc.includes("interaction_cases_desk"));
 assert.ok(edgeSrc.includes("missing_bearer_token"));
 assert.ok(edgeSrc.includes("NASA_PRINCIPAL_SUBJECT"));
 assert.ok(edgeSrc.includes("newSupabase(true)"));
+assert.ok(edgeSrc.includes("interaction_case_update_projected"));
+assert.ok(edgeSrc.includes("expected_revision"));
+assert.ok(edgeSrc.includes("revision_mismatch"));
 
 const appSrc = fs.readFileSync(app, "utf8");
 assert.ok(appSrc.includes('path="/interactions"'));
