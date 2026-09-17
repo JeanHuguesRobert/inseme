@@ -3,7 +3,7 @@
  * Refresh Agent JHN interaction_cases from public JHR Git/YAML packets (#77 quality).
  *
  * - Applies projection v2 migration
- * - Imports all packets/2026/*.yaml from JeanHuguesRobert
+ * - Imports all year folders under JeanHuguesRobert/interaction_packets/packets/
  * - On duplicate packet_id, prefers non-superseded current packet; reports skipped historical twin
  * - Re-projects from Git (resets prior Reality-Test column drift such as waiting_reply)
  */
@@ -25,13 +25,12 @@ import {
 const JHN_REF = "ndiysuhzmztatpxbkezn";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const jhrPacketsDir = path.resolve(
+const jhrPacketsRoot = path.resolve(
   root,
   "..",
   "JeanHuguesRobert",
   "interaction_packets",
-  "packets",
-  "2026"
+  "packets"
 );
 
 dotenv.config({ path: path.join(root, ".env"), quiet: true });
@@ -73,22 +72,30 @@ function applySqlFile(postgresUrl, relPath) {
   if (out.trim()) console.log(out.trim());
 }
 
+function listYamlFilesRecursive(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...listYamlFilesRecursive(full));
+    else if (entry.isFile() && entry.name.endsWith(".yaml")) out.push(full);
+  }
+  return out.sort();
+}
+
 function listYamlFiles() {
-  if (!fs.existsSync(jhrPacketsDir)) {
-    throw new Error(`JHR packets dir missing: ${jhrPacketsDir}`);
+  if (!fs.existsSync(jhrPacketsRoot)) {
+    throw new Error(`JHR packets dir missing: ${jhrPacketsRoot}`);
   }
   const parsed = [];
   const parseFailures = [];
-  for (const name of fs
-    .readdirSync(jhrPacketsDir)
-    .filter((n) => n.endsWith(".yaml"))
-    .sort()) {
-    const filePath = path.join(jhrPacketsDir, name);
+  for (const filePath of listYamlFilesRecursive(jhrPacketsRoot)) {
+    const relPath = path.relative(jhrPacketsRoot, filePath).replaceAll("\\", "/");
     const yamlText = fs.readFileSync(filePath, "utf8");
     try {
       const packet = parsePacketYaml(yamlText);
       parsed.push({
-        name,
+        name: path.basename(filePath),
+        relPath,
         filePath,
         yamlText,
         packet,
@@ -103,7 +110,7 @@ function listYamlFiles() {
       // Do not rewrite source packets merely to ingest; report and continue.
       parseFailures.push({
         reason: "yaml_parse_error",
-        file: name,
+        file: relPath,
         error: String(err.message || err).split("\n")[0],
       });
     }
@@ -200,7 +207,7 @@ async function main() {
   const env = assertJhn();
   console.log("=== #77 quality refresh → Agent JHN ===");
   console.log("Projection version:", PROJECTION_VERSION);
-  console.log("Packets dir:", jhrPacketsDir);
+  console.log("Packets dir:", jhrPacketsRoot);
 
   applySqlFile(
     env.postgresUrl,
@@ -224,7 +231,7 @@ async function main() {
 
   const imported = [];
   for (const file of current) {
-    const relPath = `interaction_packets/packets/2026/${file.name}`;
+    const relPath = `interaction_packets/packets/${file.relPath || file.name}`;
     const contentHash = `sha256:${createHash("sha256")
       .update(file.yamlText, "utf8")
       .digest("hex")}`;
