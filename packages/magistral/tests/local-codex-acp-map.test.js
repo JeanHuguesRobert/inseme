@@ -51,6 +51,6 @@ test("local Codex ACP map refuses a relative command or workspace", () => {
         },
         "win32"
       ),
-    /absolute isolated public directory/
+    /absolute path.*isolated public directory/
   );
 });
