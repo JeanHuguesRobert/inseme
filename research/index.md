@@ -181,3 +181,91 @@ _Fork to explore alternatives. Challenge via issues._
 - [COP Mission Stigmergy and Rational Exploration](cop_mission_stigmergy_exploration.md)
 - [Instance personnelle, démocratie et match non achetable](personal_instance_democracy_and_non_capturable_match.md)
 
+<!-- BEGIN_AUTO: index_catalog -->
+## Corpus catalog
+
+*Generated navigation. Editorial sections above remain human-maintained.*
+
+| Document | Role | Updated |
+|---|---|---|
+| [Add AGENTS.md for controlled multi-agent work on Inseme](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00005.md) | source | unknown |
+| [Add GitHub App webhook ingress and Digital Twin activity projection](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00029.md) | source | unknown |
+| [Add replay tests for cop-kernel Task Step Continuation state](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00007.md) | source | unknown |
+| [Agent JHN as coding-capable twin — claim and grounding (no design yet)](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00052.md) | source | unknown |
+| [Checkpoint — Mandated Agents, Harness and capability resolution](checkpoints/2026-08-24-mandated-agents-harness-capability-resolution.md) | source | 2026-08-24 |
+| [Clarify COP trace immutability, governed erasure, and stigmergic temperature](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00071.md) | source | unknown |
+| [Cogentia accounting architecture — general, statutory, analytical, budgetary, and reconciliation layers](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00039.md) | source | unknown |
+| [Cogentia Accounting Architecture — General, Statutory, Analytical, Budgetary, and Reconciliation Layers](cogentia_accounting_architecture.md) | source | 2026-08-08 |
+| [Consequential Rossignol Reality Test — provider-attested spend, mandate-bound budget, and non-silent reset](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00068.md) | source | unknown |
+| [COP 2.x — Trace-Centric architecture migration for the Reactive Corpus](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00061.md) | source | unknown |
+| [COP Composition: complete high-level combinators over Continuations](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00056.md) | source | unknown |
+| [COP Experimental Packet Kernel](cop_packet_kernel/README.md) | source | 2026-07-20 |
+| [COP Experimental Packet Kernel — Schemas, generated types and conformance vectors](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00021.md) | source | unknown |
+| [COP institutional profile: registers, publication, appeal and actor-neutral act provenance](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00040.md) | source | unknown |
+| [COP memory substrate: mneme profile and portable recovery scenarios](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00027.md) | source | unknown |
+| [COP Mneme Memory Profile](cop_mneme_memory_profile.md) | source | 2026-07-31 |
+| [COP Packet Closure — storage mobility, causal frontier, and governed effects](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00058.md) | source | unknown |
+| [COP pre-operational clean break: handlers, mandates, and execution identity](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00031.md) | source | unknown |
+| [COP Reality Test — minimal executable Cognitive Packet round trip](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00054.md) | source | unknown |
+| [COP reference runtime hardening: make cop-kernel the executable profile](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00018.md) | source | unknown |
+| [COP Reference Runtime Plan](cop_reference_runtime_plan.md) | source | 2026-07-29 |
+| [COP security regression family — reachable ≠ admissible ≠ authorized](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00066.md) | source | unknown |
+| [COP Trace Model — Trace as Unified Epistemic and Computational Substrate](cop_trace_model.md) | source | 2026-09-06 |
+| [COP Trace-Centric migration — contradiction review, migration hazards and conformance attacks](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00065.md) | source | unknown |
+| [COP Trace-Centric migration — kernel schemas, references and provenance relations](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00063.md) | source | unknown |
+| [COP Trace-Centric migration — Reactive Corpus impact, invalidation and temporal projection](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00064.md) | source | unknown |
+| [COP Trace-Centric migration — specification and normative architecture](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00062.md) | source | unknown |
+| [COP Zero Draft — Mission-Bearing Cognitive Packet Kernel](cop_zero_draft.md) | source | 2026-07-20 |
+| [COP Zero Draft — Refound COP around mission-bearing Cognitive Packets](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00020.md) | source | unknown |
+| [COP: add trace lifecycle conformance fixtures for governed erasure and reactivation](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00072.md) | source | unknown |
+| [COP: derive a real-time cognitive packet trace explorer](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00070.md) | source | unknown |
+| [COP: Exposure and Measured Risk for bounded experimentation and external effects](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00051.md) | source | unknown |
+| [COPKit — Fluidifier le copier/coller mandaté entre l’usager et le service](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00012.md) | source | unknown |
+| [Cross-link: 'Carte et territoire' clarification — artifacts/projections as maps (Cogentigrams) vs. territory (Cogentia / events / acts) in COP kernel and rational exploration](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00009.md) | source | unknown |
+| [Define COP implementation profiles distinct from COP Core](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00003.md) | source | unknown |
+| [Detect cognitive desire paths from COP traces before reinforcing routing](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00050.md) | source | unknown |
+| [DHITL — Pilotes de Corte](dhitl_pilots_corte.md) | source | 2026-07-29 |
+| [Discord Edge — BYOC Reality Test for Personal and Collective Twins](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00069.md) | source | unknown |
+| [Discord Edge — BYOC Reality Test for Personal and Collective Twins](discord_edge.md) | operational | 2026-09-06 |
+| [Evaluate dynamic Supabase-Storage-backed serving as an alternative to prebuilt static hosting](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00053.md) | source | unknown |
+| [Experiment: portable coding continuation across agents and Fractanet nodes](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00049.md) | source | unknown |
+| [Explore a COP and n8n adapter](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00004.md) | source | unknown |
+| [Explore a COP and n8n adapter](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00008.md) | source | unknown |
+| [Explore a sovereign confederation and diplomatic treaty profile for Fractanet](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00019.md) | source | unknown |
+| [Explore governed credential management skill for Agent JHN](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00043.md) | source | unknown |
+| [Factorize Personal Twin public intelligence core (John ⊇ Guide; OpenAI + MCP + CLI surfaces)](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00037.md) | source | unknown |
+| [feat(cop-core): exportable Trace Lifecycle Invariant verifier engine ('verifyTraceLogConformance')](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00073.md) | source | unknown |
+| [feat(cop-core): FractaLog degraded fallback spool monitor and forwarder ('fractalog spool status / drain')](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00074.md) | source | unknown |
+| [Fractanet Packet Attractor — proto implementation handoff (pause/resume)](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00013.md) | source | unknown |
+| [Git-backed personal Wiki: canonical revisions, Supabase projection and multi-instance Git service](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00032.md) | source | unknown |
+| [Govern instance configuration caches and periodic Vault hygiene](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00041.md) | source | unknown |
+| [Implement a native JHN Inseme instance with mandated cognitive sub-instances and hibernatable agent memory](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00017.md) | source | unknown |
+| [Implement append-only COP event persistence profile (Supabase + local spool)](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00028.md) | source | unknown |
+| [Implement Cogentia peer identity, membership, mandate enforcement, and inter-instance COP messaging](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00030.md) | source | unknown |
+| [Implement COP/Fractium Live profile: information-gravity routing for Fractanet attractors](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00014.md) | source | unknown |
+| [Implement Mandated Agent authority enforcement before consequential effects](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00055.md) | source | unknown |
+| [Implement the day-one COP/Accounting conformance kernel](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00025.md) | source | unknown |
+| [Implémenter les primitives COP nécessaires aux pilotes DHITL](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00024.md) | source | unknown |
+| [Improve Magistral routing with quota-aware fallback and provider error classification](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00006.md) | source | unknown |
+| [Interactions Registry + multichannel messaging as Personal Twin service](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00036.md) | source | unknown |
+| [JHN implementation convergence: primary conversational front door, governed delegation, usability gate, then FixBugsFirst](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00033.md) | source | unknown |
+| [LePP / pertitellu-corte — preview Fracta et migration Survey → Inseme Platform conforme COP](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00059.md) | source | unknown |
+| [Magistral: federated model catalog and OrcaRouter-Lite ideas review](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00010.md) | source | unknown |
+| [Module accounting durable — DB, plans comptables, bilans & analytique](cop_accounting_module_db_statements.md) | source | 2026-08-13 |
+| [Olé Olé — desirability sprint: useful before users, compelling on first open](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00048.md) | source | unknown |
+| [Olé Olé — invitation, progressive identity and install loop](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00046.md) | source | unknown |
+| [Olé Olé MVP — implement first vertical slices from crystallized spec](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00042.md) | source | unknown |
+| [Olé Olé portability spike — decouple runtime, build, hosting and ingress](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00047.md) | source | unknown |
+| [Personal Twin access policy: visitor classes + conversational agent enforcement (jhn)](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00035.md) | source | unknown |
+| [Physical Cognitive Packet and latent agent — Casa Mariani Immortelle demonstrator](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00022.md) | source | unknown |
+| [Préparer la plateforme cible pour Ophélia](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00011.md) | source | unknown |
+| [Provider-neutral usage accounting — packet budgets, reconciliation, and external spend safety nets](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00038.md) | source | unknown |
+| [Provisional Twins — hosted instance inheritance, shared instance_config and progressive promotion](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00057.md) | source | unknown |
+| [Resume OpenCode via Magistral integration](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00067.md) | source | unknown |
+| [Ritornu — créer la brique de retrofit patrimonial (squelette)](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00026.md) | source | unknown |
+| [Simplify COP Store under Occam's razor](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00016.md) | source | unknown |
+| [Strict Accounting / No Unaccounted Effects — adversarial audit and enforcement](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00045.md) | source | unknown |
+| [Study and extract Buzz agent harness patterns for Cogentia Twins](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00044.md) | source | unknown |
+| [User ↔ Personal Twin link on collective instances (email-verified claim)](../.cogentia/issues/jeanhuguesrobert-inseme/issue-00034.md) | source | unknown |
+
+<!-- END_AUTO: index_catalog -->
