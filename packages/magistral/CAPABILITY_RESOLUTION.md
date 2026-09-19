@@ -4,7 +4,7 @@ subtitle: Generic interface between COP orchestration and heterogeneous work cap
 author: Jean Hugues Noël Robert, baron Mariani
 date: '2026-08-23'
 last_modified_at: '2026-09-19'
-version: '0.4'
+version: '0.5'
 document_role: source
 document_kind: architecture-decision
 visibility: public
@@ -24,6 +24,7 @@ review:
   status: unreviewed
   reviewed_by: []
 changelog:
+  - v0.5 (2026-09-19) — adds quota-aware control-capacity governance: control-plane actions consume scarce provider/API/compute/attention resources and should preserve recovery reserve.
   - v0.4 (2026-09-19) — executable provider-neutral ExecutionBinding/ExecutionReceipt seam; asynchronous continuity rule: webhook fast path plus recovery polling/discovery with idempotent reconciliation.
   - v0.3 (2026-08-24) — use-led integration strategy; CapabilityProvider/ExecutionBinding/TransportAdapter layering; Rule of Two; ownership and portable-state versus portable-privilege distinctions.
   - v0.2 (2026-08-24) — explicit binding to COP Mandated Agent Security; authority-preserving resolution and rebinding requirements.
@@ -103,6 +104,12 @@ A Map binds capability offers to reachable Fractanet locations or providers. A M
 A Pilot resolves a `CapabilityRequirement` against available offers. Selection may consider required features, mandate-compatible scope, budget, cost bearer, latency, locality, availability, quality, confidence, privacy, trust domain, energy, jurisdiction, reversibility, session affinity and continuation portability.
 
 The Pilot may use fallback, competition, racing, quorum, or synthesis policies when appropriate. Selection is not authorization: every selected path remains bounded by the exact authority chain of the work.
+
+Control-plane capabilities are themselves budgeted resources. Selection SHOULD account for provider quota, API rate limit, workflow/concurrency allowance, polling cost, retry amplification, human attention, and the need to preserve recovery capacity. The existence of a powerful control surface is not by itself a reason to use it.
+
+A lower-cost admissible local path SHOULD normally be preferred when it satisfies the requirement. Additional polling, retries, redundant execution, or remote control SHOULD be justified by expected marginal value, risk reduction, deadline or consequence.
+
+> **Do not spend scarce recovery capacity on control activity whose expected value does not justify its marginal cost and exposure.**
 
 ## 4. CapabilityRequirement
 
@@ -392,7 +399,7 @@ Recovery observation MUST preserve these invariants:
 - duplicate identical terminal observations MUST NOT duplicate effects;
 - conflicting observations MUST be preserved as reconciliation evidence rather than overwritten;
 - polling workers SHOULD use a lease, optimistic lock, or equivalent single-writer discipline;
-- polling cadence SHOULD account for consequence, deadline, time-to-option-loss, provider rate limits, cost, and energy;
+- polling cadence SHOULD account for consequence, deadline, time-to-option-loss, provider rate limits, quota scarcity, cost, energy, and the need to preserve a recovery reserve;
 - recovery state MUST survive the process or HandlerInstance that initiated the work.
 
 Compact rule:
