@@ -1008,6 +1008,8 @@ Append operations MUST ensure that:
 
 - COP does **not** require global ordering across Topics.
 - COP does **not** require consensus across nodes (although implementations MAY use it).
+- Physical co-placement of several Topics in one database, process, log service, or provider MUST NOT by itself create a semantic global order.
+- Reconstructing one Topic's history MUST NOT require replaying unrelated Topics unless an explicit cross-topic dependency requires them.
 
 ## 3.2 Event Causality (parentEventIds)
 
@@ -1031,6 +1033,8 @@ If Event `E` lists Event `P` in its `parentEventIds`, then:
 ### 3.2.2 Cross-topic Causality Graph
 
 Taken together, all `parentEventIds` define a **global partial order** of Events across Topics.
+
+Here, **global** means logically spanning the explicitly connected Events. It does **not** require a single globally owned log, one physical Store, or replay of unrelated Topics. The causal graph may be reconstructed from local histories plus explicit references.
 
 This forms a **Directed Acyclic Graph (DAG)**:
 
@@ -1085,7 +1089,7 @@ A COP-compliant implementation MUST be able to produce a replay order that:
 - respects all topicSeq intra-topic order,
 - respects all parentEventIds causal dependencies.
 
-A topological sort of the global DAG (when needed) satisfies this.
+A topological sort of the relevant causal subgraph (when needed) satisfies this. A full-system topological sort is not required when the requested projection or continuation is closed over a smaller explicit dependency set.
 
 ### 3.3.3 Projector Requirements
 
@@ -1479,6 +1483,8 @@ Implementations MAY provide:
 - targeted invalidation for affected assertions via `ReactiveDependencyGraph`,
 - replay from checkpoint or snapshot without violating replay semantics.
 
+Partial rebuild SHOULD prefer the smallest sufficient authoritative source set. Unrelated Topics or local histories SHOULD NOT be replayed merely because they share a physical Store. Cross-locality expansion is required only when the target state declares an explicit dependency on material outside the current source set.
+
 ### 4.6.3 Incremental Replay
 
 After a crash:
@@ -1496,7 +1502,8 @@ Implementations MAY:
 But MUST ensure:
 
 - per-topic sequentiality,
-- integrity of cross-topic causal references (parentEventIds).
+- integrity of cross-topic causal references (parentEventIds),
+- independent intelligibility of unrelated Topic histories.
 
 ### 4.6.5 Impact on Handlers
 
