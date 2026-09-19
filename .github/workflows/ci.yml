@@ -26,6 +26,11 @@ jobs:
           node-version: 24
           cache: "pnpm"
 
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
