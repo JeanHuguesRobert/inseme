@@ -54,7 +54,18 @@ test("a designated continuation resolves and invokes the matching ACP runtime", 
     },
   ]);
   assert.equal(result.capability_resolution.offer_id, "capability:local:codex-acp");
+  assert.equal(result.capability_resolution.provider_ref, "provider:codex-acp");
   assert.equal(result.capability_resolution.context_inheritance, "ambient-host");
+  assert.equal(result.execution_binding.schema, "magistral.execution-binding/v1");
+  assert.equal(
+    result.execution_binding.requirement_ref,
+    "continuation:cont-capability-1:capability_request"
+  );
+  assert.equal(result.execution_binding.provider_ref, "provider:codex-acp");
+  assert.equal(result.execution_binding.provider_execution_id, null);
+  assert.equal(result.execution_receipt.schema, "magistral.execution-receipt/v1");
+  assert.equal(result.execution_receipt.status, "completed");
+  assert.equal(result.execution_receipt.terminal, true);
   assert.deepEqual(result.continuations, []);
 });
 
@@ -100,6 +111,11 @@ test("COPScheduler crosses the continuation boundary before invoking ACP", async
     receipt.execution.result.capability_resolution.runtime_id,
     "runtime:local:codex-acp"
   );
+  assert.equal(
+    receipt.execution.result.execution_receipt.binding.requirement_ref,
+    `continuation:${scheduledContinuation.continuationId}:capability_request`
+  );
+  assert.equal(receipt.execution.result.execution_receipt.status, "completed");
 });
 
 test("JHN can receive ACP assistance only through a continuation-backed handler", async () => {
@@ -119,5 +135,37 @@ test("JHN can receive ACP assistance only through a continuation-backed handler"
   assert.equal(handler.id, "handler:local:codex-acp");
   assert.equal(effect.text, "review receipt");
   assert.equal(effect.context_inheritance, "ambient-host");
+  assert.equal(effect.execution_receipt.status, "completed");
+  assert.equal(effect.execution_receipt.binding.provider_ref, "provider:codex-acp");
   assert.match(effect.continuation_id, /^[0-9a-f-]{36}$/);
+});
+
+
+test("provider-native execution identity from a runtime is normalized into the receipt", async () => {
+  const catalog = createCapabilityCatalog({ offers: [codexAcpCapabilityOffer()] });
+  const runtimeClient = createHostRuntimeClient({
+    runtimes: [codexAcpRuntime({ command: "codex-acp.cmd" })],
+  });
+  runtimeClient.invoke = async () => ({
+    text: "async-like result",
+    status: "completed",
+    provider_execution_id: "native-execution-77",
+    result_refs: ["artifact:result:77"],
+    log_refs: ["artifact:log:77"],
+  });
+
+  const resolver = createMagistralCapabilityResolver({
+    capabilityCatalog: catalog,
+    hostRuntimeClient: runtimeClient,
+  });
+  const handler = await resolver(MAGISTRAL_CAPABILITY_RESOLUTION, capabilityContinuation());
+  const result = await handler.execute();
+
+  assert.equal(result.execution_binding.provider_execution_id, "native-execution-77");
+  assert.equal(
+    result.execution_receipt.binding.provider_execution_id,
+    "native-execution-77"
+  );
+  assert.deepEqual(result.execution_receipt.result_refs, ["artifact:result:77"]);
+  assert.deepEqual(result.execution_receipt.log_refs, ["artifact:log:77"]);
 });
