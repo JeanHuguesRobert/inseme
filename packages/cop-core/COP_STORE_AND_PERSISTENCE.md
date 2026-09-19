@@ -5,8 +5,9 @@ author: Jean Hugues Noël Robert, baron Mariani
 affiliation: Institut Mariani / C.O.R.S.I.C.A.
 license: CC BY-SA 4.0
 date: '2026-07-14'
-version: '0.2'
+version: '0.3'
 status: working-source — human validation required
+last_modified_at: '2026-09-19'
 document_role: source
 document_kind: protocol-architecture-note
 visibility: public
@@ -19,6 +20,7 @@ related_documents:
   - packages/cop-core/COP_PERSISTENCE.md
   - packages/cop-core/src/types.ts
   - packages/cop-kernel/src/storage.js
+  - https://github.com/JeanHuguesRobert/cogentia/blob/main/research/locality_principle.md
 tags:
   - cop
   - store
@@ -297,15 +299,48 @@ one interface
 ≠ one database
 ≠ one provider
 ≠ one machine
+≠ one global locality
 ```
 
 The adapter must report failures honestly. A request for durable storage must not silently fall back to volatile memory and still claim equivalent success.
+
+### 7.1 Locality invariant
+
+COPStore is a **logical persistence contract**. It does not imply one global physical or semantic locality.
+
+A conformant deployment MAY expose several local stores, placements or cooperating adapters while preserving the same core primitives. Logical locality and physical placement remain distinct.
+
+The Store design SHOULD follow the Corpus [Locality Principle](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/locality_principle.md):
+
+> **Keep state, history, interpretation, authority and computation within the smallest sufficient locality. Cross locality boundaries by explicit reference or bounded projection; centralize or replicate only when a demonstrated invariant requires it.**
+
+In particular:
+
+~~~text
+local source authority
++ explicit cross-locality references
++ reconstructible global discovery/projections
+~~~
+
+is preferred to:
+
+~~~text
+global copy becomes the only authoritative state
+~~~
+
+when the domain does not require global ownership.
+
+Loss of a global index, graph or cache SHOULD make discovery slower or less convenient; it SHOULD NOT destroy the only surviving authoritative knowledge it indexed.
+
+Global ordering MUST NOT be introduced merely because several local streams share one physical database. Cross-object order or correlation is justified only by an explicit domain invariant.
 
 ---
 
 ## 8. Fractanet without premature ontology
 
 Fractanet may later add locality, federation, replication, discovery and governed domains.
+
+These capabilities SHOULD preserve local intelligibility and local authority: federation makes local state discoverable or composable; it does not silently turn a global view into the owner of that state.
 
 For now these should be explored as capabilities over the same primitives:
 
@@ -352,6 +387,8 @@ one Mission represented only by Events and Artifacts
 ```
 
 Only after this experiment should another interface or entity be added.
+
+A second, locality-focused experiment SHOULD then place the authoritative source material in one locality and use a cold handler in another locality to obtain only a bounded MemoryView or View through explicit references. The experiment should verify that no hidden handler memory or global cache is required for correctness, and that replication is unnecessary unless a measured requirement justifies it.
 
 ---
 
