@@ -3,8 +3,8 @@ title: Magistral Capability Resolution Boundary
 subtitle: Generic interface between COP orchestration and heterogeneous work capabilities
 author: Jean Hugues Noël Robert, baron Mariani
 date: '2026-08-23'
-last_modified_at: '2026-08-24'
-version: '0.3'
+last_modified_at: '2026-09-19'
+version: '0.4'
 document_role: source
 document_kind: architecture-decision
 visibility: public
@@ -24,6 +24,7 @@ review:
   status: unreviewed
   reviewed_by: []
 changelog:
+  - v0.4 (2026-09-19) — executable provider-neutral ExecutionBinding/ExecutionReceipt seam; asynchronous continuity rule: webhook fast path plus recovery polling/discovery with idempotent reconciliation.
   - v0.3 (2026-08-24) — use-led integration strategy; CapabilityProvider/ExecutionBinding/TransportAdapter layering; Rule of Two; ownership and portable-state versus portable-privilege distinctions.
   - v0.2 (2026-08-24) — explicit binding to COP Mandated Agent Security; authority-preserving resolution and rebinding requirements.
 license: CC BY-SA 4.0
@@ -352,6 +353,53 @@ A fork MAY reuse validated conversation or work state. It MUST NOT automatically
 Any authority required after migration or fork MUST be re-derived from the governing Mandate and, where local privilege is involved, explicitly rebound.
 
 This extends the anti-capture rule from vendor portability to runtime composition itself.
+
+
+## 19.1 Asynchronous execution continuity and recovery polling
+
+An asynchronous provider callback or webhook is useful for low-latency completion, but it MUST NOT be the only continuity path.
+
+The stable model is:
+
+```text
+durable logical requirement
+→ durable ExecutionBinding
+→ provider execution
+→ webhook / callback fast path
+        or
+  recovery observation path
+→ idempotent ExecutionReceipt
+→ Continuation resolution
+```
+
+If the provider-native execution identity is already known, a cold recovery worker MAY re-observe the provider directly:
+
+```text
+unresolved binding(provider_execution_id)
+→ lease
+→ observe provider
+→ running: reschedule with bounded backoff
+→ terminal: materialize Receipt
+```
+
+If the provider-native identity was not returned synchronously, the provider adapter MUST preserve enough durable correlation to rediscover it. The generic protocol does not yet standardize a `discovery_ref`; `requirement_ref` plus adapter-owned durable discovery state SHOULD be tested in at least two real providers before another core field is promoted.
+
+Recovery observation MUST preserve these invariants:
+
+- callback delivery failure is not execution failure;
+- provider observation failure is not proof that the execution failed;
+- callback and polling MAY race but MUST converge idempotently;
+- duplicate identical terminal observations MUST NOT duplicate effects;
+- conflicting observations MUST be preserved as reconciliation evidence rather than overwritten;
+- polling workers SHOULD use a lease, optimistic lock, or equivalent single-writer discipline;
+- polling cadence SHOULD account for consequence, deadline, time-to-option-loss, provider rate limits, cost, and energy;
+- recovery state MUST survive the process or HandlerInstance that initiated the work.
+
+Compact rule:
+
+> **Webhook is the fast path. Polling is the recovery path. Durable correlation is continuity. Idempotent reconciliation is convergence.**
+
+See Inseme issue #88 for the first implementation-oriented Reality Test.
 
 ## 20. Evidence-driven evolution
 
