@@ -9,6 +9,11 @@
  */
 import { isAbsolute } from "node:path";
 import { COPBus, COPScheduler, createContinuationDescriptor } from "@inseme/cop-kernel";
+import {
+  attachProviderExecution,
+  createExecutionBinding,
+  createExecutionReceipt,
+} from "@inseme/magistral/execution";
 
 const MAGISTRAL_CAPABILITY_RESOLUTION = "magistral:capability-resolution";
 
@@ -39,13 +44,41 @@ export function createMagistralCapabilityResolver({ capabilityCatalog, hostRunti
 
     return {
       async execute() {
+        let executionBinding = createExecutionBinding({
+          requirement_ref: request.requirement_ref || `continuation:${continuation.continuationId}:capability_request`,
+          offer_id: offer.id,
+          runtime_id: offer.runtime_id,
+          handler_instance_ref: offer.handler_instance_ref,
+          execution_surface: offer.execution_surface,
+          provider_ref: offer.provider_ref,
+        });
+
         const output = await hostRuntimeClient.invoke({
           runtime_id: offer.runtime_id,
           prompt: request.prompt,
           working_directory: request.working_directory,
         });
+
+        if (output?.provider_execution_id) {
+          executionBinding = attachProviderExecution(
+            executionBinding,
+            String(output.provider_execution_id)
+          );
+        }
+
+        const executionReceipt = createExecutionReceipt({
+          binding: executionBinding,
+          status: output?.status || "completed",
+          artifact_refs: output?.artifact_refs || [],
+          result_refs: output?.result_refs || [],
+          log_refs: output?.log_refs || [],
+          error: output?.error || null,
+        });
+
         return {
           capability_resolution: publicResolution(offer),
+          execution_binding: executionBinding,
+          execution_receipt: executionReceipt,
           output,
           continuations: [],
         };
@@ -94,6 +127,8 @@ export function createMagistralAcpContinuationHandler({
         text: String(output?.text || ""),
         context_inheritance: receipt.execution?.result?.capability_resolution?.context_inheritance,
         capability_resolution: receipt.execution?.result?.capability_resolution,
+        execution_binding: receipt.execution?.result?.execution_binding,
+        execution_receipt: receipt.execution?.result?.execution_receipt,
         continuation_id: continuation.continuationId,
       };
     },
@@ -136,6 +171,7 @@ function publicResolution(offer) {
     runtime_id: offer.runtime_id,
     host_ref: offer.host_ref,
     handler_instance_ref: offer.handler_instance_ref,
+    provider_ref: offer.provider_ref,
     execution_surface: offer.execution_surface,
     context_inheritance: offer.context_inheritance,
     dependencies: [...offer.dependencies],
