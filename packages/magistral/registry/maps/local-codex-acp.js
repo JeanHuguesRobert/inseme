@@ -9,9 +9,12 @@ export function createLocalCodexAcpMap(env = process.env, platform = process.pla
   const configuredCommand = String(env.CODEX_ACP_COMMAND || "").trim();
   const cwd = String(env.MAGISTRAL_CODEX_ACP_WORKSPACE || "").trim();
   const tier = String(env.MAGISTRAL_CODEX_ACP_TIER || "fractavolta-guide").trim();
+  const pathApi = pathFor(platform);
   if (!configuredCommand) throw new Error("CODEX_ACP_COMMAND is required for map local-codex-acp");
-  if (!cwd || !path.isAbsolute(cwd)) {
-    throw new Error("MAGISTRAL_CODEX_ACP_WORKSPACE must be an absolute isolated public directory");
+  if (!cwd || !pathApi.isAbsolute(cwd)) {
+    throw new Error(
+      "MAGISTRAL_CODEX_ACP_WORKSPACE must be an absolute path to an isolated public directory"
+    );
   }
   if (!tier) throw new Error("MAGISTRAL_CODEX_ACP_TIER must not be empty");
 
@@ -52,15 +55,16 @@ function createAcpEnvironment(env) {
 }
 
 function resolveLauncher(command, platform) {
-  if (!path.isAbsolute(command)) throw new Error("CODEX_ACP_COMMAND must be an absolute path");
+  const pathApi = pathFor(platform);
+  if (!pathApi.isAbsolute(command)) throw new Error("CODEX_ACP_COMMAND must be an absolute path");
   if (platform !== "win32" || !/\.cmd$/i.test(command)) return { command, args: [] };
   // Deno owns this direct Node process.  Avoid the npm .cmd wrapper, which
   // otherwise leaves a child process outside the pilot's lifecycle.
   return {
     command: process.execPath,
     args: [
-      path.join(
-        path.dirname(command),
+      pathApi.join(
+        pathApi.dirname(command),
         "node_modules",
         "@agentclientprotocol",
         "codex-acp",
@@ -69,6 +73,10 @@ function resolveLauncher(command, platform) {
       ),
     ],
   };
+}
+
+function pathFor(platform) {
+  return platform === "win32" ? path.win32 : path.posix;
 }
 
 function boundedTimeout(value, fallback) {
