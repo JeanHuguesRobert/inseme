@@ -3,7 +3,7 @@ canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/packages/cop
 author: Jean Hugues Noël Robert, baron Mariani
 affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
 license: CC BY-SA 4.0
-last_modified_at: 2026-09-08T00:00:00.000Z
+last_modified_at: 2026-09-19T00:00:00.000Z
 last_stamped_at: 2026-06-01T00:00:00.000Z
 language: en
 date: '2026-09-15'
@@ -127,6 +127,27 @@ No critical state MAY live exclusively in:
 Projections, materialized views, indexes, and caches are derived and non-authoritative
 (`is_authoritative: false`, `is_derived: true`). If a derived view cannot be reconstructed
 from authoritative source traces and policy, it is not valid COP state.
+
+### 4.1 Locality and explicit crossing
+
+COP follows the Corpus Locality Principle without requiring a new `Locality` protocol entity.
+
+A conformant implementation MUST preserve these properties:
+
+- a local history MUST remain reconstructible without replaying unrelated histories;
+- any external dependency required for correctness MUST be explicit and addressable;
+- physical co-placement in one database, process, or provider MUST NOT create hidden global ordering;
+- a global index, graph, registry view, or cache MUST NOT become the sole surviving authority for local source state;
+- moving continuity state or references MUST NOT silently widen authority.
+
+Cross-object or cross-topic correlation MAY exist, but it MUST be represented explicitly through stable references such as `parent_event_ids`, correlation identifiers, TraceRefs, ArtifactRefs, or equivalent profile-defined links.
+
+The governing rule is:
+
+> **Keep history as local as the thing whose history it is; introduce global ordering or correlation only when a real cross-object invariant requires it.**
+
+See the canonical Corpus Locality Principle:
+https://github.com/JeanHuguesRobert/cogentia/blob/main/research/locality_principle.md
 
 ---
 
