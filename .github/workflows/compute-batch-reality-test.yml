@@ -7,6 +7,8 @@ on:
     paths:
       - ".github/workflows/compute-batch-reality-test.yml"
   workflow_dispatch:
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: read
@@ -14,6 +16,12 @@ permissions:
 
 jobs:
   compute-batch:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.number == 85 &&
+       contains(github.event.comment.body, '/compute-batch inseme-85-v1'))
     name: compute.batch / Magistral receipt Reality Test
     runs-on: ubuntu-latest
     env:
