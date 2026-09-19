@@ -1,0 +1,102 @@
+name: Compute Batch Reality Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/compute-batch-reality-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  compute-batch:
+    name: compute.batch / Magistral receipt Reality Test
+    runs-on: ubuntu-latest
+    env:
+      REQUIREMENT_REF: requirement:compute-batch:inseme-85:v1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build COP Core
+        run: pnpm --filter @inseme/cop-core run build
+
+      - name: Validate generic compute seam
+        id: validate
+        continue-on-error: true
+        run: |
+          pnpm --filter @inseme/magistral run check
+          pnpm --filter @inseme/magistral test
+          node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js
+
+      - name: Publish durable execution callback
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VALIDATION_OUTCOME: ${{ steps.validate.outcome }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          if [ "$VALIDATION_OUTCOME" = "success" ]; then
+            RECEIPT_STATUS="completed"
+          else
+            RECEIPT_STATUS="failed"
+          fi
+
+          RUN_URL="$SERVER_URL/$REPOSITORY/actions/runs/$RUN_ID"
+
+          BODY=$(cat <<EOF
+## compute.batch callback
+
+```yaml
+execution_binding:
+  schema: magistral.execution-binding/v1
+  requirement_ref: "$REQUIREMENT_REF"
+  provider_ref: "provider:github-actions"
+  provider_execution_id: "$RUN_ID"
+  execution_surface: "batch"
+  runtime_id: "runtime:github-actions:ubuntu-latest"
+  handler_instance_ref: "handler:github-actions:$RUN_ID"
+
+execution_receipt:
+  schema: magistral.execution-receipt/v1
+  status: "$RECEIPT_STATUS"
+  terminal: true
+  result_refs:
+    - "git:$SHA"
+  log_refs:
+    - "github-actions-run:$RUN_ID"
+  error: null
+```
+
+Provider execution: $RUN_URL  
+Run attempt: $RUN_ATTEMPT
+EOF
+          )
+
+          gh api "repos/$REPOSITORY/issues/85/comments" -f body="$BODY"
+
+      - name: Preserve failure as workflow conclusion
+        if: steps.validate.outcome != 'success'
+        run: exit 1
