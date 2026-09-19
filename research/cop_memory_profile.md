@@ -16,8 +16,12 @@ classification_source: cogentia.js
 classification_version: '1'
 classification_rule: working-note
 classification_confidence: medium
-last_modified_at: '2026-09-08'
+last_modified_at: '2026-09-19'
 update_policy: UP-DEFAULT-REVIEWED
+related_documents:
+  - https://github.com/JeanHuguesRobert/cogentia/blob/main/research/locality_principle.md
+  - https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/fractacarta.md
+  - ../packages/cop-core/COP_STORE_AND_PERSISTENCE.md
 review:
   status: unreviewed
   reviewed_by: []
@@ -114,6 +118,32 @@ keep execution, working state and the traces needed by that execution close to
 the activity that uses them. Remote calls, replication and global publication
 remain deliberate boundary crossings: they should serve a needed capability,
 coordination or preservation purpose rather than be the default placement.
+
+This profile adopts the Corpus [Locality Principle](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/locality_principle.md):
+
+> **Keep state, history, interpretation, authority and computation within the smallest sufficient locality. Cross locality boundaries by explicit reference or bounded projection; centralize or replicate only when a demonstrated invariant requires it.**
+
+Locality is not physical placement. A logical locality is the smallest domain in which something can be correctly understood, governed or continued without implicit external dependency. One logical locality may have several physical placements, and one physical store may host several localities.
+
+For a memory request or action `Q`, use the provisional criterion:
+
+~~~text
+MSL(Q) = Minimum Sufficient Locality for Q
+~~~
+
+Sufficiency depends on task, mandate, risk/exposure, privacy, cost, latency, freshness, epistemic requirements and available capabilities.
+
+A locality is sufficiently closed for an operation when every dependency required for correctness is either local or an explicit external reference. Cross-locality expansion SHOULD therefore be observable rather than hidden behind a global cache or vendor session.
+
+Preferred escalation is:
+
+~~~text
+local read
+→ local projection
+→ explicit cross-locality reference
+→ remote bounded projection
+→ replication only when justified
+~~~
 
 ## 5. Temperature
 
@@ -310,6 +340,16 @@ It is not the memory itself.
 
 It is a task-relative, cost-aware, confidence-aware and privacy-aware window into memory.
 
+Under the Locality Principle, a useful MemoryView should be treated as an approximation of the bounded representation of the **Minimum Sufficient Locality** for the current action:
+
+~~~text
+MemoryView(Q)
+≈
+bounded representation of MSL(Q)
+~~~
+
+This is a design objective, not a claim that one unique mathematical MSL always exists. Retrieval SHOULD seek the smallest cognitively sufficient neighborhood and expose paths for explicit expansion when the view is insufficient, rather than maximizing globally accumulated context.
+
 A useful `MemoryView` should declare:
 
 - why the trace is returned;
@@ -485,4 +525,6 @@ Next work:
 5. integrate with existing COP audit and continuation mechanisms;
 6. define schemas for NamedResource, ResourceState, TemporalView and StateMap;
 7. specify bitemporal access policies for civic and legal memory;
-8. define schemas for MemoryView, access policy, cost policy and sufficiency profiles.
+8. define schemas for MemoryView, access policy, cost policy and sufficiency profiles;
+9. run a cold-handler locality Reality Test: retain source knowledge in Locality A, resolve a bounded MemoryView from Locality B, expand only through explicit references/projections, and verify that loss of global caches impairs discovery without destroying source knowledge;
+10. determine from that test whether Locality/MSL require protocol fields or remain projection/query policy.
