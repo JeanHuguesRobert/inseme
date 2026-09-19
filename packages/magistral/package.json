@@ -8,7 +8,8 @@
     ".": "./src/router.js",
     "./router": "./src/router.js",
     "./acp": "./src/acp.js",
-    "./capabilities": "./src/capabilities.js",\n    "./execution": "./src/execution.js"
+    "./capabilities": "./src/capabilities.js",
+    "./execution": "./src/execution.js"
   },
   "bin": {
     "magistral": "./bin/magistral.js"
