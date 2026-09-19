@@ -4,7 +4,7 @@ subtitle: Generic interface between COP orchestration and heterogeneous work cap
 author: Jean Hugues Noël Robert, baron Mariani
 date: '2026-08-23'
 last_modified_at: '2026-09-19'
-version: '0.5'
+version: '0.6'
 document_role: source
 document_kind: architecture-decision
 visibility: public
@@ -24,6 +24,7 @@ review:
   status: unreviewed
   reviewed_by: []
 changelog:
+  - v0.6 (2026-09-19) — records GitHub Issues + Actions + callbacks/polling as a deliberately replaceable control-substrate profile for governed Continuations; GitHub must never own logical continuity.
   - v0.5 (2026-09-19) — adds quota-aware control-capacity governance: control-plane actions consume scarce provider/API/compute/attention resources and should preserve recovery reserve.
   - v0.4 (2026-09-19) — executable provider-neutral ExecutionBinding/ExecutionReceipt seam; asynchronous continuity rule: webhook fast path plus recovery polling/discovery with idempotent reconciliation.
   - v0.3 (2026-08-24) — use-led integration strategy; CapabilityProvider/ExecutionBinding/TransportAdapter layering; Rule of Two; ownership and portable-state versus portable-privilege distinctions.
@@ -407,6 +408,56 @@ Compact rule:
 > **Webhook is the fast path. Polling is the recovery path. Durable correlation is continuity. Idempotent reconciliation is convergence.**
 
 See Inseme issue #88 for the first implementation-oriented Reality Test.
+
+
+## 19.2 GitHub as an opportunistic, replaceable control substrate
+
+The current GitHub integration demonstrates a particularly low-friction control substrate:
+
+~~~text
+GitHub Issue / comment
+→ durable coordination point or control projection
+→ GitHub Actions / CI
+→ temporary execution capacity
+→ provider-native run identity
+→ webhook / callback fast path
+        or
+  recovery polling / discovery
+→ ExecutionReceipt
+→ governed COP Continuation resumes
+~~~
+
+This profile is useful precisely because it composes already-available primitives:
+
+- Issues and comments provide durable, human-visible coordination and correlation;
+- repository state provides versioned code, task logic and provenance;
+- Actions provides disposable remote execution;
+- provider-native run IDs provide physical execution identity;
+- callbacks/webhooks provide low-latency completion signals;
+- polling/discovery provides recovery when callback delivery fails;
+- COP Continuations, Mandates and Receipts preserve logical continuity and authority.
+
+However, none of these GitHub objects is the logical computation itself.
+
+A GitHub Issue is a convenient control-plane rendezvous and projection, not a required COP primitive. A workflow run is a temporary HandlerInstance, not the owner of the Mission or Continuation. A webhook is a fast notification path, not the sole continuity path.
+
+The anti-capture requirement is strict:
+
+> **If GitHub becomes unavailable, changes its quotas, revokes an API, or disappears as a usable provider, the logical work must remain reconstructible and continuable elsewhere.**
+
+Therefore:
+
+- canonical task logic SHOULD remain in portable repository or Artifact form rather than only inside provider UI state;
+- provider-native execution IDs MUST remain references inside provider-neutral bindings/receipts;
+- no correctness-critical continuation state may exist only inside a GitHub run, Issue, comment, check, or webhook delivery;
+- alternative handlers MAY satisfy the same capability requirement without changing the logical requirement;
+- recovery procedures SHOULD be testable against provider loss, not only provider failure.
+
+The present GitHub profile is thus evidence for the abstraction, not a reason to shape the abstraction around GitHub.
+
+Compact formulation:
+
+> **Use GitHub while it is useful. Never require GitHub in order to continue the work.**
 
 ## 20. Evidence-driven evolution
 
