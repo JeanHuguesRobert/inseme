@@ -4,14 +4,14 @@
   "main": "src/index.js",
   "type": "module",
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
-    "leaflet": "^1.9.4",
-    "react-leaflet": "^4.2.1",
-    "swr": "^2.2.5",
-    "geoportal-extensions-leaflet": "^2.4.3",
+    "@inseme/cop-host": "workspace:*",
     "@inseme/ui": "workspace:*",
-    "@inseme/cop-host": "workspace:*"
+    "geoportal-extensions-leaflet": "^2.4.3",
+    "leaflet": "^1.9.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-leaflet": "^4.2.1",
+    "react-router-dom": "^6.30.6",
+    "swr": "^2.5.1"
   }
 }

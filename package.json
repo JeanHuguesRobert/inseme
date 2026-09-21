@@ -43,17 +43,17 @@
     "jhn:interactions:refresh": "node scripts/refresh-interaction-cases-jhn.js"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "eslint": "^9.39.2",
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.26",
-    "glob": "^11.0.1",
+    "glob": "^11.1.0",
     "globals": "^15.15.0",
-    "lint-staged": "^16.2.7",
-    "prettier": "^3.7.4",
-    "turbo": "^2.7.3",
-    "undici": "^7.18.2"
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.9.8",
+    "turbo": "^2.11.2",
+    "undici": "^7.29.1"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -63,8 +63,8 @@
     "*.css": "node scripts/prettier-staged.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.90.1",
-    "dotenv": "^17.2.3",
-    "node-fetch": "^3.0.0"
+    "@supabase/supabase-js": "^2.116.0",
+    "dotenv": "^17.4.2",
+    "node-fetch": "^3.3.2"
   }
 }

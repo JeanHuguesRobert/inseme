@@ -19,8 +19,8 @@
   },
   "dependencies": {
     "kokoro-js": "^1.2.1",
-    "node-fetch": "^3.0.0",
-    "onnxruntime-node": "^1.23.2",
-    "ws": "^8.19.0"
+    "node-fetch": "^3.3.2",
+    "onnxruntime-node": "^1.30.0",
+    "ws": "^8.21.3"
   }
 }

@@ -5,10 +5,10 @@
   "main": "src/index.js",
   "type": "module",
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@inseme/ui": "workspace:*",
+    "@inseme/brique-kudocracy": "workspace:*",
     "@inseme/cop-host": "workspace:*",
-    "@inseme/brique-kudocracy": "*"
+    "@inseme/ui": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

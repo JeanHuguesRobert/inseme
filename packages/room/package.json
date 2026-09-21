@@ -11,19 +11,19 @@
     "./utils/*": "./utils/*.js"
   },
   "dependencies": {
-    "@jitsi/react-sdk": "^1.0.0",
-    "@inseme/ophelia": "workspace:*",
-    "@inseme/kudocracy": "workspace:*",
+    "@inseme/brique-cyrnea": "workspace:*",
     "@inseme/cop-host": "workspace:*",
-    "lucide-react": "^0.562.0",
-    "@inseme/ui": "*",
-    "@inseme/brique-cyrnea": "*"
+    "@inseme/kudocracy": "workspace:*",
+    "@inseme/ophelia": "workspace:*",
+    "@inseme/ui": "workspace:*",
+    "@jitsi/react-sdk": "^1.4.4",
+    "lucide-react": "^0.562.0"
   },
   "peerDependencies": {
+    "@supabase/supabase-js": ">=2.0.0",
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0",
-    "react-router-dom": ">=6.20.0",
-    "@supabase/supabase-js": ">=2.0.0"
+    "react-router-dom": ">=6.20.0"
   },
   "license": "MIT"
 }

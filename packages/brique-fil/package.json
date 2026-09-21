@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "react": "^18.3.1",
-    "react-router-dom": "^6.26.1",
+    "@inseme/cop-host": "workspace:*",
     "@inseme/ui": "workspace:*",
-    "@inseme/cop-host": "workspace:*"
+    "react": "^18.3.1",
+    "react-router-dom": "^6.30.6"
   }
 }

@@ -15,11 +15,11 @@
     "react-router-dom": ">=6.20.0"
   },
   "dependencies": {
+    "@inseme/cop-host": "workspace:*",
+    "dompurify": "^3.4.15",
     "lucide-react": "^0.562.0",
+    "marked": "^17.0.6",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1",
-    "marked": "^17.0.1",
-    "dompurify": "^3.3.1",
-    "@inseme/cop-host": "*"
+    "remark-gfm": "^4.0.1"
   }
 }
