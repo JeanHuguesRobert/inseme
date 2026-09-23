@@ -7,7 +7,7 @@ affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, C
 date: "2026-09-23"
 last_modified_at: "2026-09-23"
 last_stamped_at: "unknown"
-version: "0.1"
+version: "0.2"
 status: "experiment"
 license: "CC BY-SA 4.0"
 language: "en"
@@ -43,6 +43,9 @@ tags:
   - reality-test
   - resolution
   - foresight
+changelog:
+  - "v0.1 (2026-09-23) — initial N=10 field protocol and executable scenario reference."
+  - "v0.2 (2026-09-23) — measurement-only amendment before case 1/10: freezes a Janus Case Record and explicit anti-bias rules; sample eligibility and resolution semantics are unchanged."
 ---
 
 # COP/Janus Booster — Prospective Assertions Made Answerable
@@ -139,23 +142,107 @@ A continuation enters the sample when a real choice is made among materially dif
 
 If no genuinely decisive prospective assertion exists, record that fact rather than inventing one.
 
-## 6. Data to record for each of the ten decisions
+## 6. Frozen Janus Case Record — measurement-only amendment
 
-Record at minimum:
+This observation format is frozen before case 1/10 to reduce variation between handlers and cases.
 
-```text
-decision / continuation reference
-decisive assertion reference(s)
-asserted_at / recorded_at
-revision_conditions
-resolution criterion
-resolution horizon
-follow-up continuation reference
-later trace reference(s)
-EvidenceRelation(s)
-resolution state
-review friction / ambiguity notes
+It does **not** change:
+
+- the frozen N=10 sample;
+- the inclusion rule in §5;
+- the definition of a decisive prospective Assertion;
+- the allowed Resolution / unresolved states;
+- COP schemas or authorization semantics.
+
+A candidate observation must not be promoted merely because the record can be filled in.
+
+Minimal record:
+
+```yaml
+case_id: "janus-01"
+sample_index: 1
+detected_at: "ISO-8601"
+
+continuation_ref: "durable reference"
+
+candidate_decision:
+  description: "what choice is being made"
+  alternatives_considered:
+    - "continuation A"
+    - "continuation B"
+
+eligibility:
+  genuinely_decision_bearing: true
+  decisive_assertion_exists: true
+  inclusion_reason: "why this case qualifies for the frozen sample"
+
+decisive_assertions:
+  - assertion_ref: "..."
+    why_decisive: "what could have changed if this assertion were materially reversed"
+    recorded_at: "ISO-8601"
+    revision_conditions:
+      - "..."
+    resolution_expectation:
+      criterion: "..."
+      horizon: "ISO-8601 or durable event condition"
+
+followup_continuation_ref: "..."
+
+later_trace_refs: []
+evidence_relations: []
+
+resolution_state: "pending"
+# Later examples:
+# supported | contradicted | contextualized |
+# ambiguous | unattributable | not-yet-observable | unresolved-at-horizon
+
+information_preserved:
+  useful_information_otherwise_lost: null
+  note: null
+
+review_friction:
+  human_minutes: null
+  machine_or_handler_note: null
+  ambiguity_note: null
+
+governance_refs:
+  mandate_ref: null
+  measured_risk_ref: null
+  act_ref: null
+
+residue: []
 ```
+
+### 6.1 Candidate with no decisive assertion
+
+The record must support a negative observation without manufacturing Janus content.
+
+For a real decision-bearing continuation where no prospective Assertion was genuinely decisive, preserve:
+
+```yaml
+eligibility:
+  genuinely_decision_bearing: true
+  decisive_assertion_exists: false
+  inclusion_reason: "real decision-bearing continuation; no genuinely decisive prospective assertion found"
+
+decisive_assertions: []
+```
+
+Such an observation is useful evidence about Janus applicability. Whether it occupies one of the frozen ten follows the §5 sample rule; do not redefine that rule from the form.
+
+### 6.2 Temporal and retrospective completion
+
+At initial capture, all later evidence fields may legitimately be empty.
+
+At the declared horizon or relevant event, append or link:
+
+- the later TraceRef(s);
+- the qualified EvidenceRelation(s);
+- the resulting resolution state;
+- what information the ex-ante record preserved;
+- review friction, ambiguity and residue.
+
+Do not edit the original prospective commitment to make it fit later Reality.
 
 When an external Act is involved, reference the applicable Mandate and COP/Measured Risk material instead of copying a risk dossier into Janus metadata.
 
