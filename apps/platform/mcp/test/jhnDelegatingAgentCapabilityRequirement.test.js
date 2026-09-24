@@ -68,6 +68,10 @@ function invocation(events) {
   return events.find((event) => event.payload?.kind === "CapabilityInvocation");
 }
 
+function assistantMessage(events) {
+  return events.find((event) => event.payload?.kind === "conversation.assistant_message");
+}
+
 function decisionFor(capability) {
   return {
     selected_path: "handler_assisted",
@@ -99,7 +103,7 @@ test("A - a matching coding.assist.read requirement proceeds to the Mandate gate
     execution_budget: executionBudget(),
   });
 
-  await agent.turn({
+  const result = await agent.turn({
     message: "Review this repository code and explain the bug without changing files.",
     conversationId: "req-a",
     turnId: "turn-a",
@@ -113,6 +117,8 @@ test("A - a matching coding.assist.read requirement proceeds to the Mandate gate
   assert.equal(invocation(events), undefined);
   assert.equal(refused.payload.reason, "capability_out_of_scope");
   assert.equal(refused.payload.capability, "coding.assist.read");
+  assert.equal(result.handler_instance_ref, null);
+  assert.equal(assistantMessage(events).payload.handler_instance_ref, null);
   assert.notEqual(refused.payload.reason, "capability_requirement_mismatch");
   assert.notEqual(refused.payload.reason, "mandate_inactive");
   assert.ok(recorded.topic.seq < refused.topic.seq);
@@ -137,7 +143,7 @@ test("B - a mismatching handler is refused before governed invocation", async ()
     execution_budget: executionBudget(),
   });
 
-  await agent.turn({
+  const result = await agent.turn({
     message: "Implement this change and commit it.",
     conversationId: "req-b",
     turnId: "turn-b",
@@ -153,6 +159,8 @@ test("B - a mismatching handler is refused before governed invocation", async ()
   assert.equal(refused.payload.reason, "capability_requirement_mismatch");
   assert.equal(refused.payload.capability, "coding.assist");
   assert.equal(refused.payload.handler_capability, "coding.assist.read");
+  assert.equal(result.handler_instance_ref, null);
+  assert.equal(assistantMessage(events).payload.handler_instance_ref, null);
   assert.notEqual(refused.payload.reason, "mandate_inactive");
   assert.notEqual(refused.payload.reason, "budget_exhausted");
   assert.notEqual(refused.payload.reason, "required_capability_unavailable");
@@ -268,7 +276,7 @@ test("G - matching requirement leaves Mandate and budget as independent gates", 
       execution_budget: executionBudget(),
     });
 
-    await agent.turn({
+    const result = await agent.turn({
       message: "Implement this change and commit it.",
       conversationId: "req-g-invoke",
       turnId: "turn-g3",
@@ -278,9 +286,48 @@ test("G - matching requirement leaves Mandate and budget as independent gates", 
     assert.equal(handlerObserved.called, true);
     assert.equal(invocation(events).payload.capability, "coding.assist");
     assert.equal(reasonerObserved.input.handlerAssist, "handler contribution");
+    assert.equal(result.handler_instance_ref, "handler:test:coding.assist");
+    assert.equal(
+      assistantMessage(events).payload.handler_instance_ref,
+      "handler:test:coding.assist"
+    );
     assert.equal(
       events.some((event) => event.payload?.kind === "conversation.delegation_refused"),
       false
     );
   });
+});
+
+
+test("H - a configured handler is not attributed on a local-only turn", async () => {
+  const store = createMemoryCopEventStore();
+  const handlerObserved = {};
+  const handler = createHandler("coding.assist.read", handlerObserved);
+  const agent = createJhnDelegatingAgent({
+    store,
+    handler,
+    reasoner: createReasoner(),
+    identity,
+    decideHandlerAssist: () => ({
+      selected_path: "local_only",
+      alternatives: ["local_only", "handler_assisted"],
+      capability_requirement: null,
+      rationale: {
+        summary: "John can answer locally.",
+        decisive_assertion_refs: [],
+      },
+    }),
+  });
+
+  const result = await agent.turn({
+    message: "Summarize our current conversation.",
+    conversationId: "req-h",
+    turnId: "turn-h",
+  });
+
+  const events = conversationEvents(store, "req-h");
+  assert.equal(handlerObserved.called, undefined);
+  assert.equal(invocation(events), undefined);
+  assert.equal(result.handler_instance_ref, null);
+  assert.equal(assistantMessage(events).payload.handler_instance_ref, null);
 });
