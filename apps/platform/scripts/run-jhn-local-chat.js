@@ -2,9 +2,8 @@ import OpenAI from "openai";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createJhnLocalAgent } from "../mcp/cop/jhnLocalAgent.js";
+import { createJhnLocalOperationalAgent } from "../mcp/cop/jhnLocalOperationalAgent.js";
 import { createOpenAIJhnReasoner } from "../mcp/cop/jhnReasoner.js";
-import { readJhnConversationState } from "../mcp/cop/jhnConversationState.js";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 
@@ -23,25 +22,17 @@ const message = messageIndex === -1 ? null : process.argv[messageIndex + 1];
 const conversationIndex = process.argv.indexOf("--conversation");
 const conversationId = conversationIndex === -1 ? "john" : process.argv[conversationIndex + 1];
 if (!message) throw new Error("Usage: node scripts/run-jhn-local-chat.js --message <text>");
-if (!process.env.COP_CAPABILITY || !process.env.COP_RUNTIME_URL) {
-  throw new Error("COP_CAPABILITY and COP_RUNTIME_URL must be supplied by run:jhn:local-cop");
-}
 if (!process.env.OPENAI_API_KEY)
   throw new Error("OPENAI_API_KEY is not available to the local agent process");
 
 const reasoner = createOpenAIJhnReasoner({
   client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
 });
-const agent = createJhnLocalAgent({
-  runtimeUrl: process.env.COP_RUNTIME_URL,
-  capability: process.env.COP_CAPABILITY,
-  reasoner,
-});
+const stateDirectory = path.resolve(scriptDirectory, "..", "instances", "jhn-cop-local");
+const agent = createJhnLocalOperationalAgent({ stateDirectory, reasoner });
 
 try {
-  const stateDirectory = path.resolve(scriptDirectory, "..", "instances", "jhn-cop-local");
-  const state = readJhnConversationState({ stateDirectory, conversationId });
-  const result = await agent.turn({ message, conversationId, history: state.history });
+  const result = await agent.turn({ message, conversationId });
   console.log(result.text);
 } catch (error) {
   const status = error?.status;
@@ -49,4 +40,6 @@ try {
   else if (status === 429) console.error("OpenAI quota or rate limit prevented the JHN test.");
   else console.error(`JHN local chat failed: ${error.message}`);
   process.exitCode = 1;
+} finally {
+  agent.close();
 }

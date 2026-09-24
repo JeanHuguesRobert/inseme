@@ -3,10 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import OpenAI from "openai";
-import { createJhnLocalAgent } from "../mcp/cop/jhnLocalAgent.js";
-import { readJhnConversationState } from "../mcp/cop/jhnConversationState.js";
-import { createJhnLocalCapabilityIssuer } from "../mcp/cop/localCapabilityIssuer.js";
-import { createJhnLocalCopRuntime } from "../mcp/cop/localRuntimeServer.js";
+import { createJhnLocalOperationalAgent } from "../mcp/cop/jhnLocalOperationalAgent.js";
 import { createOpenAIJhnReasoner } from "../mcp/cop/jhnReasoner.js";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -18,12 +15,10 @@ if (!process.env.OPENAI_API_KEY) {
 }
 if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is unavailable");
 
-const runtime = await createJhnLocalCopRuntime({ stateDirectory });
-const runtimeAddress = await runtime.listen();
-const issuer = await createJhnLocalCapabilityIssuer({ stateDirectory });
 const reasoner = createOpenAIJhnReasoner({
   client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
 });
+const agent = createJhnLocalOperationalAgent({ stateDirectory, reasoner });
 const page = `<!doctype html><meta charset="utf-8"><title>John local</title><style>body{max-width:48rem;margin:2rem auto;font:16px system-ui}#log{white-space:pre-wrap}form{display:flex;gap:.5rem}input{flex:1}</style><h1>John local</h1><div id="log"></div><form><input autofocus placeholder="Parlez à John"><button>Envoyer</button></form><script>const log=document.querySelector('#log'),form=document.querySelector('form'),input=document.querySelector('input');form.onsubmit=async e=>{e.preventDefault();const message=input.value.trim();if(!message)return;log.textContent+='Vous> '+message+'\\n';input.value='';const r=await fetch('/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message,conversationId:'john'})});const b=await r.json();log.textContent+='John> '+(b.text||b.error)+'\\n';};</script>`;
 const server = createServer(async (request, response) => {
   if (request.method === "GET" && request.url === "/") {
@@ -41,14 +36,7 @@ const server = createServer(async (request, response) => {
       const { message, conversationId = "john" } = JSON.parse(
         Buffer.concat(chunks).toString("utf8")
       );
-      const capability = await issuer.issue({ subject: "principal:jhn:runtime" });
-      const state = readJhnConversationState({ stateDirectory, conversationId });
-      const agent = createJhnLocalAgent({
-        runtimeUrl: `http://${runtimeAddress.host}:${runtimeAddress.port}`,
-        capability,
-        reasoner,
-      });
-      const result = await agent.turn({ message, conversationId, history: state.history });
+      const result = await agent.turn({ message, conversationId });
       response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
       response.end(JSON.stringify({ text: result.text }));
     } catch (error) {
@@ -62,9 +50,8 @@ const server = createServer(async (request, response) => {
 server.listen(8788, "127.0.0.1", () => console.log("John local console: http://127.0.0.1:8788"));
 for (const signal of ["SIGINT", "SIGTERM"])
   process.once(signal, () =>
-    server.close(async () => {
-      issuer.close();
-      await runtime.close();
+    server.close(() => {
+      agent.close();
       process.exit(0);
     })
   );

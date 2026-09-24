@@ -92,6 +92,7 @@ export function createJhnDelegatingAgent(options = {}) {
       const topicId = conversationTopic(conversationId);
 
       store.append({
+        event_type: "conversation.user_message",
         topic_id: topicId,
         epistemic_status: "observed",
         actor_ref: identity.principal_ref,
@@ -231,6 +232,7 @@ export function createJhnDelegatingAgent(options = {}) {
       });
 
       store.append({
+        event_type: "conversation.assistant_message",
         topic_id: topicId,
         epistemic_status: "observed",
         actor_ref: identity.logical_agent_ref,
