@@ -253,6 +253,8 @@ export function createJhnDelegatingAgent(options = {}) {
         identity: "John",
       });
 
+      const invokedHandlerInstanceRef = handlerReceipt?.receipt?.handler_instance_ref || null;
+
       store.append({
         event_type: "conversation.assistant_message",
         topic_id: topicId,
@@ -266,7 +268,7 @@ export function createJhnDelegatingAgent(options = {}) {
           responseId: result.responseId || null,
           message: result.text,
           conversational_identity: "John",
-          handler_instance_ref: handler?.id || null,
+          handler_instance_ref: invokedHandlerInstanceRef,
           governed_act_id: handlerReceipt?.act_id || null,
         },
         idempotency_key: `conv:${conversationId}:assistant:${Date.now()}`,
@@ -276,7 +278,7 @@ export function createJhnDelegatingAgent(options = {}) {
         text: result.text,
         responseId: result.responseId || null,
         conversational_identity: "John",
-        handler_instance_ref: handler?.id || null,
+        handler_instance_ref: invokedHandlerInstanceRef,
         governed_act: handlerReceipt?.receipt || null,
       };
     },
