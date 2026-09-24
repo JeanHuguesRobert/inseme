@@ -8,6 +8,7 @@
 
 import { randomUUID } from "node:crypto";
 import { createCopEventEnvelope } from "./cop-event-envelope.js";
+import { matchHardUsage } from "./execution-budget.js";
 import { normalizeResourceAssessments } from "./resource-assessment.js";
 import { evaluateMeasuredRisk } from "./measured-risk.js";
 
@@ -222,10 +223,11 @@ export async function jhnDelegateToHandler(options) {
  * Enforces:
  * 1. Mandate active pre-check
  * 2. Authority-bound budget reservation
- * 3. Immediate pre-call TOCTOU re-check (revocation before effect prevents call)
- * 4. Handler invocation (consequential effect)
- * 5. Settlement or release of budget based on verified provider outcome
- * 6. Attributable governed act chain recording (Invocation, Act, Trace, Imputation)
+ * 3. Handler/runtime hard-budget preflight
+ * 4. Immediate pre-call TOCTOU re-check (revocation before effect prevents call)
+ * 5. Handler invocation (consequential effect)
+ * 6. Settle consumption after the provider was called, or release if it was not
+ * 7. Attributable governed act chain recording (Invocation, Act, Trace, Imputation)
  *
  * @param {object} options
  * @param {object} options.store - Append-only COP store
@@ -262,6 +264,7 @@ export async function invokeGovernedCapability(options) {
     exposure = null,
     observed_prior_exposure = null,
     observed_exposure = null,
+    preflightExecutionBudget = null,
   } = options;
 
   if (!store || typeof store.append !== "function") throw new TypeError("store.append is required");
@@ -413,7 +416,73 @@ export async function invokeGovernedCapability(options) {
     reservation = resResult.reservation;
   }
 
-  // 3. TOCTOU Pre-check: Verify mandate is STILL active & fresh immediately before external effect boundary!
+  // 3. Hard-budget preflight after reservation and before the provider.
+  // A handler without this seam keeps the previous full-vector path.
+  if (reservation) {
+    const preflight = handler.preflightExecutionBudget || preflightExecutionBudget;
+    if (typeof preflight === "function") {
+      let verdict;
+      try {
+        verdict = await preflight({
+          demand: reservation.demand,
+          limits: ledger.snapshot().limits,
+          capability,
+        });
+      } catch (err) {
+        verdict = {
+          ok: false,
+          error: "execution_budget_preflight_failed",
+          reason: String(err?.message || err),
+        };
+      }
+      if (!verdict || verdict.ok !== true) {
+        const release = releaseReservation(ledger, reservation, `${keyBase}:preflight-release`);
+        if (!release?.ok) {
+          return {
+            ok: false,
+            error: "execution_budget_release_unresolved",
+            reason: verdict?.reason || verdict?.error || "preflight refused",
+            called_provider: false,
+            dimension: verdict?.dimension ?? null,
+            requested: verdict?.requested ?? null,
+            runtime_bound: verdict?.runtime_bound ?? null,
+            reservation,
+            release,
+            snapshot: ledger.snapshot(),
+            act_id: null,
+            receipt: null,
+          };
+        }
+        return {
+          ok: false,
+          error: verdict?.error || "execution_budget_preflight_refused",
+          reason: verdict?.reason || null,
+          dimension: verdict?.dimension ?? null,
+          requested: verdict?.requested ?? null,
+          runtime_bound: verdict?.runtime_bound ?? null,
+          reserved: verdict?.reserved ?? null,
+          called_provider: false,
+          reservation,
+          release,
+          snapshot: ledger.snapshot(),
+          diagnostic: {
+            discovered: true,
+            reachable: true,
+            healthy: true,
+            admissible: true,
+            selected_or_funded: true,
+            authorized: true,
+            invoked: false,
+            committed: false,
+          },
+          act_id: null,
+          receipt: null,
+        };
+      }
+    }
+  }
+
+  // 4. TOCTOU Pre-check: Verify mandate is STILL active & fresh immediately before external effect boundary!
   const preCallGrant = evaluateMandate(store, {
     mandate: identity.mandate,
     mandate_ref: identity.mandate_ref,
@@ -433,11 +502,7 @@ export async function invokeGovernedCapability(options) {
 
   if (!preCallGrant.granted) {
     if (ledger && reservation) {
-      ledger.release({
-        reservation_id: reservation.reservation_id,
-        expected_version: ledger.snapshot().version,
-        idempotency_key: `${keyBase}:toctou-release`,
-      });
+      releaseReservation(ledger, reservation, `${keyBase}:toctou-release`);
     }
     const toctouError =
       preCallGrant.error === "mandate_version_stale"
@@ -464,39 +529,39 @@ export async function invokeGovernedCapability(options) {
     };
   }
 
-  // 4. Consequential Effect Boundary (Provider Execution)
+  // 5. Consequential Effect Boundary (Provider Execution)
   let effect = null;
   let outcome = "ok";
   let handlerError = null;
+  let calledProvider = false;
   try {
     effect = await handler.invoke(input);
+    calledProvider = true;
   } catch (err) {
+    calledProvider = true;
     outcome = "failed";
     handlerError = err;
-    effect = { error: String(err?.message || err) };
+    effect = handlerFailureEffect(err);
   }
 
-  // 5. Settlement / Release
+  // 6. Settlement / Release
+  // The provider effect boundary consumes execution capacity even when the
+  // handler later fails. Release is only for a reservation whose provider
+  // was never called.
   let settlement = null;
+  let executionBudgetSettlement = null;
   if (ledger && reservation) {
-    const snap = ledger.snapshot();
-    if (outcome === "failed" || outcome === "refused") {
-      settlement = ledger.release({
-        reservation_id: reservation.reservation_id,
-        expected_version: snap.version,
-        idempotency_key: `${keyBase}:release`,
-      });
+    if (!calledProvider) {
+      settlement = releaseReservation(ledger, reservation, `${keyBase}:release`);
     } else {
-      const usage =
-        effect?.execution_usage ||
-        (effect?.usage && typeof effect.usage.max_steps === "number" ? effect.usage : null) ||
-        reservation.demand;
-      settlement = ledger.settle({
-        reservation_id: reservation.reservation_id,
-        expected_version: snap.version,
-        usage,
-        idempotency_key: `${keyBase}:settle`,
-      });
+      const accounted = settleProviderConsumption(ledger, reservation, effect, keyBase);
+      settlement = accounted.settlement;
+      executionBudgetSettlement = accounted.execution_budget_settlement;
+      effect = withSettlementDiagnostic(effect, executionBudgetSettlement);
+      if (accounted.unresolved) {
+        outcome = "failed";
+        if (!handlerError) handlerError = new Error("execution_budget_settlement_unresolved");
+      }
     }
   }
 
@@ -523,16 +588,18 @@ export async function invokeGovernedCapability(options) {
     observed_exposure: observed_exposure || effect?.observed_exposure || null,
   });
 
+  const settlementUnresolved = executionBudgetSettlement?.mode === "unresolved";
   return {
-    ok: outcome === "ok",
+    ok: outcome === "ok" && !settlementUnresolved,
     outcome,
-    called_provider: true,
+    called_provider: calledProvider,
     effect,
     act_id: actResult.act_id,
     receipt: actResult.receipt,
     events: actResult.events,
     reservation,
     settlement,
+    execution_budget_settlement: executionBudgetSettlement,
     snapshot: ledger ? ledger.snapshot() : null,
     diagnostic: {
       discovered: true,
@@ -544,7 +611,115 @@ export async function invokeGovernedCapability(options) {
       invoked: true,
       committed: outcome === "ok",
     },
-    error: handlerError ? String(handlerError?.message || handlerError) : null,
+    error: handlerError
+      ? String(handlerError?.message || handlerError)
+      : settlementUnresolved
+        ? "execution_budget_settlement_unresolved"
+        : null,
+  };
+}
+
+function releaseReservation(ledger, reservation, idempotency_key) {
+  return ledger.release({
+    reservation_id: reservation.reservation_id,
+    expected_version: ledger.snapshot().version,
+    idempotency_key,
+  });
+}
+
+function handlerFailureEffect(err) {
+  const effect = { error: String(err?.message || err) };
+  if (err && typeof err === "object") {
+    if (err.execution_usage) effect.execution_usage = err.execution_usage;
+    if (err.acp_observations) effect.acp_observations = err.acp_observations;
+    if (Array.isArray(err.resource_assessments)) {
+      effect.resource_assessments = err.resource_assessments;
+    }
+  }
+  return effect;
+}
+
+function withSettlementDiagnostic(effect, diagnostic) {
+  if (effect && typeof effect === "object" && !Array.isArray(effect)) {
+    return { ...effect, execution_budget_settlement: diagnostic };
+  }
+  return { value: effect ?? null, execution_budget_settlement: diagnostic };
+}
+
+function settleOnce(ledger, reservation, usage, idempotency_key) {
+  try {
+    return ledger.settle({
+      reservation_id: reservation.reservation_id,
+      expected_version: ledger.snapshot().version,
+      usage,
+      idempotency_key,
+    });
+  } catch (err) {
+    return { ok: false, error: "settlement_threw", reason: String(err?.message || err) };
+  }
+}
+
+function reportedHardUsage(effect) {
+  if (effect?.execution_usage) return effect.execution_usage;
+  if (effect?.usage && typeof effect.usage.max_steps === "number") return effect.usage;
+  return null;
+}
+
+function settleProviderConsumption(ledger, reservation, effect, keyBase) {
+  const reported = reportedHardUsage(effect);
+  const matched = matchHardUsage(reported, reservation.demand);
+  const settleKey = `${keyBase}:settle`;
+  let observedResult = null;
+  if (matched.ok) {
+    observedResult = settleOnce(ledger, reservation, matched.vector, settleKey);
+    if (observedResult?.error === "budget_version_conflict") {
+      observedResult = settleOnce(ledger, reservation, matched.vector, settleKey);
+    }
+    if (observedResult?.ok) {
+      return {
+        settlement: observedResult,
+        unresolved: false,
+        execution_budget_settlement: {
+          mode: "observed",
+          reason: null,
+          usage: matched.vector,
+        },
+      };
+    }
+  }
+
+  const reason = matched.ok
+    ? observedResult?.error || "usage_invalid"
+    : reported
+      ? "incomplete_or_invalid_usage"
+      : "usage_unavailable";
+  let conservative = settleOnce(ledger, reservation, reservation.demand, settleKey);
+  if (conservative?.error === "budget_version_conflict") {
+    conservative = settleOnce(ledger, reservation, reservation.demand, settleKey);
+  }
+  if (conservative?.ok) {
+    return {
+      settlement: conservative,
+      unresolved: false,
+      execution_budget_settlement: {
+        mode: "conservative",
+        reason,
+        usage: reservation.demand,
+      },
+    };
+  }
+  return {
+    settlement: conservative,
+    unresolved: true,
+    execution_budget_settlement: {
+      mode: "unresolved",
+      reason,
+      usage: null,
+      residue: {
+        reservation_id: reservation.reservation_id,
+        error: conservative?.error || null,
+      },
+    },
   };
 }
 

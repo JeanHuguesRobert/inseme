@@ -6,10 +6,89 @@
  * handler invokes it under an active mandate and an execution budget.
  */
 import { spawn as nodeSpawn } from "node:child_process";
-import { platform } from "node:process";
+import { env as processEnv, platform } from "node:process";
 import { connectAcpStdio, createReadOnlyPermissionPolicy } from "@inseme/magistral/acp";
 
 const MAX_CAPTURE_BYTES = 128_000;
+
+/**
+ * ACP hard-budget profile established by #101.
+ * One governed session/prompt can bound max_steps at 1.
+ * max_elapsed_ms is bounded only by the prompt timeout installed before spawn.
+ * Tool calls, subagents, and numeric external effects are not enforceable here.
+ * A reserved zero on those dimensions is still unenforceable.
+ */
+export function preflightAcpExecutionBudget({ demand, promptTimeoutMs } = {}) {
+  if (!demand || typeof demand !== "object" || Array.isArray(demand)) {
+    return {
+      ok: false,
+      error: "execution_budget_dimension_unenforceable",
+      dimension: null,
+      requested: null,
+      runtime_bound: null,
+      policy: "demand_required",
+    };
+  }
+  const order = [
+    "max_steps",
+    "max_tool_calls",
+    "max_subagents",
+    "max_elapsed_ms",
+    "max_external_effects",
+  ];
+  for (const dimension of order) {
+    if (!Object.hasOwn(demand, dimension)) continue;
+    const requested = demand[dimension];
+    if (dimension === "max_steps") {
+      const runtime_bound = 1;
+      if (!Number.isInteger(requested) || requested < runtime_bound) {
+        return {
+          ok: false,
+          error: "execution_budget_bound_exceeds_reservation",
+          dimension,
+          requested,
+          reserved: requested,
+          runtime_bound,
+          policy: "acp_governed_prompt_count",
+        };
+      }
+      continue;
+    }
+    if (dimension === "max_elapsed_ms") {
+      if (!Number.isInteger(promptTimeoutMs) || promptTimeoutMs < 0) {
+        return {
+          ok: false,
+          error: "execution_budget_dimension_unenforceable",
+          dimension,
+          requested,
+          runtime_bound: null,
+          policy: "no_enforceable_timeout",
+        };
+      }
+      if (promptTimeoutMs > requested) {
+        return {
+          ok: false,
+          error: "execution_budget_bound_exceeds_reservation",
+          dimension,
+          requested,
+          reserved: requested,
+          runtime_bound: promptTimeoutMs,
+          policy: "prompt_timeout_exceeds_reservation",
+        };
+      }
+      continue;
+    }
+    return {
+      ok: false,
+      error: "execution_budget_dimension_unenforceable",
+      dimension,
+      requested,
+      runtime_bound: null,
+      policy: "acp_profile_unenforceable",
+    };
+  }
+  return { ok: true };
+}
 export function createHostRuntimeClient({ runtimes = [], spawnImpl = nodeSpawn } = {}) {
   const catalog = new Map(runtimes.map(normalizeRuntime).map((runtime) => [runtime.id, runtime]));
 
@@ -45,7 +124,7 @@ export function createHostRuntimeClient({ runtimes = [], spawnImpl = nodeSpawn }
     /** Return the existing COP handler shape; authority remains outside this client. */
     asHandler(id, defaults = {}) {
       const runtime = requireRuntime(catalog, id);
-      return {
+      const handler = {
         id: runtime.handler_instance_ref,
         capability: defaults.capability || runtime.capabilities[0],
         invoke: (input) =>
@@ -55,6 +134,14 @@ export function createHostRuntimeClient({ runtimes = [], spawnImpl = nodeSpawn }
             working_directory: defaults.working_directory,
           }),
       };
+      if (runtime.adapter === "acp_stdio") {
+        handler.preflightExecutionBudget = ({ demand } = {}) =>
+          preflightAcpExecutionBudget({
+            demand,
+            promptTimeoutMs: runtime.invoke_timeout_ms,
+          });
+      }
+      return handler;
     },
 
     async invoke({ runtime_id, prompt, working_directory } = {}) {
@@ -73,6 +160,7 @@ export function createHostRuntimeClient({ runtimes = [], spawnImpl = nodeSpawn }
           runtime_id: runtime.id,
           execution_usage: { max_steps: 1, max_elapsed_ms: result.elapsed_ms },
           permission_trace: result.permission_trace,
+          acp_observations: result.acp_observations,
         };
       }
       if (runtime.adapter === "opencode_run_json") {
@@ -332,7 +420,7 @@ function runProcess(spawnImpl, command, args, { timeout_ms, cwd, env = {} }) {
     const child = spawnImpl(command, args, {
       stdio: ["ignore", "pipe", "pipe"],
       ...(cwd ? { cwd } : {}),
-      env: { ...process.env, ...env },
+      env: { ...processEnv, ...env },
     });
     let stdout = "";
     let stderr = "";
@@ -375,6 +463,7 @@ function runAcpSession(spawnImpl, runtime, { prompt, working_directory }) {
     const started = Date.now();
     let text = "";
     const permission_trace = [];
+    const observed = { tool_calls: new Map(), usage_update: null };
     const requestPermission =
       runtime.permission_policy === "read-only"
         ? createReadOnlyPermissionPolicy({
@@ -393,6 +482,7 @@ function runAcpSession(spawnImpl, runtime, { prompt, working_directory }) {
       requestPermission,
       onSessionUpdate: (params) => {
         text = appendCapture(text, acpText(params?.update));
+        collectAcpObservation(observed, params?.update);
       },
     });
     try {
@@ -406,7 +496,18 @@ function runAcpSession(spawnImpl, runtime, { prompt, working_directory }) {
         prompt: [{ type: "text", text: prompt }],
       });
       text = appendCapture(text, acpText(result));
-      return { text: compactText(text), elapsed_ms: Date.now() - started, permission_trace };
+      const elapsed_ms = Date.now() - started;
+      return {
+        text: compactText(text),
+        elapsed_ms,
+        permission_trace,
+        acp_observations: buildAcpObservations({
+          elapsed_ms,
+          tool_calls: observed.tool_calls,
+          permission_trace,
+          usage_update: observed.usage_update,
+        }),
+      };
     } finally {
       client.terminate();
     }
@@ -432,6 +533,44 @@ function openCodeText(stdout) {
       })
       .join("")
   );
+}
+
+function collectAcpObservation(observed, update) {
+  if (!update || typeof update !== "object") return;
+  const sessionUpdate = update.sessionUpdate || null;
+  if (sessionUpdate === "usage_update") {
+    observed.usage_update = {
+      used: update.used ?? null,
+      size: update.size ?? null,
+      cost: update.cost ?? null,
+    };
+    return;
+  }
+  if (sessionUpdate !== "tool_call" && sessionUpdate !== "tool_call_update") return;
+  const id = update.toolCallId || update.toolCall?.toolCallId || null;
+  if (!id) return;
+  const previous = observed.tool_calls.get(id) || { id, kind: null, status: null };
+  const kind = update.toolCall?.kind || update.kind || previous.kind;
+  observed.tool_calls.set(id, {
+    id,
+    kind: kind === "tool_call" || kind === "tool_call_update" ? previous.kind : kind,
+    status: update.status || previous.status,
+  });
+}
+
+function buildAcpObservations({ elapsed_ms, tool_calls, permission_trace, usage_update }) {
+  const cost = usage_update?.cost;
+  const provider_cost =
+    cost && cost.amount != null
+      ? { status: "measured", amount: cost.amount, currency: cost.currency || null }
+      : "not_estimated";
+  return {
+    elapsed_ms,
+    tool_calls: [...tool_calls.values()],
+    permission_trace,
+    usage_update,
+    provider_cost,
+  };
 }
 
 function acpText(value) {

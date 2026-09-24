@@ -9,6 +9,7 @@
  */
 import { isAbsolute } from "node:path";
 import { COPBus, COPScheduler, createContinuationDescriptor } from "@inseme/cop-kernel";
+import { preflightAcpExecutionBudget } from "./hostRuntimeClient.js";
 import {
   attachProviderExecution,
   createExecutionBinding,
@@ -45,7 +46,9 @@ export function createMagistralCapabilityResolver({ capabilityCatalog, hostRunti
     return {
       async execute() {
         let executionBinding = createExecutionBinding({
-          requirement_ref: request.requirement_ref || `continuation:${continuation.continuationId}:capability_request`,
+          requirement_ref:
+            request.requirement_ref ||
+            `continuation:${continuation.continuationId}:capability_request`,
           offer_id: offer.id,
           runtime_id: offer.runtime_id,
           handler_instance_ref: offer.handler_instance_ref,
@@ -105,10 +108,19 @@ export function createMagistralAcpContinuationHandler({
   const resolve = createMagistralCapabilityResolver({ capabilityCatalog, hostRuntimeClient });
   const [offer] = capabilityCatalog.resolve(requirement);
   if (!offer) throw new Error("capability_requirement_unavailable");
+  const runtime = hostRuntimeClient.list().find((candidate) => candidate.id === offer.runtime_id);
 
   return {
     id: offer.handler_instance_ref,
     capability: requirement.capability,
+    preflightExecutionBudget:
+      offer.execution_surface === "acp"
+        ? ({ demand } = {}) =>
+            preflightAcpExecutionBudget({
+              demand,
+              promptTimeoutMs: runtime?.invoke_timeout_ms,
+            })
+        : undefined,
     async invoke(input = {}) {
       const prompt = String(input.message || input.prompt || "").trim();
       if (!prompt) throw new TypeError("governed ACP handler prompt is required");

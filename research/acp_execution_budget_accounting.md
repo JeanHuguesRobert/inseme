@@ -589,3 +589,42 @@ Therefore:
 ```
 
 Human review still chooses whether the follow-up changes the adapter, the generic budget contract, or both. That choice is not an amendment of JHN's Mandate.
+
+## 12. Implementation outcome (#102)
+
+#102 implemented the enforceable-dimension ledger and the ACP fail-closed preflight. It did not decide the numeric unit of `max_tool_calls` or `max_external_effects`, and it did not authorize either dimension for ACP.
+
+```text
+hard ExecutionBudget
+  = the non-empty subset of known dimensions present on the grant
+
+omitted hard dimension
+  = not part of this budget
+  ≠ zero usage
+
+ACP preflight, before spawn
+  max_steps        enforceable as one governed session/prompt, upper bound 1
+  max_elapsed_ms   enforceable only when promptTimeoutMs is installed first
+                   and is no greater than the reservation
+  max_tool_calls   unenforceable, including 0
+  max_subagents    unenforceable
+  max_external_effects
+                   unenforceable; numeric unit still unresolved
+
+after the provider is called
+  complete hard usage settles at the observed vector
+  missing or invalid hard usage settles at the reserved demand
+  and records conservative settlement
+  a pre-provider refusal releases the reservation and records no Act
+
+observations, outside the hard vector
+  elapsed measurement
+  ACP tool_call id, kind, status
+  permission decisions
+  usage_update
+  provider cost = not_estimated when cost is absent
+```
+
+`mandate:jhn:agent:1`, `budget:jhn:agent:local:1`, `JHN_AGENT_ALLOWED_CAPABILITIES`, `JHN_AGENT_BUDGET_LIMITS`, and `JHN_AGENT_TURN_DEMAND` are unchanged. The current five-dimensional JHN demand therefore fails ACP preflight. #98 remains PARKED. #90 is unchanged.
+
+The administrative choice of which sparse dimensions belong in the JHN grant, which timeout is sufficient, and whether an ACP-visible tool-call count later becomes enforceable, remains outside this implementation.

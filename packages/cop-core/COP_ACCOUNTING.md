@@ -203,6 +203,23 @@ MUST retain its confidence and MAY trigger a smaller bounded slice or review, bu
 lock all available capacity. Reservation, settlement and release use an expected budget version; a
 version conflict returns the current snapshot for a caller to re-read and recalculate.
 
+A hard execution budget names only the dimensions that can be bounded before the effect. The known
+dimension names are `max_steps`, `max_tool_calls`, `max_subagents`, `max_elapsed_ms`, and
+`max_external_effects`. A grant MAY contain a non-empty subset of them. The keys present on the
+authoritative grant are that ledger's active hard-dimension set. Every reservation demand, and every
+observed settlement of that reservation, uses exactly that set. An omitted hard dimension is not part
+of the budget. It is not zero usage, and a snapshot MUST NOT materialize it as zero. Unknown or
+unenforceable consumption stays a resource assessment or other trace evidence.
+
+A dimension that cannot be bounded before execution MUST NOT be placed in the hard reservation for
+that handler. If a preflight refuses after a reservation was made, the reservation is released, the
+provider is not called, and no governed Act is recorded. Once the provider effect boundary has been
+entered, a failed or refused provider outcome does not release the reservation as if the work were
+free. A complete valid usage vector for the reserved dimensions settles at the observed values. If
+that vector is missing or invalid, settlement uses the reserved demand as a conservative upper bound
+and records that observed usage was unavailable or invalid. Missing values MUST NOT be rewritten as
+zero. A refusal before the provider is called releases the reservation and records no consumption.
+
 Where a COP event store is available, these operations MUST be represented by append-only
 `ExecutionBudgetReservation`, `ExecutionBudgetSettlement`, and `ExecutionBudgetRelease` events under
 one budget topic. The topic sequence is the budget version and is the atomic precondition of each

@@ -31,12 +31,7 @@ export type TypeString = string;
  * Implementations MUST NOT rely on non-JSON types.
  */
 export type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | JsonValue[]
-  | { [key: string]: JsonValue | undefined };
+  null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue | undefined };
 
 /**
  * Standard status lifecycle for Topics.
@@ -199,7 +194,11 @@ export interface EvidenceRelation {
   meta?: Record<string, JsonValue>;
 }
 
-/** Authoritative Execution Budget Limits */
+/**
+ * Hard execution-budget vector.
+ * A present key is an enforceable dimension of this budget.
+ * An omitted key is outside the budget. Omission is not zero usage.
+ */
 export interface ExecutionBudgetLimits {
   max_steps?: number;
   max_tool_calls?: number;
@@ -228,13 +227,7 @@ export interface ExecutionBudgetSnapshot {
 
 /** Temporal Precision */
 export type TemporalPrecision =
-  | "exact"
-  | "day"
-  | "month"
-  | "year"
-  | "interval"
-  | "approximate"
-  | "unknown";
+  "exact" | "day" | "month" | "year" | "interval" | "approximate" | "unknown";
 
 /** Temporal Claim with precision and chronological sort keys */
 export interface TemporalClaim {

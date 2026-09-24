@@ -23,7 +23,7 @@ test("JHN Delegating Agent Governed Delegation & Packet Tracing (#33, #31)", asy
       const mockHandler = {
         id: "handler:openai-reasoner@local",
         capability: "coding.assist",
-        async invoke(input) {
+        async invoke(_input) {
           return {
             text: "Here is the refactored code implementation.",
             provider: "openai",
@@ -41,7 +41,7 @@ test("JHN Delegating Agent Governed Delegation & Packet Tracing (#33, #31)", asy
         store,
         handler: mockHandler,
         reasoner: {
-          async respond({ message, handlerAssist }) {
+          async respond({ message: _message, handlerAssist }) {
             return { text: `John Response: ${handlerAssist}`, responseId: "resp-123" };
           },
         },
@@ -139,7 +139,7 @@ test("JHN delegation fails closed without a bounded execution budget", async () 
   );
 });
 
-test("JHN delegation releases its reservation when the handler fails", async () => {
+test("JHN delegation settles reserved hard capacity when the handler fails", async () => {
   const store = createMemoryCopEventStore();
   recordMandateDeclaration(store, {
     mandate_id: "mandate:jhn:active-001",
@@ -190,8 +190,16 @@ test("JHN delegation releases its reservation when the handler fails", async () 
   });
 
   await agent.turn({ message: "delegate", conversationId: "budget-failure", turnId: "turn-1" });
+  const budgetEvents = store.listTopic("execution-budget:budget:jhn:failure");
   assert.deepEqual(
-    store.listTopic("execution-budget:budget:jhn:failure").map((event) => event.event_type),
-    ["ExecutionBudgetReservation", "ExecutionBudgetRelease"]
+    budgetEvents.map((event) => event.event_type),
+    ["ExecutionBudgetReservation", "ExecutionBudgetSettlement"]
   );
+  assert.deepEqual(budgetEvents[1].payload.usage, {
+    max_steps: 1,
+    max_tool_calls: 0,
+    max_subagents: 0,
+    max_elapsed_ms: 1_000,
+    max_external_effects: 0,
+  });
 });

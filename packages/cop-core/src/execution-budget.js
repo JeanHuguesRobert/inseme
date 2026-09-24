@@ -1,7 +1,10 @@
 /**
- * Reference in-memory execution-budget reservation ledger.
+ * Reference execution-budget reservation ledger.
  *
- * This is intentionally a small, provider-neutral reference implementation.
+ * A grant names the active hard dimensions. Omitted dimensions are outside
+ * that budget: they are not zero usage and they are not materialized as zero.
+ * Demand and settlement for one ledger use exactly the active set.
+ *
  * Production stores must offer the same reserve/settle/release atomicity over
  * durable COP events before consequential handlers are connected.
  */
@@ -24,38 +27,138 @@ function requireText(value, name) {
   return value;
 }
 
-function normalizeLimits(value, name) {
-  if (!value || typeof value !== "object" || Array.isArray(value))
+export function activeHardDimensions(limits) {
+  if (!limits || typeof limits !== "object" || Array.isArray(limits)) return [];
+  return DIMENSIONS.filter((dimension) => Object.hasOwn(limits, dimension));
+}
+
+function denseZero() {
+  return Object.fromEntries(DIMENSIONS.map((dimension) => [dimension, 0]));
+}
+
+function zeros(active) {
+  return Object.fromEntries(active.map((dimension) => [dimension, 0]));
+}
+
+function add(left, right, active) {
+  return Object.fromEntries(
+    active.map((dimension) => [dimension, left[dimension] + right[dimension]])
+  );
+}
+
+function subtract(left, right, active) {
+  return Object.fromEntries(
+    active.map((dimension) => [dimension, left[dimension] - right[dimension]])
+  );
+}
+
+function exceeds(left, right, active) {
+  return active.find((dimension) => left[dimension] > right[dimension]) || null;
+}
+
+/**
+ * Accept a non-empty subset of the known hard dimensions.
+ * An omitted dimension is not part of the grant.
+ */
+function normalizeGrantLimits(value, name) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new TypeError(`${name} is required`);
+  }
+  for (const key of Object.keys(value)) {
+    if (!DIMENSIONS.includes(key)) {
+      throw new TypeError(`${name}.${key} is not a known execution-budget dimension`);
+    }
+  }
   const out = {};
   for (const dimension of DIMENSIONS) {
+    if (!Object.hasOwn(value, dimension)) continue;
     const amount = value[dimension];
     if (!Number.isInteger(amount) || amount < 0) {
       throw new TypeError(`${name}.${dimension} must be a non-negative integer`);
     }
     out[dimension] = amount;
   }
+  if (Object.keys(out).length === 0) {
+    throw new TypeError(`${name} must name at least one hard dimension`);
+  }
   return out;
 }
 
-function zero() {
-  return Object.fromEntries(DIMENSIONS.map((dimension) => [dimension, 0]));
+/**
+ * Demand and usage must name exactly the active hard dimensions.
+ * Missing is not zero, and an extra dimension does not extend the grant.
+ */
+export function matchHardUsage(usage, template) {
+  return normalizeExactVector(usage, "usage", template);
 }
 
-function add(left, right) {
-  return Object.fromEntries(
-    DIMENSIONS.map((dimension) => [dimension, left[dimension] + right[dimension]])
-  );
+function normalizeExactVector(value, name, template) {
+  const active = activeHardDimensions(template);
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {
+      ok: false,
+      error: "invalid_hard_budget_vector",
+      dimension: null,
+      reason: `${name} is required`,
+    };
+  }
+  for (const key of Object.keys(value)) {
+    if (!DIMENSIONS.includes(key)) {
+      return {
+        ok: false,
+        error: "unknown_hard_dimension",
+        dimension: key,
+        reason: `${name}.${key} is not a known execution-budget dimension`,
+      };
+    }
+    if (!active.includes(key)) {
+      return {
+        ok: false,
+        error: "inactive_hard_dimension",
+        dimension: key,
+        reason: `${name}.${key} is not an active hard dimension`,
+      };
+    }
+  }
+  const vector = {};
+  for (const dimension of active) {
+    if (!Object.hasOwn(value, dimension)) {
+      return {
+        ok: false,
+        error: "missing_active_hard_dimension",
+        dimension,
+        reason: `${name}.${dimension} must be a non-negative integer`,
+      };
+    }
+    const amount = value[dimension];
+    if (!Number.isInteger(amount) || amount < 0) {
+      return {
+        ok: false,
+        error: "invalid_hard_dimension",
+        dimension,
+        reason: `${name}.${dimension} must be a non-negative integer`,
+      };
+    }
+    vector[dimension] = amount;
+  }
+  return { ok: true, vector };
 }
 
-function subtract(left, right) {
-  return Object.fromEntries(
-    DIMENSIONS.map((dimension) => [dimension, left[dimension] - right[dimension]])
-  );
+function readActive(value, template, name) {
+  const parsed = normalizeExactVector(value, name, template);
+  if (!parsed.ok)
+    throw new TypeError(parsed.reason || `${name} does not match the active hard dimensions`);
+  return parsed.vector;
 }
 
-function exceeds(left, right) {
-  return DIMENSIONS.find((dimension) => left[dimension] > right[dimension]) || null;
+function rejectedVector(parsed, snapshot) {
+  return {
+    ok: false,
+    error: parsed.error,
+    dimension: parsed.dimension,
+    reason: parsed.reason,
+    snapshot,
+  };
 }
 
 /**
@@ -64,11 +167,12 @@ function exceeds(left, right) {
  */
 export function createMemoryExecutionBudgetLedger({ budget_id, limits } = {}) {
   requireText(budget_id, "budget_id");
-  const maximum = normalizeLimits(limits, "limits");
+  const maximum = normalizeGrantLimits(limits, "limits");
+  const active = activeHardDimensions(maximum);
   const reservations = new Map();
   const idempotency = new Map();
-  let reserved = zero();
-  let settled = zero();
+  let reserved = zeros(active);
+  let settled = zeros(active);
   let version = 1;
 
   function snapshot() {
@@ -78,28 +182,31 @@ export function createMemoryExecutionBudgetLedger({ budget_id, limits } = {}) {
       limits: { ...maximum },
       reserved: { ...reserved },
       settled: { ...settled },
-      available: subtract(maximum, add(reserved, settled)),
+      available: subtract(maximum, add(reserved, settled, active), active),
     };
   }
 
   return {
     reserve({ idempotency_key, expected_version, demand, forecasts = [] } = {}) {
       requireText(idempotency_key, "idempotency_key");
-      const requested = normalizeLimits(demand, "demand");
+      const parsed = normalizeExactVector(demand, "demand", maximum);
+      if (!parsed.ok) return rejectedVector(parsed, snapshot());
+      const requested = parsed.vector;
       const existingId = idempotency.get(idempotency_key);
-      if (existingId)
+      if (existingId) {
         return {
           ok: true,
           duplicate: true,
           reservation: structuredClone(reservations.get(existingId)),
           snapshot: snapshot(),
         };
+      }
       if (!Number.isInteger(expected_version) || expected_version !== version) {
         return { ok: false, error: "budget_version_conflict", snapshot: snapshot() };
       }
 
-      const next = add(add(reserved, settled), requested);
-      const exceeded = exceeds(next, maximum);
+      const next = add(add(reserved, settled, active), requested, active);
+      const exceeded = exceeds(next, maximum, active);
       if (exceeded) {
         return { ok: false, error: "budget_exhausted", dimension: exceeded, snapshot: snapshot() };
       }
@@ -110,11 +217,11 @@ export function createMemoryExecutionBudgetLedger({ budget_id, limits } = {}) {
         demand: requested,
         forecasts: normalizeForecasts(forecasts),
         status: "reserved",
-        settled: zero(),
+        settled: zeros(active),
       };
       reservations.set(reservation.reservation_id, reservation);
       idempotency.set(idempotency_key, reservation.reservation_id);
-      reserved = add(reserved, requested);
+      reserved = add(reserved, requested, active);
       version += 1;
       return {
         ok: true,
@@ -128,29 +235,33 @@ export function createMemoryExecutionBudgetLedger({ budget_id, limits } = {}) {
       requireText(reservation_id, "reservation_id");
       const reservation = reservations.get(reservation_id);
       if (!reservation) return { ok: false, error: "unknown_reservation", snapshot: snapshot() };
-      if (reservation.status !== "reserved")
+      const parsed = normalizeExactVector(usage, "usage", reservation.demand);
+      if (!parsed.ok) return rejectedVector(parsed, snapshot());
+      const observed = parsed.vector;
+      if (reservation.status !== "reserved") {
         return { ok: false, error: "reservation_not_active", snapshot: snapshot() };
+      }
       if (!Number.isInteger(expected_version) || expected_version !== version) {
         return { ok: false, error: "budget_version_conflict", snapshot: snapshot() };
       }
-      const observed = normalizeLimits(usage, "usage");
-      const exceeded = exceeds(observed, reservation.demand);
-      if (exceeded)
+      const exceeded = exceeds(observed, reservation.demand, active);
+      if (exceeded) {
         return {
           ok: false,
           error: "usage_exceeds_reservation",
           dimension: exceeded,
           snapshot: snapshot(),
         };
+      }
       reservation.status = "settled";
       reservation.settled = observed;
-      reserved = subtract(reserved, reservation.demand);
-      settled = add(settled, observed);
+      reserved = subtract(reserved, reservation.demand, active);
+      settled = add(settled, observed, active);
       version += 1;
       return {
         ok: true,
         reservation: structuredClone(reservation),
-        released: subtract(reservation.demand, observed),
+        released: subtract(reservation.demand, observed, active),
         snapshot: snapshot(),
       };
     },
@@ -159,13 +270,14 @@ export function createMemoryExecutionBudgetLedger({ budget_id, limits } = {}) {
       requireText(reservation_id, "reservation_id");
       const reservation = reservations.get(reservation_id);
       if (!reservation) return { ok: false, error: "unknown_reservation", snapshot: snapshot() };
-      if (reservation.status !== "reserved")
+      if (reservation.status !== "reserved") {
         return { ok: false, error: "reservation_not_active", snapshot: snapshot() };
+      }
       if (!Number.isInteger(expected_version) || expected_version !== version) {
         return { ok: false, error: "budget_version_conflict", snapshot: snapshot() };
       }
       reservation.status = "released";
-      reserved = subtract(reserved, reservation.demand);
+      reserved = subtract(reserved, reservation.demand, active);
       version += 1;
       return { ok: true, reservation: structuredClone(reservation), snapshot: snapshot() };
     },
@@ -186,10 +298,13 @@ function listTopicEvents(store, topic) {
   throw new TypeError("COP event store must provide listTopic() or replay()");
 }
 
+function zeroLike(template) {
+  const active = activeHardDimensions(template);
+  return zeros(active.length > 0 ? active : DIMENSIONS);
+}
+
 function projectEventLedger({ budget_id, limits, events, require_authority_grant = false }) {
-  const reservations = new Map();
-  let reserved = zero();
-  let settled = zero();
+  const relevant = [];
   let version = 0;
   let authority_version = 0;
   let mandate_ref = null;
@@ -200,44 +315,67 @@ function projectEventLedger({ budget_id, limits, events, require_authority_grant
     version = Math.max(version, event.topic?.seq || 0);
     const payload = event.payload || {};
     if (payload.budget_id !== budget_id) continue;
-
+    relevant.push(event);
     if (event.event_type === "ExecutionBudgetGrant" || payload.kind === "ExecutionBudgetGrant") {
       has_grant = true;
       mandate_ref = payload.mandate_ref || mandate_ref;
       authority_version = Math.max(authority_version, payload.authority_version || 1);
-      authoritative_limits = normalizeLimits(payload.limits, "grant.limits");
+      authoritative_limits = normalizeGrantLimits(payload.limits, "grant.limits");
+    }
+  }
+
+  // No grant under require_authority_grant is absence of authority, so every
+  // dimension of the supplied fallback has zero capacity. That is not an
+  // omitted dimension of a sparse grant.
+  const effectiveLimits = authoritative_limits
+    ? { ...authoritative_limits }
+    : require_authority_grant
+      ? zeroLike(limits)
+      : limits
+        ? { ...limits }
+        : denseZero();
+  const active = activeHardDimensions(effectiveLimits);
+  const reservations = new Map();
+  let reserved = zeros(active);
+  let settled = zeros(active);
+
+  for (const event of relevant) {
+    const payload = event.payload || {};
+    if (event.event_type === "ExecutionBudgetGrant" || payload.kind === "ExecutionBudgetGrant") {
       continue;
     }
-
     if (event.event_type === "ExecutionBudgetReservation") {
       if (reservations.has(payload.reservation?.reservation_id)) continue;
       const reservation = structuredClone(payload.reservation);
       reservations.set(reservation.reservation_id, reservation);
-      reserved = add(reserved, reservation.demand);
+      reserved = add(
+        reserved,
+        readActive(reservation.demand, effectiveLimits, "reservation.demand"),
+        active
+      );
       continue;
     }
     const reservation = reservations.get(payload.reservation_id);
     if (!reservation || reservation.status !== "reserved") continue;
     if (event.event_type === "ExecutionBudgetSettlement") {
+      const usage = readActive(payload.usage, effectiveLimits, "settlement.usage");
       reservation.status = "settled";
-      reservation.settled = structuredClone(payload.usage);
-      reserved = subtract(reserved, reservation.demand);
-      settled = add(settled, payload.usage);
+      reservation.settled = usage;
+      reserved = subtract(
+        reserved,
+        readActive(reservation.demand, effectiveLimits, "reservation.demand"),
+        active
+      );
+      settled = add(settled, usage, active);
     } else if (event.event_type === "ExecutionBudgetRelease") {
       reservation.status = "released";
-      reserved = subtract(reserved, reservation.demand);
+      reserved = subtract(
+        reserved,
+        readActive(reservation.demand, effectiveLimits, "reservation.demand"),
+        active
+      );
     }
   }
-
-  // The store's authoritative grant ALWAYS trumps caller-provided limits.
-  // If require_authority_grant is true and no grant exists, capacity is 0 (fail-closed).
-  const effectiveLimits = authoritative_limits
-    ? { ...authoritative_limits }
-    : require_authority_grant
-      ? zero()
-      : limits
-        ? { ...limits }
-        : zero();
 
   return {
     reservations,
@@ -250,7 +388,7 @@ function projectEventLedger({ budget_id, limits, events, require_authority_grant
       limits: { ...effectiveLimits },
       reserved,
       settled,
-      available: subtract(effectiveLimits, add(reserved, settled)),
+      available: subtract(effectiveLimits, add(reserved, settled, active), active),
     },
   };
 }
@@ -275,7 +413,7 @@ export function recordExecutionBudgetGrant(store, input) {
   requireText(input?.budget_id, "budget_id");
   requireText(input?.mandate_ref, "mandate_ref");
   requireText(input?.principal_ref, "principal_ref");
-  const normalizedLimits = normalizeLimits(input.limits, "limits");
+  const normalizedLimits = normalizeGrantLimits(input.limits, "limits");
   const topic = input.topic_id || executionBudgetTopic(input.budget_id);
   const version =
     Number.isInteger(input.authority_version) && input.authority_version > 0
@@ -334,7 +472,7 @@ export function createEventSourcedExecutionBudgetLedger({
   require_authority_grant = false,
 } = {}) {
   requireText(budget_id, "budget_id");
-  const fallbackLimits = limits ? normalizeLimits(limits, "limits") : zero();
+  const fallbackLimits = limits ? normalizeGrantLimits(limits, "limits") : denseZero();
   if (!store || typeof store.append !== "function") {
     throw new TypeError("COP event store must provide append()");
   }
@@ -368,27 +506,37 @@ export function createEventSourcedExecutionBudgetLedger({
   return {
     reserve({ idempotency_key, expected_version, demand, forecasts = [] } = {}) {
       requireText(idempotency_key, "idempotency_key");
-      const requested = normalizeLimits(demand, "demand");
       const state = current();
       if (require_authority_grant && !state.snapshot.has_grant) {
         return { ok: false, error: "budget_not_authorized", snapshot: state.snapshot };
       }
+      const parsed = normalizeExactVector(demand, "demand", state.snapshot.limits);
+      if (!parsed.ok) return rejectedVector(parsed, state.snapshot);
+      const requested = parsed.vector;
       const existing = [...state.reservations.values()].find(
         (reservation) => reservation.idempotency_key === idempotency_key
       );
-      if (existing)
+      if (existing) {
         return {
           ok: true,
           duplicate: true,
           reservation: structuredClone(existing),
           snapshot: state.snapshot,
         };
-      if (!Number.isInteger(expected_version) || expected_version !== state.snapshot.version)
+      }
+      if (!Number.isInteger(expected_version) || expected_version !== state.snapshot.version) {
         return conflict(state.snapshot);
-      const next = add(add(state.snapshot.reserved, state.snapshot.settled), requested);
-      const dimension = exceeds(next, state.snapshot.limits);
-      if (dimension)
+      }
+      const active = activeHardDimensions(state.snapshot.limits);
+      const next = add(
+        add(state.snapshot.reserved, state.snapshot.settled, active),
+        requested,
+        active
+      );
+      const dimension = exceeds(next, state.snapshot.limits, active);
+      if (dimension) {
         return { ok: false, error: "budget_exhausted", dimension, snapshot: state.snapshot };
+      }
 
       const reservation = {
         reservation_id: `reservation:${budget_id}:${idempotency_key}`,
@@ -397,7 +545,7 @@ export function createEventSourcedExecutionBudgetLedger({
         demand: requested,
         forecasts: normalizeForecasts(forecasts),
         status: "reserved",
-        settled: zero(),
+        settled: zeros(active),
       };
       const result = append(
         "ExecutionBudgetReservation",
@@ -417,38 +565,50 @@ export function createEventSourcedExecutionBudgetLedger({
 
     settle({ reservation_id, expected_version, usage, idempotency_key } = {}) {
       requireText(reservation_id, "reservation_id");
-      const observed = normalizeLimits(usage, "usage");
       const key = idempotency_key || `settle:${reservation_id}`;
       const appendKey = `execution-budget:settle:${budget_id}:${key}`;
       const state = current();
       const reservation = state.reservations.get(reservation_id);
       if (!reservation)
         return { ok: false, error: "unknown_reservation", snapshot: state.snapshot };
+      const parsed = normalizeExactVector(usage, "usage", reservation.demand);
+      if (!parsed.ok) return rejectedVector(parsed, state.snapshot);
+      const observed = parsed.vector;
+      const active = activeHardDimensions(state.snapshot.limits);
       const prior = listTopicEvents(store, topic).find(
         (event) => event.idempotency_key === appendKey
       );
       if (prior) {
-        const priorUsage = prior.payload.usage;
+        const priorUsage = readActive(
+          prior.payload.usage,
+          state.snapshot.limits,
+          "settlement.usage"
+        );
+        const demand = readActive(reservation.demand, state.snapshot.limits, "reservation.demand");
         return {
           ok: true,
           duplicate: true,
           reservation: structuredClone(reservation),
-          released: subtract(reservation.demand, priorUsage),
+          released: subtract(demand, priorUsage, active),
           snapshot: state.snapshot,
         };
       }
-      if (reservation.status !== "reserved")
+      if (reservation.status !== "reserved") {
         return { ok: false, error: "reservation_not_active", snapshot: state.snapshot };
-      if (!Number.isInteger(expected_version) || expected_version !== state.snapshot.version)
+      }
+      if (!Number.isInteger(expected_version) || expected_version !== state.snapshot.version) {
         return conflict(state.snapshot);
-      const dimension = exceeds(observed, reservation.demand);
-      if (dimension)
+      }
+      const demand = readActive(reservation.demand, state.snapshot.limits, "reservation.demand");
+      const dimension = exceeds(observed, demand, active);
+      if (dimension) {
         return {
           ok: false,
           error: "usage_exceeds_reservation",
           dimension,
           snapshot: state.snapshot,
         };
+      }
       const result = append("ExecutionBudgetSettlement", expected_version, appendKey, {
         reservation_id,
         usage: observed,
@@ -460,7 +620,11 @@ export function createEventSourcedExecutionBudgetLedger({
         ok: true,
         duplicate: Boolean(result.duplicate),
         reservation: structuredClone(settledReservation),
-        released: subtract(reservation.demand, observed),
+        released: subtract(
+          readActive(reservation.demand, state.snapshot.limits, "reservation.demand"),
+          observed,
+          active
+        ),
         snapshot: after.snapshot,
       };
     },
@@ -481,10 +645,12 @@ export function createEventSourcedExecutionBudgetLedger({
           snapshot: state.snapshot,
         };
       }
-      if (reservation.status !== "reserved")
+      if (reservation.status !== "reserved") {
         return { ok: false, error: "reservation_not_active", snapshot: state.snapshot };
-      if (!Number.isInteger(expected_version) || expected_version !== state.snapshot.version)
+      }
+      if (!Number.isInteger(expected_version) || expected_version !== state.snapshot.version) {
         return conflict(state.snapshot);
+      }
       const result = append("ExecutionBudgetRelease", expected_version, appendKey, {
         reservation_id,
       });

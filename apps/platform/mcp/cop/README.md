@@ -39,7 +39,15 @@ reservation/settlement, traces, and imputation.
 `codexAcpRuntime()` preserves Codex's native inspection tools in its isolated working directory. Its
 default `read-only` permission policy can admit only one-shot, local inspection commands; file
 edits, network/elevation requests, persistent grants and unknown permission requests are refused and
-recorded in the invocation's `permission_trace`. Additional MCP servers remain explicitly admitted
+recorded in the invocation's `permission_trace`. That policy is not an enforceable tool-call count.
+ACP hard budgets admit only dimensions this adapter can bound before `session/prompt`: one governed
+prompt (`max_steps`) and a prompt abort timeout installed before the session (`max_elapsed_ms`) that
+is no greater than the reservation. `max_tool_calls`, `max_subagents`, and `max_external_effects`
+are unenforceable on this profile, including a reserved zero. Tool-call ids, kinds, statuses,
+permission decisions, the measured elapsed time, and usage updates stay observations. Provider cost
+is `not_estimated` when the ACP usage update has no cost. An omitted hard dimension is not zero
+usage. The current Agent JHN grant still names all five dimensions, so this preflight refuses that
+grant. The mandate and the grant stay as they are. Additional MCP servers remain explicitly admitted
 per runtime: they must be public/read-only and separately policy-reviewed, so the Cogentia MCP is
 never injected as an ambient re-entry path.
 
