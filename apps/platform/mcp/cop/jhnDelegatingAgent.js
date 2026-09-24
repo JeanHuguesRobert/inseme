@@ -13,6 +13,7 @@ import {
   normalizeReasonedHandlerAssistDecision,
   recordHandlerAssistDecision,
 } from "./handlerAssistDecision.js";
+import { requiredCapabilityOf, satisfiesCapabilityRequirement } from "./capabilityRequirement.js";
 import { createEventSourcedExecutionBudgetLedger } from "../../../../packages/cop-core/src/execution-budget.js";
 
 function normalizeExecutionBudget(store, value) {
@@ -158,9 +159,10 @@ export function createJhnDelegatingAgent(options = {}) {
           idempotency_key: `conv:${conversationId}:capability-unavailable:${turnId || Date.now()}`,
         });
       } else if (wantsDelegate && handler) {
-        const { invokeGovernedCapability, isMandateActive } =
-          await import("../../../../packages/cop-core/src/governed-act.js");
-        if (!isMandateActive(store, identity.mandate_ref)) {
+        const requiredCapability = requiredCapabilityOf(handlerAssistDecision);
+        if (
+          !satisfiesCapabilityRequirement(handlerAssistDecision.capability_requirement, handler)
+        ) {
           store.append({
             topic_id: topicId,
             epistemic_status: "observed",
@@ -168,40 +170,17 @@ export function createJhnDelegatingAgent(options = {}) {
             visibility: "restricted",
             payload: {
               kind: "conversation.delegation_refused",
-              reason: "mandate_inactive",
+              reason: "capability_requirement_mismatch",
               mandate_ref: identity.mandate_ref,
+              capability: requiredCapability,
+              handler_capability: handler.capability || null,
             },
-            idempotency_key: `conv:${conversationId}:refused:${Date.now()}`,
-          });
-        } else if (!executionBudget) {
-          store.append({
-            topic_id: topicId,
-            epistemic_status: "observed",
-            actor_ref: identity.logical_agent_ref,
-            visibility: "restricted",
-            payload: {
-              kind: "conversation.delegation_refused",
-              reason: "execution_budget_required",
-              mandate_ref: identity.mandate_ref,
-              capability: handler.capability || "reasoning.assist",
-            },
-            idempotency_key: `conv:${conversationId}:budget-required:${turnId || Date.now()}`,
+            idempotency_key: `conv:${conversationId}:capability-mismatch:${turnId || Date.now()}`,
           });
         } else {
-          const reservationKey = `jhn-delegation:${conversationId}:${turnId || Date.now()}`;
-          const invResult = await invokeGovernedCapability({
-            store,
-            ledger: executionBudget.ledger,
-            handler,
-            identity: { ...identity, topic_id: topicId },
-            capability: handler.capability || "reasoning.assist",
-            input: { message, history },
-            demand: executionBudget.demand,
-            forecasts: executionBudget.forecasts,
-            idempotency_key: reservationKey,
-          });
-
-          if (!invResult.ok && !invResult.called_provider) {
+          const { invokeGovernedCapability, isMandateActive } =
+            await import("../../../../packages/cop-core/src/governed-act.js");
+          if (!isMandateActive(store, identity.mandate_ref)) {
             store.append({
               topic_id: topicId,
               epistemic_status: "observed",
@@ -209,17 +188,60 @@ export function createJhnDelegatingAgent(options = {}) {
               visibility: "restricted",
               payload: {
                 kind: "conversation.delegation_refused",
-                reason: invResult.error,
+                reason: "mandate_inactive",
                 mandate_ref: identity.mandate_ref,
-                capability: handler.capability || "reasoning.assist",
-                budget: invResult.snapshot,
+                capability: requiredCapability,
               },
-              idempotency_key: `conv:${conversationId}:budget-refused:${turnId || Date.now()}`,
+              idempotency_key: `conv:${conversationId}:refused:${Date.now()}`,
+            });
+          } else if (!executionBudget) {
+            store.append({
+              topic_id: topicId,
+              epistemic_status: "observed",
+              actor_ref: identity.logical_agent_ref,
+              visibility: "restricted",
+              payload: {
+                kind: "conversation.delegation_refused",
+                reason: "execution_budget_required",
+                mandate_ref: identity.mandate_ref,
+                capability: requiredCapability,
+              },
+              idempotency_key: `conv:${conversationId}:budget-required:${turnId || Date.now()}`,
             });
           } else {
-            handlerReceipt = invResult;
-            const trace = invResult.events?.find((event) => event.payload?.kind === "Trace");
-            handlerText = trace?.payload?.effect?.text || trace?.payload?.effect?.summary || null;
+            const reservationKey = `jhn-delegation:${conversationId}:${turnId || Date.now()}`;
+            const invResult = await invokeGovernedCapability({
+              store,
+              ledger: executionBudget.ledger,
+              handler,
+              identity: { ...identity, topic_id: topicId },
+              capability: requiredCapability,
+              input: { message, history },
+              demand: executionBudget.demand,
+              forecasts: executionBudget.forecasts,
+              idempotency_key: reservationKey,
+            });
+
+            if (!invResult.ok && !invResult.called_provider) {
+              store.append({
+                topic_id: topicId,
+                epistemic_status: "observed",
+                actor_ref: identity.logical_agent_ref,
+                visibility: "restricted",
+                payload: {
+                  kind: "conversation.delegation_refused",
+                  reason: invResult.error,
+                  mandate_ref: identity.mandate_ref,
+                  capability: requiredCapability,
+                  budget: invResult.snapshot,
+                },
+                idempotency_key: `conv:${conversationId}:budget-refused:${turnId || Date.now()}`,
+              });
+            } else {
+              handlerReceipt = invResult;
+              const trace = invResult.events?.find((event) => event.payload?.kind === "Trace");
+              handlerText = trace?.payload?.effect?.text || trace?.payload?.effect?.summary || null;
+            }
           }
         }
       }

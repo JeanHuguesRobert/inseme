@@ -111,6 +111,7 @@ test("JHN delegation fails closed without a bounded execution budget", async () 
     store,
     handler: {
       id: "handler:test",
+      capability: "reasoning.assist",
       async invoke() {
         invoked = true;
         return { text: "must not run" };
@@ -153,6 +154,7 @@ test("JHN delegation releases its reservation when the handler fails", async () 
     store,
     handler: {
       id: "handler:failing-test",
+      capability: "reasoning.assist",
       async invoke() {
         throw new Error("handler unavailable");
       },

@@ -253,10 +253,34 @@ Janus instrumentation should remain optional and separate: only an explicitly
 referenced, genuinely decisive prospective Assertion would be eligible for the
 Janus profile.
 
+## Production Reality (Inseme #99)
+
+`capability_requirement` is now load-bearing on the production JHN delegation
+path. `jhnDelegatingAgent.js` compares the recorded requirement to the bound
+handler's declared `capability` through
+`satisfiesCapabilityRequirement(requirement, handler)` before Mandate, budget,
+or `invokeGovernedCapability`. Current semantics are exact string equality and
+fail closed. There is still no capability hierarchy: `coding.assist` and
+`coding.assist.read` do not contain each other.
+
+A mismatch is recorded as `conversation.delegation_refused` with
+`reason: capability_requirement_mismatch`. That reason is distinct from
+`required_capability_unavailable`, `mandate_inactive`,
+`execution_budget_required`, `capability_out_of_scope`, and budget exhaustion.
+The original `HandlerAssistDecisionRecorded` event is left unchanged. On the
+matching path, the same required capability string is the one Mandate
+evaluates.
+
+The operational decider may request `coding.assist.read` for inspection/review
+of existing code. Mutating requests keep the generic unresolved
+`coding.assist` requirement. `coding.assist.write` is not an implemented
+capability.
+
 ## Residue
 
 - The local payload convention is not yet a stable public schema.
 - The exact trace vocabulary for output use, retention, acceptance, and
   incremental value remains to be designed separately.
-- Production integration is outside #93 and requires its own mandate.
+- Production integration of the decision value itself is in #95/#96; #99 makes
+  the requirement effective without widening Mandate or budget.
 - The #90 field sample remains unchanged by this sandbox.

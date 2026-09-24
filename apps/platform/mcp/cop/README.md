@@ -2,7 +2,7 @@
 title: mcp/cop
 author: unknown
 date: "2025-12-24"
-last_modified_at: "2026-08-23"
+last_modified_at: "2026-09-24"
 document_role: source
 document_kind: documentation
 visibility: public
@@ -60,7 +60,11 @@ continuations when the account, provider, host, or inherited context is absent.
 `codexAcpRuntime()`/`codexAcpCapabilityOffer()` and
 `openCodeMagistralRuntime()`/`openCodeMagistralCapabilityOffer()` are distinct replaceable handler
 bindings for the same `coding.assist.read` capability. Register both pairs in the host runtime
-client and capability catalog. A continuation requirement may then:
+client and capability catalog. `HandlerAssistDecision.capability_requirement` is load-bearing in
+`jhnDelegatingAgent`: a bound handler is considered only when its declared `capability` exactly
+equals that requirement. `coding.assist` and `coding.assist.read` are distinct strings; there is no
+prefix or inheritance match. A mismatch is refused as `capability_requirement_mismatch` before
+Mandate evaluation, budget reservation, or governed invocation. A continuation requirement may then:
 
 - pin `runtime_id` (or `offer_id`) for an explicit operator/governance choice;
 - request `execution_surface: "acp"` for Codex ACP or `execution_surface: "cli"` for OpenCode; or
