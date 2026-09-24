@@ -31,7 +31,7 @@
     "react-router-dom": "^6.0.0 || ^7.0.0"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.116.0",
+    "@supabase/supabase-js": "^2.117.1",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {

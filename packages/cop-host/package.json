@@ -25,22 +25,26 @@
     "./logging/*": "./src/lib/logging/*"
   },
   "dependencies": {
-    "@axiomhq/js": "^1.8.0",
-    "@axiomhq/logging": "^0.1.7",
-    "@axiomhq/react": "^0.1.7",
+    "@axiomhq/js": "^2.0.0",
+    "@axiomhq/logging": "^0.4.1",
+    "@axiomhq/react": "^0.4.1",
     "@inseme/brique-kudocracy": "workspace:*",
     "@inseme/ui": "workspace:*",
-    "@loglayer/transport-axiom": "^2.1.16",
-    "@supabase/supabase-js": "^2.116.0",
-    "dotenv": "^17.4.2",
-    "glob": "^10.5.0",
-    "loglayer": "^8.5.0",
-    "lucide-react": "^0.563.0",
+    "@loglayer/transport-axiom": "^3.3.0",
+    "@ngrok/ngrok": "^1.7.0",
+    "@supabase/supabase-js": "^2.117.1",
+    "dotenv": "^18.0.3",
+    "glob": "^13.0.6",
+    "loglayer": "^9.4.0",
+    "lucide-react": "^0.577.0",
     "minimist": "^1.2.8",
-    "ngrok": "5.0.0-beta.2",
     "qrcode": "^1.5.4",
-    "react-router-dom": "^6.30.6",
-    "serialize-error": "^11.0.3",
-    "undici": "^7.29.1"
+    "react-router-dom": "^7.18.4",
+    "serialize-error": "^13.0.1",
+    "undici": "^8.11.2"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   }
 }

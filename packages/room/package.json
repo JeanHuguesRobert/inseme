@@ -17,7 +17,7 @@
     "@inseme/ophelia": "workspace:*",
     "@inseme/ui": "workspace:*",
     "@jitsi/react-sdk": "^1.4.4",
-    "lucide-react": "^0.562.0"
+    "lucide-react": "^0.577.0"
   },
   "peerDependencies": {
     "@supabase/supabase-js": ">=2.0.0",

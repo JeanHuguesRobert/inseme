@@ -8,10 +8,10 @@
     "@inseme/cop-host": "workspace:*",
     "@inseme/room": "workspace:*",
     "@inseme/ui": "workspace:*",
-    "lucide-react": "^0.562.0",
-    "react": "^18.3.1",
+    "lucide-react": "^0.577.0",
+    "react": "^19.3.0",
     "react-camera-pro": "^1.4.0",
-    "react-dom": "^18.3.1",
+    "react-dom": "^19.3.0",
     "tau-prolog": "^0.3.4"
   }
 }

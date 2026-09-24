@@ -46,14 +46,14 @@
     "@eslint/js": "^9.39.5",
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.26",
-    "glob": "^11.1.0",
-    "globals": "^15.15.0",
-    "lint-staged": "^16.4.0",
-    "prettier": "^3.9.8",
-    "turbo": "^2.11.2",
-    "undici": "^7.29.1"
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "glob": "^13.0.6",
+    "globals": "^17.12.0",
+    "lint-staged": "^17.5.1",
+    "prettier": "^3.9.9",
+    "turbo": "^2.11.3",
+    "undici": "^8.11.2"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -62,9 +62,17 @@
     ],
     "*.css": "node scripts/prettier-staged.js"
   },
+  "pnpm": {
+    "overrides": {
+      "http-proxy-middleware": "3.0.7",
+      "multiparty": "4.3.1",
+      "sharp": "0.35.4",
+      "workbox-build": "7.4.1"
+    }
+  },
   "dependencies": {
-    "@supabase/supabase-js": "^2.116.0",
-    "dotenv": "^17.4.2",
+    "@supabase/supabase-js": "^2.117.1",
+    "dotenv": "^18.0.3",
     "node-fetch": "^3.3.2"
   }
 }

@@ -5,8 +5,8 @@
   "dependencies": {
     "@inseme/cop-host": "workspace:*",
     "@inseme/ui": "workspace:*",
-    "date-fns": "^3.6.0",
-    "react": "^18.3.1",
-    "react-router-dom": "^6.30.6"
+    "date-fns": "^4.4.0",
+    "react": "^19.3.0",
+    "react-router-dom": "^7.18.4"
   }
 }

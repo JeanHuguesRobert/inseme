@@ -5,9 +5,9 @@
   "dependencies": {
     "@inseme/cop-host": "workspace:*",
     "@inseme/ui": "workspace:*",
-    "openai": "^4.104.0",
-    "react": "^18.3.1",
-    "react-router-dom": "^6.30.6",
-    "recharts": "^2.15.4"
+    "openai": "^7.23.0",
+    "react": "^19.3.0",
+    "react-router-dom": "^7.18.4",
+    "recharts": "^3.10.1"
   }
 }

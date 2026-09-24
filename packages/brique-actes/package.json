@@ -6,11 +6,11 @@
   "dependencies": {
     "@inseme/cop-host": "workspace:*",
     "@inseme/ui": "workspace:*",
-    "@tanstack/react-query": "^5.103.1",
+    "@tanstack/react-query": "^5.103.2",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.30.6"
+    "jspdf": "^4.2.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4"
   }
 }

@@ -38,6 +38,6 @@
     "node": ">=20"
   },
   "optionalDependencies": {
-    "@supabase/supabase-js": "^2.116.0"
+    "@supabase/supabase-js": "^2.117.1"
   }
 }

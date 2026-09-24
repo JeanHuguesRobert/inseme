@@ -23,8 +23,8 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "vitest": "^1.6.1"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
   },
   "dependencies": {
     "swagger-ui-dist": "^5.33.0"

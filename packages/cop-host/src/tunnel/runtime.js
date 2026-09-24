@@ -3,7 +3,7 @@
  * Script to create a tunnel (Cloudflare or Ngrok) for the platform API
  */
 
-import ngrok from "ngrok";
+import ngrok from "@ngrok/ngrok";
 import { exec } from "child_process";
 import { promisify } from "util";
 import minimist from "minimist";
@@ -323,6 +323,7 @@ if (TERMINAL_ENABLED) {
 
 let IS_PROXY_ENABLED = true; // Track if HTTP_PROXY is enabled in .env
 let CF_PROCESS = null; // Track cloudflare process
+let NGROK_LISTENER = null; // Track embedded ngrok listener
 let IS_TUNNEL_RUNNING = false;
 let PROXY_SERVER = null;
 
@@ -658,9 +659,13 @@ async function startTunnel() {
   } else {
     debugLog("Starting ngrok tunnel...", "TUNNEL");
     try {
-      await ngrok.authtoken(NGROK_TOKEN);
       const ngrokTargetPort = USE_PROXY ? PROXY_PORT : PORT;
-      const url = await ngrok.connect({ addr: Number(ngrokTargetPort) });
+      NGROK_LISTENER = await ngrok.forward({
+        addr: Number(ngrokTargetPort),
+        authtoken: NGROK_TOKEN,
+      });
+      const url = NGROK_LISTENER.url();
+      if (!url) throw new Error("ngrok listener did not provide a public URL");
       PUBLIC_URL = url;
       IS_TUNNEL_RUNNING = true;
       displayQrCode(url);
@@ -694,9 +699,9 @@ async function stopTunnel() {
     if (TUNNEL_TYPE === "cloudflare" && CF_PROCESS) {
       CF_PROCESS.kill();
       CF_PROCESS = null;
-    } else {
-      await ngrok.disconnect();
-      await ngrok.kill();
+    } else if (NGROK_LISTENER) {
+      await NGROK_LISTENER.close();
+      NGROK_LISTENER = null;
     }
 
     PUBLIC_URL = null;
@@ -1516,6 +1521,9 @@ async function start() {
       if (TUNNEL_TYPE === "cloudflare" && CF_PROCESS) {
         CF_PROCESS.kill();
         CF_PROCESS = null;
+      } else if (NGROK_LISTENER) {
+        await NGROK_LISTENER.close();
+        NGROK_LISTENER = null;
       }
       await startTunnel();
     }

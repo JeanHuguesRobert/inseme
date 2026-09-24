@@ -242,6 +242,7 @@ describe("Mandated Agent Authority & Security Enforcement (Issue #55)", () => {
   // Acceptance Criterion 5
   it("AC5: child authority wider than parent -> refuse (child_authority_exceeds_parent)", () => {
     const store = createMemoryCopStore();
+    const evaluationTime = new Date("2026-09-06T12:00:00.000Z");
     const parentMandate = {
       mandate_id: "mandate:parent@v1",
       version: "v1",
@@ -269,6 +270,7 @@ describe("Mandated Agent Authority & Security Enforcement (Issue #55)", () => {
       mandate: childExcessCap,
       parent_mandate: parentMandate,
       capability: "tool:read",
+      at_time: evaluationTime,
     });
     expect(grantCap.granted).toBe(false);
     expect(grantCap.error).toBe("child_authority_exceeds_parent");
@@ -289,6 +291,7 @@ describe("Mandated Agent Authority & Security Enforcement (Issue #55)", () => {
       mandate: childExcessTime,
       parent_mandate: parentMandate,
       capability: "tool:read",
+      at_time: evaluationTime,
     });
     expect(grantTime.granted).toBe(false);
     expect(grantTime.error).toBe("child_authority_exceeds_parent");
@@ -309,6 +312,7 @@ describe("Mandated Agent Authority & Security Enforcement (Issue #55)", () => {
       mandate: childExcessBudget,
       parent_mandate: parentMandate,
       capability: "tool:read",
+      at_time: evaluationTime,
     });
     expect(grantBudget.granted).toBe(false);
     expect(grantBudget.error).toBe("child_authority_exceeds_parent");
@@ -331,6 +335,7 @@ describe("Mandated Agent Authority & Security Enforcement (Issue #55)", () => {
       parent_mandate: parentMandate,
       capability: "tool:read",
       demand: { max_steps: 3 },
+      at_time: evaluationTime,
     });
     expect(grantValid.granted).toBe(true);
     expect(grantValid.decision).toBe("granted");

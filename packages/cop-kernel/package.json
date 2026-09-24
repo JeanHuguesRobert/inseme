@@ -21,10 +21,10 @@
   },
   "dependencies": {
     "@inseme/cop-core": "workspace:*",
-    "@supabase/supabase-js": "^2.116.0",
+    "@supabase/supabase-js": "^2.117.1",
     "mysql2": "^3.24.4",
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
+    "sqlite3": "^6.0.1",
     "yaml": "^2.9.1"
   },
   "engines": {

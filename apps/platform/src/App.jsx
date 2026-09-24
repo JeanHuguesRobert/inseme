@@ -2,6 +2,7 @@
 
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { registerSW } from "virtual:pwa-register";
 import Methodologie from "./pages/Methodologie";
 import GlobalStatusIndicator from "./components/common/GlobalStatusIndicator";
 import Audit from "./pages/Audit";
@@ -139,7 +140,7 @@ export function App() {
           path="/oleole"
           element={
             <LazyRoute>
-              <OleoleHome />
+              <OleoleHome registerServiceWorker={registerSW} />
             </LazyRoute>
           }
         />
@@ -147,7 +148,7 @@ export function App() {
           path="/oleole/*"
           element={
             <LazyRoute>
-              <OleoleHome />
+              <OleoleHome registerServiceWorker={registerSW} />
             </LazyRoute>
           }
         />

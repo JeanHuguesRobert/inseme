@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { registerSW } from "virtual:pwa-register";
+
 import OleoleMap from "../components/OleoleMap.jsx";
 import TimeSelector from "../components/TimeSelector.jsx";
 import PresencePanel from "../components/PresencePanel.jsx";
@@ -280,18 +280,19 @@ function InstallPanel() {
   );
 }
 
-function UpdateNotice() {
+function UpdateNotice({ registerServiceWorker }) {
   const { t } = useI18n();
   const [applyUpdate, setApplyUpdate] = useState(null);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    const updateServiceWorker = registerSW({
+    if (typeof registerServiceWorker !== "function") return undefined;
+    const updateServiceWorker = registerServiceWorker({
       onNeedRefresh() {
         setApplyUpdate(() => updateServiceWorker);
       },
     });
-  }, []);
+  }, [registerServiceWorker]);
 
   if (!applyUpdate || dismissed) return null;
   return (
@@ -366,7 +367,7 @@ function InfoPanel() {
   );
 }
 
-function OleoleHomeInner() {
+function OleoleHomeInner({ registerServiceWorker }) {
   const { t, locale } = useI18n();
   const [subjectRef] = useState(() => getOrCreateSubjectRef());
   const [windowKey, setWindowKey] = useState("now");
@@ -546,7 +547,7 @@ function OleoleHomeInner() {
         </section>
 
         <aside className="oleole-side">
-          <UpdateNotice />
+          <UpdateNotice registerServiceWorker={registerServiceWorker} />
           <ContextPanel
             places={places}
             selectedPlace={selectedPlace}
@@ -630,10 +631,10 @@ function OleoleHomeInner() {
   );
 }
 
-export default function OleoleHome() {
+export default function OleoleHome({ registerServiceWorker }) {
   return (
     <I18nProvider>
-      <OleoleHomeInner />
+      <OleoleHomeInner registerServiceWorker={registerServiceWorker} />
     </I18nProvider>
   );
 }

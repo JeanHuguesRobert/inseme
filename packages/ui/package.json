@@ -16,9 +16,9 @@
   },
   "dependencies": {
     "@inseme/cop-host": "workspace:*",
-    "dompurify": "^3.4.15",
-    "lucide-react": "^0.562.0",
-    "marked": "^17.0.6",
+    "dompurify": "^3.4.16",
+    "lucide-react": "^0.577.0",
+    "marked": "^18.0.14",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   }

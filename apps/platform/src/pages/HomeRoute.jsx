@@ -7,6 +7,7 @@
  * Olé Olé is not a separate product: same Twin (twin:jhn), different service façade.
  */
 import { lazy, Suspense } from "react";
+import { registerSW } from "virtual:pwa-register";
 import { getConfig } from "../common/config/instanceConfig.client.js";
 import { isOleoleFacade } from "@inseme/brique-oleole/src/lib/facade-host.js";
 import JhnLandingPage from "./JhnLandingPage";
@@ -19,7 +20,7 @@ export default function HomeRoute() {
   if (isOleoleFacade()) {
     return (
       <Suspense fallback={<div className="p-8 text-center">Olé Olé…</div>}>
-        <OleoleHome />
+        <OleoleHome registerServiceWorker={registerSW} />
       </Suspense>
     );
   }

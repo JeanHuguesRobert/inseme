@@ -5,19 +5,19 @@
   "main": "index.jsx",
   "type": "module",
   "dependencies": {
-    "@axiomhq/js": "^1.8.0",
-    "@axiomhq/logging": "^0.1.7",
-    "@axiomhq/react": "^0.1.7",
+    "@axiomhq/js": "^2.0.0",
+    "@axiomhq/logging": "^0.4.1",
+    "@axiomhq/react": "^0.4.1",
     "@inseme/cop-host": "workspace:*",
     "@inseme/cop-kernel": "workspace:*",
     "@inseme/cop-prolog": "workspace:*",
     "@inseme/room": "workspace:*",
     "@inseme/ui": "workspace:*",
-    "@loglayer/transport-axiom": "^2.1.16",
-    "loglayer": "^8.5.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "serialize-error": "^11.0.3"
+    "@loglayer/transport-axiom": "^3.3.0",
+    "loglayer": "^9.4.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "serialize-error": "^13.0.1"
   },
   "keywords": [
     "democracy",
