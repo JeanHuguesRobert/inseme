@@ -11,11 +11,18 @@ import { readJhnConversationState, conversationTopic } from "../cop/jhnConversat
 import { createSqliteCopRuntimeStore } from "../cop/sqliteRuntimeStore.js";
 import { createMemoryCopEventStore } from "../../../../packages/cop-core/src/cop-event-spool.js";
 import { recordMandateDeclaration } from "../../../../packages/cop-core/src/governed-act.js";
+import {
+  JHN_AGENT_LOGICAL_AGENT_REF,
+  JHN_AGENT_MANDATE_REF,
+  JHN_AGENT_PRINCIPAL_REF,
+} from "../cop/jhnLocalAgentAuthority.js";
 
+// Injected-store cases declare this normative id themselves. They do not use
+// the transport ACL row `mandate:jhn:runtime:1`.
 const identity = Object.freeze({
-  principal_ref: "principal:jhn",
-  mandate_ref: "mandate:jhn:runtime:1",
-  logical_agent_ref: "agent:jhn",
+  principal_ref: JHN_AGENT_PRINCIPAL_REF,
+  mandate_ref: JHN_AGENT_MANDATE_REF,
+  logical_agent_ref: JHN_AGENT_LOGICAL_AGENT_REF,
 });
 
 function recordedEvents(stateDirectory, conversationId) {

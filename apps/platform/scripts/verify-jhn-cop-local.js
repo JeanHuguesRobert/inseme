@@ -2,6 +2,15 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
+import { createSqliteCopRuntimeStore } from "../mcp/cop/sqliteRuntimeStore.js";
+import {
+  JHN_AGENT_BUDGET_ID,
+  JHN_AGENT_LOGICAL_AGENT_REF,
+  JHN_AGENT_MANDATE_REF,
+  JHN_AGENT_PRINCIPAL_REF,
+  JHN_TRANSPORT_GRANTEE_REF,
+  JHN_TRANSPORT_MANDATE_REF,
+} from "../mcp/cop/jhnLocalAgentAuthority.js";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const defaultStateDirectory = path.resolve(scriptDirectory, "..", "instances", "jhn-cop-local");
@@ -53,23 +62,42 @@ export async function verifyJhnLocalCopAuthority({ stateDirectory = defaultState
       .prepare(
         "SELECT mandate_ref, version, status, grantee_ref, permissions FROM cop_mandates WHERE mandate_ref = ?"
       )
-      .get("mandate:jhn:runtime:1");
+      .get(JHN_TRANSPORT_MANDATE_REF);
     if (
       !mandate ||
       mandate.status !== "active" ||
       mandate.version !== 1 ||
-      mandate.grantee_ref !== "principal:jhn:runtime"
+      mandate.grantee_ref !== JHN_TRANSPORT_GRANTEE_REF
     ) {
-      throw new Error("JHN bootstrap mandate is missing or invalid");
+      throw new Error("JHN transport mandate is missing or invalid");
     }
     const permissions = JSON.parse(mandate.permissions);
     if (!Array.isArray(permissions) || !permissions.includes("cop.events.append")) {
-      throw new Error("JHN bootstrap mandate permissions are invalid");
+      throw new Error("JHN transport mandate permissions are invalid");
     }
     const eventCount = database
       .prepare("SELECT count(*) AS count FROM cop_events WHERE type = ?")
       .get("authority.local_bootstrapped").count;
     if (eventCount !== 1) throw new Error("JHN bootstrap audit event is missing or duplicated");
+    const events = createSqliteCopRuntimeStore(database).eventStore.replay();
+    const normative = events.find(
+      (event) =>
+        event.payload?.kind === "MandateDeclaration" &&
+        event.payload.mandate_id === JHN_AGENT_MANDATE_REF &&
+        event.payload.principal_ref === JHN_AGENT_PRINCIPAL_REF &&
+        event.payload.logical_agent_ref === JHN_AGENT_LOGICAL_AGENT_REF
+    );
+    const budget = events.find(
+      (event) =>
+        event.payload?.kind === "ExecutionBudgetGrant" &&
+        event.payload.budget_id === JHN_AGENT_BUDGET_ID &&
+        event.payload.mandate_ref === JHN_AGENT_MANDATE_REF
+    );
+    if (!normative || !budget) {
+      throw new Error(
+        "Normative Agent JHN mandate or budget grant is missing. Transport state was left unchanged. Run: node apps/platform/scripts/repair-jhn-local-agent-authority.js --state-dir <directory>"
+      );
+    }
   } finally {
     database.close();
   }

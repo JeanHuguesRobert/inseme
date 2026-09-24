@@ -1,15 +1,39 @@
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { createEventSourcedExecutionBudgetLedger } from "../../../../packages/cop-core/src/execution-budget.js";
 import { createJhnDelegatingAgent } from "./jhnDelegatingAgent.js";
 import { createSqliteCopRuntimeStore } from "./sqliteRuntimeStore.js";
 import { readJhnConversationState } from "./jhnConversationState.js";
 import { decideJhnHandlerAssist } from "./jhnHandlerAssistDecider.js";
+import {
+  JHN_AGENT_BUDGET_ID,
+  JHN_AGENT_LOGICAL_AGENT_REF,
+  JHN_AGENT_MANDATE_REF,
+  JHN_AGENT_PRINCIPAL_REF,
+  JHN_AGENT_TURN_DEMAND,
+} from "./jhnLocalAgentAuthority.js";
 
 const DEFAULT_IDENTITY = Object.freeze({
-  principal_ref: "principal:jhn",
-  mandate_ref: "mandate:jhn:runtime:1",
-  logical_agent_ref: "agent:jhn",
+  principal_ref: JHN_AGENT_PRINCIPAL_REF,
+  mandate_ref: JHN_AGENT_MANDATE_REF,
+  logical_agent_ref: JHN_AGENT_LOGICAL_AGENT_REF,
 });
+
+/**
+ * Read the already-declared local budget grant. This does not create one.
+ * Without a matching ExecutionBudgetGrant the ledger fails closed.
+ */
+function eventSourcedAgentBudget(store) {
+  return {
+    budget_id: JHN_AGENT_BUDGET_ID,
+    demand: JHN_AGENT_TURN_DEMAND,
+    ledger: createEventSourcedExecutionBudgetLedger({
+      store,
+      budget_id: JHN_AGENT_BUDGET_ID,
+      require_authority_grant: true,
+    }),
+  };
+}
 
 function requireText(value, name) {
   if (typeof value !== "string" || value.length === 0) throw new TypeError(`${name} is required`);
@@ -26,13 +50,18 @@ function requireText(value, name) {
  *
  * `jhnDelegatingAgent` calls `store.append(...)` synchronously and inspects
  * the result without awaiting it. The existing local SQLite event store
- * (`sqliteRuntimeStore.js`) already satisfies that contract in-process. The
- * capability-protected HTTP write gateway (`localRuntimeServer.js`) is a
- * transport-level ACL for raw single-table writes and is orthogonal to the
- * COP Mandate/budget governance `jhnDelegatingAgent` already enforces
- * against the event log; going in-process for the local, same-host
- * conversational surfaces does not weaken that governance and avoids
- * re-deriving mandate/budget state over a new network read protocol.
+ * (`sqliteRuntimeStore.js`) already satisfies that contract in-process.
+ *
+ * Local trust boundary (Inseme #97): these same-host surfaces open the
+ * SQLite file in-process. The transport ACL (`mandate:jhn:runtime:1`, signed
+ * capabilities, `localRuntimeServer.js`) does not mediate those calls. The
+ * process is inside the trusted host boundary and can read the state file
+ * directly. COP normative Mandate and budget checks still mediate
+ * consequential handler Acts. Do not generalize this assumption to a
+ * deployed or public runtime.
+ *
+ * This factory references `mandate:jhn:agent:1`. It does not create, renew,
+ * widen, or repair that mandate or its budget grant.
  */
 export function createJhnLocalOperationalAgent({
   stateDirectory,
@@ -65,7 +94,7 @@ export function createJhnLocalOperationalAgent({
     identity,
     decideHandlerAssist,
     shouldDelegate,
-    execution_budget,
+    execution_budget: execution_budget || eventSourcedAgentBudget(eventStore),
     cogentia,
   });
 

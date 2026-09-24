@@ -1,8 +1,8 @@
 ---
 title: mcp/cop
 author: unknown
-date: '2025-12-24'
-last_modified_at: '2026-08-23'
+date: "2025-12-24"
+last_modified_at: "2026-08-23"
 document_role: source
 document_kind: documentation
 visibility: public
@@ -12,7 +12,7 @@ provenance:
   origin_type: repository
   origin_repository: JeanHuguesRobert/inseme
   origin_ref: 1cdac1c
-  origin_date: '2025-12-24'
+  origin_date: "2025-12-24"
   derived_from: []
 review:
   status: unreviewed
@@ -22,7 +22,6 @@ affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Co
 language: en
 status: working-paper
 ---
-
 
 # mcp/cop
 
@@ -148,18 +147,59 @@ administrative path.
 
 `pnpm --filter platform bootstrap:jhn:local-cop` performs that first local bootstrap into
 `apps/platform/instances/jhn-cop-local/` (Git-ignored). It creates the private Ed25519 key,
-public-key configuration, migrated SQLite database, minimal JHN runtime mandate, and one auditable
-bootstrap event. It refuses to overwrite state and never prints the private key or a bearer
+public-key configuration, migrated SQLite database, the transport ACL row, and one auditable
+bootstrap event. It also records a separate normative mandate and a separate bounded
+execution-budget grant. It refuses to overwrite state and never prints the private key or a bearer
 capability.
+
+Those are different authorities:
+
+```text
+mandate:jhn:runtime:1
+  SQL transport ACL
+  issuer instance:jhn
+  grantee principal:jhn:runtime
+  permissions for the signed capability gateway
+
+mandate:jhn:agent:1
+  append-only MandateDeclaration
+  principal:jhn → agent:jhn
+  scope limited to coding.assist
+  not inferred from the transport row
+
+budget:jhn:agent:local:1
+  append-only ExecutionBudgetGrant bound to mandate:jhn:agent:1
+  small local handler-turn ceiling
+  not part of the mandate scope
+```
+
+`chat:jhn:local`, `repl:jhn:local`, and `console:jhn:local` open that SQLite file in-process through
+`createJhnLocalOperationalAgent`. The transport ACL does not mediate those calls: the process is
+inside the trusted host boundary and can read the state file directly. Normative Mandate and budget
+checks still mediate consequential handler Acts. This is a local trust-boundary choice, not a claim
+that security is unchanged, and it does not apply to deployed or public runtimes. The conversational
+factory does not grant or repair its own mandate.
+
+A directory created by the older bootstrap has the transport row and no normative declaration.
+Repair it explicitly, without rotating keys or deleting history:
+
+```text
+node apps/platform/scripts/repair-jhn-local-agent-authority.js --state-dir <directory>
+```
+
+The repair is idempotent. It refuses if an existing Principal → Agent JHN declaration or budget
+grant disagrees with this local canonical shape, or if the transport row itself is missing or
+reassigned. It reports what it changed and does not print key material.
 
 The state directory is deliberately portable: `cop-runtime.sqlite`, the public key configuration,
 and the private JWK can be moved together to a Node host such as the Fracta VPS. The runtime does
 not rely on Windows ACLs, Tailscale, or any OS-specific key store. The destination host remains
 responsible for keeping the private JWK out of source control and transferring it through its normal
 secret channel. After a stopped-runtime copy, run
-`pnpm --filter platform verify:jhn:local-cop -- --state-dir <directory>`; it checks the SQLite
-bootstrap state and that the private/public key pair matches, without disclosing either key or a
-bearer capability.
+`pnpm --filter platform verify:jhn:local-cop -- --state-dir <directory>`; it checks the transport
+row, the normative Agent JHN mandate, the separate budget grant, and that the private/public key
+pair matches, without disclosing either key or a bearer capability. A pre-#97 directory fails this
+check until the repair command above has been run.
 
 `pnpm --filter platform start:jhn:local-cop` starts the next boundary on `127.0.0.1:8787`:
 `GET /health` and the six protected COP write routes. It never binds a public interface and loads
@@ -172,10 +212,11 @@ equal the mandate grantee. For an agent command,
 `pnpm --filter platform run:jhn:local-cop -- -- <command>` passes the capability only as
 `COP_CAPABILITY` and the loopback URL as `COP_RUNTIME_URL`. Neither is printed or written to disk.
 
-`chat:jhn:local` is the first conversational loop. It calls an OpenAI Responses adapter with
-`store: false`, then records the user and assistant messages as COP events through the local
-protected boundary. It is invoked by the issuer wrapper, for example with
-`run:jhn:local-cop -- pnpm --filter platform chat:jhn:local -- --message "Bonjour John"`.
+`chat:jhn:local` is the local conversational loop. It calls an OpenAI Responses adapter with
+`store: false`, then records the user and assistant messages through the in-process SQLite
+operational agent described above. A direct invocation is
+`pnpm --filter platform chat:jhn:local -- --message "Bonjour John"`. The signed loopback gateway
+remains available for other callers through `run:jhn:local-cop`.
 
 ### Future optimisation: provider conversation cache
 
@@ -191,6 +232,6 @@ separate so that this optimisation does not change the COP event model or requir
 provider.
 
 For local interactive use, `pnpm --filter platform repl:jhn:local` starts a terminal REPL for the
-`john` conversation (or pass another conversation id as its first argument). It starts and stops the
-loopback runtime itself, issues a fresh short-lived capability for each turn, and persists every
-turn to SQLite.
+`john` conversation (or pass another conversation id as its first argument). It uses the same
+in-process operational agent and persists every turn to SQLite. It does not issue a transport
+capability for those conversational turns.

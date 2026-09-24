@@ -8,6 +8,14 @@ import {
   signCopCapability,
 } from "../mcp/cop/signedCapability.js";
 import { createSqliteCopRuntimeStore } from "../mcp/cop/sqliteRuntimeStore.js";
+import {
+  JHN_AGENT_BUDGET_ID,
+  JHN_AGENT_MANDATE_REF,
+  JHN_TRANSPORT_GRANTEE_REF,
+  JHN_TRANSPORT_ISSUER_REF,
+  JHN_TRANSPORT_MANDATE_REF,
+} from "../mcp/cop/jhnLocalAgentAuthority.js";
+import { repairJhnLocalAgentAuthority } from "./repair-jhn-local-agent-authority.js";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const platformDirectory = path.resolve(scriptDirectory, "..");
@@ -30,7 +38,12 @@ async function writeNewFile(filePath, contents) {
   await writeFile(filePath, contents, { encoding: "utf8", flag: "wx", mode: 0o600 });
 }
 
-export async function bootstrapJhnLocalCopAuthority({
+/**
+ * Fresh transport-only local state: keys, SQL ACL row, and the bootstrap
+ * audit event. Does not declare Principal → Agent JHN authority.
+ * Used by full bootstrap and by tests that fixture a pre-#97 directory.
+ */
+export async function bootstrapJhnLocalTransportAuthority({
   stateDirectory = defaultStateDirectory,
   clock = () => new Date(),
 } = {}) {
@@ -56,7 +69,7 @@ export async function bootstrapJhnLocalCopAuthority({
   const keyId = `jhn-local-${crypto.randomUUID()}`;
   const audience = "cop-runtime:jhn";
   const now = isoNow(clock);
-  const mandateRef = "mandate:jhn:runtime:1";
+  const mandateRef = JHN_TRANSPORT_MANDATE_REF;
 
   await writeNewFile(privateKeyPath, `${JSON.stringify(privateKey, null, 2)}\n`);
   await writeNewFile(
@@ -76,8 +89,8 @@ export async function bootstrapJhnLocalCopAuthority({
         mandateRef,
         1,
         "active",
-        "instance:jhn",
-        "principal:jhn:runtime",
+        JHN_TRANSPORT_ISSUER_REF,
+        JHN_TRANSPORT_GRANTEE_REF,
         '["cop.tasks.write","cop.steps.write","cop.events.append","cop.artifacts.append"]',
         now,
         now,
@@ -114,8 +127,8 @@ export async function bootstrapJhnLocalCopAuthority({
     const capability = await signCopCapability({
       privateKey: keys.privateKey,
       keyId,
-      issuer: "instance:jhn",
-      subject: "principal:jhn:runtime",
+      issuer: JHN_TRANSPORT_ISSUER_REF,
+      subject: JHN_TRANSPORT_GRANTEE_REF,
       mandateRef,
       mandateVersion: 1,
       audience,
@@ -152,11 +165,41 @@ export async function bootstrapJhnLocalCopAuthority({
   };
 }
 
+/**
+ * Fresh local state: transport ACL plus a distinct Principal → Agent JHN
+ * MandateDeclaration and a separate bounded execution-budget grant.
+ */
+export async function bootstrapJhnLocalCopAuthority({
+  stateDirectory = defaultStateDirectory,
+  clock = () => new Date(),
+  provenance = "local-bootstrap",
+} = {}) {
+  const transport = await bootstrapJhnLocalTransportAuthority({ stateDirectory, clock });
+  const authority = await repairJhnLocalAgentAuthority({
+    stateDirectory: transport.stateDirectory,
+    provenance,
+  });
+  if (!authority.ok) {
+    throw new Error(
+      `Normative Agent JHN authority was not established: ${(authority.conflicts || []).join("; ")}`
+    );
+  }
+  return {
+    ...transport,
+    agentMandateRef: JHN_AGENT_MANDATE_REF,
+    budgetId: JHN_AGENT_BUDGET_ID,
+    authority,
+  };
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const stateDirectory = argumentValue("--state-dir") ?? defaultStateDirectory;
   const result = await bootstrapJhnLocalCopAuthority({ stateDirectory });
   console.log(`JHN local COP authority bootstrapped in ${result.stateDirectory}`);
   console.log(`SQLite state: ${result.databasePath}`);
+  console.log(`Transport mandate: ${result.mandateRef}`);
+  console.log(`Normative Agent JHN mandate: ${result.agentMandateRef}`);
+  console.log(`Execution budget: ${result.budgetId}`);
   console.log(`Public capability configuration: ${result.publicKeysPath}`);
   console.log("The private signing key is host-only and was not printed.");
 }
