@@ -8,6 +8,11 @@
 
 import { conversationTopic } from "./jhnConversationState.js";
 import { loadCogentiaMcpClientFromEnv } from "./cogentiaMcpClient.js";
+import {
+  normalizeLegacyHandlerAssistDecision,
+  normalizeReasonedHandlerAssistDecision,
+  recordHandlerAssistDecision,
+} from "./handlerAssistDecision.js";
 import { createEventSourcedExecutionBudgetLedger } from "../../../../packages/cop-core/src/execution-budget.js";
 
 function normalizeExecutionBudget(store, value) {
@@ -42,11 +47,12 @@ function requireText(value, name) {
  * @param {object} options.reasoner  { respond({message,history}) }
  * @param {object} [options.handler]  optional external capability { id, invoke }
  * @param {object} options.identity  principal/mandate/logical_agent refs
+ * @param {(input: object) => object|Promise<object>} [options.decideHandlerAssist]
  * @param {(input: object) => boolean} [options.shouldDelegate]
  * @param {object} [options.cogentia]  createCogentiaMcpClient() or env-loaded client
  */
 export function createJhnDelegatingAgent(options = {}) {
-  const { store, reasoner, handler, identity, shouldDelegate } = options;
+  const { store, reasoner, handler, identity, decideHandlerAssist, shouldDelegate } = options;
   if (!store || typeof store.append !== "function") {
     throw new TypeError("store.append is required");
   }
@@ -102,10 +108,40 @@ export function createJhnDelegatingAgent(options = {}) {
 
       let handlerReceipt = null;
       let handlerText = null;
-      const wantsDelegate =
-        typeof shouldDelegate === "function"
-          ? shouldDelegate({ message, history })
-          : Boolean(handler && /code|implement|fix|review/i.test(message));
+      const decisionKey = turnId || Date.now();
+      const decisionContext = {
+        decisionId: `decision:handler-assist:${conversationId}:${decisionKey}`,
+        decidedAt: new Date().toISOString(),
+      };
+      let handlerAssistDecision;
+      if (typeof decideHandlerAssist === "function") {
+        handlerAssistDecision = normalizeReasonedHandlerAssistDecision(
+          await decideHandlerAssist({ message, history }),
+          decisionContext
+        );
+      } else if (typeof shouldDelegate === "function") {
+        handlerAssistDecision = normalizeLegacyHandlerAssistDecision({
+          ...decisionContext,
+          wantsDelegate: Boolean(await shouldDelegate({ message, history })),
+          capability: handler?.capability || "reasoning.assist",
+        });
+      } else {
+        handlerAssistDecision = normalizeLegacyHandlerAssistDecision({
+          ...decisionContext,
+          wantsDelegate: Boolean(handler && /code|implement|fix|review/i.test(message)),
+          capability: handler?.capability || "reasoning.assist",
+          rationaleKind: "legacy_heuristic",
+        });
+      }
+      recordHandlerAssistDecision({
+        store,
+        decision: handlerAssistDecision,
+        topicId,
+        actorRef: identity.logical_agent_ref,
+        subjectRef: identity.principal_ref,
+        idempotencyKey: `conv:${conversationId}:handler-assist-decision:${decisionKey}`,
+      });
+      const wantsDelegate = handlerAssistDecision.selected_path === "handler_assisted";
 
       if (wantsDelegate && !handler) {
         store.append({
