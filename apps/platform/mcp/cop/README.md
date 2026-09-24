@@ -176,13 +176,19 @@ mandate:jhn:runtime:1
 mandate:jhn:agent:1
   append-only MandateDeclaration
   principal:jhn → agent:jhn
-  scope limited to coding.assist
+  active declaration version v2
+  scope limited to coding.assist.read
+  coding.assist is not authorized
   not inferred from the transport row
 
 budget:jhn:agent:local:1
   append-only ExecutionBudgetGrant bound to mandate:jhn:agent:1
-  small local handler-turn ceiling
-  not part of the mandate scope
+  authority_version 2
+  hard limits: max_steps=8, max_elapsed_ms=480000
+  per-turn demand: max_steps=1, max_elapsed_ms=60000
+  canonical ACP prompt timeout: 60000 ms
+  omitted dimensions are outside this hard budget
+  omission is not zero use and is not external-effect authority
 ```
 
 `chat:jhn:local`, `repl:jhn:local`, and `console:jhn:local` open that SQLite file in-process through
@@ -192,16 +198,25 @@ checks still mediate consequential handler Acts. This is a local trust-boundary 
 that security is unchanged, and it does not apply to deployed or public runtimes. The conversational
 factory does not grant or repair its own mandate.
 
-A directory created by the older bootstrap has the transport row and no normative declaration.
-Repair it explicitly, without rotating keys or deleting history:
+A directory created before any normative Agent JHN declaration has the transport row only.
+Repair establishes the current canonical v2 envelope directly, without rotating keys or deleting
+history, and without first writing v1:
 
 ```text
 node apps/platform/scripts/repair-jhn-local-agent-authority.js --state-dir <directory>
 ```
 
-The repair is idempotent. It refuses if an existing Principal → Agent JHN declaration or budget
-grant disagrees with this local canonical shape, or if the transport row itself is missing or
-reassigned. It reports what it changed and does not print key material.
+Repair does not migrate an exact v1 predecessor. That administrative step is explicit:
+
+```text
+node apps/platform/scripts/migrate-jhn-local-agent-read-authority.js --state-dir <directory>
+```
+
+The migration appends MandateDeclaration v2 and ExecutionBudgetGrant authority_version 2. It
+leaves the v1 events in place. A second run against exact v2, including that lineage, appends
+nothing. Absent, partial, revoked, suspended, consumed, or divergent authority fails closed.
+Neither command runs from ordinary conversational startup. Both refuse a missing or reassigned
+transport row, report what they changed, and do not print key material.
 
 The state directory is deliberately portable: `cop-runtime.sqlite`, the public key configuration,
 and the private JWK can be moved together to a Node host such as the Fracta VPS. The runtime does
@@ -211,7 +226,8 @@ secret channel. After a stopped-runtime copy, run
 `pnpm --filter platform verify:jhn:local-cop -- --state-dir <directory>`; it checks the transport
 row, the normative Agent JHN mandate, the separate budget grant, and that the private/public key
 pair matches, without disclosing either key or a bearer capability. A pre-#97 directory fails this
-check until the repair command above has been run.
+check until the repair command above has been run. A #97 v1 directory fails it until the explicit
+migration command has been run. The active check is the v2 mandate and the sparse v2 budget.
 
 `pnpm --filter platform start:jhn:local-cop` starts the next boundary on `127.0.0.1:8787`:
 `GET /health` and the six protected COP write routes. It never binds a public interface and loads

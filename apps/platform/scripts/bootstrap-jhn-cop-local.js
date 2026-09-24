@@ -166,8 +166,9 @@ export async function bootstrapJhnLocalTransportAuthority({
 }
 
 /**
- * Fresh local state: transport ACL plus a distinct Principal → Agent JHN
- * MandateDeclaration and a separate bounded execution-budget grant.
+ * Fresh local state: transport ACL plus the current canonical Principal →
+ * Agent JHN MandateDeclaration v2 and the sparse authority_version 2 budget.
+ * Fresh state does not record a v1 predecessor.
  */
 export async function bootstrapJhnLocalCopAuthority({
   stateDirectory = defaultStateDirectory,

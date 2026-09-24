@@ -71,13 +71,15 @@ function decisionEvent(events) {
   return events.find((event) => event.event_type === "HandlerAssistDecisionRecorded");
 }
 
-function codingHandler() {
+const READ_ONLY_REPOSITORY_MESSAGE = "Please review this repository without changing files";
+
+function codingHandler(capability = "coding.assist") {
   const observed = { called: 0 };
   return {
     observed,
     handler: {
       id: "handler:test-coder",
-      capability: "coding.assist",
+      capability,
       async invoke() {
         observed.called += 1;
         return { text: "handler contribution", provider: "test", model: "test-model" };
@@ -115,7 +117,9 @@ test("A - fresh bootstrap keeps transport authority distinct from the Agent JHN 
     assert.equal(declarations[0].payload.principal_ref, JHN_AGENT_PRINCIPAL_REF);
     assert.equal(declarations[0].payload.logical_agent_ref, JHN_AGENT_LOGICAL_AGENT_REF);
     assert.equal(declarations[0].payload.status, "active");
-    assert.deepEqual(declarations[0].payload.scope.allowed_actions, ["coding.assist"]);
+    assert.equal(declarations[0].payload.version, "v2");
+    assert.deepEqual(declarations[0].payload.scope.allowed_actions, ["coding.assist.read"]);
+    assert.equal(declarations[0].payload.scope.allowed_actions.includes("coding.assist"), false);
     assert.equal(
       declarations[0].payload.scope.allowed_actions.includes("cop.events.append"),
       false
@@ -127,13 +131,22 @@ test("A - fresh bootstrap keeps transport authority distinct from the Agent JHN 
         mandate_ref: JHN_AGENT_MANDATE_REF,
         expected_principal_ref: JHN_AGENT_PRINCIPAL_REF,
         expected_actor_ref: JHN_AGENT_LOGICAL_AGENT_REF,
+        capability: "coding.assist.read",
+      });
+      const generic = evaluateMandate(store, {
+        mandate_ref: JHN_AGENT_MANDATE_REF,
+        expected_principal_ref: JHN_AGENT_PRINCIPAL_REF,
+        expected_actor_ref: JHN_AGENT_LOGICAL_AGENT_REF,
         capability: "coding.assist",
       });
       const transportAsNormative = resolveMandate(store, JHN_TRANSPORT_MANDATE_REF);
-      return { mandate, grant, transportAsNormative };
+      return { mandate, grant, generic, transportAsNormative };
     });
     assert.equal(resolved.mandate.mandate_id, JHN_AGENT_MANDATE_REF);
+    assert.equal(resolved.mandate.version, "v2");
     assert.equal(resolved.grant.granted, true);
+    assert.equal(resolved.generic.granted, false);
+    assert.equal(resolved.generic.error, "capability_out_of_scope");
     assert.equal(resolved.transportAsNormative, null);
     await verifyJhnLocalCopAuthority({ stateDirectory });
   } finally {
@@ -161,6 +174,14 @@ test("B - repair adds one normative declaration to old local state and is idempo
     const after = replay(stateDirectory);
     assert.equal(kindCount(after, "MandateDeclaration"), 1);
     assert.equal(kindCount(after, "ExecutionBudgetGrant"), 1);
+    assert.equal(
+      after.find((event) => event.payload?.kind === "MandateDeclaration").payload.version,
+      "v2"
+    );
+    assert.deepEqual(
+      after.find((event) => event.payload?.kind === "ExecutionBudgetGrant").payload.limits,
+      { max_steps: 8, max_elapsed_ms: 480_000 }
+    );
     const bootstrapAuditCount = withStore(
       stateDirectory,
       (database) =>
@@ -330,7 +351,7 @@ test("D - governed fake handler succeeds against the bootstrapped SQLite event s
   const stateDirectory = await temporaryState("d");
   try {
     await bootstrapJhnLocalCopAuthority({ stateDirectory });
-    const { handler, observed } = codingHandler();
+    const { handler, observed } = codingHandler("coding.assist.read");
     const agent = createJhnLocalOperationalAgent({
       stateDirectory,
       reasoner: reasoner(),
@@ -342,7 +363,7 @@ test("D - governed fake handler succeeds against the bootstrapped SQLite event s
     assert.equal(agent.identity.mandate_ref, JHN_AGENT_MANDATE_REF);
 
     const result = await agent.turn({
-      message: "Please implement this repository change",
+      message: READ_ONLY_REPOSITORY_MESSAGE,
       conversationId: "auth-d",
       history: [],
     });
@@ -401,7 +422,7 @@ test("D - the event-sourced grant caps caller-supplied limits", async () => {
   const stateDirectory = await temporaryState("d-cap");
   try {
     await bootstrapJhnLocalCopAuthority({ stateDirectory });
-    const { handler, observed } = codingHandler();
+    const { handler, observed } = codingHandler("coding.assist.read");
     const database = new DatabaseSync(path.join(stateDirectory, "cop-runtime.sqlite"));
     try {
       const store = createSqliteCopRuntimeStore(database).eventStore;
@@ -417,17 +438,14 @@ test("D - the event-sourced grant caps caller-supplied limits", async () => {
             budget_id: JHN_AGENT_BUDGET_ID,
             limits: {
               max_steps: 10_000,
-              max_tool_calls: 0,
-              max_subagents: 0,
-              max_elapsed_ms: 60_000,
-              max_external_effects: 0,
+              max_elapsed_ms: 10_000_000,
             },
             require_authority_grant: true,
           }),
         },
       });
       const result = await agent.turn({
-        message: "Please implement this repository change",
+        message: READ_ONLY_REPOSITORY_MESSAGE,
         conversationId: "auth-d-cap",
         history: [],
       });
@@ -455,10 +473,10 @@ test("E - restart reopens the normative mandate and the governed trace", async (
     const agent = createJhnLocalOperationalAgent({
       stateDirectory,
       reasoner: reasoner(),
-      handler: codingHandler().handler,
+      handler: codingHandler("coding.assist.read").handler,
     });
     await agent.turn({
-      message: "Please implement this repository change",
+      message: READ_ONLY_REPOSITORY_MESSAGE,
       conversationId: "auth-e",
       history: [],
     });
@@ -470,7 +488,7 @@ test("E - restart reopens the normative mandate and the governed trace", async (
         mandate_ref: JHN_AGENT_MANDATE_REF,
         expected_principal_ref: JHN_AGENT_PRINCIPAL_REF,
         expected_actor_ref: JHN_AGENT_LOGICAL_AGENT_REF,
-        capability: "coding.assist",
+        capability: "coding.assist.read",
       });
       const topic = store.listTopic(conversationTopic("auth-e"));
       return { mandate, grant, topic };
@@ -505,6 +523,7 @@ test("startup does not self-grant normative authority", async () => {
     assert.equal(source.includes("recordMandateDeclaration"), false);
     assert.equal(source.includes("recordExecutionBudgetGrant"), false);
     assert.equal(source.includes("repairJhnLocalAgentAuthority"), false);
+    assert.equal(source.includes("migrateJhnLocalAgentReadAuthority"), false);
 
     const { handler, observed } = codingHandler();
     const agent = createJhnLocalOperationalAgent({

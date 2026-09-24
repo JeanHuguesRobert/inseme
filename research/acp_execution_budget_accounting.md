@@ -625,6 +625,19 @@ observations, outside the hard vector
   provider cost = not_estimated when cost is absent
 ```
 
-`mandate:jhn:agent:1`, `budget:jhn:agent:local:1`, `JHN_AGENT_ALLOWED_CAPABILITIES`, `JHN_AGENT_BUDGET_LIMITS`, and `JHN_AGENT_TURN_DEMAND` are unchanged. The current five-dimensional JHN demand therefore fails ACP preflight. #98 remains PARKED. #90 is unchanged.
+`mandate:jhn:agent:1`, `budget:jhn:agent:local:1`, `JHN_AGENT_ALLOWED_CAPABILITIES`, `JHN_AGENT_BUDGET_LIMITS`, and `JHN_AGENT_TURN_DEMAND` are unchanged by this #102 checkpoint. The five-dimensional JHN demand recorded here fails ACP preflight. #98 remains PARKED. #90 is unchanged.
 
-The administrative choice of which sparse dimensions belong in the JHN grant, which timeout is sufficient, and whether an ACP-visible tool-call count later becomes enforceable, remains outside this implementation.
+The administrative choice of which sparse dimensions belong in the JHN grant, which timeout is sufficient, and whether an ACP-visible tool-call count later becomes enforceable, was outside this implementation.
+
+## Successor — Inseme #103
+
+The Principal approved the next envelope on #102, and #103 makes that envelope canonical:
+
+```text
+allowed capability     coding.assist.read
+hard grant             max_steps=8, max_elapsed_ms=480000
+per-turn demand        max_steps=1, max_elapsed_ms=60000
+ACP prompt timeout     60000 ms
+```
+
+The v1 declaration and five-dimensional grant remain historical events. They are not the active envelope. #98 stays PARKED until that migration is reviewed and applied to the operator's local state. #90 is unchanged.

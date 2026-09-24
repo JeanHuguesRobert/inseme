@@ -6,6 +6,7 @@ import { createMemoryExecutionBudgetLedger } from "../../../../packages/cop-core
 import { invokeGovernedCapability } from "../../../../packages/cop-core/src/governed-act.js";
 import { createCopEventEnvelope } from "../../../../packages/cop-core/src/cop-event-envelope.js";
 import {
+  JHN_AGENT_ACP_PROMPT_TIMEOUT_MS,
   JHN_AGENT_ALLOWED_CAPABILITIES,
   JHN_AGENT_BUDGET_LIMITS,
   JHN_AGENT_TURN_DEMAND,
@@ -235,17 +236,27 @@ test("G — a sparse enforceable ACP profile runs and keeps tool calls observati
   assert.equal(ledger.snapshot().reserved.max_steps, 0);
 });
 
-test("the frozen JHN five-dimensional demand fails ACP preflight", () => {
+test("the approved JHN sparse demand passes ACP preflight at the canonical timeout", () => {
   const verdict = preflightAcpExecutionBudget({
     demand: JHN_AGENT_TURN_DEMAND,
-    promptTimeoutMs: 240_000,
+    promptTimeoutMs: JHN_AGENT_ACP_PROMPT_TIMEOUT_MS,
   });
-  assert.equal(verdict.ok, false);
-  assert.equal(verdict.error, "execution_budget_dimension_unenforceable");
-  assert.equal(verdict.dimension, "max_tool_calls");
-  assert.equal(verdict.requested, 0);
-  assert.equal(JHN_AGENT_BUDGET_LIMITS.max_tool_calls, 0);
-  assert.equal(JHN_AGENT_BUDGET_LIMITS.max_elapsed_ms, 60_000);
-  assert.deepEqual(JHN_AGENT_ALLOWED_CAPABILITIES, ["coding.assist"]);
-  assert.equal(JHN_AGENT_TURN_DEMAND.max_elapsed_ms, 1_000);
+  assert.equal(verdict.ok, true);
+  assert.deepEqual(JHN_AGENT_ALLOWED_CAPABILITIES, ["coding.assist.read"]);
+  assert.deepEqual(JHN_AGENT_BUDGET_LIMITS, { max_steps: 8, max_elapsed_ms: 480_000 });
+  assert.deepEqual(JHN_AGENT_TURN_DEMAND, { max_steps: 1, max_elapsed_ms: 60_000 });
+  assert.equal(Object.hasOwn(JHN_AGENT_TURN_DEMAND, "max_tool_calls"), false);
+  assert.equal(Object.hasOwn(JHN_AGENT_BUDGET_LIMITS, "max_external_effects"), false);
+  const timeout = preflightAcpExecutionBudget({
+    demand: JHN_AGENT_TURN_DEMAND,
+    promptTimeoutMs: JHN_AGENT_ACP_PROMPT_TIMEOUT_MS + 1,
+  });
+  assert.equal(timeout.ok, false);
+  assert.equal(timeout.dimension, "max_elapsed_ms");
+  const zeroToolCalls = preflightAcpExecutionBudget({
+    demand: { ...JHN_AGENT_TURN_DEMAND, max_tool_calls: 0 },
+    promptTimeoutMs: JHN_AGENT_ACP_PROMPT_TIMEOUT_MS,
+  });
+  assert.equal(zeroToolCalls.ok, false);
+  assert.equal(zeroToolCalls.dimension, "max_tool_calls");
 });
