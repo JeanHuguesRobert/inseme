@@ -1,0 +1,42 @@
+name: Dependency Submission
+
+# Workaround for issue #92: GitHub's native dependency-graph parser has not
+# been reconciling this repo's pnpm-lock.yaml (lockfileVersion 9) with pushes
+# — Dependabot alerts stayed open against already-patched versions and the
+# dependency-graph/sbom endpoint returned 404. This submits an explicit
+# snapshot via the Dependency Submission API on every push to main.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  submit-dependency-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate and submit dependency snapshot
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          dependency-snapshot: true
