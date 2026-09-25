@@ -8,9 +8,8 @@ const CODEX_ENV = {
 };
 
 const CLAUDE_ENV = {
-  CLAUDE_ACP_COMMAND: "/usr/local/bin/claude-code-acp",
+  CLAUDE_ACP_COMMAND: "/usr/local/bin/claude-agent-acp",
   MAGISTRAL_CLAUDE_ACP_WORKSPACE: "/srv/public-guide/claude",
-  ANTHROPIC_API_KEY: "sk-ant-test",
 };
 
 test("composite map includes both providers when both are configured", () => {
