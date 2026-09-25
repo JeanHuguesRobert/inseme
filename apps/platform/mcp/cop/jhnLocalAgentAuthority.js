@@ -12,7 +12,8 @@
  * (inseme#102 / inseme#103). The v1 five-dimensional predecessor remains
  * reconstructible and is never rewritten. Repair may establish v2 only when
  * no normative Agent JHN authority exists. It does not migrate v1. That
- * transition is `migrateJhnLocalAgentReadAuthority`.
+ * transition is `migrateJhnLocalAgentReadAuthority`. When the store exposes
+ * `transaction()`, the v2 declaration and v2 grant commit together or not at all.
  */
 
 import { recordExecutionBudgetGrant } from "../../../../packages/cop-core/src/execution-budget.js";
@@ -299,6 +300,62 @@ export function inspectJhnLocalAgentAuthority(store) {
   };
 }
 
+/**
+ * Read-only migration label. This does not change the fail-closed shape
+ * returned by `inspectJhnLocalAgentAuthority`.
+ *
+ * @param {{ inspection?: object, transportValid?: boolean, transportReason?: string|null }} input
+ */
+export function classifyJhnAuthorityMigrationCheck({
+  inspection,
+  transportValid = true,
+  transportReason = null,
+} = {}) {
+  if (!transportValid) {
+    return {
+      classification: "REFUSED",
+      state: "transport-invalid",
+      reason:
+        transportReason ||
+        "transport mandate mandate:jhn:runtime:1 is missing or does not match the local runtime grantee; migration will not recreate it",
+    };
+  }
+  const shape = inspection?.shape || "absent";
+  if (shape === "absent") {
+    return {
+      classification: "REFUSED",
+      state: "absent",
+      reason: "no canonical v1 predecessor; use bootstrap/repair path as appropriate",
+    };
+  }
+  if (shape === "canonical_v1") {
+    return { classification: "MIGRATABLE", state: "canonical_v1", reason: null };
+  }
+  if (shape === "canonical_v2" || shape === "canonical_lineage") {
+    return { classification: "ALREADY_CURRENT", state: shape, reason: null };
+  }
+  const conflicts = Array.isArray(inspection?.conflicts) ? inspection.conflicts : [];
+  const text = conflicts.join("\n");
+  const consumed =
+    text.includes("reservation, settlement, or release") &&
+    inspection?.v1Declarations?.length === 1 &&
+    inspection?.v1Grants?.length === 1 &&
+    inspection?.v2Declarations?.length === 0 &&
+    inspection?.v2Grants?.length === 0;
+  let state = "divergent";
+  if (text.includes("MandateControl")) state = "controlled";
+  else if (consumed) state = "consumed_v1";
+  else if (text.includes("partial or internally inconsistent")) state = "partial";
+  return {
+    classification: "REFUSED",
+    state,
+    reason:
+      state === "consumed_v1"
+        ? "predecessor budget has activity"
+        : conflicts.join("; ") || "normative authority conflict",
+  };
+}
+
 function authorityResult(inspection, { changed, mandateAction, budgetAction }) {
   const declaration = inspection.v2Declarations[0] || null;
   const grant = inspection.v2Grants[0] || null;
@@ -334,38 +391,81 @@ function refusal(error, conflicts) {
   };
 }
 
-function appendCanonicalV2(store, { provenance, supersedesVersion = null }) {
-  const recordedMandate = recordMandateDeclaration(store, {
-    mandate_id: JHN_AGENT_MANDATE_REF,
-    version: JHN_AGENT_MANDATE_VERSION,
-    principal_ref: JHN_AGENT_PRINCIPAL_REF,
-    logical_agent_ref: JHN_AGENT_LOGICAL_AGENT_REF,
-    representative_kind: "agent",
-    status: "active",
-    scope: {
-      allowed_actions: [...JHN_AGENT_ALLOWED_CAPABILITIES],
-      forbidden_actions: [],
-      budget_ceiling: null,
-    },
-    metadata: canonicalMetadata(provenance, supersedesVersion),
-  });
-  const recordedGrant = recordExecutionBudgetGrant(store, {
-    budget_id: JHN_AGENT_BUDGET_ID,
-    mandate_ref: JHN_AGENT_MANDATE_REF,
-    principal_ref: JHN_AGENT_PRINCIPAL_REF,
-    limits: { ...JHN_AGENT_BUDGET_LIMITS },
-    authority_version: JHN_AGENT_BUDGET_AUTHORITY_VERSION,
-    reason:
-      "Bounded local read-only handler turns for agent:jhn. Hard dimensions are only max_steps and max_elapsed_ms. Omitted dimensions are outside this budget and do not authorize effects.",
-  });
+function instrumentAppend(store, failBeforeAppend) {
+  if (!failBeforeAppend) return store;
   return {
-    mandateEventId: eventIdOf(recordedMandate),
-    budgetEventId: eventIdOf(recordedGrant),
+    append(partial) {
+      const kind = partial?.payload?.kind || partial?.event_type || "";
+      if (kind === failBeforeAppend) {
+        throw new Error(`injected_append_failure:${failBeforeAppend}`);
+      }
+      return store.append(partial);
+    },
+    replay(...args) {
+      return store.replay(...args);
+    },
+    listTopic(...args) {
+      return store.listTopic(...args);
+    },
   };
 }
 
-function establishCanonicalV2(store, { provenance, supersedesVersion = null }) {
-  appendCanonicalV2(store, { provenance, supersedesVersion });
+function appendCanonicalV2(
+  store,
+  { provenance, supersedesVersion = null, failBeforeAppend = null } = {}
+) {
+  const writePair = (target) => {
+    const writer = instrumentAppend(target, failBeforeAppend);
+    const recordedMandate = recordMandateDeclaration(writer, {
+      mandate_id: JHN_AGENT_MANDATE_REF,
+      version: JHN_AGENT_MANDATE_VERSION,
+      principal_ref: JHN_AGENT_PRINCIPAL_REF,
+      logical_agent_ref: JHN_AGENT_LOGICAL_AGENT_REF,
+      representative_kind: "agent",
+      status: "active",
+      scope: {
+        allowed_actions: [...JHN_AGENT_ALLOWED_CAPABILITIES],
+        forbidden_actions: [],
+        budget_ceiling: null,
+      },
+      metadata: canonicalMetadata(provenance, supersedesVersion),
+    });
+    const recordedGrant = recordExecutionBudgetGrant(writer, {
+      budget_id: JHN_AGENT_BUDGET_ID,
+      mandate_ref: JHN_AGENT_MANDATE_REF,
+      principal_ref: JHN_AGENT_PRINCIPAL_REF,
+      limits: { ...JHN_AGENT_BUDGET_LIMITS },
+      authority_version: JHN_AGENT_BUDGET_AUTHORITY_VERSION,
+      reason:
+        "Bounded local read-only handler turns for agent:jhn. Hard dimensions are only max_steps and max_elapsed_ms. Omitted dimensions are outside this budget and do not authorize effects.",
+    });
+    return {
+      mandateEventId: eventIdOf(recordedMandate),
+      budgetEventId: eventIdOf(recordedGrant),
+    };
+  };
+
+  if (typeof store.transaction !== "function") return writePair(store);
+
+  try {
+    const tx = store.transaction((txStore) => writePair(txStore));
+    if (!tx.ok) {
+      return refusal(
+        "authority_append_failed",
+        tx.errors?.length ? tx.errors : [tx.error || "transaction rolled back"]
+      );
+    }
+    return tx.value;
+  } catch (error) {
+    return refusal("authority_append_failed", [
+      error instanceof Error ? error.message : String(error),
+    ]);
+  }
+}
+
+function establishCanonicalV2(store, options) {
+  const appended = appendCanonicalV2(store, options);
+  if (appended?.ok === false) return appended;
   const inspection = inspectJhnLocalAgentAuthority(store);
   if (inspection.shape !== "canonical_v2" && inspection.shape !== "canonical_lineage") {
     return refusal(
@@ -416,17 +516,20 @@ export function ensureJhnLocalAgentAuthority(store, { provenance = "local-admin-
  * Appends nothing for absent, partial, revoked, or divergent authority.
  *
  * @param {object} store append-only COP event store
- * @param {{ provenance?: string }} [options]
+ * @param {{ provenance?: string, failBeforeAppend?: string|null }} [options]
+ * `failBeforeAppend` is a test seam. It throws before the named v2 event is
+ * appended so a transaction can prove rollback. Operational callers omit it.
  */
 export function migrateJhnLocalAgentReadAuthority(
   store,
-  { provenance = "local-admin-migration" } = {}
+  { provenance = "local-admin-migration", failBeforeAppend = null } = {}
 ) {
   const inspection = inspectJhnLocalAgentAuthority(store);
   if (inspection.shape === "canonical_v1") {
     return establishCanonicalV2(store, {
       provenance,
       supersedesVersion: JHN_AGENT_V1_MANDATE_VERSION,
+      failBeforeAppend,
     });
   }
   if (inspection.shape === "canonical_v2" || inspection.shape === "canonical_lineage") {

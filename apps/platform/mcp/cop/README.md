@@ -212,11 +212,20 @@ Repair does not migrate an exact v1 predecessor. That administrative step is exp
 node apps/platform/scripts/migrate-jhn-local-agent-read-authority.js --state-dir <directory>
 ```
 
-The migration appends MandateDeclaration v2 and ExecutionBudgetGrant authority_version 2. It
-leaves the v1 events in place. A second run against exact v2, including that lineage, appends
-nothing. Absent, partial, revoked, suspended, consumed, or divergent authority fails closed.
-Neither command runs from ordinary conversational startup. Both refuse a missing or reassigned
-transport row, report what they changed, and do not print key material.
+The migration appends MandateDeclaration v2 and ExecutionBudgetGrant authority_version 2 in one
+SQLite transaction. Both events become durable together, or neither does. It leaves the v1 events
+in place. A second run against exact v2, including that lineage, appends nothing. Absent, partial,
+revoked, suspended, consumed, or divergent authority fails closed.
+
+A read-only preflight writes nothing, including no key rotation and no reservation:
+
+```text
+node apps/platform/scripts/migrate-jhn-local-agent-read-authority.js --state-dir <directory> --check
+```
+
+It reports `MIGRATABLE`, `ALREADY_CURRENT`, or `REFUSED`, with the state name and, for a refusal,
+the reason. Neither command runs from ordinary conversational startup. Both refuse a missing or
+reassigned transport row, report what they changed, and do not print key material.
 
 The state directory is deliberately portable: `cop-runtime.sqlite`, the public key configuration,
 and the private JWK can be moved together to a Node host such as the Fracta VPS. The runtime does

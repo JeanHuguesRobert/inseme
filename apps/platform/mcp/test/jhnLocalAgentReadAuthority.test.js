@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,7 +21,11 @@ import {
   bootstrapJhnLocalCopAuthority,
   bootstrapJhnLocalTransportAuthority,
 } from "../../scripts/bootstrap-jhn-cop-local.js";
-import { migrateJhnLocalAgentReadAuthorityDirectory } from "../../scripts/migrate-jhn-local-agent-read-authority.js";
+import {
+  checkJhnLocalAgentReadAuthorityDirectory,
+  formatMigrationCheckReport,
+  migrateJhnLocalAgentReadAuthorityDirectory,
+} from "../../scripts/migrate-jhn-local-agent-read-authority.js";
 import { repairJhnLocalAgentAuthority } from "../../scripts/repair-jhn-local-agent-authority.js";
 import { verifyJhnLocalCopAuthority } from "../../scripts/verify-jhn-cop-local.js";
 import { acpStdioRuntime, createHostRuntimeClient } from "../cop/hostRuntimeClient.js";
@@ -38,6 +42,7 @@ import {
   JHN_AGENT_V1_BUDGET_LIMITS,
   JHN_AGENT_V1_MANDATE_VERSION,
   JHN_TRANSPORT_MANDATE_REF,
+  inspectJhnLocalAgentAuthority,
 } from "../cop/jhnLocalAgentAuthority.js";
 import { createSqliteCopRuntimeStore } from "../cop/sqliteRuntimeStore.js";
 
@@ -126,6 +131,39 @@ function budgetSnapshot(stateDirectory) {
       require_authority_grant: true,
     }).snapshot()
   );
+}
+
+function authorityShape(stateDirectory) {
+  return withStore(
+    stateDirectory,
+    (_database, store) => inspectJhnLocalAgentAuthority(store).shape
+  );
+}
+
+function versionCount(events, kind, version) {
+  return events.filter((event) => {
+    if (event.payload?.kind !== kind) return false;
+    return kind === "MandateDeclaration"
+      ? event.payload.version === version
+      : event.payload.authority_version === version;
+  }).length;
+}
+
+async function runCheckCli(stateDirectory) {
+  try {
+    const { stdout, stderr } = await execFileAsync(
+      process.execPath,
+      [migrationScript, "--state-dir", stateDirectory, "--check"],
+      { encoding: "utf8" }
+    );
+    return { code: 0, stdout, stderr };
+  } catch (error) {
+    return {
+      code: error.code ?? 1,
+      stdout: error.stdout ?? "",
+      stderr: error.stderr ?? "",
+    };
+  }
 }
 
 test("A - fresh bootstrap records canonical v2 directly", async () => {
@@ -610,5 +648,280 @@ test("J - migrated SQLite state reopens as the same v2 mandate and sparse budget
     await verifyJhnLocalCopAuthority({ stateDirectory });
   } finally {
     await removeState(stateDirectory);
+  }
+});
+
+test("K - injected grant failure leaves no v2 events after reopen", async () => {
+  const stateDirectory = await temporaryState("k-grant");
+  try {
+    await fixtureCanonicalV1(stateDirectory);
+    const before = replay(stateDirectory);
+    const privateBefore = await readFile(path.join(stateDirectory, "cop-capability-private.jwk"));
+    const publicBefore = await readFile(
+      path.join(stateDirectory, "cop-capability-public-keys.json")
+    );
+    assert.equal(authorityShape(stateDirectory), "canonical_v1");
+
+    const result = await migrateJhnLocalAgentReadAuthorityDirectory({
+      stateDirectory,
+      failBeforeAppend: "ExecutionBudgetGrant",
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.changed, false);
+    assert.equal(result.error, "authority_append_failed");
+    assert.match(result.conflicts.join("\n"), /injected_append_failure:ExecutionBudgetGrant/);
+
+    const events = replay(stateDirectory);
+    assert.equal(versionCount(events, "MandateDeclaration", "v2"), 0);
+    assert.equal(versionCount(events, "ExecutionBudgetGrant", 2), 0);
+    assert.equal(versionCount(events, "MandateDeclaration", "v1"), 1);
+    assert.equal(versionCount(events, "ExecutionBudgetGrant", 1), 1);
+    assert.equal(events.length, before.length);
+    assert.equal(authorityShape(stateDirectory), "canonical_v1");
+    assert.equal(
+      Buffer.compare(
+        privateBefore,
+        await readFile(path.join(stateDirectory, "cop-capability-private.jwk"))
+      ),
+      0
+    );
+    assert.equal(
+      Buffer.compare(
+        publicBefore,
+        await readFile(path.join(stateDirectory, "cop-capability-public-keys.json"))
+      ),
+      0
+    );
+  } finally {
+    await removeState(stateDirectory);
+  }
+});
+
+test("L - injected mandate failure commits nothing", async () => {
+  const stateDirectory = await temporaryState("l-mandate");
+  try {
+    await fixtureCanonicalV1(stateDirectory);
+    const before = replay(stateDirectory).length;
+    const result = await migrateJhnLocalAgentReadAuthorityDirectory({
+      stateDirectory,
+      failBeforeAppend: "MandateDeclaration",
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.changed, false);
+    assert.match(result.conflicts.join("\n"), /injected_append_failure:MandateDeclaration/);
+    const events = replay(stateDirectory);
+    assert.equal(events.length, before);
+    assert.equal(versionCount(events, "MandateDeclaration", "v2"), 0);
+    assert.equal(versionCount(events, "ExecutionBudgetGrant", 2), 0);
+    assert.equal(authorityShape(stateDirectory), "canonical_v1");
+  } finally {
+    await removeState(stateDirectory);
+  }
+});
+
+test("M - migration --check classifies authority and writes nothing", async () => {
+  const directories = [];
+  try {
+    const migratable = await temporaryState("m-v1");
+    directories.push(migratable);
+    await fixtureCanonicalV1(migratable);
+    const sqliteBefore = await readFile(path.join(migratable, "cop-runtime.sqlite"));
+    const namesBefore = (await readdir(migratable)).sort();
+    const privateText = await readFile(path.join(migratable, "cop-capability-private.jwk"), "utf8");
+    const countBefore = replay(migratable).length;
+    const report = await checkJhnLocalAgentReadAuthorityDirectory({ stateDirectory: migratable });
+    assert.equal(report.classification, "MIGRATABLE");
+    assert.equal(report.state, "canonical_v1");
+    assert.equal(report.writes_performed, false);
+    assert.match(
+      formatMigrationCheckReport(report),
+      /target: mandate v2 \/ sparse budget authority_version 2/
+    );
+    const cli = await runCheckCli(migratable);
+    assert.equal(cli.code, 0);
+    assert.match(cli.stdout, /JHN authority migration check: MIGRATABLE/);
+    assert.match(cli.stdout, /state: canonical_v1/);
+    assert.match(cli.stdout, /writes performed: no/);
+    assert.equal(cli.stdout.includes(privateText), false);
+    assert.equal(cli.stderr.includes(privateText), false);
+    assert.equal(replay(migratable).length, countBefore);
+    assert.equal(
+      Buffer.compare(sqliteBefore, await readFile(path.join(migratable, "cop-runtime.sqlite"))),
+      0
+    );
+    assert.deepEqual((await readdir(migratable)).sort(), namesBefore);
+
+    const lineage = await temporaryState("m-lineage");
+    directories.push(lineage);
+    await fixtureCanonicalV1(lineage);
+    assert.equal(
+      (await migrateJhnLocalAgentReadAuthorityDirectory({ stateDirectory: lineage })).ok,
+      true
+    );
+    const lineageCheck = await checkJhnLocalAgentReadAuthorityDirectory({
+      stateDirectory: lineage,
+    });
+    assert.equal(lineageCheck.classification, "ALREADY_CURRENT");
+    assert.equal(lineageCheck.state, "canonical_lineage");
+    assert.equal(lineageCheck.writes_performed, false);
+
+    const current = await temporaryState("m-v2");
+    directories.push(current);
+    await bootstrapJhnLocalCopAuthority({ stateDirectory: current });
+    const currentCheck = await checkJhnLocalAgentReadAuthorityDirectory({
+      stateDirectory: current,
+    });
+    assert.equal(currentCheck.classification, "ALREADY_CURRENT");
+    assert.equal(currentCheck.state, "canonical_v2");
+    assert.equal(currentCheck.writes_performed, false);
+
+    const absent = await temporaryState("m-absent");
+    directories.push(absent);
+    await bootstrapJhnLocalTransportAuthority({ stateDirectory: absent });
+    const absentBefore = await readFile(path.join(absent, "cop-runtime.sqlite"));
+    const absentCheck = await checkJhnLocalAgentReadAuthorityDirectory({ stateDirectory: absent });
+    assert.equal(absentCheck.classification, "REFUSED");
+    assert.equal(absentCheck.state, "absent");
+    assert.equal(
+      absentCheck.reason,
+      "no canonical v1 predecessor; use bootstrap/repair path as appropriate"
+    );
+    assert.equal(absentCheck.writes_performed, false);
+    assert.equal(
+      Buffer.compare(absentBefore, await readFile(path.join(absent, "cop-runtime.sqlite"))),
+      0
+    );
+    const absentCli = await runCheckCli(absent);
+    assert.notEqual(absentCli.code, 0);
+    assert.match(absentCli.stdout, /JHN authority migration check: REFUSED/);
+    assert.match(absentCli.stdout, /state: absent/);
+    assert.match(absentCli.stdout, /writes performed: no/);
+
+    const consumed = await temporaryState("m-consumed");
+    directories.push(consumed);
+    await fixtureCanonicalV1(consumed);
+    withStore(consumed, (_database, store) => {
+      const ledger = createEventSourcedExecutionBudgetLedger({
+        store,
+        budget_id: JHN_AGENT_BUDGET_ID,
+        limits: { ...JHN_AGENT_V1_BUDGET_LIMITS },
+        require_authority_grant: true,
+      });
+      const snapshot = ledger.snapshot();
+      const reserved = ledger.reserve({
+        idempotency_key: "check-consumed",
+        expected_version: snapshot.version,
+        demand: {
+          max_steps: 1,
+          max_tool_calls: 0,
+          max_subagents: 0,
+          max_elapsed_ms: 1_000,
+          max_external_effects: 0,
+        },
+      });
+      assert.equal(reserved.ok, true);
+    });
+    const consumedCheck = await checkJhnLocalAgentReadAuthorityDirectory({
+      stateDirectory: consumed,
+    });
+    assert.equal(consumedCheck.classification, "REFUSED");
+    assert.equal(consumedCheck.state, "consumed_v1");
+    assert.equal(consumedCheck.reason, "predecessor budget has activity");
+    assert.equal(consumedCheck.writes_performed, false);
+    assert.match(formatMigrationCheckReport(consumedCheck), /writes performed: no/);
+
+    const partial = await temporaryState("m-partial");
+    directories.push(partial);
+    await bootstrapJhnLocalTransportAuthority({ stateDirectory: partial });
+    withStore(partial, (_database, store) => {
+      recordMandateDeclaration(store, {
+        mandate_id: JHN_AGENT_MANDATE_REF,
+        version: "v1",
+        principal_ref: JHN_AGENT_PRINCIPAL_REF,
+        logical_agent_ref: JHN_AGENT_LOGICAL_AGENT_REF,
+        status: "active",
+        scope: { allowed_actions: ["coding.assist"], forbidden_actions: [] },
+      });
+    });
+    const partialCheck = await checkJhnLocalAgentReadAuthorityDirectory({
+      stateDirectory: partial,
+    });
+    assert.equal(partialCheck.classification, "REFUSED");
+    assert.equal(partialCheck.state, "partial");
+    assert.match(partialCheck.reason, /partial or internally inconsistent/);
+    assert.equal(partialCheck.writes_performed, false);
+
+    const divergent = await temporaryState("m-divergent");
+    directories.push(divergent);
+    await bootstrapJhnLocalTransportAuthority({ stateDirectory: divergent });
+    withStore(divergent, (_database, store) => {
+      recordMandateDeclaration(store, {
+        mandate_id: JHN_AGENT_MANDATE_REF,
+        version: "v1",
+        principal_ref: JHN_AGENT_PRINCIPAL_REF,
+        logical_agent_ref: JHN_AGENT_LOGICAL_AGENT_REF,
+        status: "active",
+        scope: { allowed_actions: ["coding.assist", "coding.assist.read"], forbidden_actions: [] },
+      });
+      recordExecutionBudgetGrant(store, {
+        budget_id: JHN_AGENT_BUDGET_ID,
+        mandate_ref: JHN_AGENT_MANDATE_REF,
+        principal_ref: JHN_AGENT_PRINCIPAL_REF,
+        limits: { ...JHN_AGENT_V1_BUDGET_LIMITS },
+        authority_version: 1,
+      });
+    });
+    const divergentCheck = await checkJhnLocalAgentReadAuthorityDirectory({
+      stateDirectory: divergent,
+    });
+    assert.equal(divergentCheck.classification, "REFUSED");
+    assert.equal(divergentCheck.state, "divergent");
+    assert.match(divergentCheck.reason, /does not match the canonical v1 predecessor/);
+    assert.equal(divergentCheck.writes_performed, false);
+
+    const controlled = await temporaryState("m-controlled");
+    directories.push(controlled);
+    await fixtureCanonicalV1(controlled);
+    withStore(controlled, (_database, store) => {
+      recordMandateControl(store, {
+        principal_ref: JHN_AGENT_PRINCIPAL_REF,
+        mandate_ref: JHN_AGENT_MANDATE_REF,
+        logical_agent_ref: JHN_AGENT_LOGICAL_AGENT_REF,
+        action: "suspend",
+        reason: "reality-test",
+      });
+    });
+    const controlledCheck = await checkJhnLocalAgentReadAuthorityDirectory({
+      stateDirectory: controlled,
+    });
+    assert.equal(controlledCheck.classification, "REFUSED");
+    assert.equal(controlledCheck.state, "controlled");
+    assert.match(controlledCheck.reason, /MandateControl/);
+    assert.equal(controlledCheck.writes_performed, false);
+
+    const transport = await temporaryState("m-transport");
+    directories.push(transport);
+    await fixtureCanonicalV1(transport);
+    withStore(transport, (database) => {
+      database
+        .prepare("UPDATE cop_mandates SET grantee_ref = ? WHERE mandate_ref = ?")
+        .run("principal:other", JHN_TRANSPORT_MANDATE_REF);
+    });
+    const transportBefore = await readFile(path.join(transport, "cop-runtime.sqlite"));
+    const transportCount = replay(transport).length;
+    const transportCheck = await checkJhnLocalAgentReadAuthorityDirectory({
+      stateDirectory: transport,
+    });
+    assert.equal(transportCheck.classification, "REFUSED");
+    assert.equal(transportCheck.state, "transport-invalid");
+    assert.match(transportCheck.reason, /mandate:jhn:runtime:1/);
+    assert.equal(transportCheck.writes_performed, false);
+    assert.equal(replay(transport).length, transportCount);
+    assert.equal(
+      Buffer.compare(transportBefore, await readFile(path.join(transport, "cop-runtime.sqlite"))),
+      0
+    );
+  } finally {
+    for (const stateDirectory of directories) await removeState(stateDirectory);
   }
 });

@@ -57,9 +57,16 @@ function rollbackQuietly(database) {
  * table. It stores a full signed/hashed envelope inside metadata so legacy
  * runtime events remain readable but are never rewritten. BEGIN IMMEDIATE
  * serializes each topic-sequence decision in SQLite.
+ *
+ * `append` keeps one event in its own immediate transaction and still commits
+ * a no-op when that event is refused. `transaction` appends several events
+ * under one immediate transaction and rolls the whole batch back when any
+ * requested append is not ok, or when the callback throws. It does not issue
+ * a nested BEGIN.
  */
 export function createSqliteCopEventStore(database) {
   requireDatabase(database);
+  let transactionDepth = 0;
 
   function topicEvents(topicId) {
     return database
@@ -84,66 +91,144 @@ export function createSqliteCopEventStore(database) {
       );
   }
 
-  return {
+  function replayEvents({ after_event_id } = {}) {
+    const events = allEnvelopes();
+    if (!after_event_id) return events;
+    const index = events.findIndex((event) => event.event_id === after_event_id);
+    return index < 0 ? events : events.slice(index + 1);
+  }
+
+  function appendPrepared(partial) {
+    const prepared = createCopEventEnvelope(partial);
+    const validation = validateCopEventEnvelope(prepared, { requirePositiveSeq: false });
+    if (!validation.ok) return { ok: false, error: "invalid_envelope", errors: validation.errors };
+
+    const existing = allEnvelopes();
+    if (prepared.idempotency_key) {
+      const duplicate = existing.find(
+        (event) => event.idempotency_key === prepared.idempotency_key
+      );
+      if (duplicate) return { ok: true, duplicate: true, event: duplicate };
+    }
+    if (database.prepare("SELECT id FROM cop_events WHERE id = ?").get(prepared.event_id)) {
+      return { ok: false, error: "event_id_conflict" };
+    }
+    const events = topicEvents(prepared.topic.id);
+    const nextSeq = events.length + 1;
+    if (prepared.topic.seq > 0 && prepared.topic.seq !== nextSeq) {
+      return {
+        ok: false,
+        error: "topic_seq_conflict",
+        errors: [`expected_seq_${nextSeq}`, `got_seq_${prepared.topic.seq}`],
+      };
+    }
+    prepared.topic.seq = nextSeq;
+    const finalValidation = validateCopEventEnvelope(prepared, { requirePositiveSeq: true });
+    if (!finalValidation.ok) {
+      return { ok: false, error: "invalid_envelope", errors: finalValidation.errors };
+    }
+    database
+      .prepare(
+        "INSERT INTO cop_events (id, topic_id, task_id, type, payload, metadata, occurred_at, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      )
+      .run(
+        prepared.event_id,
+        prepared.topic.id,
+        null,
+        prepared.event_type,
+        JSON.stringify(prepared.payload),
+        JSON.stringify({ cop_event_envelope: prepared }),
+        prepared.time.occurred_at ?? prepared.time.recorded_at,
+        prepared.time.recorded_at
+      );
+    return { ok: true, duplicate: false, event: structuredClone(prepared) };
+  }
+
+  function requireOwnTransaction() {
+    if (transactionDepth !== 0) {
+      throw new Error("nested COP SQLite transaction is not supported");
+    }
+  }
+
+  const store = {
     kind: "sqlite",
 
     append(partial) {
-      const prepared = createCopEventEnvelope(partial);
-      const validation = validateCopEventEnvelope(prepared, { requirePositiveSeq: false });
-      if (!validation.ok)
-        return { ok: false, error: "invalid_envelope", errors: validation.errors };
-
+      requireOwnTransaction();
       database.exec("BEGIN IMMEDIATE");
+      transactionDepth = 1;
       try {
-        const existing = allEnvelopes();
-        if (prepared.idempotency_key) {
-          const duplicate = existing.find(
-            (event) => event.idempotency_key === prepared.idempotency_key
-          );
-          if (duplicate) {
-            database.exec("COMMIT");
-            return { ok: true, duplicate: true, event: duplicate };
-          }
-        }
-        if (database.prepare("SELECT id FROM cop_events WHERE id = ?").get(prepared.event_id)) {
-          database.exec("COMMIT");
-          return { ok: false, error: "event_id_conflict" };
-        }
-        const events = topicEvents(prepared.topic.id);
-        const nextSeq = events.length + 1;
-        if (prepared.topic.seq > 0 && prepared.topic.seq !== nextSeq) {
-          database.exec("COMMIT");
-          return {
-            ok: false,
-            error: "topic_seq_conflict",
-            errors: [`expected_seq_${nextSeq}`, `got_seq_${prepared.topic.seq}`],
-          };
-        }
-        prepared.topic.seq = nextSeq;
-        const finalValidation = validateCopEventEnvelope(prepared, { requirePositiveSeq: true });
-        if (!finalValidation.ok) {
-          database.exec("COMMIT");
-          return { ok: false, error: "invalid_envelope", errors: finalValidation.errors };
-        }
-        database
-          .prepare(
-            "INSERT INTO cop_events (id, topic_id, task_id, type, payload, metadata, occurred_at, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-          )
-          .run(
-            prepared.event_id,
-            prepared.topic.id,
-            null,
-            prepared.event_type,
-            JSON.stringify(prepared.payload),
-            JSON.stringify({ cop_event_envelope: prepared }),
-            prepared.time.occurred_at ?? prepared.time.recorded_at,
-            prepared.time.recorded_at
-          );
+        const result = appendPrepared(partial);
         database.exec("COMMIT");
-        return { ok: true, duplicate: false, event: structuredClone(prepared) };
+        return result;
       } catch (error) {
         rollbackQuietly(database);
         throw error;
+      } finally {
+        transactionDepth = 0;
+      }
+    },
+
+    /**
+     * Append every event requested by `fn` under one immediate transaction.
+     * A non-ok append result rolls the batch back even when `fn` returns
+     * normally. A throw rolls the batch back and propagates.
+     *
+     * @param {(transactionalStore: object) => unknown} fn
+     */
+    transaction(fn) {
+      if (typeof fn !== "function") throw new TypeError("transaction callback is required");
+      requireOwnTransaction();
+      database.exec("BEGIN IMMEDIATE");
+      transactionDepth = 1;
+      const refusals = [];
+      const transactionalStore = {
+        kind: "sqlite-transaction",
+        append(partial) {
+          const result = appendPrepared(partial);
+          if (!result || result.ok !== true) {
+            refusals.push(result || { ok: false, error: "transaction_append_refused" });
+          }
+          return result;
+        },
+        listTopic(topicId) {
+          return topicEvents(topicId);
+        },
+        replay(options) {
+          return replayEvents(options);
+        },
+        update() {
+          throw new Error("COP Event Log is strictly append-only. UPDATE forbidden.");
+        },
+        delete() {
+          throw new Error("COP Event Log is strictly append-only. DELETE forbidden.");
+        },
+      };
+      try {
+        const value = fn(transactionalStore);
+        if (refusals.length > 0) {
+          database.exec("ROLLBACK");
+          const errors = refusals.flatMap((refusal) =>
+            refusal.errors?.length
+              ? refusal.errors
+              : [refusal.error || "transaction_append_refused"]
+          );
+          return {
+            ok: false,
+            rolledBack: true,
+            error: refusals[0].error || "transaction_append_refused",
+            errors,
+            refusals,
+            value,
+          };
+        }
+        database.exec("COMMIT");
+        return { ok: true, rolledBack: false, value };
+      } catch (error) {
+        rollbackQuietly(database);
+        throw error;
+      } finally {
+        transactionDepth = 0;
       }
     },
 
@@ -151,11 +236,8 @@ export function createSqliteCopEventStore(database) {
       return topicEvents(topicId);
     },
 
-    replay({ after_event_id } = {}) {
-      const events = allEnvelopes();
-      if (!after_event_id) return events;
-      const index = events.findIndex((event) => event.event_id === after_event_id);
-      return index < 0 ? events : events.slice(index + 1);
+    replay(options) {
+      return replayEvents(options);
     },
 
     update() {
@@ -166,6 +248,8 @@ export function createSqliteCopEventStore(database) {
       throw new Error("COP Event Log is strictly append-only. DELETE forbidden.");
     },
   };
+
+  return store;
 }
 
 /**
