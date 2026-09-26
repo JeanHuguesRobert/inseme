@@ -75,6 +75,12 @@ function createAcpEnvironment(env) {
   if (env.CONTINUATION_ACP_TIMEOUT_MS)
     passthrough.CONTINUATION_ACP_TIMEOUT_MS = env.CONTINUATION_ACP_TIMEOUT_MS;
   if (env.CONTINUATION_ACP_KIND) passthrough.CONTINUATION_ACP_KIND = env.CONTINUATION_ACP_KIND;
+  // The server shells out to `cogentia continuation ...`, which needs to
+  // find a .cogentia.json registry -- without this, every emit/inspect
+  // call fails with "No .cogentia.json found" (a real gap found live on
+  // fracta2, not just a test wrinkle: production has no default registry
+  // location for a non-interactive process with no HOME-based lookup hit).
+  if (env.COGENTIA_REGISTRY) passthrough.COGENTIA_REGISTRY = env.COGENTIA_REGISTRY;
   if (String(env.MAGISTRAL_CONTINUATION_ACP_INHERIT_PROXY || "") === "1") return passthrough;
   return {
     ...passthrough,

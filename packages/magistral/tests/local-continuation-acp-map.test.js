@@ -31,6 +31,19 @@ test("local continuation ACP map passes through its own tuning env vars", () => 
   assert.equal(node.env.CONTINUATION_ACP_KIND, "custom_kind");
 });
 
+test("local continuation ACP map passes through COGENTIA_REGISTRY so the server can find its registry", () => {
+  const [node] = createLocalContinuationAcpMap(
+    { ...BASE_ENV, COGENTIA_REGISTRY: "/srv/cogentia/repos/JeanHuguesRobert" },
+    "linux"
+  );
+  assert.equal(node.env.COGENTIA_REGISTRY, "/srv/cogentia/repos/JeanHuguesRobert");
+});
+
+test("local continuation ACP map omits COGENTIA_REGISTRY when not set", () => {
+  const [node] = createLocalContinuationAcpMap({ ...BASE_ENV }, "linux");
+  assert.equal(node.env.COGENTIA_REGISTRY, undefined);
+});
+
 test("local continuation ACP map can explicitly retain host proxy settings", () => {
   const [node] = createLocalContinuationAcpMap(
     { ...BASE_ENV, MAGISTRAL_CONTINUATION_ACP_INHERIT_PROXY: "1" },
