@@ -25,6 +25,25 @@ function normalizeRegistryStatus(status) {
   return status;
 }
 
+// inseme#105 / inseme#109: known machine-readable discriminants, across
+// providers, that mean "this node is out of capacity, stop retrying it
+// until the TTL clears" rather than "one request happened to fail".
+// Codex's codexErrorInfo is the only one observed live so far; the field
+// name itself varies per provider (see acp-executor.js's err.acpError),
+// so classification checks a short list of known field names rather than
+// assuming one universal shape.
+const EXHAUSTION_SIGNALS = new Set(["usageLimitExceeded", "rateLimited"]);
+
+export function classifyAcpError(err) {
+  const data = err?.acpError?.data;
+  const discriminant = data?.codexErrorInfo || data?.continuationErrorInfo || data?.errorCode;
+  const detail = (data && data.message) || err?.message || "unknown_error";
+  if (discriminant && EXHAUSTION_SIGNALS.has(discriminant)) {
+    return { exhausted: true, reason: `${discriminant}: ${detail}` };
+  }
+  return { exhausted: false, reason: discriminant ? `${discriminant}: ${detail}` : detail };
+}
+
 function normalizeTier(tier) {
   if (!tier || tier === "main" || tier === "default" || tier === "magistral") return "fast";
   if (tier === "reasoning") return "strong";
@@ -599,12 +618,24 @@ export function createRouter({
         });
       } catch (err) {
         logEntry.latencyMs = Date.now() - startTime;
-        logEntry.error = err.message;
+        // inseme#105 / inseme#109: err.message alone is often a generic
+        // wrapper ("Internal error") with the real diagnostic sitting in
+        // the attached ACP error's `data` field (acp-executor.js attaches
+        // it as err.acpError). Keep both so nothing gets lost the way it
+        // did for hours during the Codex quota-exhaustion incident.
+        const classification = classifyAcpError(err);
+        logEntry.error = classification.reason;
+        logEntry.errorData = err.acpError?.data || null;
         logEntry.status = 0;
         trafficLog.append(logEntry);
 
-        registry.recordError(node.id, err.message);
-        log(`[Magistral] Node ${node.id} network error: ${err.message}, trying next…`);
+        if (classification.exhausted) {
+          registry.markExhausted(node.id, classification.reason);
+          log(`[Magistral] Node ${node.id} marked exhausted: ${classification.reason}`);
+        } else {
+          registry.recordError(node.id, classification.reason);
+          log(`[Magistral] Node ${node.id} network error: ${classification.reason}, trying next…`);
+        }
       }
     }
 

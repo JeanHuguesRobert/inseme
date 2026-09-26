@@ -234,9 +234,19 @@ async function executeAcpStdio({ node, payload, onSessionUpdate = () => {} }) {
         } else if (message.id !== undefined && pending.has(message.id)) {
           const entry = pending.get(message.id);
           pending.delete(message.id);
-          message.error
-            ? entry.reject(new Error(message.error.message || "acp_request_failed"))
-            : entry.resolve(message.result);
+          if (message.error) {
+            // inseme#105 / inseme#109: the useful diagnostic (quota
+            // messages, retry timing, provider-specific error codes) lives
+            // in error.data, not error.message -- a generic "Internal
+            // error" collapsed here cost an entire investigation session
+            // to decode manually. Attach the full object so callers
+            // (router.js) can classify and log it properly.
+            const err = new Error(message.error.message || "acp_request_failed");
+            err.acpError = message.error;
+            entry.reject(err);
+          } else {
+            entry.resolve(message.result);
+          }
         }
       }
     }
