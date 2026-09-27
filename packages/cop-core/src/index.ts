@@ -4,6 +4,7 @@ export * from "./github-ingress.js";
 export * from "./github-activity-feed.js";
 export * from "./github-delivery-replay.js";
 export * from "./github-reconcile.js";
+export * from "./continuation-result.js";
 export * from "./governed-act.js";
 export * from "./cop-event-envelope.js";
 export * from "./cop-event-spool.js";

@@ -155,10 +155,27 @@ Resume checklist:
 | Module                                    | Role                                  |
 | ----------------------------------------- | ------------------------------------- |
 | `packages/cop-core/src/github-ingress.js` | HMAC, allowlist, full event map       |
+| `continuation-result.js`                  | Pure continuation-result recognizer (Inseme #113) |
 | `github-activity-feed.js`                 | Private activity projection           |
 | `github-delivery-replay.js`               | Remap after mapper changes            |
 | `github-reconcile.js`                     | Gap detection vs injected GitHub list |
 | Edge `github-webhook.js`                  | 202 + durable #28 path                |
+
+## Continuation results (Inseme #113)
+
+An `issue_comment` event carries `payload.details.comment_id` and `comment_body`.
+That is adapter evidence. It does not resolve a continuation.
+
+`evaluateGithubIngress` calls the recognizer only when `options.continuationContext`
+is supplied. The recognizer proposes `cop.event/v1` records under profile
+`cop.continuation-result/v1`. It does not append them. The edge function is
+unchanged, and this issue does not configure a live webhook.
+
+The same comment id is the idempotency key shared by a webhook delivery and a
+later reconciliation backfill. A second observation proposes no further
+`returned` phase. `cognitive_producer_verified` stays false: a GitHub login is
+not proof of which model wrote the comment. The correlation challenge is not
+copied onto the proposed events.
 
 ## Local simulation
 

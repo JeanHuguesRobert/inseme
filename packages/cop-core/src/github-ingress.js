@@ -6,6 +6,7 @@
  */
 
 import { createHmac, createHash, timingSafeEqual } from "node:crypto";
+import { recognizeMappedContinuationResults } from "./continuation-result.js";
 
 /** Explicit subscription set from Inseme #29. */
 export const GITHUB_EVENT_SUBSCRIPTIONS = Object.freeze([
@@ -251,6 +252,12 @@ export function mapDeliveryToCopEvents(delivery, payload, options = {}) {
       summary = `Comment on issue #${issueNumber} ${delivery.action} by ${delivery.sender_login}`;
       details.issue_number = issueNumber;
       details.correlation = `issue:${delivery.repository_name}#${issueNumber}`;
+      details.comment_id = payload?.comment?.id ?? null;
+      details.comment_node_id = payload?.comment?.node_id ?? null;
+      details.comment_url = payload?.comment?.html_url ?? null;
+      details.comment_updated_at = payload?.comment?.updated_at ?? null;
+      details.comment_body =
+        typeof payload?.comment?.body === "string" ? payload.comment.body : null;
       break;
     }
     case "discussion":
@@ -429,7 +436,7 @@ export function evaluateGithubIngress({
   }
 
   const events = mapDeliveryToCopEvents(delivery, payload, options);
-  return {
+  const result = {
     ok: true,
     status: 202,
     persist: true,
@@ -437,4 +444,13 @@ export function evaluateGithubIngress({
     events,
     outcome: events[0]?.meta?.handled === false ? "unhandled_recorded" : "mapped",
   };
+  // Recognition runs only when the caller supplies suspended continuations.
+  // It proposes events. It does not append them or resolve the continuation.
+  if (options.continuationContext) {
+    result.continuation_recognition = recognizeMappedContinuationResults(
+      events,
+      options.continuationContext
+    );
+  }
+  return result;
 }
