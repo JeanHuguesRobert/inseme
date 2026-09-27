@@ -134,8 +134,26 @@ Already prepared:
 - `github_webhook_secret` is generated in the JHN Vault and marked secret;
 - `github_repo_allowlist` is present in the JHN Vault with the initial `JeanHuguesRobert/inseme`
   scope;
-- the JHN Netlify profile contains the Vault-backed, fail-closed ingress;
-- no GitHub App, installation, or live delivery has been created.
+- the JHN Netlify profile contains the Vault-backed, fail-closed ingress.
+
+## Activation record — repository webhook (Inseme #113)
+
+On 2026-09-27 the Principal authorized live webhook creation. The allowlist still
+contains one repository, so one repository webhook is the whole observable surface.
+
+| Field | Value |
+| --- | --- |
+| Repository | `JeanHuguesRobert/inseme` |
+| Hook id | `686776940` |
+| URL | `https://jhn.baronsmariani.org/api/webhooks/github` |
+| Events | `issue_comment`, `issues`, `pull_request`, `push`, `workflow_run` |
+| Content type | `json` |
+
+A signed local probe and GitHub's own `ping` both received HTTP 202. The probe
+response reported `durable: appended`. No GitHub App was created, and no other
+repository was hooked: deliveries from a repository outside the Vault allowlist
+are accepted and then ignored. Add a repository to `github_repo_allowlist` before
+creating its webhook.
 
 Resume checklist:
 
