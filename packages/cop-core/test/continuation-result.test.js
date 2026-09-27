@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   CONTINUATION_RESULT_ADMISSION,
   CONTINUATION_RESULT_PROFILE,
+  continuationContextFromRecords,
+  declaredContinuationRecord,
+  issueCommentObservationEvent,
   observeContinuationResult,
   projectContinuationForExternalHandler,
   recognizeMappedContinuationResults,
@@ -322,6 +325,44 @@ describe("continuation result recognizer", () => {
     expect(projection.body).toContain(CHALLENGE);
     expect(projection.body).toContain("does not grant authority");
     expect(projection.body).toContain("cognitive.judgment");
+    expect(projection.body).not.toContain("```");
+    const published = observeContinuationResult(
+      commentEvent({ body: projection.body, commentId: 4242, deliveryId: "projection" }),
+      context()
+    );
+    expect(published.matched).toBe(false);
+  });
+
+  it("rebuilds suspended context and marks a returned continuation", () => {
+    const record = continuation();
+    const declared = declaredContinuationRecord(record);
+    expect(declared.idempotency_key).toBe("continuation:ctn_demo:declared");
+    const returned = observeContinuationResult(commentEvent({ body: yamlResult() }), context());
+    const rebuilt = continuationContextFromRecords(
+      [declared],
+      returned.proposed_events.map((event) => ({ payload: event.payload }))
+    );
+    expect(rebuilt.continuations.ctn_demo.lifecycle).toBe("returned");
+    expect(rebuilt.progressed_continuation_ids).toEqual(["ctn_demo"]);
+    const again = observeContinuationResult(
+      commentEvent({ body: yamlResult(), commentId: 77, deliveryId: "later" }),
+      rebuilt
+    );
+    expect(again.proposed_events.at(-1).payload.reason).toBe("late_result");
+  });
+
+  it("keeps the comment body on the issue observation", () => {
+    const observation = issueCommentObservationEvent({
+      deliveryId: "deliv-body",
+      action: "created",
+      repository: "JeanHuguesRobert/inseme",
+      senderLogin: "octocat",
+      payload: { issue: { number: 113 }, comment: { id: 9, body: yamlResult() } },
+    });
+    expect(observation.payload.details.comment_body).toContain("cogentia.step_result/v1");
+    expect(observation.idempotency_key).toBe("github:deliv-body:issue_comment");
+    const report = observeContinuationResult(observation, context());
+    expect(report.progresses).toBe(true);
   });
 });
 

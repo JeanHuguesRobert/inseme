@@ -1,10 +1,19 @@
 /* global Deno */
-// Deno Edge Function: GitHub App Webhook Ingress (Issues #28 / #29)
+// Deno Edge Function: GitHub App Webhook Ingress (Issues #28 / #29 / #113)
 // Path: /api/webhooks/github
 //
 // #28 durable path: delivery row → optional artifact → cop_event_append RPC
 // (atomic topic_seq). On append failure → cop_spool_queue. Returns 202 after
 // validation. Secret values never logged.
+//
+// #113: after a durable issue_comment, propose continuation-result events.
+// This import is resolved from the compiled profile copy
+// apps/platform/netlify/profiles/<id>/edge-functions/github-webhook.js.
+import {
+  continuationContextFromRecords,
+  issueCommentObservationEvent,
+  recognizeMappedContinuationResults,
+} from "../../../../../../packages/cop-core/src/continuation-result.js";
 
 const ARTIFACT_THRESHOLD = 8 * 1024;
 const DEFAULT_ARTIFACT_BUCKET = "cop-artifacts";
@@ -192,6 +201,7 @@ export default async (request, _context) => {
   let durable = "skipped_no_supabase";
   let artifactRef = null;
   let spooled = false;
+  let continuation = null;
 
   {
     const supabase = vault.config.newSupabase(true);
@@ -239,18 +249,40 @@ export default async (request, _context) => {
       const topicId = `github:${repositoryName || "global"}`;
       const actorId = senderLogin ? `github:${senderLogin}` : "github:anonymous";
       const idempotencyKey = `github:${deliveryId}:${eventName}`;
-      const eventPayload = {
-        github_event: eventName,
-        action,
-        repository: repositoryName,
-        installation_id: installationId,
-        summary: `GitHub Event ${eventName} (${action || "no-action"}) on ${repositoryName || "unknown"}`,
-        details: {
-          sender: senderLogin,
-          payload_hash: payloadHash,
-          externalized: Boolean(artifactRef),
-        },
-      };
+      const commentObservation =
+        eventName === "issue_comment"
+          ? issueCommentObservationEvent({
+              deliveryId,
+              eventName,
+              action,
+              repository: repositoryName,
+              senderLogin,
+              payload,
+            })
+          : null;
+      const eventPayload = commentObservation
+        ? {
+            ...commentObservation.payload,
+            installation_id: installationId,
+            details: {
+              ...commentObservation.payload.details,
+              sender: senderLogin,
+              payload_hash: payloadHash,
+              externalized: Boolean(artifactRef),
+            },
+          }
+        : {
+            github_event: eventName,
+            action,
+            repository: repositoryName,
+            installation_id: installationId,
+            summary: `GitHub Event ${eventName} (${action || "no-action"}) on ${repositoryName || "unknown"}`,
+            details: {
+              sender: senderLogin,
+              payload_hash: payloadHash,
+              externalized: Boolean(artifactRef),
+            },
+          };
       const eventPayloadHash = await payloadHashSha256(eventPayload);
 
       const { error: appendError } = await supabase.rpc("cop_event_append", {
@@ -299,6 +331,12 @@ export default async (request, _context) => {
             normalized_at: new Date().toISOString(),
           })
           .eq("delivery_id", deliveryId);
+        if (commentObservation && action !== "deleted") {
+          continuation = await proposeContinuationResultEvents(supabase, {
+            ...commentObservation,
+            payload: eventPayload,
+          });
+        }
       }
     }
   }
@@ -314,6 +352,7 @@ export default async (request, _context) => {
       spooled,
       artifact: Boolean(artifactRef),
       allowlist: allowlistOutcome,
+      continuation,
     }),
     {
       status: 202,
@@ -321,3 +360,55 @@ export default async (request, _context) => {
     }
   );
 };
+
+async function proposeContinuationResultEvents(supabase, observation) {
+  try {
+    const declared = await supabase
+      .from("cop_event_log")
+      .select("payload")
+      .like("idempotency_key", "continuation:%:declared")
+      .limit(20);
+    if (declared.error) return { ok: false, error: "continuation_context_unavailable" };
+    const results = await supabase
+      .from("cop_event_log")
+      .select("payload")
+      .like("idempotency_key", "continuation-result:%")
+      .limit(200);
+    if (results.error) return { ok: false, error: "continuation_result_context_unavailable" };
+
+    const context = continuationContextFromRecords(declared.data, results.data);
+    if (!Object.keys(context.continuations).length) {
+      return { ok: true, matched: false, progression: "none", proposed: 0 };
+    }
+    const recognition = recognizeMappedContinuationResults([observation], context);
+    const report = recognition.reports[0] || { matched: false, progression: "none" };
+    let appended = 0;
+    for (const proposed of recognition.proposed_events) {
+      const proposedHash = await payloadHashSha256(proposed.payload);
+      const { error } = await supabase.rpc("cop_event_append", {
+        p_topic_id: proposed.topic_id,
+        p_event_type: proposed.event_type || "cop.event/v1",
+        p_actor_id: proposed.actor_id,
+        p_epistemic_status: proposed.epistemic_status || "observed",
+        p_origin_ref: proposed.origin_ref,
+        p_payload: proposed.payload,
+        p_meta: proposed.meta || {},
+        p_idempotency_key: proposed.idempotency_key,
+        p_payload_hash: proposedHash,
+        p_visibility: proposed.visibility || "restricted",
+      });
+      if (!error) appended += 1;
+    }
+    return {
+      ok: true,
+      matched: report.matched === true,
+      progression: report.progression || "none",
+      continuation_id: report.continuation_id || null,
+      proposed: recognition.proposed_events.length,
+      appended,
+    };
+  } catch (error) {
+    console.error("Continuation recognition failed", { message: error?.message });
+    return { ok: false, error: "continuation_recognition_failed" };
+  }
+}

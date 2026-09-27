@@ -14,8 +14,6 @@
  * correlated result came back. It does not invoke a handler.
  */
 
-import { createHash, timingSafeEqual } from "node:crypto";
-
 export const CONTINUATION_RESULT_PROFILE = "cop.continuation-result/v1";
 export const STEP_RESULT_PROTOCOL = "cogentia.step_result/v1";
 
@@ -36,7 +34,7 @@ export const CONTINUATION_RESULT_ADMISSION = Object.freeze({
     "cognitive_producer_verified is never inferred from the surface actor or from the result's own claim.",
     "The challenge correlates a packet. It is omitted from proposed events and grants no authority.",
     "YAML block scalars are not parsed. Use a single-line answer or a JSON fence.",
-    "Live webhook configuration and a conversational-agent round trip are outside this slice.",
+    "Only a fenced block is a candidate result. The projection template is unfenced so publishing it does not answer the continuation.",
   ]),
 });
 
@@ -232,16 +230,16 @@ export function projectContinuationForExternalHandler(continuation, options = {}
   }
 
   lines.push(
-    "Post one fenced block on a declared return path. The challenge correlates this packet with the continuation. It does not grant authority for any other COP act.",
+    "Post a new comment on a declared return path. Put the result in one fenced yaml or json block. The challenge correlates this packet with the continuation. It does not grant authority for any other COP act.",
     "",
-    "```yaml",
-    `protocol: ${schema}`,
-    `continuation_id: ${continuationId}`,
-    `challenge: ${challenge}`,
-    "status: answered",
-    "result:",
-    "  answer:",
-    "```",
+    "Template, not itself a result:",
+    "",
+    "    protocol: " + schema,
+    "    continuation_id: " + continuationId,
+    "    challenge: " + challenge,
+    "    status: answered",
+    "    result:",
+    "      answer: <your answer>",
     ""
   );
 
@@ -448,12 +446,7 @@ function candidateBlocks(text) {
   const fence = /```([^\n`]*)\n([\s\S]*?)```/g;
   let match;
   while ((match = fence.exec(text))) fenced.push(match[2]);
-  if (fenced.length) return fenced;
-
-  const bare = [];
-  const re = /(?:^|\n)(protocol:\s*cogentia\.step[-_]result\/v1[^\n]*(?:\n[^\n]+)*)/g;
-  while ((match = re.exec(text))) bare.push(match[1]);
-  return bare;
+  return fenced;
 }
 
 function parseCandidateBlock(block) {
@@ -541,8 +534,112 @@ function observationKeyFor(event, candidate) {
   if (generic) return `observation:${generic}`;
   if (event?.idempotency_key) return `event:${event.idempotency_key}`;
   if (event?.origin_ref) return `origin:${event.origin_ref}`;
-  const digest = createHash("sha256").update(stableCandidate(candidate)).digest("hex").slice(0, 16);
-  return `candidate:${candidate.continuation_id || "unknown"}:${digest}`;
+  return `candidate:${candidate.continuation_id || "unknown"}:${fnv1a(stableCandidate(candidate))}`;
+}
+
+/**
+ * Normalized issue_comment event the recognizer can read.
+ * The live edge appends this payload and passes the same object to recognition.
+ */
+export function issueCommentObservationEvent({
+  deliveryId,
+  eventName = "issue_comment",
+  action = null,
+  repository = null,
+  senderLogin = null,
+  payload = {},
+} = {}) {
+  const comment = payload?.comment && typeof payload.comment === "object" ? payload.comment : {};
+  const body = typeof comment.body === "string" ? comment.body.slice(0, MAX_TEXT_CHARS) : null;
+  return {
+    topic_id: `github:${repository || "global"}`,
+    event_type: "cop.event/v1",
+    actor_id: senderLogin ? `github:${senderLogin}` : "github:anonymous",
+    origin_ref: deliveryId ? `github:delivery:${deliveryId}` : null,
+    idempotency_key: deliveryId ? `github:${deliveryId}:${eventName}` : null,
+    visibility: "restricted",
+    epistemic_status: "observed",
+    payload: {
+      github_event: eventName,
+      action,
+      repository,
+      surface: "github",
+      summary: `Comment on issue #${payload?.issue?.number ?? "?"} ${action || "no-action"} by ${senderLogin || "unknown"}`,
+      details: {
+        issue_number: payload?.issue?.number ?? null,
+        comment_id: comment.id ?? null,
+        comment_node_id: comment.node_id ?? null,
+        comment_url: comment.html_url ?? null,
+        comment_body: body,
+        correlation:
+          repository && payload?.issue?.number != null
+            ? `issue:${repository}#${payload.issue.number}`
+            : null,
+      },
+    },
+    meta: { delivery_id: deliveryId || null },
+  };
+}
+
+/**
+ * Append-only declaration of one suspended continuation.
+ * Later `returned` events do not rewrite this row. The runtime overlays lifecycle.
+ */
+export function declaredContinuationRecord(continuation) {
+  const continuationId = stringOrNull(continuation?.continuation_id);
+  if (!continuationId) throw new Error("continuation_id is required");
+  return {
+    topic_id: `continuation:${continuationId}`,
+    event_type: "cop.event/v1",
+    actor_id: "cop:continuation-result-recognizer",
+    subject_ref: `continuation:${continuationId}`,
+    epistemic_status: "declared",
+    origin_ref: `continuation:${continuationId}`,
+    visibility: "restricted",
+    idempotency_key: `continuation:${continuationId}:declared`,
+    payload: {
+      profile: "cop/continuation",
+      continuation,
+    },
+    meta: {
+      profile: "cop/continuation",
+      admits_new_core_entity: false,
+    },
+  };
+}
+
+/**
+ * Rebuild recognizer context from durable rows. Pure.
+ * @param {Array<{ payload?: object }>} declaredRows
+ * @param {Array<{ payload?: object }>} resultRows
+ */
+export function continuationContextFromRecords(declaredRows, resultRows) {
+  const continuations = {};
+  for (const row of declaredRows || []) {
+    const continuation = row?.payload?.continuation;
+    const continuationId = stringOrNull(continuation?.continuation_id);
+    if (!continuationId) continue;
+    continuations[continuationId] = { ...continuation };
+  }
+  const seen = [];
+  const progressed = [];
+  for (const row of resultRows || []) {
+    const payload = row?.payload || {};
+    if (payload.profile !== CONTINUATION_RESULT_PROFILE) continue;
+    if (payload.observation_key) seen.push(String(payload.observation_key));
+    if (payload.phase === "returned" && continuations[payload.continuation_id]) {
+      progressed.push(String(payload.continuation_id));
+      continuations[payload.continuation_id] = {
+        ...continuations[payload.continuation_id],
+        lifecycle: "returned",
+      };
+    }
+  }
+  return {
+    continuations,
+    seen_observation_keys: [...new Set(seen)],
+    progressed_continuation_ids: [...new Set(progressed)],
+  };
 }
 
 function stableCandidate(candidate) {
@@ -596,10 +693,21 @@ function stripChallenge(candidate) {
 
 function challengesMatch(expected, actual) {
   if (typeof expected !== "string" || typeof actual !== "string") return false;
-  const left = Buffer.from(expected, "utf8");
-  const right = Buffer.from(actual, "utf8");
+  const left = new TextEncoder().encode(expected);
+  const right = new TextEncoder().encode(actual);
   if (left.length === 0 || left.length !== right.length) return false;
-  return timingSafeEqual(left, right);
+  let diff = 0;
+  for (let index = 0; index < left.length; index += 1) diff |= left[index] ^ right[index];
+  return diff === 0;
+}
+
+function fnv1a(text) {
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
 function toSet(value) {

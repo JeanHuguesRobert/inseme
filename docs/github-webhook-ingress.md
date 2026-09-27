@@ -185,9 +185,12 @@ An `issue_comment` event carries `payload.details.comment_id` and `comment_body`
 That is adapter evidence. It does not resolve a continuation.
 
 `evaluateGithubIngress` calls the recognizer only when `options.continuationContext`
-is supplied. The recognizer proposes `cop.event/v1` records under profile
-`cop.continuation-result/v1`. It does not append them. The edge function is
-unchanged, and this issue does not configure a live webhook.
+is supplied. The live edge function does the same after a durable `issue_comment`:
+it loads rows declared as `continuation:<id>:declared`, runs the recognizer, and
+appends the proposed events with their idempotency keys. A recognition failure
+still returns 202 for the GitHub delivery. The projection template is unfenced,
+so publishing it does not answer the continuation. The handler posts a separate
+fenced block.
 
 The same comment id is the idempotency key shared by a webhook delivery and a
 later reconciliation backfill. A second observation proposes no further
