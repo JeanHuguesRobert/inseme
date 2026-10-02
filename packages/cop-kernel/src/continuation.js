@@ -58,6 +58,7 @@ function getRandomUUID() {
  */
 export function createContinuationDescriptor(params = {}) {
   const {
+    continuationId = null,
     resumeTo, // maps to "handler" in the Artifact payload
     resumeIntent,
     correlationId = null,
@@ -78,7 +79,7 @@ export function createContinuationDescriptor(params = {}) {
   }
 
   const descriptor = {
-    continuationId: getRandomUUID(),
+    continuationId: continuationId || getRandomUUID(),
     type: "cop/continuation", // as per spec §2.7.3 Reserved Type Name
     resumeTo, // "handler" field
     resumeIntent,
@@ -440,6 +441,7 @@ export async function executeContinuation(params = {}) {
     triggeringEvent,
     reason,
     readOnlyStore,
+    payload,
   });
 
   return {
@@ -447,5 +449,97 @@ export async function executeContinuation(params = {}) {
     handler: continuation.resumeTo,
     resumeMessage,
     result,
+  };
+}
+
+/**
+ * Bridges a durable `returned` COP event (profile `cop.continuation-result/v1`)
+ * to kernel continuation resumption (§5.5).
+ *
+ * Preserves the architectural distinction:
+ * - `returned`: external result arrived at Ithaca and correlated.
+ * - `resumed`: computation woken up with the candidate yield.
+ * - `resolved`: handler executed and accepted the yield.
+ * - `assimilated`: durable cognitive state updated.
+ */
+export async function resumeContinuationFromReturnedEvent(params = {}) {
+  const {
+    continuation,
+    returnedEvent,
+    handlerResolver = null,
+    readOnlyStore = null,
+    bus = null,
+  } = params;
+
+  if (!returnedEvent || returnedEvent.payload?.profile !== "cop.continuation-result/v1") {
+    throw new Error(
+      "resumeContinuationFromReturnedEvent: valid returnedEvent with profile cop.continuation-result/v1 required"
+    );
+  }
+  if (returnedEvent.payload.phase !== "returned") {
+    throw new Error(
+      `resumeContinuationFromReturnedEvent: event phase must be 'returned', got '${returnedEvent.payload.phase}'`
+    );
+  }
+
+  const continuationId =
+    continuation?.continuationId ||
+    continuation?.continuation_id ||
+    returnedEvent.payload.continuation_id;
+  if (!continuationId) {
+    throw new Error("resumeContinuationFromReturnedEvent: continuationId is required");
+  }
+
+  const candidateResult = returnedEvent.payload.candidate_result;
+  const normalizedContinuation = {
+    ...continuation,
+    continuationId,
+    resumeTo: continuation?.resumeTo || continuation?.handler || "continuation-default-handler",
+    state: continuation?.state || {},
+  };
+
+  const resumeMsg = {
+    type: "cop.continuation.resume",
+    source: "cop-kernel",
+    data: {
+      continuationId,
+      resumeTo: normalizedContinuation.resumeTo,
+      resumeIntent: normalizedContinuation.resumeIntent || "resume-external-continuation",
+      state: normalizedContinuation.state,
+      triggeringEvent: returnedEvent,
+      reason: "external_result_returned",
+      candidateResult,
+      yield: candidateResult?.result || null,
+      provenance: returnedEvent.payload.provenance || null,
+    },
+  };
+
+  if (bus && typeof bus.publish === "function") {
+    await bus.publish(resumeMsg);
+  }
+
+  let execution = null;
+  if (handlerResolver) {
+    execution = await executeContinuation({
+      continuation: normalizedContinuation,
+      handlerResolver,
+      readOnlyStore,
+      triggeringEvent: returnedEvent,
+      reason: "external_result_returned",
+      payload: {
+        candidateResult,
+        yield: candidateResult?.result || null,
+        provenance: returnedEvent.payload.provenance || null,
+      },
+    });
+  }
+
+  return {
+    continuationId,
+    resumed: true,
+    lifecycle: "resumed",
+    resumeMessage: resumeMsg,
+    execution,
+    yield: candidateResult?.result || null,
   };
 }

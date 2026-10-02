@@ -48,9 +48,7 @@ export class COPScheduler {
     if (this.unsubscribe) return;
 
     // The Scheduler reacts to all events to check waitForEvents conditions (§5.5.2)
-    this.unsubscribe = this.bus.subscribeAll((event) => {
-      this._onEvent(event);
-    });
+    this.unsubscribe = this.bus.subscribeAll((event) => this._onEvent(event));
 
     // Lightweight global fallback timer (every 5s) for any continuations without precise resumeAfter
     this.globalTimer = setInterval(() => this._evaluateTimeBased(), 5000);
@@ -173,9 +171,26 @@ export class COPScheduler {
       const cont = entry.continuation;
       const waitList = cont.conditions?.waitForEvents || [];
 
-      if (waitList.includes(event.type)) {
+      const contId = cont.continuationId || cont.continuation_id;
+      const isReturnedResult =
+        (event?.type === "cop.event/v1" || event?.event_type === "cop.event/v1") &&
+        event.payload?.profile === "cop.continuation-result/v1" &&
+        event.payload?.phase === "returned" &&
+        (event.payload?.continuation_id === contId ||
+          event.subject_ref === `continuation:${contId}`);
+
+      if (waitList.includes(event?.type) || isReturnedResult) {
+        const reason = isReturnedResult ? "external_result_returned" : "event-match";
+        const payload = isReturnedResult
+          ? {
+              candidateResult: event.payload?.candidate_result,
+              yield: event.payload?.candidate_result?.result,
+              provenance: event.payload?.provenance,
+              observationKey: event.payload?.observation_key,
+            }
+          : {};
         // Matching event arrived → resume
-        await this._performResumption(cont, event, "event-match");
+        await this._performResumption(cont, event, reason, payload);
         this.pending.delete(id);
       }
     }
@@ -255,6 +270,7 @@ export class COPScheduler {
         triggeringEvent,
         reason: resumeReason,
         retry: finalContinuation.retry || null,
+        ...payload,
       },
     };
 
