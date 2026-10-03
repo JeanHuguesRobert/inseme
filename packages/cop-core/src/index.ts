@@ -25,3 +25,5 @@ export * from "./reactive-corpus.js";
 export * from "./measured-risk.js";
 export * from "./trace-lifecycle-verifier.js";
 export * from "./fractalog-spool.js";
+export * from "./compute-preemption.js";
+export * from "./git-safe-writeback.js";
