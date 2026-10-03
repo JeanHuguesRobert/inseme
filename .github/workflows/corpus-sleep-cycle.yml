@@ -1,0 +1,127 @@
+name: Preemptible Corpus Sleep Cycle
+
+on:
+  schedule:
+    # Nightly at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      budget_minutes:
+        description: "Max wall-time budget (minutes)"
+        required: false
+        default: "20"
+        type: string
+      max_pairs:
+        description: "Maximum document pairs to evaluate"
+        required: false
+        default: "50"
+        type: string
+      dry_run:
+        description: "Dry-run without committing back to Git"
+        required: false
+        default: false
+        type: boolean
+
+# Enforce Compute Fabric concurrency bounds (inseme#114):
+# Background jobs share the 'compute-background' group and do not cancel each other.
+# They are capped to preserve >= 18 slots for immediate foreground on-demand jobs.
+concurrency:
+  group: compute-background
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  corpus-sleep-cycle:
+    name: Corpus Sleep Cycle & Consolidation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Inseme
+        uses: actions/checkout@v4
+        with:
+          path: inseme
+
+      - name: Checkout Cogentia
+        uses: actions/checkout@v4
+        with:
+          repository: JeanHuguesRobert/cogentia
+          path: cogentia
+          token: ${{ github.token }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: inseme/pnpm-lock.yaml
+
+      - name: Install Inseme dependencies
+        working-directory: inseme
+        run: pnpm install --frozen-lockfile
+
+      - name: Build COP Core
+        working-directory: inseme
+        run: pnpm --filter @inseme/cop-core run build
+
+      - name: Run Corpus Sleep Cycle Harness
+        id: sleep_cycle
+        env:
+          INPUT_BUDGET_MIN: ${{ inputs.budget_minutes || '20' }}
+          INPUT_MAX_PAIRS: ${{ inputs.max_pairs || '50' }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run || false }}
+        run: |
+          BUDGET_MS=$(( ${INPUT_BUDGET_MIN} * 60 * 1000 ))
+          DRY_RUN_FLAG=""
+          if [ "$INPUT_DRY_RUN" = "true" ]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+
+          node inseme/scripts/run-corpus-sleep-cycle-harness.js \
+            --budget-ms "$BUDGET_MS" \
+            --max-pairs "$INPUT_MAX_PAIRS" \
+            --root ./cogentia \
+            $DRY_RUN_FLAG \
+            --json > sleep-cycle-report.json
+
+          cat sleep-cycle-report.json
+
+      - name: Upload Sleep Cycle Report & Evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sleep-cycle-report-${{ github.run_id }}
+          path: sleep-cycle-report.json
+          retention-days: 14
+
+      - name: Publish Sleep Cycle Receipt
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          RUN_URL="$SERVER_URL/$REPOSITORY/actions/runs/$RUN_ID"
+          OUTCOME="${{ steps.sleep_cycle.outcome }}"
+
+          BODY=$(cat <<EOF
+## Corpus Sleep Cycle Execution Receipt
+
+- **Status**: \`$OUTCOME\`
+- **Run URL**: $RUN_URL
+- **Concurrency Group**: \`compute-background\`
+- **Evidence Schema**: \`cop.preemption-receipt/v1\`
+- **Reference**: inseme#116 (GitHub Compute Fabric 3/5)
+EOF
+          )
+
+          gh api "repos/$REPOSITORY/issues/116/comments" -f body="$BODY" || true
