@@ -3,7 +3,7 @@ title: Olé Olé MVP — implementation status (#42)
 author: Jean Hugues Noël Robert, baron Mariani
 affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
 date: '2026-09-15'
-last_modified_at: '2026-09-15'
+last_modified_at: '2026-10-06'
 version: '0.1'
 status: working-paper
 license: CC BY-SA 4.0
@@ -121,7 +121,7 @@ Suggested runbook:
 1. **Inspect current JHN mapping**
    - Netlify UI → site for `jhn.baronsmariani.org` → Domain management: note custom domain, Netlify
      subdomain (`*.netlify.app`), HTTPS status.
-   - DNS at registrar (Gandi for baronsmariani / acorsica as applicable):
+   - Authoritative DNS (Cloudflare for `baronsmariani.org` and `acorsica.org`; registrar identity is separate):
      ```text
      dig jhn.baronsmariani.org +short
      dig CNAME jhn.baronsmariani.org +short
@@ -142,7 +142,7 @@ Suggested runbook:
    - Netlify → Domain management → Add `oleole.acorsica.org`.
    - Copy the **exact** DNS instructions Netlify shows (CNAME target or A records).
 
-4. **Gandi DNS (acorsica.org)**
+4. **Cloudflare DNS (`acorsica.org`)**
    - Create the record Netlify requested for host `oleole` (or FQDN).
    - Do not invent values; paste Netlify’s target.
 
@@ -159,7 +159,7 @@ Suggested runbook:
    - Whether pattern matches or intentionally differs from `jhn.baronsmariani.org`
 
 **Status as of implementation PR:** code and site config are ready; **public DNS/TLS not applied
-from this agent session** (requires Gandi + Netlify credentials / UI confirmation).
+from this agent session** (requires Cloudflare + Netlify credentials / UI confirmation).
 
 ### C. Full Overture/OSM bulk ingest
 
