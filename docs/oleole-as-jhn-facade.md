@@ -3,7 +3,7 @@ title: Olé Olé = façade d’Agent JHN
 author: Jean Hugues Noël Robert, baron Mariani
 affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
 date: '2026-09-15'
-last_modified_at: '2026-09-15'
+last_modified_at: '2026-10-06'
 version: '0.1'
 status: 'architectural decision (2026-08-12) Issue:'
 license: CC BY-SA 4.0
@@ -84,7 +84,7 @@ Site cible : **`jhn-baronsmariani-org`**.
    - `oleole.acorsica.org` (+ `www` si besoin)
    - `oleole.jhn.baronsmariani.org`
 2. DNS :
-   - **Gandi `acorsica.org`** : `oleole` → cible Netlify indiquée (souvent CNAME vers
+   - **Cloudflare DNS `acorsica.org`** : `oleole` → cible Netlify indiquée (souvent CNAME vers
      `jhn-baronsmariani-org.netlify.app`) — **ne pas inventer** le record.
    - **`baronsmariani.org`** : `oleole.jhn` (ou la forme que le DNS exige pour un sous-sous-domaine)
      → **même** cible Netlify.
