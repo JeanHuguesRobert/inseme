@@ -3,7 +3,7 @@ title: Olé Olé (`apps/oleole`)
 author: Jean Hugues Noël Robert, baron Mariani
 affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
 date: '2026-09-15'
-last_modified_at: '2026-09-15'
+last_modified_at: '2026-10-06'
 version: '0.1'
 status: working-paper
 license: CC BY-SA 4.0
@@ -58,5 +58,5 @@ pnpm oleole:build
 
 ## DNS / custom domain
 
-See [`docs/oleole-mvp-status.md`](../../docs/oleole-mvp-status.md) for Gandi + Netlify steps
+See [`docs/oleole-mvp-status.md`](../../docs/oleole-mvp-status.md) for Cloudflare DNS + Netlify steps
 mirroring `jhn.baronsmariani.org` without guessing records.
