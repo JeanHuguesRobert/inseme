@@ -52,7 +52,7 @@ function loadConfig(env) {
         schema: "watch-the-watchers/config-v1",
         state: "REVIEW",
         artifact_ref: "cc-petition/review-v0.30",
-        review_url: "https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/senatoriales-2026/requete-conseil-constitutionnel.md",
+        review_url: "https://jhn.baronsmariani.org/cc/requete-conseil-constitutionnel-haute-corse-2026.pdf",
       };
   if (config.schema !== "watch-the-watchers/config-v1") throw new Error("invalid_config_schema");
   if (!["REVIEW", "FROZEN"].includes(config.state)) throw new Error("invalid_config_state");
