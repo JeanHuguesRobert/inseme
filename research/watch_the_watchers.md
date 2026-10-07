@@ -89,6 +89,9 @@ This kernel does not select a production datastore. A deployment must keep the t
 ## Current implementation
 
 - `scripts/watch-the-watchers.js`: pure kernel for tokens, state validation, event creation, target resolution and disclosure-page rendering.
+- `scripts/watch-the-watchers-http.js`: framework-neutral HTTP adapter implementing `LANDING`, explicit `OPEN_PDF`, and `REDIRECT` semantics with injected private token lookup and append-event storage.
 - `scripts/watch-the-watchers.test.js`: tests for privacy, REVIEW/FROZEN separation, conservative event semantics and canonical escape path.
+- `scripts/watch-the-watchers-http.test.js`: route-level tests including bot-like ambient headers, unknown-token behavior, explicit-action redirects, and the absence of a synthetic `READ` event.
+- `.github/workflows/ci.yml`: enforces both Watch the Watchers test suites on every push/PR to `main`.
 
-Production routing, datastore selection, secrets, domain/DNS and public deployment remain outside this bounded slice and require the appropriate deployment mandate.
+Production datastore selection, secrets, domain/DNS and public deployment remain outside this bounded slice and require the appropriate deployment mandate.
