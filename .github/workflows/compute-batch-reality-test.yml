@@ -1,4 +1,4 @@
-# Reality Test trigger v1
+# Reality Test trigger v2
 name: Compute Batch Reality Test
 
 on:
@@ -60,6 +60,7 @@ jobs:
           pnpm --filter @inseme/magistral run check
           pnpm --filter @inseme/magistral test
           node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js
+          node --test scripts/github-compute-request.test.js
 
       - name: Publish durable execution callback
         if: always()
@@ -114,3 +115,80 @@ EOF
       - name: Preserve failure as workflow conclusion
         if: steps.validate.outcome != 'success'
         run: exit 1
+
+
+  typed-compute-request:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.comment.user.login == github.repository_owner &&
+      contains(github.event.comment.body, '"schema": "cop.compute-request/v1"')
+    name: typed compute request / bounded GitHub adapter
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout trusted adapter from main
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Parse and validate typed request
+        id: request
+        run: |
+          node scripts/github-compute-request.js parse-event \
+            --event "$GITHUB_EVENT_PATH" \
+            --github-output "$GITHUB_OUTPUT" \
+            --request-file "$RUNNER_TEMP/compute-request.json"
+
+      - name: Check idempotent durable result
+        id: replay
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ steps.request.outputs.issue }}
+          COMPUTATION_ID: ${{ steps.request.outputs.computation_id }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" --paginate --jq '.[].body' > "$RUNNER_TEMP/issue-comments.txt"
+          if grep -Fq -- "<!-- cop-compute-result:$COMPUTATION_ID -->" "$RUNNER_TEMP/issue-comments.txt"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout exact requested source commit
+        if: steps.replay.outputs.skip != 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.request.outputs.ref }}
+
+      - name: Verify exact source commit
+        if: steps.replay.outputs.skip != 'true'
+        env:
+          EXPECTED_REF: ${{ steps.request.outputs.ref }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_REF"
+
+      - name: Execute allowlisted computation
+        if: steps.replay.outputs.skip != 'true'
+        env:
+          TIMEOUT_SECONDS: ${{ steps.request.outputs.timeout_seconds }}
+        run: |
+          timeout "$TIMEOUT_SECONDS"s node scripts/github-compute-request.js execute \
+            --request-file "$RUNNER_TEMP/compute-request.json" \
+            --result-file "$RUNNER_TEMP/compute-result.json"
+
+      - name: Render structured result
+        if: steps.replay.outputs.skip != 'true'
+        run: |
+          node scripts/github-compute-request.js format-result \
+            --result-file "$RUNNER_TEMP/compute-result.json" \
+            --comment-file "$RUNNER_TEMP/compute-result.md"
+
+      - name: Publish durable structured result
+        if: steps.replay.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ steps.request.outputs.issue }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" \
+            -f body="$(cat "$RUNNER_TEMP/compute-result.md")"
