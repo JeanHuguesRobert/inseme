@@ -50,4 +50,4 @@ jobs:
         run: pnpm run test
 
       - name: Watch the Watchers invariants (Issue #120)
-        run: node --test scripts/watch-the-watchers.test.js
+        run: node --test scripts/watch-the-watchers.test.js scripts/watch-the-watchers-http.test.js
