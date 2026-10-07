@@ -1,5 +1,5 @@
 const DEFAULT_SOURCE_URL =
-  "https://raw.githubusercontent.com/JeanHuguesRobert/barons-Mariani/main/research/senatoriales-2026/review-pdf/66f34d0cb32e94509988b6f83a87c8a215b3fb81/requete-conseil-constitutionnel-REVIEW.pdf";
+  "https://raw.githubusercontent.com/JeanHuguesRobert/barons-Mariani/0f9901d4f260728d43abc8b39b28598bec99d02e/research/senatoriales-2026/review-pdf/66f34d0cb32e94509988b6f83a87c8a215b3fb81/requete-conseil-constitutionnel-REVIEW.pdf";
 
 export async function handler(event) {
   if (String(event.httpMethod || "GET").toUpperCase() !== "GET") {
