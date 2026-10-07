@@ -81,34 +81,32 @@ jobs:
 
           RUN_URL="$SERVER_URL/$REPOSITORY/actions/runs/$RUN_ID"
 
-          BODY=$(cat <<EOF
-## compute.batch callback
-
-```yaml
-execution_binding:
-  schema: magistral.execution-binding/v1
-  requirement_ref: "$REQUIREMENT_REF"
-  provider_ref: "provider:github-actions"
-  provider_execution_id: "$RUN_ID"
-  execution_surface: "batch"
-  runtime_id: "runtime:github-actions:ubuntu-latest"
-  handler_instance_ref: "handler:github-actions:$RUN_ID"
-
-execution_receipt:
-  schema: magistral.execution-receipt/v1
-  status: "$RECEIPT_STATUS"
-  terminal: true
-  result_refs:
-    - "git:$SHA"
-  log_refs:
-    - "github-actions-run:$RUN_ID"
-  error: null
-```
-
-Provider execution: $RUN_URL  
-Run attempt: $RUN_ATTEMPT
-EOF
-          )
+          BODY=$(printf '%s\n' \
+            '## compute.batch callback' \
+            '' \
+            '```yaml' \
+            'execution_binding:' \
+            '  schema: magistral.execution-binding/v1' \
+            "  requirement_ref: \"$REQUIREMENT_REF\"" \
+            '  provider_ref: "provider:github-actions"' \
+            "  provider_execution_id: \"$RUN_ID\"" \
+            '  execution_surface: "batch"' \
+            '  runtime_id: "runtime:github-actions:ubuntu-latest"' \
+            "  handler_instance_ref: \"handler:github-actions:$RUN_ID\"" \
+            '' \
+            'execution_receipt:' \
+            '  schema: magistral.execution-receipt/v1' \
+            "  status: \"$RECEIPT_STATUS\"" \
+            '  terminal: true' \
+            '  result_refs:' \
+            "    - \"git:$SHA\"" \
+            '  log_refs:' \
+            "    - \"github-actions-run:$RUN_ID\"" \
+            '  error: null' \
+            '```' \
+            '' \
+            "Provider execution: $RUN_URL" \
+            "Run attempt: $RUN_ATTEMPT")
 
           gh api "repos/$REPOSITORY/issues/85/comments" -f body="$BODY"
 
