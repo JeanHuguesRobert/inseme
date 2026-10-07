@@ -50,6 +50,12 @@
   path = "/api/corsica/context"
 
 [[redirects]]
+  from = "/cc/requete-conseil-constitutionnel-haute-corse-2026.pdf"
+  to = "/.netlify/functions/cc-petition-pdf"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/artifact-access/*"
   to = "/.netlify/functions/artifact-access/:splat"
   status = 200
