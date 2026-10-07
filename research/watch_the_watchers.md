@@ -108,6 +108,10 @@ The migration is `apps/platform/supabase/migrations/20261007143000_artifact_acce
 - `scripts/watch-the-watchers-http.js`: framework-neutral HTTP adapter implementing `LANDING`, explicit `OPEN_PDF`, and `REDIRECT` semantics with injected private token lookup and append-event storage.
 - `scripts/watch-the-watchers.test.js`: tests for privacy, REVIEW/FROZEN separation, conservative event semantics and canonical escape path.
 - `scripts/watch-the-watchers-http.test.js`: route-level tests including bot-like ambient headers, unknown-token behavior, explicit-action redirects, and the absence of a synthetic `READ` event.
-- `.github/workflows/ci.yml`: enforces both Watch the Watchers test suites on every push/PR to `main`.
+- `apps/platform/mcp/cop/artifactAccessSupabaseStore.js`: service-role storage adapter using one-way token references and RPC-only private lookup/append/purge.
+- `apps/platform/mcp/cop/artifactAccessRouter.js`: opt-in Express router for the existing MCP server surface.
+- `apps/platform/mcp/server.js`: mounts the router only when `WATCHERS_CONFIG_JSON` is explicitly present.
+- `apps/platform/supabase/migrations/20261007143000_artifact_access_trace.sql`: restricted schema/RPCs for mappings, append-only raw events, and expiry purge.
+- `.github/workflows/ci.yml`: enforces Watch the Watchers kernel, HTTP, storage and integration tests on every push/PR to `main`.
 
 The datastore design and HTTP integration are now selected and implemented in source, but the migration is not applied and the route is inert unless `WATCHERS_CONFIG_JSON`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` are explicitly provided. Secrets, domain/DNS changes, migration application, and public deployment remain outside this bounded slice and require the appropriate deployment mandate.
