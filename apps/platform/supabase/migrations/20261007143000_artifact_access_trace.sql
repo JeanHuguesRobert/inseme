@@ -77,17 +77,160 @@ BEGIN
   ) VALUES (
     p_token_ref, p_recipient_ref, NULLIF(p_context_ref, ''), p_artifact_ref, p_expires_at
   )
-  ON CONFLICT (token_ref) DO UPDATE
-    SET recipient_ref = EXCLUDED.recipient_ref,
-        context_ref = EXCLUDED.context_ref,
-        artifact_ref = EXCLUDED.artifact_ref,
-        expires_at = EXCLUDED.expires_at,
-        disabled_at = NULL
+  ON CONFLICT (token_ref) DO NOTHING
+  RETURNING * INTO inserted;
+
+  IF FOUND THEN RETURN inserted; END IF;
+
+  SELECT * INTO inserted
+    FROM public.artifact_access_tokens
+   WHERE token_ref = p_token_ref
+   LIMIT 1;
+
+  IF inserted.recipient_ref <> p_recipient_ref
+     OR COALESCE(inserted.context_ref, '') <> COALESCE(NULLIF(p_context_ref, ''), '')
+     OR inserted.artifact_ref <> p_artifact_ref
+     OR inserted.expires_at <> p_expires_at THEN
+    RAISE EXCEPTION 'artifact_access_token_ref_conflict';
+  END IF;
+
+  RETURN inserted;
+END;
+$$;
+
+
+CREATE FUNCTION public.artifact_access_token_lookup(p_token_ref text)
+RETURNS public.artifact_access_tokens
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $
+DECLARE
+  found_row public.artifact_access_tokens;
+BEGIN
+  IF p_token_ref !~ '^sha256:[0-9a-f]{64}
+RETURNS public.artifact_access_events
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  token_row public.artifact_access_tokens;
+  inserted public.artifact_access_events;
+  v_token_ref text;
+  v_event text;
+  v_event_at timestamptz;
+  v_artifact_ref text;
+BEGIN
+  IF p_event IS NULL OR jsonb_typeof(p_event) <> 'object' THEN
+    RAISE EXCEPTION 'artifact_access_event_must_be_object';
+  END IF;
+  IF p_event->>'schema' <> 'artifact-access-event/v1' THEN
+    RAISE EXCEPTION 'artifact_access_event_schema_invalid';
+  END IF;
+
+  v_token_ref := NULLIF(p_event->>'token_ref', '');
+  v_event := NULLIF(p_event->>'event', '');
+  v_event_at := NULLIF(p_event->>'timestamp', '')::timestamptz;
+  v_artifact_ref := NULLIF(p_event->>'artifact_ref', '');
+
+  IF v_token_ref !~ '^sha256:[0-9a-f]{64}$'
+     OR v_event NOT IN ('LANDING', 'OPEN_PDF', 'REDIRECT')
+     OR v_event_at IS NULL
+     OR v_artifact_ref IS NULL THEN
+    RAISE EXCEPTION 'artifact_access_event_invalid';
+  END IF;
+
+  SELECT * INTO token_row
+    FROM public.artifact_access_tokens
+   WHERE token_ref = v_token_ref
+     AND disabled_at IS NULL
+     AND expires_at > CURRENT_TIMESTAMP
+   LIMIT 1;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'artifact_access_token_not_active';
+  END IF;
+  IF token_row.artifact_ref <> v_artifact_ref THEN
+    RAISE EXCEPTION 'artifact_access_artifact_mismatch';
+  END IF;
+
+  INSERT INTO public.artifact_access_events (
+    token_ref, event, event_at, artifact_ref, expires_at
+  ) VALUES (
+    v_token_ref, v_event, v_event_at, v_artifact_ref, token_row.expires_at
+  )
   RETURNING * INTO inserted;
 
   RETURN inserted;
 END;
 $$;
+
+CREATE FUNCTION public.artifact_access_purge_expired(p_before timestamptz DEFAULT CURRENT_TIMESTAMP)
+RETURNS TABLE(events_deleted bigint, tokens_deleted bigint)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_events bigint;
+  v_tokens bigint;
+BEGIN
+  DELETE FROM public.artifact_access_events
+   WHERE expires_at <= p_before;
+  GET DIAGNOSTICS v_events = ROW_COUNT;
+
+  DELETE FROM public.artifact_access_tokens
+   WHERE expires_at <= p_before
+     AND NOT EXISTS (
+       SELECT 1
+         FROM public.artifact_access_events e
+        WHERE e.token_ref = artifact_access_tokens.token_ref
+     );
+  GET DIAGNOSTICS v_tokens = ROW_COUNT;
+
+  RETURN QUERY SELECT v_events, v_tokens;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.artifact_access_token_register(text, text, text, text, timestamptz)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.artifact_access_token_lookup(text)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.artifact_access_event_append(jsonb)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.artifact_access_purge_expired(timestamptz)
+  FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.artifact_access_token_register(text, text, text, text, timestamptz)
+  TO service_role;
+GRANT EXECUTE ON FUNCTION public.artifact_access_token_lookup(text)
+  TO service_role;
+GRANT EXECUTE ON FUNCTION public.artifact_access_event_append(jsonb)
+  TO service_role;
+GRANT EXECUTE ON FUNCTION public.artifact_access_purge_expired(timestamptz)
+  TO service_role;
+
+COMMENT ON TABLE public.artifact_access_tokens IS
+  'Restricted token-to-recipient/context mapping for Watch the Watchers. Public token bytes are not stored.';
+COMMENT ON TABLE public.artifact_access_events IS
+  'Restricted minimal access-path events. Semantics never claim proof of human reading.';
+COMMENT ON FUNCTION public.artifact_access_purge_expired(timestamptz) IS
+  'Service-only retention enforcement for expired mappings and raw events.';
+ THEN
+    RAISE EXCEPTION 'artifact_access_token_ref_invalid';
+  END IF;
+
+  SELECT * INTO found_row
+    FROM public.artifact_access_tokens
+   WHERE token_ref = p_token_ref
+     AND disabled_at IS NULL
+     AND expires_at > CURRENT_TIMESTAMP
+   LIMIT 1;
+
+  RETURN found_row;
+END;
+$;
 
 CREATE FUNCTION public.artifact_access_event_append(p_event jsonb)
 RETURNS public.artifact_access_events
