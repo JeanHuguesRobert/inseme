@@ -58,17 +58,19 @@ test("registerToken sends only the one-way token_ref to Supabase", async () => {
 test("appendEvent preserves minimal canonical event shape", async () => {
   const client = fakeClient();
   const store = createArtifactAccessSupabaseStore(client);
-
-  const result = await store.appendEvent({
-    token: "B".repeat(32),
+  const document = {
+    schema: "artifact-access-event/v1",
+    token_ref: "sha256:" + "2".repeat(64),
     event: "LANDING",
-    artifact_ref: "cc-petition/current-review",
     timestamp: "2026-10-07T14:00:00.000Z",
-  });
+    artifact_ref: "cc-petition/current-review",
+  };
+
+  const result = await store.appendEvent(document);
 
   assert.deepEqual(Object.keys(result.event), ["schema", "token_ref", "event", "timestamp", "artifact_ref"]);
   const call = client.calls.find((item) => item.name === "artifact_access_event_append");
-  assert.equal(call.args.p_event.event, "LANDING");
+  assert.deepEqual(call.args.p_event, document);
   assert.ok(!("ip" in call.args.p_event));
   assert.ok(!("user_agent" in call.args.p_event));
 });
