@@ -43,10 +43,17 @@ export async function handler(event) {
 }
 
 function loadConfig(env) {
-  if (!env.WATCHERS_CONFIG_JSON || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
     return null;
   }
-  const config = JSON.parse(env.WATCHERS_CONFIG_JSON);
+  const config = env.WATCHERS_CONFIG_JSON
+    ? JSON.parse(env.WATCHERS_CONFIG_JSON)
+    : {
+        schema: "watch-the-watchers/config-v1",
+        state: "REVIEW",
+        artifact_ref: "cc-petition/review-v0.30",
+        review_url: "https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/senatoriales-2026/requete-conseil-constitutionnel.md",
+      };
   if (config.schema !== "watch-the-watchers/config-v1") throw new Error("invalid_config_schema");
   if (!["REVIEW", "FROZEN"].includes(config.state)) throw new Error("invalid_config_state");
   if (!config.artifact_ref) throw new Error("artifact_ref_required");
@@ -126,7 +133,7 @@ function renderLanding({ token, config }) {
 <p>${escapeHtml(disclosure)}</p>
 <p>État : <strong>${config.state}</strong></p>
 <form method="post" action="/artifact-access/a/${encodeURIComponent(token)}/open">
-<button type="submit">Ouvrir le PDF</button>
+<button type="submit">Ouvrir le document REVIEW</button>
 </form>
 ${canonical}
 </main></body></html>`;
