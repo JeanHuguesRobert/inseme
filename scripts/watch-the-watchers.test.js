@@ -8,6 +8,7 @@ import {
   disclosureText,
   renderLandingHtml,
   resolveArtifactTarget,
+  tokenRefFromToken,
   validateConfig,
   validateTokenMapping,
 } from "./watch-the-watchers.js";
@@ -37,6 +38,14 @@ test("opaque token has no readable recipient data", () => {
   assert.match(token, /^[A-Za-z0-9_-]+$/);
   assert.ok(token.length >= 22);
   validateTokenMapping({ token_ref: token, recipient_ref: "recipient-001" });
+});
+
+test("token reference is a one-way sha256 identifier", () => {
+  const token = createOpaqueToken();
+  const ref = tokenRefFromToken(token);
+  assert.match(ref, /^sha256:[0-9a-f]{64}$/);
+  assert.ok(!ref.includes(token));
+  assert.equal(ref, tokenRefFromToken(token));
 });
 
 test("REVIEW never advertises frozen coordinates or sha256", () => {
