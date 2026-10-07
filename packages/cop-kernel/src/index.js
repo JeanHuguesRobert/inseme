@@ -69,3 +69,6 @@ export * from "./projections/interactionCase.js";
 
 // Cognitive Packet Composition combinators (copFork, copAll, copRace, copSequence, copCascadeCancel)
 export * from "./copComposition.js";
+
+// Packet-level scheduler coordination (F1 exclusive mutation reference implementation)
+export * from "./packetCoordination.js";
