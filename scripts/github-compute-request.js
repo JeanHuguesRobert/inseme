@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 
 const REQUEST_SCHEMA = "cop.compute-request/v1";
 const RESULT_SCHEMA = "cop.compute-result/v1";
@@ -63,8 +64,23 @@ export function validateRequest(request, {
 
   const operation = request.operation;
   if (!operation || typeof operation !== "object") throw new Error("operation_required");
-  if (operation.kind !== "sha256-file") throw new Error("unsupported_operation");
-  validateRelativePath(operation.path);
+  if (operation.kind === "sha256-file") {
+    validateRelativePath(operation.path);
+  } else if (operation.kind === "node-test") {
+    if (!Array.isArray(operation.files) || operation.files.length < 1 || operation.files.length > 8) {
+      throw new Error("invalid_node_test_files");
+    }
+    for (const file of operation.files) {
+      const normalized = validateRelativePath(file);
+      if (!normalized.endsWith(".test.js")) throw new Error("node_test_file_required");
+      const allowed =
+        normalized.startsWith("scripts/") ||
+        normalized.startsWith("apps/platform/mcp/test/");
+      if (!allowed) throw new Error("node_test_path_not_allowed");
+    }
+  } else {
+    throw new Error("unsupported_operation");
+  }
 
   const limits = request.limits;
   if (!limits || typeof limits !== "object") throw new Error("limits_required");
@@ -85,6 +101,93 @@ export function validateRequest(request, {
   if (returnSpec.structured_result !== true) throw new Error("structured_result_required");
 
   return true;
+}
+
+
+export function executeNodeTestRequest(request, {
+  workspace = process.cwd(),
+  runId = process.env.GITHUB_RUN_ID ?? "local",
+  runUrl = process.env.GITHUB_SERVER_URL &&
+      process.env.GITHUB_REPOSITORY &&
+      process.env.GITHUB_RUN_ID
+    ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+    : null,
+} = {}) {
+  validateRequest(request, {
+    expectedRepository: request.repository.name,
+    expectedIssue: request.return.github_issue,
+  });
+
+  const files = request.operation.files.map(validateRelativePath);
+  for (const file of files) {
+    const absolutePath = path.resolve(workspace, file);
+    const root = path.resolve(workspace) + path.sep;
+    if (!absolutePath.startsWith(root)) throw new Error("path_escapes_workspace");
+    if (!fs.existsSync(absolutePath)) throw new Error(`node_test_file_missing:${file}`);
+  }
+
+  const execution = spawnSync(process.execPath, ["--test", ...files], {
+    cwd: workspace,
+    encoding: "utf8",
+    timeout: request.limits.timeout_seconds * 1000,
+    env: {
+      ...process.env,
+      NO_PROXY: "*",
+      HTTP_PROXY: "",
+      HTTPS_PROXY: "",
+      ALL_PROXY: "",
+    },
+    maxBuffer: 1024 * 1024,
+  });
+
+  const passed = execution.status === 0 && !execution.error;
+  const binding = Object.freeze({
+    schema: "magistral.execution-binding/v1",
+    requirement_ref: `requirement:compute-request:${request.computation_id}`,
+    offer_id: "offer:github-actions:typed-compute-v1",
+    runtime_id: "runtime:github-actions:ubuntu-latest",
+    handler_instance_ref: `handler:github-actions:${runId}`,
+    execution_surface: "batch",
+    provider_ref: "provider:github-actions",
+    provider_execution_id: String(runId),
+  });
+
+  const receipt = Object.freeze({
+    schema: "magistral.execution-receipt/v1",
+    binding,
+    status: passed ? "completed" : "failed",
+    terminal: true,
+    artifact_refs: [],
+    result_refs: files.map((file) => `git:${request.repository.ref}#${file}`),
+    log_refs: runUrl ? [`github-actions-run:${runId}`, runUrl] : [],
+    error: passed ? null : (execution.error?.message || `node_test_exit_${execution.status}`),
+  });
+
+  return Object.freeze({
+    schema: RESULT_SCHEMA,
+    computation_id: request.computation_id,
+    source: Object.freeze({
+      repository: request.repository.name,
+      ref: request.repository.ref,
+      paths: files,
+    }),
+    result: Object.freeze({
+      operation: "node-test",
+      passed,
+      exit_code: execution.status,
+      signal: execution.signal,
+      stdout: (execution.stdout || "").slice(-12000),
+      stderr: (execution.stderr || "").slice(-12000),
+    }),
+    execution_binding: binding,
+    execution_receipt: receipt,
+  });
+}
+
+export function executeRequest(request, options = {}) {
+  if (request.operation?.kind === "sha256-file") return executeSha256Request(request, options);
+  if (request.operation?.kind === "node-test") return executeNodeTestRequest(request, options);
+  throw new Error("unsupported_operation");
 }
 
 export function executeSha256Request(request, {
@@ -220,7 +323,7 @@ async function main() {
     const resultFile = args["--result-file"];
     if (!requestFile || !resultFile) throw new Error("missing_execute_argument");
     const request = JSON.parse(fs.readFileSync(requestFile, "utf8"));
-    const result = executeSha256Request(request);
+    const result = executeRequest(request);
     fs.writeFileSync(resultFile, JSON.stringify(result, null, 2));
     return;
   }
