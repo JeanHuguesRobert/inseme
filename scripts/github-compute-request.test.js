@@ -49,6 +49,15 @@ test("parses one typed fenced JSON request", () => {
   assert.deepEqual(parsed, value);
 });
 
+test("parses a bare JSON comment when GitHub strips presentation fencing", () => {
+  const value = request();
+  const parsed = parseComputeRequestComment(JSON.stringify(value), {
+    expectedRepository: "JeanHuguesRobert/inseme",
+    expectedIssue: 120,
+  });
+  assert.deepEqual(parsed, value);
+});
+
 test("rejects arbitrary operation kinds", () => {
   const value = request({ operation: { kind: "shell", command: "rm -rf /" } });
   assert.throws(
