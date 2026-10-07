@@ -84,7 +84,23 @@ A passive request to the landing route is recorded, at most, as `LANDING`. The e
 
 ## Storage and retention
 
-This kernel does not select a production datastore. A deployment must keep the token mapping and raw access events non-public, use append-oriented integrity where appropriate, and define a retention period tied to the evidentiary/litigation purpose rather than indefinite retention.
+The selected persistence profile is the existing Supabase/PostgreSQL service-role infrastructure.
+
+Implementation:
+- `artifact_access_tokens`: restricted token-to-recipient/context mapping;
+- `artifact_access_events`: restricted append-only raw access-path events;
+- the public token itself is never stored; only `sha256:<hex>` is retained as `token_ref`;
+- lookup, registration, event append and purge are exposed only through service-role RPC functions;
+- re-registering an existing `token_ref` is idempotent only when attribution/context/artifact/expiry are identical; silent reassignment is rejected.
+
+Retention rule:
+- every mapping MUST have an explicit `expires_at`; there is no indefinite default;
+- raw events inherit the mapping expiry;
+- `artifact_access_purge_expired` deletes expired events, then expired mappings;
+- for a litigation/evidentiary campaign, choose a bounded expiry tied to that campaign and renew by issuing a new token rather than mutating an existing token attribution;
+- for the first Conseil constitutionnel use, the operational profile SHOULD use a bounded interim horizon and be reviewed at procedural closure; no automated indefinite extension is permitted.
+
+The migration is `apps/platform/supabase/migrations/20261007143000_artifact_access_trace.sql`. It is committed but not applied by this implementation slice.
 
 ## Current implementation
 
@@ -94,4 +110,4 @@ This kernel does not select a production datastore. A deployment must keep the t
 - `scripts/watch-the-watchers-http.test.js`: route-level tests including bot-like ambient headers, unknown-token behavior, explicit-action redirects, and the absence of a synthetic `READ` event.
 - `.github/workflows/ci.yml`: enforces both Watch the Watchers test suites on every push/PR to `main`.
 
-Production datastore selection, secrets, domain/DNS and public deployment remain outside this bounded slice and require the appropriate deployment mandate.
+The datastore design and HTTP integration are now selected and implemented in source, but the migration is not applied and the route is inert unless `WATCHERS_CONFIG_JSON`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` are explicitly provided. Secrets, domain/DNS changes, migration application, and public deployment remain outside this bounded slice and require the appropriate deployment mandate.
