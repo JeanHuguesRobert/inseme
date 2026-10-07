@@ -13,6 +13,14 @@ export function createOpaqueToken(bytes = 24) {
   return crypto.randomBytes(bytes).toString("base64url");
 }
 
+export function tokenRefFromToken(token) {
+  if (typeof token !== "string" || token.length < 22 || token.length > 128) {
+    throw new Error("invalid_token");
+  }
+  if (!/^[A-Za-z0-9_-]+$/.test(token)) throw new Error("invalid_token");
+  return "sha256:" + crypto.createHash("sha256").update(token, "utf8").digest("hex");
+}
+
 export function validateConfig(config) {
   if (!config || typeof config !== "object") throw new Error("config_required");
   if (config.schema !== ACCESS_CONFIG_SCHEMA) throw new Error("unsupported_config_schema");
