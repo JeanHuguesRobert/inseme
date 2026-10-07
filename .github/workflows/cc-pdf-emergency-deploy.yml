@@ -1,0 +1,57 @@
+name: Emergency deploy JHN CC PDF
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cc-pdf-emergency-deploy.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: bfe156be-6efe-4d28-9d45-4c60fb5de6b5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require Netlify token
+        run: |
+          if [ -z "${NETLIFY_AUTH_TOKEN:-}" ]; then
+            echo "NETLIFY_AUTH_TOKEN secret is not configured" >&2
+            exit 2
+          fi
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Build JHN
+        run: pnpm --filter platform run build:jhn
+
+      - name: Deploy production
+        run: |
+          pnpm exec netlify deploy \
+            --prod \
+            --dir apps/platform/dist \
+            --site "$NETLIFY_SITE_ID" \
+            --config apps/platform/netlify.toml \
+            --message "Emergency CC petition PDF route"
+
+      - name: Verify canonical PDF
+        run: |
+          URL="https://jhn.baronsmariani.org/cc/requete-conseil-constitutionnel-haute-corse-2026.pdf"
+          curl -fsS -D /tmp/h -o /tmp/p.pdf --max-time 30 "$URL"
+          grep -i '^content-type: application/pdf' /tmp/h
+          test "$(head -c 5 /tmp/p.pdf)" = "%PDF-"
+          sha256sum /tmp/p.pdf
