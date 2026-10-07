@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 import { ask } from "../../../packages/ophelia/index.js";
 import copRouter from "./cop/index.js";
+import { maybeCreateArtifactAccessRouterFromEnv } from "./cop/artifactAccessRouter.js";
 import MCPscheduler from "./scheduler.js";
 import opheliaAgent from "./agents/opheliaAgent.js";
 import ragAgent from "./agents/ragAgent.js";
@@ -15,6 +16,13 @@ app.use(express.json());
 
 // Mount COP router
 app.use("/cop", copRouter);
+
+// Watch the Watchers remains inert unless WATCHERS_CONFIG_JSON is explicitly set.
+// No public deployment or configuration is implied by this mount point.
+const artifactAccessRouter = maybeCreateArtifactAccessRouterFromEnv();
+if (artifactAccessRouter) {
+  app.use("/artifact-access", artifactAccessRouter);
+}
 
 // MCP: expose /resources, /tools, /prompts, /ask
 
