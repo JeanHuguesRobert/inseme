@@ -49,6 +49,12 @@
   function = "gen-corsica-context-api"
   path = "/api/corsica/context"
 
+[[redirects]]
+  from = "/artifact-access/*"
+  to = "/.netlify/functions/artifact-access/:splat"
+  status = 200
+  force = true
+
 # SPA fallback — must remain last so /api/* rules win first
 [[redirects]]
   from = "/*"
