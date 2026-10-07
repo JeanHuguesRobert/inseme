@@ -30,13 +30,9 @@ export function createArtifactAccessSupabaseStore(client) {
 
   async function lookupToken(token) {
     const token_ref = tokenRefFromToken(token);
-    const { data, error } = await client
-      .from("artifact_access_tokens")
-      .select("token_ref, recipient_ref, context_ref, artifact_ref, expires_at, disabled_at")
-      .eq("token_ref", token_ref)
-      .is("disabled_at", null)
-      .gt("expires_at", new Date().toISOString())
-      .maybeSingle();
+    const { data, error } = await client.rpc("artifact_access_token_lookup", {
+      p_token_ref: token_ref,
+    });
 
     if (error) throw new Error(`artifact_access_token_lookup_failed: ${error.message || error}`);
     if (!data) return null;
