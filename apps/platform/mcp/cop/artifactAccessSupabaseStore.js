@@ -1,4 +1,4 @@
-import { createAccessEvent, tokenRefFromToken } from "../../../../scripts/watch-the-watchers.js";
+import { tokenRefFromToken } from "../../../../scripts/watch-the-watchers.js";
 
 function requireSupabase(client) {
   if (!client || typeof client.rpc !== "function") {
@@ -43,9 +43,10 @@ export function createArtifactAccessSupabaseStore(client) {
     return { ...data, token_ref };
   }
 
-  async function appendEvent({ token, event, artifact_ref, timestamp = new Date().toISOString() }) {
-    const token_ref = tokenRefFromToken(token);
-    const document = createAccessEvent({ token_ref, event, artifact_ref, timestamp });
+  async function appendEvent(document) {
+    if (!document || document.schema !== "artifact-access-event/v1") {
+      throw new Error("artifact_access_event_document_required");
+    }
     const { data, error } = await client.rpc("artifact_access_event_append", {
       p_event: document,
     });
