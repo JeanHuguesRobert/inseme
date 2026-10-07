@@ -20,7 +20,9 @@ function fixture() {
   const events = [];
   const handler = createWatchTheWatchersHandler({
     config: frozen,
-    lookupToken: async (token) => token === "opaque-token" ? { recipient_ref: "r-1" } : null,
+    lookupToken: async (token) => token === "opaque-token"
+      ? { token_ref: "sha256:" + "c".repeat(64), recipient_ref: "r-1" }
+      : null,
     appendEvent: async (event) => events.push(event),
     now: () => "2026-10-07T13:00:00.000Z",
   });
@@ -44,6 +46,8 @@ test("GET landing records only LANDING and renders disclosure", async () => {
   assert.match(result.body, /Accès canonique non instrumenté/);
   assert.equal(events.length, 1);
   assert.equal(events[0].event, "LANDING");
+  assert.equal(events[0].token_ref, "sha256:" + "c".repeat(64));
+  assert.ok(!events[0].token_ref.includes("opaque-token"));
   assert.deepEqual(Object.keys(events[0]), ["schema", "token_ref", "event", "timestamp", "artifact_ref"]);
 });
 
