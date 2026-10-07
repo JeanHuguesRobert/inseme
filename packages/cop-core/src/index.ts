@@ -27,3 +27,5 @@ export * from "./trace-lifecycle-verifier.js";
 export * from "./fractalog-spool.js";
 export * from "./compute-preemption.js";
 export * from "./git-safe-writeback.js";
+
+export * from "./packet-coordination.js";
