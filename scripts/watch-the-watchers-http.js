@@ -15,10 +15,11 @@ export function createWatchTheWatchersHandler({
     const parts = url.pathname.split("/").filter(Boolean);
     if (parts[0] !== "a" || !parts[1]) return response(404, "Not found");
 
-    const token_ref = decodeURIComponent(parts[1]);
-    const mapping = await lookupToken(token_ref);
-    if (!mapping) return response(404, "Not found");
+    const token = decodeURIComponent(parts[1]);
+    const mapping = await lookupToken(token);
+    if (!mapping?.token_ref) return response(404, "Not found");
 
+    const token_ref = mapping.token_ref;
     const artifact_ref = config.artifact_ref;
 
     if (request.method === "GET" && parts.length === 2) {
@@ -35,7 +36,7 @@ export function createWatchTheWatchersHandler({
           "cache-control": "no-store",
           "referrer-policy": "no-referrer",
         },
-        body: renderLandingHtml({ token_ref, config }),
+        body: renderLandingHtml({ token_ref: token, config }),
       };
     }
 
