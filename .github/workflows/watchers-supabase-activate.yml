@@ -1,0 +1,103 @@
+name: Activate Watchers Supabase migration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/platform/supabase/migrations/20261007143000_artifact_access_trace.sql"
+      - ".github/workflows/watchers-supabase-activate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  migrate:
+    name: Apply only Watchers migration to JHN Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROJECT_REF: ndiysuhzmztatpxbkezn
+      TARGET_MIGRATION: "20261007143000"
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+
+      - name: Require deployment secrets
+        shell: bash
+        run: |
+          missing=0
+          for name in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error title=Missing deployment secret::$name is not configured for this repository."
+              missing=1
+            fi
+          done
+          test "$missing" -eq 0
+
+      - name: Install Supabase CLI
+        run: npm install --global supabase@2.117.0
+
+      - name: Link exact JHN project
+        working-directory: apps/platform
+        shell: bash
+        run: |
+          supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Fail closed unless only Watchers migration is pending
+        working-directory: apps/platform
+        shell: bash
+        run: |
+          node scripts/check-supabase-migration-plan.js --allow-pending="$TARGET_MIGRATION"
+
+      - name: Apply bounded migration set
+        working-directory: apps/platform
+        shell: bash
+        run: |
+          supabase db push --linked
+
+      - name: Verify remote migration alignment
+        working-directory: apps/platform
+        shell: bash
+        run: |
+          node scripts/check-supabase-migration-plan.js
+
+      - name: Verify Watchers RPC exists
+        shell: bash
+        run: |
+          status=$(curl --silent --show-error --output "$RUNNER_TEMP/rpc-check.json" --write-out '%{http_code}'             -X POST "$SUPABASE_URL/rest/v1/rpc/artifact_access_token_lookup"             -H "apikey: $SUPABASE_SERVICE_ROLE_KEY"             -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"             -H "Content-Type: application/json"             --data '{"p_token_ref":"sha256:0000000000000000000000000000000000000000000000000000000000000000"}')
+          test "$status" = "200"
+
+      - name: Report success to Issue 120
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment 120 --repo "${{ github.repository }}" --body "## Watchers Supabase activation — SUCCESS
+
+          - project_ref: `$PROJECT_REF`
+          - migration: `$TARGET_MIGRATION`
+          - preflight: only explicitly allowed pending migration
+          - db push: completed
+          - postflight: aligned
+          - RPC smoke: `artifact_access_token_lookup` reachable with service role
+          - workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Report failure boundary to Issue 120
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment 120 --repo "${{ github.repository }}" --body "## Watchers Supabase activation — BLOCKED
+
+          The bounded migration workflow stopped fail-closed. No success is claimed.
+
+          Inspect run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          Expected prerequisites are repository secrets `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY`. The preflight also refuses to push if any migration other than `$TARGET_MIGRATION` is pending."
