@@ -29,6 +29,15 @@ export function parseComputeRequestComment(body, {
     }
   }
 
+  if (!request) {
+    try {
+      const value = JSON.parse(body.trim());
+      if (value?.schema === REQUEST_SCHEMA) request = value;
+    } catch {
+      // The comment may contain prose or malformed JSON; preserve the canonical error below.
+    }
+  }
+
   if (!request) throw new Error("compute_request_not_found");
   validateRequest(request, { expectedRepository, expectedIssue });
   return request;
