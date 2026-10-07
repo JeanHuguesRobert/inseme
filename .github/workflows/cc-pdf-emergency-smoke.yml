@@ -1,0 +1,43 @@
+name: Emergency CC PDF smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/platform/netlify/profiles/jhn/functions/cc-petition-pdf.js"
+      - "apps/platform/netlify.toml"
+      - ".github/workflows/cc-pdf-emergency-smoke.yml"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Wait for JHN deploy and verify canonical PDF URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://jhn.baronsmariani.org/cc/requete-conseil-constitutionnel-haute-corse-2026.pdf"
+          ok=0
+          for i in $(seq 1 36); do
+            echo "Attempt $i"
+            rm -f /tmp/cc.pdf /tmp/headers.txt
+            if curl -fsS -D /tmp/headers.txt -o /tmp/cc.pdf --max-time 15 "$URL"; then
+              status="$(awk 'toupper($1) ~ /^HTTP/ {code=$2} END {print code}' /tmp/headers.txt)"
+              ctype="$(awk 'BEGIN{IGNORECASE=1} /^content-type:/ {sub(/^[^:]*:[[:space:]]*/,""); gsub(/\r/,""); print; exit}' /tmp/headers.txt)"
+              sig="$(head -c 5 /tmp/cc.pdf || true)"
+              size="$(wc -c < /tmp/cc.pdf | tr -d ' ')"
+              echo "status=$status content-type=$ctype size=$size signature=$sig"
+              if [ "$status" = "200" ] && [[ "$ctype" == application/pdf* ]] && [ "$sig" = "%PDF-" ]; then
+                sha256sum /tmp/cc.pdf
+                ok=1
+                break
+              fi
+            fi
+            sleep 5
+          done
+          if [ "$ok" != "1" ]; then
+            echo "Canonical PDF URL did not become healthy in time" >&2
+            exit 1
+          fi
