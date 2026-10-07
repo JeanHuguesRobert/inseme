@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createArtifactAccessSupabaseStore } from "./artifactAccessSupabaseStore.js";
+import { createArtifactAccessSupabaseStore } from "../cop/artifactAccessSupabaseStore.js";
 
 function fakeClient() {
   const calls = [];
