@@ -30,15 +30,22 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Require deployment secrets
+        id: secrets
         shell: bash
         run: |
           missing=0
+          report="$RUNNER_TEMP/secret-status.txt"
+          : > "$report"
           for name in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; do
             if [ -z "${!name}" ]; then
+              echo "$name=missing" >> "$report"
               echo "::error title=Missing deployment secret::$name is not configured for this repository."
               missing=1
+            else
+              echo "$name=present" >> "$report"
             fi
           done
+          cat "$report"
           test "$missing" -eq 0
 
       - name: Install Supabase CLI
@@ -93,11 +100,26 @@ jobs:
         if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          gh issue comment 120 --repo "${{ github.repository }}" --body "## Watchers Supabase activation — BLOCKED
+          status="secret status unavailable"
+          if [ -f "$RUNNER_TEMP/secret-status.txt" ]; then
+            status=$(cat "$RUNNER_TEMP/secret-status.txt")
+          fi
+          body=$(cat <<EOF
+## Watchers Supabase activation — BLOCKED
 
-          The bounded migration workflow stopped fail-closed. No success is claimed.
+The bounded migration workflow stopped fail-closed. No success is claimed.
 
-          Inspect run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+Inspect run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-          Expected prerequisites are repository secrets `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY`. The preflight also refuses to push if any migration other than `$TARGET_MIGRATION` is pending."
+Secret presence only (values are never exposed):
+
+```text
+$status
+```
+
+The preflight also refuses to push if any migration other than $TARGET_MIGRATION is pending.
+EOF
+)
+          gh issue comment 120 --repo "${{ github.repository }}" --body "$body"
