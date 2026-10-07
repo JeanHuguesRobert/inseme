@@ -48,3 +48,6 @@ jobs:
 
       - name: Run Test Suites (cop-core, cop-kernel, magistral)
         run: pnpm run test
+
+      - name: Watch the Watchers invariants (Issue #120)
+        run: node --test scripts/watch-the-watchers.test.js
