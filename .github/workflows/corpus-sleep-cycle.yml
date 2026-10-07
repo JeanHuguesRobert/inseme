@@ -113,15 +113,13 @@ jobs:
           RUN_URL="$SERVER_URL/$REPOSITORY/actions/runs/$RUN_ID"
           OUTCOME="${{ steps.sleep_cycle.outcome }}"
 
-          BODY=$(cat <<EOF
-## Corpus Sleep Cycle Execution Receipt
-
-- **Status**: \`$OUTCOME\`
-- **Run URL**: $RUN_URL
-- **Concurrency Group**: \`compute-background\`
-- **Evidence Schema**: \`cop.preemption-receipt/v1\`
-- **Reference**: inseme#116 (GitHub Compute Fabric 3/5)
-EOF
-          )
+          BODY=$(printf '%s\\n' \\
+            '## Corpus Sleep Cycle Execution Receipt' \\
+            '' \\
+            "- **Status**: \`$OUTCOME\`" \\
+            "- **Run URL**: $RUN_URL" \\
+            '- **Concurrency Group**: \`compute-background\`' \\
+            '- **Evidence Schema**: \`cop.preemption-receipt/v1\`' \\
+            '- **Reference**: inseme#116 (GitHub Compute Fabric 3/5)')
 
           gh api "repos/$REPOSITORY/issues/116/comments" -f body="$BODY" || true
