@@ -154,13 +154,20 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Preserve trusted resource adapter across source checkout
+        if: steps.replay.outputs.skip != 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/compute-adapter"
+          cp scripts/github-compute-resource-cli.js scripts/github-compute-resources.js "$RUNNER_TEMP/compute-adapter/"
+          printf '{"type":"module"}\n' > "$RUNNER_TEMP/compute-adapter/package.json"
+
       - name: Snapshot provider quota and decide resource admission
         id: admission
         if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted'
         env:
           TIMEOUT_SECONDS: ${{ steps.request.outputs.timeout_seconds }}
         run: |
-          node scripts/github-compute-resource-cli.js before \
+          node "$RUNNER_TEMP/compute-adapter/github-compute-resource-cli.js" before \
             "$RUNNER_TEMP/compute-resource-before.json" \
             "$RUNNER_TEMP/compute-admission.json" \
             "$GITHUB_OUTPUT" "$TIMEOUT_SECONDS"
@@ -168,7 +175,7 @@ jobs:
       - name: Return non-admission as structured result
         if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission != 'admitted'
         run: |
-          node scripts/github-compute-resource-cli.js refuse \
+          node "$RUNNER_TEMP/compute-adapter/github-compute-resource-cli.js" refuse \
             "$RUNNER_TEMP/compute-request.json" \
             "$RUNNER_TEMP/compute-result.json" \
             "$RUNNER_TEMP/compute-admission.json"
@@ -220,7 +227,7 @@ jobs:
       - name: Attach before/after resource accounting
         if: steps.replay.outputs.skip != 'true'
         run: |
-          node scripts/github-compute-resource-cli.js after \
+          node "$RUNNER_TEMP/compute-adapter/github-compute-resource-cli.js" after \
             "$RUNNER_TEMP/compute-resource-before.json" \
             "$RUNNER_TEMP/compute-admission.json" \
             "$RUNNER_TEMP/compute-result.json"
