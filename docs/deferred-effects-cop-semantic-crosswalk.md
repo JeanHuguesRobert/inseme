@@ -96,3 +96,17 @@ Decision dimensions: fidelity of ordering, traceability, recoverability, simplic
 5. Trigger renewed exploration when an apparent equilibrium is sensitive to changed environments, agents or measurement choices.
 
 The loop is an *epistemic and engineering method*, **not** a newly mandated COP runtime primitive. Both the present specifications and this proposal remain revisable.
+
+### First Reality Probe outcome — Topic vs streamId (2026-10-08)
+
+Synthetic bounded Node tests: [source](../scripts/topic-stream-semantic-probe.test.js), [GitHub Compute receipt](https://github.com/JeanHuguesRobert/inseme/issues/121#issuecomment-6068891637), 3/3 passed.
+
+**Observed within the toy model:** a lossless Topic/topicSeq → streamId/streamSeq renaming preserves per-scope order, duplicate elimination and replay. Gap detection is invariant under that renaming. A stream ID alone does not encode lifecycle/governance metadata.
+
+**Not demonstrated:** atomic concurrent append, restart durability, replay across actual adapters, independent Topic identity or required Topic governance lifecycle. The governance test is a representation counterexample, not proof a distinct Topic primitive is necessary: such properties could be Events/metadata/Views.
+
+**Judgement:** H1 remains plausible for the *ordering scope*. H2 remains open for any independently required governance/identity invariant. Do not conflate naming with a semantic distinction or assume independent entity status merely to carry extra metadata.
+
+**Peripheral observation (serendipity discipline):** what appeared to be a conflict between two names may instead be a confusion between two questions: the identity of an ordering scope and the locus of its authorization/governance. Preserve this as a new question, not as a settled conclusion. Continue without manufacturing an A/B campaign.
+
+**Resource/attention accounting:** one synthetic test execution, three tests; actual provider resource/attention cost not reliably observable here. Do not represent as zero.
