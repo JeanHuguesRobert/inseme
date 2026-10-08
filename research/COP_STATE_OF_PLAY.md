@@ -2,7 +2,7 @@
 title: COP State of Play — Asynchronous Orchestration & Traceability
 author: Jean Hugues Noël Robert, baron Mariani
 affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
-date: 2026-05
+date: 2026-05-01
 license: CC BY-SA 4.0
 status: working-note
 corpus_role: source
