@@ -65,3 +65,16 @@ Issue identity ≠ computation ID ≠ artifact digest ≠ Gmail draft ID.
 A GitHub Issue is a work packet by reference, not an authority mint.
 An ExecutionReceipt proves observed compute result, not acceptance by institutional recipients or Gmail dispatch.
 This reality test is read-only regarding institutional communications and does not establish full COP/Magistral integration.
+
+## Follow-up: draft discovery and durable reconstruction
+
+A fresh, authorized Gmail connector draft listing found one match for the exact dossier-specific subject and the Council greffe recipient. Thus the earlier access error was intermittent rather than evidence that the draft disappeared. Do not store account-specific draft IDs as public canonical instructions: locate the existing draft afresh by exact subject and recipient, require a unique match, and use its returned ID for in-place updates. A later raw MIME read was denied; byte equivalence is still unproven. Stop without mutation if access fails or identification is ambiguous.
+
+Derived build outputs need not be committed into a source repository. For deterministic reconstruction, preserve the pinned compute request and result already linked above, including the exact program/input commits and the expected hashes:
+
+- Markdown: 37088 bytes; SHA-256 `75397bb1343c09664ddc0bf90c0587d8a261af1cc18906110e5213a1995a240f`.
+- Manifest: 1750 bytes; SHA-256 `806c04c3abd197751e89c0395263bcac2a684e82be3d2944c32b04e0c9ae4d3b`.
+
+After Actions artifact expiration, request a new computation ID using the **same pinned source commits and program commands** from the original typed request. Verify that the rebuilt files match both recorded hashes. This is conditional recoverability from Git objects, **not** redundant preservation of the original build bytes. Never silently replace immutable refs with current `main`.
+
+Gmail connection and draft update remain a separate external-effect boundary, not authority conferred by the GitHub Issue or compute receipt.
