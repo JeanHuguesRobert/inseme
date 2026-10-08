@@ -31,3 +31,13 @@ A Git tag's atomic *creation* from E5 is a one-shot reservation, not a renewable
 The chat agent's conversational memory may index the lease reference but is not the canonical authority for its epoch, status or freshness.
 
 Follow-up design: choose a durable store with an actual atomic conditional update interface; attach generation to each effect request; enforce terminal status in a durable append-only journal; record separate claim and completion receipts; simulate pauses/revocations between claim and write. If provider lacks conditional write semantics, fail closed or constrain operation to idempotent effect types.
+
+## Lease resource obligation — accounting correction (2026-10-08)
+
+A lease **always** consumes or commits resources, even if its marginal currency charge is zero or its quantity is unavailable. This is not merely a price tag. It may consume API call quota, retention/storage, allocated concurrency, scheduler checks, renewal traffic, agent or human attention, risk and opportunity costs. A zero price in EUR does not prove zero resources. Unknown quantity MUST remain `status: unknown`, never an invented zero.
+
+`cop.lease-resource-obligation/v1` is required by `makeEffectLease`. Each resource dimension uses `observed | estimated | unknown`; numeric values are required for observed and estimated, prohibited for unknown. A budget reference and outstanding settlement are recorded. At preflight, an explicit current reservation and authorization for unknown-cost risk are separately required. No actual ledger reservation is performed by these pure functions: a real COP/Accounting ledger must record and later settle the reservation, including retries, maintenance/renewals, expiry and cancellations. Authority to proceed is not obtained by manufacturing a budget reference.
+
+Source: https://github.com/JeanHuguesRobert/inseme/blob/main/scripts/effect-lease-accounting.js
+
+As a policy invariant: **no lease without accounted resource obligation, no preflight success without explicit budget authorization and reservation evidence; unknown never means free.**
