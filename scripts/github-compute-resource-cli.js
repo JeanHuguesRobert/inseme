@@ -1,20 +1,28 @@
 import fs from "node:fs";
+import { spawnSync } from "node:child_process";
 import { computeResourceSnapshot,admitComputeResources,computeResourceReceipt } from "./github-compute-resources.js";
 
 const [mode,...args]=process.argv.slice(2);
 const read=p=>JSON.parse(fs.readFileSync(p,"utf8"));
 const write=(p,v)=>fs.writeFileSync(p,JSON.stringify(v,null,2));
+const apiQuota=()=>{
+ if(!process.env.GH_TOKEN)return undefined;
+ const probe=spawnSync("gh",["api","rate_limit","--jq",".resources.core.remaining"],{encoding:"utf8",timeout:5000,maxBuffer:100000});
+ if(probe.status!==0)return undefined;
+ const n=Number((probe.stdout||"").trim());
+ return Number.isFinite(n)&&n>=0?n:undefined;
+};
 const quota=()=> {
  const num=process.env.GITHUB_COMPUTE_AVAILABLE_MINUTES;
  return num && Number.isFinite(Number(num)) ? Number(num) : undefined;
 };
 if(mode==="before"){
  const [snapshotPath,admissionPath,outputPath,timeoutRaw]=args;
- const before=computeResourceSnapshot({available:{actions_minutes:quota()}});
+ const before=computeResourceSnapshot({available:{actions_minutes:quota(),api_requests:apiQuota()}});
  const estimate=Math.ceil(Number(timeoutRaw)/60);
  const reserve=Number(process.env.GITHUB_COMPUTE_RECOVERY_RESERVE_MINUTES||0);
  const policy=process.env.GITHUB_COMPUTE_UNKNOWN_QUOTA_POLICY==="conservative"?"conservative":"allow_unknown";
- const admission=admitComputeResources({before,required:{actions_minutes:estimate},reserve:{actions_minutes:reserve},policy});
+ const admission=admitComputeResources({before,required:{actions_minutes:estimate,api_requests:2},reserve:{actions_minutes:reserve,api_requests:5},policy});
  // The provider quota is not a mandate: do not claim COP budget admission.
  write(snapshotPath,before);write(admissionPath,admission);
  fs.appendFileSync(outputPath,`admission=${admission.decision}\n`);
