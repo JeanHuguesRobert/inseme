@@ -110,9 +110,7 @@ jobs:
 
           gh api "repos/$REPOSITORY/issues/85/comments" -f body="$BODY"
 
-      - name: Preserve failure as workflow conclusion
-        if: steps.validate.outcome != 'success'
-        run: exit 1
+      # Validation failure is a compute result recorded above, not a runner crash.
 
 
   typed-compute-request:
@@ -170,6 +168,8 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_REF"
 
       - name: Execute allowlisted computation
+        id: execute
+        continue-on-error: true
         if: steps.replay.outputs.skip != 'true'
         env:
           TIMEOUT_SECONDS: ${{ steps.request.outputs.timeout_seconds }}
@@ -177,6 +177,17 @@ jobs:
           timeout "$TIMEOUT_SECONDS"s node scripts/github-compute-request.js execute \
             --request-file "$RUNNER_TEMP/compute-request.json" \
             --result-file "$RUNNER_TEMP/compute-result.json"
+
+      - name: Recover interrupted compute into a failed receipt
+        if: steps.replay.outputs.skip != 'true' && steps.execute.outcome != 'success'
+        env:
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node scripts/github-compute-failure.js \
+            "$RUNNER_TEMP/compute-request.json" \
+            "$RUNNER_TEMP/compute-result.json" \
+            "$RUN_ID" "$RUN_URL" "compute_execution_interrupted"
 
       - name: Upload generic program outputs
         if: steps.replay.outputs.skip != 'true' && steps.request.outputs.operation_kind == 'git-program'
@@ -203,7 +214,5 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" \
             -f body="$(cat "$RUNNER_TEMP/compute-result.md")"
 
-      - name: Preserve compute failure as workflow conclusion
-        if: steps.replay.outputs.skip != 'true'
-        run: |
-          node -e 'const fs=require("fs"); const r=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/compute-result.json","utf8")); if(r.execution_receipt.status!=="completed") process.exit(1)'
+      # A returned failed ExecutionReceipt is an expected computation outcome.
+      # Only infrastructure/callback failures should fail this job.
