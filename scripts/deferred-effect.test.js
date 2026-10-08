@@ -1,0 +1,6 @@
+import test from "node:test";import assert from "node:assert/strict";
+import {classifyEffectFailure,createDeferredEffect} from "./deferred-effect.js";
+test("transient failure stores next action",()=>{const f=classifyEffectFailure({code:"rate_limited",transient:true,retryAfter:"2026-10-09T00:00:00Z"});assert.equal(f.retryability,"retryable");assert.equal(f.next_action,"store_and_forward")});
+test("exhausted retry is terminal",()=>{assert.equal(classifyEffectFailure({code:"rate_limited",transient:true,attempt:5}).retryability,"terminal")});
+test("deferred effects preserve explicit authority references and stable key",()=>{const f=classifyEffectFailure({code:"provider_unavailable",transient:true});const x=createDeferredEffect({effectId:"effect-7",capability:"github.issue.write",operation:"comment",target:"repo#5",inputs:{body:"example"},failure:f,mandateRef:"mandate:7",budgetRef:"budget:2"});assert.equal(x.state,"pending");assert.equal(x.idempotency_key,"effect-7");assert.equal(x.reauthorization_required,true)});
+test("deferred effects without authority references are refused",()=>assert.throws(()=>createDeferredEffect({effectId:"x",capability:"x",operation:"x",target:"x",failure:classifyEffectFailure({code:"x"})})));
