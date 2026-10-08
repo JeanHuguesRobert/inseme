@@ -1,6 +1,6 @@
 import {assessLeaseBudget} from "./effect-lease-accounting.js";
 /** Pure fencing policy. No implicit side effects and no provider-atomicity claim. */
-export function inspectEffectLease({lease,now,canonicalGeneration,canonicalRevision,targetRevision,mandateValid=false,budgetAvailable=false,desired=true,alreadySatisfied=false}={}){
+export function inspectEffectLease({lease,now,canonicalGeneration,canonicalRevision,targetRevision,mandateValid=false,budgetAvailable=false,reservationRecorded=false,unknownCostPolicy="defer",desired=true,alreadySatisfied=false}={}){
  if(!lease||lease.schema!=="cop.effect-lease/v1"||!Number.isSafeInteger(lease.generation)||lease.generation<1)throw Error("invalid_lease");
  if(!Number.isSafeInteger(canonicalGeneration)||canonicalGeneration<1)return {decision:"defer",reason:"canonical_generation_unknown"};
  if(!Number.isSafeInteger(canonicalRevision)||canonicalRevision<0)return {decision:"defer",reason:"canonical_revision_unknown"};
@@ -12,7 +12,7 @@ export function inspectEffectLease({lease,now,canonicalGeneration,canonicalRevis
  if(targetRevision!==lease.expected_target_revision)return {decision:"reconcile",reason:"target_changed"};
  if(Date.parse(now)>=Date.parse(lease.expires_at))return {decision:"fenced",reason:"lease_expired"};
  if(!mandateValid||!budgetAvailable)return {decision:"blocked",reason:"authority_or_budget_missing"};
- const accounting=lease.cost?assessLeaseBudget({cost:lease.cost,budgetAuthorized:budgetAvailable,reservationRecorded:true,unknownPolicy:"authorized_bounded_unknown"}):{decision:"blocked",reason:"lease_cost_missing"};
+ const accounting=lease.cost?assessLeaseBudget({cost:lease.cost,budgetAuthorized:budgetAvailable,reservationRecorded,unknownPolicy:unknownCostPolicy}):{decision:"blocked",reason:"lease_cost_missing"};
  if(accounting.decision!=="preflight_only")return accounting;
  return {decision:"preflight_only",fencing_token:lease.generation,provider_atomic_check_required:true};
 }
