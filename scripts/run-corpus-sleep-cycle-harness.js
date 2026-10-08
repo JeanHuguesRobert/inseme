@@ -77,6 +77,20 @@ export async function runCorpusSleepHarness(options = {}) {
 
   const sleepScript = findCogentiaSleepScript(explicitRoot);
   if (!sleepScript) {
+    if (dryRun) {
+      // Validate the orchestration envelope without asserting the external
+      // Cogentia executable actually ran. CI may check out inseme alone.
+      const evidence = preemptionCtrl.toEvidenceReceipt({
+        phase: "dry_run_dependency_unavailable",
+        outcome: "completed_partial",
+        details: { execution_skipped: true, reason: "sleep_cycle_script_not_found" },
+      });
+      return {
+        ok: true, status: "completed_partial", evidence,
+        sleepOutput: null, writeBack: null, cogentiaDir: null,
+        execution_skipped: true,
+      };
+    }
     return {
       ok: false,
       error: "sleep_cycle_script_not_found",
