@@ -1,0 +1,63 @@
+name: E5 Shared Store Atomic Claim Reality Test
+on:
+  issue_comment:
+    types: [created]
+permissions:
+  contents: write
+  issues: write
+jobs:
+  synthetic-claim:
+    if: >-
+      github.event.issue.number == 121 &&
+      github.event.comment.user.login == github.repository_owner &&
+      contains(github.event.comment.body, '/cop-e5-claim shared-20261008-v1')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Atomic first-writer-wins reservation in Git ref store
+        id: claim
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLAIM_REF: refs/tags/cop-e5-shared-20261008-v1
+          CLAIM_TAG: cop-e5-shared-20261008-v1
+        shell: bash
+        run: |
+          set -u
+          echo "claim_ref=$CLAIM_REF" >> "$GITHUB_OUTPUT"
+          description="synthetic; no external business effect; handler-run=$GITHUB_RUN_ID"
+          tag_sha=$(gh api -X POST "repos/$GITHUB_REPOSITORY/git/tags" \
+            -f tag="$CLAIM_TAG" -f message="$description" \
+            -f object="$GITHUB_SHA" -f type=commit --jq '.sha' 2>"$RUNNER_TEMP/tag-error") || {
+            echo "outcome=deferred" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          if gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="$CLAIM_REF" -f sha="$tag_sha" > "$RUNNER_TEMP/create-result" 2>"$RUNNER_TEMP/create-error"; then
+            echo "outcome=claimed" >> "$GITHUB_OUTPUT"
+          else
+            # Do not mistake a transient API error for a lost race.
+            existing=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$CLAIM_TAG" --jq '.object.sha' 2>/dev/null) || existing=""
+            if [ -n "$existing" ]; then
+              echo "outcome=contended" >> "$GITHUB_OUTPUT"
+            else
+              echo "outcome=deferred" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+      - name: Publish observation to same Cognitive Packet
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.claim.outputs.outcome }}
+          CLAIM_REF: ${{ steps.claim.outputs.claim_ref }}
+        shell: bash
+        run: |
+          {
+            printf '## E5 synthetic distributed atomic claim\n\n'
+            printf '%s\n' 'Schema: cop.e5-claim-receipt/v1'
+            printf 'Claim: `%s`\n' "$CLAIM_REF"
+            printf 'Handler run: https://github.com/%s/actions/runs/%s\n' "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            printf 'Outcome: **%s**\n' "${OUTCOME:-deferred}"
+            printf '%s\n' 'Effect executed: **none**'
+          } > "$RUNNER_TEMP/e5-receipt.md"
+          gh issue comment 121 --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/e5-receipt.md" || cat "$RUNNER_TEMP/e5-receipt.md" >> "$GITHUB_STEP_SUMMARY"
