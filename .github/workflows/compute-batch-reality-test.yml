@@ -154,15 +154,34 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Snapshot provider quota and decide resource admission
+        id: admission
+        if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted'
+        env:
+          TIMEOUT_SECONDS: ${{ steps.request.outputs.timeout_seconds }}
+        run: |
+          node scripts/github-compute-resource-cli.js before \
+            "$RUNNER_TEMP/compute-resource-before.json" \
+            "$RUNNER_TEMP/compute-admission.json" \
+            "$GITHUB_OUTPUT" "$TIMEOUT_SECONDS"
+
+      - name: Return non-admission as structured result
+        if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission != 'admitted'
+        run: |
+          node scripts/github-compute-resource-cli.js refuse \
+            "$RUNNER_TEMP/compute-request.json" \
+            "$RUNNER_TEMP/compute-result.json" \
+            "$RUNNER_TEMP/compute-admission.json"
+
       - name: Checkout exact requested source commit
-        if: steps.replay.outputs.skip != 'true'
+        if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted'
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.request.outputs.ref }}
           persist-credentials: false
 
       - name: Verify exact source commit
-        if: steps.replay.outputs.skip != 'true'
+        if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted'
         env:
           EXPECTED_REF: ${{ steps.request.outputs.ref }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_REF"
@@ -170,7 +189,7 @@ jobs:
       - name: Execute allowlisted computation
         id: execute
         continue-on-error: true
-        if: steps.replay.outputs.skip != 'true'
+        if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted'
         env:
           TIMEOUT_SECONDS: ${{ steps.request.outputs.timeout_seconds }}
         run: |
@@ -179,7 +198,7 @@ jobs:
             --result-file "$RUNNER_TEMP/compute-result.json"
 
       - name: Recover interrupted compute into a failed receipt
-        if: steps.replay.outputs.skip != 'true' && steps.execute.outcome != 'success'
+        if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted' && steps.execute.outcome != 'success'
         env:
           RUN_ID: ${{ github.run_id }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -190,13 +209,21 @@ jobs:
             "$RUN_ID" "$RUN_URL" "compute_execution_interrupted"
 
       - name: Upload generic program outputs
-        if: steps.replay.outputs.skip != 'true' && steps.request.outputs.operation_kind == 'git-program'
+        if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted' && steps.request.outputs.operation_kind == 'git-program'
         uses: actions/upload-artifact@v4
         with:
           name: compute-${{ steps.request.outputs.computation_id }}
           path: ${{ runner.temp }}/compute-artifacts/*
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Attach before/after resource accounting
+        if: steps.replay.outputs.skip != 'true'
+        run: |
+          node scripts/github-compute-resource-cli.js after \
+            "$RUNNER_TEMP/compute-resource-before.json" \
+            "$RUNNER_TEMP/compute-admission.json" \
+            "$RUNNER_TEMP/compute-result.json"
 
       - name: Render structured result
         if: steps.replay.outputs.skip != 'true'
