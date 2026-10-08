@@ -126,6 +126,8 @@ jobs:
     steps:
       - name: Checkout trusted adapter from main
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -159,6 +161,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.request.outputs.ref }}
+          persist-credentials: false
 
       - name: Verify exact source commit
         if: steps.replay.outputs.skip != 'true'
@@ -174,6 +177,15 @@ jobs:
           timeout "$TIMEOUT_SECONDS"s node scripts/github-compute-request.js execute \
             --request-file "$RUNNER_TEMP/compute-request.json" \
             --result-file "$RUNNER_TEMP/compute-result.json"
+
+      - name: Upload generic program outputs
+        if: steps.replay.outputs.skip != 'true' && steps.request.outputs.operation_kind == 'git-program'
+        uses: actions/upload-artifact@v4
+        with:
+          name: compute-${{ steps.request.outputs.computation_id }}
+          path: ${{ runner.temp }}/compute-artifacts/*
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Render structured result
         if: steps.replay.outputs.skip != 'true'
