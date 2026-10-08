@@ -101,7 +101,7 @@ export function executeGitProgram(request, {
   const receipt = {
     schema: "magistral.execution-receipt/v1", binding,
     status: passed ? "completed" : "failed", terminal: true,
-    artifact_refs: outputs.map(x=>`github-actions-run:${runId}:compute-artifacts#${x.artifact_file}`),
+    artifact_refs: outputs.map(x=>`github-actions-run:${runId}:compute-${request.computation_id}#${x.artifact_file}`),
     result_refs: outputs.map(x=>`sha256:${x.sha256}`),
     log_refs: runUrl ? [runUrl] : [],
     error, recorded_at: stamp(),
