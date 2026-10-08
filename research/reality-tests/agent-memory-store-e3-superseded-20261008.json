@@ -1,0 +1,11 @@
+{
+  "schema": "cop.deferred-effect-event/v1",
+  "probe_id": "memory-store-e1-20261008-jhr",
+  "effect_id": "memory-e1-effect",
+  "type": "superseded",
+  "by": "memory-e3-new-intent",
+  "observed_at": "2026-10-08",
+  "source": "synthetic-reality-test-e3",
+  "reason": "Original remembered pending state is no longer desired",
+  "execution_permitted": false
+}
