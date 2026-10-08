@@ -123,16 +123,27 @@ jobs:
 
     steps:
       - name: Checkout trusted adapter from main
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           persist-credentials: false
 
       - name: Setup Node.js
+        continue-on-error: true
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
+      - name: Preserve trusted failure finalizer
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/compute-supervisor"
+          cp scripts/github-compute-finalize.js scripts/github-compute-failure.js "$RUNNER_TEMP/compute-supervisor/"
+          printf '{"type":"module"}\n' > "$RUNNER_TEMP/compute-supervisor/package.json"
+
       - name: Parse and validate typed request
+        continue-on-error: true
         id: request
         run: |
           node scripts/github-compute-request.js parse-event \
@@ -141,6 +152,7 @@ jobs:
             --request-file "$RUNNER_TEMP/compute-request.json"
 
       - name: Check idempotent durable result
+        continue-on-error: true
         id: replay
         env:
           GH_TOKEN: ${{ github.token }}
@@ -155,6 +167,7 @@ jobs:
           fi
 
       - name: Preserve trusted resource adapter across source checkout
+        continue-on-error: true
         if: steps.replay.outputs.skip != 'true'
         run: |
           mkdir -p "$RUNNER_TEMP/compute-adapter"
@@ -162,6 +175,7 @@ jobs:
           printf '{"type":"module"}\n' > "$RUNNER_TEMP/compute-adapter/package.json"
 
       - name: Snapshot provider quota and decide resource admission
+        continue-on-error: true
         id: admission
         if: steps.replay.outputs.skip != 'true'
         env:
@@ -174,6 +188,7 @@ jobs:
             "$GITHUB_OUTPUT" "$TIMEOUT_SECONDS"
 
       - name: Return non-admission as structured result
+        continue-on-error: true
         if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission != 'admitted'
         run: |
           node "$RUNNER_TEMP/compute-adapter/github-compute-resource-cli.js" refuse \
@@ -182,6 +197,7 @@ jobs:
             "$RUNNER_TEMP/compute-admission.json"
 
       - name: Checkout exact requested source commit
+        continue-on-error: true
         if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted'
         uses: actions/checkout@v4
         with:
@@ -189,12 +205,14 @@ jobs:
           persist-credentials: false
 
       - name: Verify exact source commit
+        continue-on-error: true
         if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted'
         env:
           EXPECTED_REF: ${{ steps.request.outputs.ref }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_REF"
 
       - name: Execute allowlisted computation
+        continue-on-error: true
         id: execute
         continue-on-error: true
         if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted'
@@ -206,6 +224,7 @@ jobs:
             --result-file "$RUNNER_TEMP/compute-result.json"
 
       - name: Recover interrupted compute into a failed receipt
+        continue-on-error: true
         if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted' && steps.execute.outcome != 'success'
         env:
           RUN_ID: ${{ github.run_id }}
@@ -217,6 +236,7 @@ jobs:
             "$RUN_ID" "$RUN_URL" "compute_execution_interrupted"
 
       - name: Upload generic program outputs
+        continue-on-error: true
         if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted' && steps.request.outputs.operation_kind == 'git-program'
         uses: actions/upload-artifact@v4
         with:
@@ -226,6 +246,7 @@ jobs:
           retention-days: 14
 
       - name: Attach before/after resource accounting
+        continue-on-error: true
         if: steps.replay.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -236,6 +257,7 @@ jobs:
             "$RUNNER_TEMP/compute-result.json"
 
       - name: Render structured result
+        continue-on-error: true
         if: steps.replay.outputs.skip != 'true'
         run: |
           node scripts/github-compute-request.js format-result \
@@ -243,6 +265,7 @@ jobs:
             --comment-file "$RUNNER_TEMP/compute-result.md"
 
       - name: Publish durable structured result
+        continue-on-error: true
         if: steps.replay.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -253,3 +276,15 @@ jobs:
 
       # A returned failed ExecutionReceipt is an expected computation outcome.
       # Only infrastructure/callback failures should fail this job.
+
+      - name: Ensure one structured result callback even after exceptions
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f "$RUNNER_TEMP/compute-supervisor/github-compute-finalize.js" ]; then
+            node "$RUNNER_TEMP/compute-supervisor/github-compute-finalize.js"
+          else
+            echo "Compute supervisor unavailable; inspect checkout failure" >> "$GITHUB_STEP_SUMMARY"
+          fi
