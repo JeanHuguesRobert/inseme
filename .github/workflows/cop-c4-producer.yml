@@ -1,0 +1,29 @@
+name: COP C4 Producer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Record no-route decision
+        run: node apps/platform/mcp/c4-producer.mjs c4-artifact
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cop-c4-handoff
+          path: c4-artifact/
+          if-no-files-found: error
+          retention-days: 7
