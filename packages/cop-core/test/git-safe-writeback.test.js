@@ -72,7 +72,7 @@ describe(
         paths: ["status.txt"],
       });
 
-      expect(result.ok).toBe(true);
+      expect(result.ok, JSON.stringify(result)).toBe(true);
       expect(result.action).toBe("pushed_to_target");
       expect(result.branch).toBe("main");
 
@@ -99,7 +99,7 @@ describe(
         paths: ["background-digest.md"],
       });
 
-      expect(result.ok).toBe(true);
+      expect(result.ok, JSON.stringify(result)).toBe(true);
       expect(result.action).toBe("pushed_to_target");
 
       // Verify that both peer-work and background-digest exist
@@ -133,7 +133,7 @@ describe(
         regenerate,
       });
 
-      expect(result.ok).toBe(true);
+      expect(result.ok, JSON.stringify(result)).toBe(true);
       expect(result.action).toBe("pushed_to_target");
 
       // Ensure index.txt includes the peer's data.txt post-rebase
