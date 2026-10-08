@@ -1,0 +1,10 @@
+import test from "node:test";import assert from "node:assert/strict";import {inspectEffectLease,makeEffectLease} from "./effect-lease-fence.js";
+const lease=makeEffectLease({effectId:"test",holder:"agent-a",generation:2,expectedRevision:4,expectedTargetRevision:"v7",expiresAt:"2026-10-08T20:00:00Z"});
+const valid={lease,now:"2026-10-08T19:00:00Z",canonicalGeneration:2,canonicalRevision:4,targetRevision:"v7",mandateValid:true,budgetAvailable:true};
+test("same generation only passes preflight",()=>{const r=inspectEffectLease(valid);assert.equal(r.decision,"preflight_only");assert.equal(r.provider_atomic_check_required,true)});
+test("new generation fences stale holder",()=>assert.equal(inspectEffectLease({...valid,canonicalGeneration:3}).decision,"fenced"));
+test("expired lease fences previous holder",()=>assert.equal(inspectEffectLease({...valid,now:"2026-10-08T20:00:01Z"}).reason,"lease_expired"));
+test("superseded intention cannot execute",()=>assert.equal(inspectEffectLease({...valid,desired:false}).decision,"obsolete"));
+test("completion elsewhere cancels duplicate",()=>assert.equal(inspectEffectLease({...valid,alreadySatisfied:true}).decision,"no_op"));
+test("unknown authoritative revision fails closed",()=>assert.equal(inspectEffectLease({...valid,canonicalRevision:undefined}).decision,"defer"));
+test("target revision divergence reconciles",()=>assert.equal(inspectEffectLease({...valid,targetRevision:"v8"}).decision,"reconcile"));
