@@ -158,3 +158,35 @@ test("executes bounded node tests without shell command text", () => {
   assert.equal(result.execution_receipt.status, "completed");
   assert.equal(result.execution_binding.provider_execution_id, "54321");
 });
+
+
+test("accepts generic git-program separately from legacy operations", () => {
+  const descriptor = {
+    schema: "fractanet.compute-program/v1",
+    program: { repository: "JeanHuguesRobert/ubikia", ref: "b".repeat(40) },
+    commands: [["node", "cli/text-product.js", "--output", "output.md"]],
+    inputs: [{ repository: "JeanHuguesRobert/barons-Mariani", ref: "c".repeat(40) }],
+    outputs: ["output.md"],
+    execution: { runtime: "github-actions-ubuntu", timeout_seconds: 120 },
+  };
+  const value = request({
+    operation: { kind: "git-program", descriptor },
+    limits: { timeout_seconds: 120, network: true, repository_write: false },
+  });
+  assert.deepEqual(parseComputeRequestComment(JSON.stringify(value), {
+    expectedRepository: "JeanHuguesRobert/inseme",
+    expectedIssue: 120,
+  }), value);
+  for (const mutation of [
+    (v) => { v.operation.descriptor.program.ref = "main"; },
+    (v) => { v.limits.repository_write = true; },
+    (v) => { v.operation.descriptor.budget = { tokens: 100 }; },
+  ]) {
+    const invalid = structuredClone(value);
+    mutation(invalid);
+    assert.throws(() => parseComputeRequestComment(JSON.stringify(invalid), {
+      expectedRepository: "JeanHuguesRobert/inseme",
+      expectedIssue: 120,
+    }));
+  }
+});
