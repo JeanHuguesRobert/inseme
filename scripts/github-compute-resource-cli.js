@@ -26,7 +26,7 @@ if(mode==="before"){
  const after=computeResourceSnapshot({available:{actions_minutes:quota()}});
  const resources=computeResourceReceipt({before,after,admission,
   executionStatus:admission.decision==="admitted"?status:"not_started",
-  usage:{actions_minutes:undefined}});
+  usage:{actions_minutes:undefined,runner_wall_seconds:Math.max(0,(Date.now()-Date.parse(before.observed_at))/1000)}});
  result.resource_accounting=resources;
  write(resultPath,result);
 } else if(mode==="refuse"){
