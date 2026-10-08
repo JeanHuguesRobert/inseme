@@ -101,3 +101,18 @@ Candidate workflow (non-prescriptive): trace original act → detect contradicti
 Tests must distinguish technical restoration from repair of social/legal consequences. Measure completion time, correctness, residual harm, unconsented externalities, cost (including attention and unknowns), repeatability and ability to challenge a remedy. No guarantee of "exactly once" is implied.
 
 Peripheral observation: the target may not be *absence of mistakes* but **governed error detection, contestation, and effective repair**, with consequences visible to all affected principals. This is an experimentally testable candidate, not a theorem.
+
+## Optimistic Locking as governing posture, not only versioned CAS
+
+The Corpus already defines a broader doctrine in [Optimistic Mainline Governance](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/optimistic_mainline_governance.md): allow small, scoped, attributable acts under explicit mandate and measured Exposure when a credible correction or recovery path exists; observe real effects and reconcile. A version comparison is an instrument, **not** the whole doctrine. [Agent Working Conventions](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/agent_working_conventions.md) adds the important rule that in-flight agents refresh, compare baseline with live work, and reconcile rather than freeze the living Corpus.
+
+This changes the research question. The goal is **not** universal pre-emptive locking. It is to classify effect boundaries by actual Exposure and recovery envelope, selecting the least restrictive justified safeguards while maintaining mandate, traceability, rights and budget.
+
+Working alternatives:
+1. **Optimistic, cheap-to-repair act:** act on current snapshot and visible delta, use CAS if relevant, inspect receipts, reconcile conflicts through successor acts.
+2. **Optimistic with constrained recovery:** permit bounded provisional effects; monitor propagation; reserve cost and plausible remedy capacity; compensate, restore or conciliate when necessary.
+3. **Preventive boundary:** demand stronger authorization and provider enforcement when the potential harm is irreversible, violates rights, or cannot legitimately be shifted to another principal.
+
+No optimistic posture makes a revoked mandate valid, and recovery cannot retrospectively authorize an impermissible violation. This is a **risk-based choice of controls**, not a universal exception to authority rules.
+
+**Hypothesis:** compared with mandatory serializable cross-provider locking everywhere, this spectrum may preserve more useful capacity, attention and serendipitous learning at tolerable harm/cost. Test outcomes and counterexamples in ordinary work before claiming improvement. The costs of locking, coordination, retries, human approval and recovery must all be accounted for, including unknown dimensions.
