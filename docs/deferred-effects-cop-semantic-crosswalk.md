@@ -120,3 +120,15 @@ The experiment separates three concerns: stable stream identity, append ordering
 **New possible discovered en route:** a Topic/stream distinction may be better understood as a governance projection over a stable ordered event scope, instead of either (a) an independent universal core noun or (b) a bare name with no authorization semantics. This is a hypothesis, not a COP amendment or a universal constraint.
 
 **Missing Reality Tests:** real concurrent appends and crash/restart recovery; provenance and revocation arriving during a write; explicit atomicity/consistency contract at adapter boundary; cost of enforcing governance. Preserve alternative hypotheses until evidence discriminates.
+
+### Third semantic probe — mandate revocation across the check/write boundary (2026-10-08)
+
+[Source](../scripts/stream-revocation-boundary.test.js) and [verified Compute receipt](https://github.com/JeanHuguesRobert/inseme/issues/121#issuecomment-6069284203): 3/3 synthetic tests passed.
+
+- A new authoritative observation after a mandate's revocation fences a handler that retained an old authorization snapshot.
+- A stale handler may still race if mandate revocation occurs **after** the final read but **before** its write. This is a check-to-use window (TOCTOU).
+- Thus permissions/mandates and stream sequence allocation are semantically independent, yet a real consequential append may require their enforcement to share a transactional boundary or a provider-enforced fencing/idempotency contract.
+
+**Limit:** these are pure model tests, not a real shared-store concurrent write, and they prove no atomic revocation guarantee. A dedicated GitHub Actions workflow was not published because the tool disallowed that write-enabled workflow creation. Do not infer provider guarantees from this probe.
+
+**Peripheral observation:** revocation is a *temporal authority condition*, not merely a property of stream identity or order. This suggests that narrowing the analysis to Topic/stream naming would have missed the important causal boundary.
