@@ -1,0 +1,35 @@
+name: Compute Outbox Forward
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "GitHub Actions run containing compute-outbox artifact"
+        required: true
+        type: string
+permissions:
+  actions: read
+  issues: write
+  contents: read
+jobs:
+  forward:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        continue-on-error: true
+      - name: Download pending callback (not computation)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/forward"
+          gh run download "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/forward"
+      - name: Replay pending callbacks idempotently
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          find "$RUNNER_TEMP/forward" -name pending.json -type f -print0 2>/dev/null | while IFS= read -r -d '' file; do
+            node scripts/github-compute-forward.js "$file" || true
+          done
