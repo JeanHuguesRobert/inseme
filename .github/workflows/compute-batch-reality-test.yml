@@ -158,12 +158,12 @@ jobs:
         if: steps.replay.outputs.skip != 'true'
         run: |
           mkdir -p "$RUNNER_TEMP/compute-adapter"
-          cp scripts/github-compute-resource-cli.js scripts/github-compute-resources.js "$RUNNER_TEMP/compute-adapter/"
+          cp scripts/github-compute-resource-cli.js scripts/github-compute-resources.js scripts/github-compute-failure.js "$RUNNER_TEMP/compute-adapter/"
           printf '{"type":"module"}\n' > "$RUNNER_TEMP/compute-adapter/package.json"
 
       - name: Snapshot provider quota and decide resource admission
         id: admission
-        if: steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted'
+        if: steps.replay.outputs.skip != 'true'
         env:
           TIMEOUT_SECONDS: ${{ steps.request.outputs.timeout_seconds }}
         run: |
@@ -210,7 +210,7 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          node scripts/github-compute-failure.js \
+          node "$RUNNER_TEMP/compute-adapter/github-compute-failure.js" \
             "$RUNNER_TEMP/compute-request.json" \
             "$RUNNER_TEMP/compute-result.json" \
             "$RUN_ID" "$RUN_URL" "compute_execution_interrupted"
