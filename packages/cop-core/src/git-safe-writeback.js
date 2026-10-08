@@ -114,7 +114,7 @@ export async function gitSafeWriteback(options = {}) {
       // Remote might be offline or branch not yet pushed; handle gracefully
     }
 
-    const rebaseRes = git(["rebase", `${remote}/${branch}`], { cwd });
+    const rebaseRes = git(["rebase", `${remote}/${branch}`], { cwd, env });
     if (!rebaseRes.ok) {
       // Conflict detected!
       git(["rebase", "--abort"], { cwd });
