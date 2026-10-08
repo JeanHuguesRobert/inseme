@@ -202,3 +202,8 @@ jobs:
         run: |
           gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" \
             -f body="$(cat "$RUNNER_TEMP/compute-result.md")"
+
+      - name: Preserve compute failure as workflow conclusion
+        if: steps.replay.outputs.skip != 'true'
+        run: |
+          node -e 'const fs=require("fs"); const r=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/compute-result.json","utf8")); if(r.execution_receipt.status!=="completed") process.exit(1)'
