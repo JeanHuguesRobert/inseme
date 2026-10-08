@@ -31,6 +31,7 @@ jobs:
 
       - name: Require deployment secrets
         id: secrets
+        continue-on-error: true
         shell: bash
         run: |
           missing=0
@@ -49,40 +50,46 @@ jobs:
           test "$missing" -eq 0
 
       - name: Install Supabase CLI
+        if: steps.secrets.outcome == 'success'
         run: npm install --global supabase@2.117.0
 
       - name: Link exact JHN project
+        if: steps.secrets.outcome == 'success'
         working-directory: apps/platform
         shell: bash
         run: |
           supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
 
       - name: Fail closed unless only Watchers migration is pending
+        if: steps.secrets.outcome == 'success'
         working-directory: apps/platform
         shell: bash
         run: |
           node scripts/check-supabase-migration-plan.js --allow-pending="$TARGET_MIGRATION"
 
       - name: Apply bounded migration set
+        if: steps.secrets.outcome == 'success'
         working-directory: apps/platform
         shell: bash
         run: |
           supabase db push --linked
 
       - name: Verify remote migration alignment
+        if: steps.secrets.outcome == 'success'
         working-directory: apps/platform
         shell: bash
         run: |
           node scripts/check-supabase-migration-plan.js
 
       - name: Verify Watchers RPC exists
+        if: steps.secrets.outcome == 'success'
         shell: bash
         run: |
           status=$(curl --silent --show-error --output "$RUNNER_TEMP/rpc-check.json" --write-out '%{http_code}'             -X POST "$SUPABASE_URL/rest/v1/rpc/artifact_access_token_lookup"             -H "apikey: $SUPABASE_SERVICE_ROLE_KEY"             -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"             -H "Content-Type: application/json"             --data '{"p_token_ref":"sha256:0000000000000000000000000000000000000000000000000000000000000000"}')
           test "$status" = "200"
 
       - name: Report success to Issue 120
-        if: success()
+        if: success() && steps.secrets.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -97,7 +104,7 @@ jobs:
           - workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Report failure boundary to Issue 120
-        if: failure()
+        if: always() && (steps.secrets.outcome != 'success' || failure())
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
