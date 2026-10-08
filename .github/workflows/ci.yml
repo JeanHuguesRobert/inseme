@@ -52,6 +52,9 @@ jobs:
       - name: C1 COP no-route Reality Test
         run: node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js
 
+      - name: C2 COP route decision persistence Reality Test
+        run: node --test apps/platform/mcp/test/cop-routing-decision-persistence.test.js
+
       - name: Watch the Watchers invariants (Issue #120)
         run: >-
           node --test
