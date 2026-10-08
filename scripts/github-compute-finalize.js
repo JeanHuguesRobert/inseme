@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { recoverComputeFailure } from "./github-compute-failure.js";
 
@@ -26,6 +27,10 @@ if (!result || result.schema!=="cop.compute-result/v1") {
     reason:request?"compute_pipeline_interrupted":"compute_request_not_admitted_or_invalid",
   });
 }
+const outbox=path.join(process.env.RUNNER_TEMP,"compute-outbox");
+fs.mkdirSync(outbox,{recursive:true});
+const envelope={schema:"cop.compute-outbox/v1",repository,issue,computation_id:computationId,marker,body:["<!-- cop-compute-result:"+computationId+" -->","## COP compute result","","```json",JSON.stringify(result,null,2),"```"].join("\n")};
+fs.writeFileSync(path.join(outbox,"pending.json"),JSON.stringify(envelope,null,2));
 if (!Number.isInteger(issue)||issue<1||!repository) {
   console.log("Compute callback unavailable: cannot identify originating Issue");
   process.exit(0);
@@ -34,13 +39,15 @@ const list=runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`]);
 if(list.status===0){
   try {
     if(JSON.parse(list.stdout).some(c=>String(c.body).includes(marker))) {
+      fs.renameSync(path.join(outbox,"pending.json"),path.join(outbox,"delivered.json"));
       console.log("Compute receipt already published");process.exit(0);
     }
   }catch{}
 }
-const comment=[marker,"## COP compute result","","```json",JSON.stringify(result,null,2),"```"].join("\n");
+const comment=envelope.body;
 const posted=runGh([`repos/${repository}/issues/${issue}/comments`,"-f",`body=${comment}`]);
 if(posted.status===0){
+ fs.renameSync(path.join(outbox,"pending.json"),path.join(outbox,"delivered.json"));
  console.log(`Compute result published to issue #${issue}`);process.exit(0);
 }
 const summary=process.env.GITHUB_STEP_SUMMARY;
