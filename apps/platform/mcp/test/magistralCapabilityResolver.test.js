@@ -169,3 +169,36 @@ test("provider-native execution identity from a runtime is normalized into the r
   assert.deepEqual(result.execution_receipt.result_refs, ["artifact:result:77"]);
   assert.deepEqual(result.execution_receipt.log_refs, ["artifact:log:77"]);
 });
+
+test("C1: unavailable capability returns a no-route failure without invoking any runtime", async () => {
+  const catalog = createCapabilityCatalog({ offers: [] });
+  let invocations = 0;
+  const runtimeClient = {
+    list: () => [],
+    invoke: async () => {
+      invocations += 1;
+      throw new Error("unexpected runtime invocation");
+    },
+  };
+  const scheduler = new COPScheduler(new COPBus({ name: "c1-no-route" }), {
+    handlerResolver: createMagistralCapabilityResolver({
+      capabilityCatalog: catalog,
+      hostRuntimeClient: runtimeClient,
+    }),
+  });
+  const continuation = createContinuationDescriptor({
+    resumeTo: MAGISTRAL_CAPABILITY_RESOLUTION,
+    state: {
+      capability_request: {
+        requirement: { capability: "validate.frontmatter" },
+        prompt: "Validate frontmatter of research/fractaxxxx.md (read-only probe).",
+        working_directory: process.cwd(),
+      },
+    },
+  });
+  await assert.rejects(
+    () => scheduler.execute(continuation),
+    /executeContinuation: no executable handler for magistral:capability-resolution/
+  );
+  assert.equal(invocations, 0);
+});
