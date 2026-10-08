@@ -1,3 +1,5 @@
+import { validateGitProgramDescriptor } from "./github-compute-program.js";
+import { executeGitProgram } from "./github-compute-execute-program.js";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -78,6 +80,8 @@ export function validateRequest(request, {
         normalized.startsWith("apps/platform/mcp/test/");
       if (!allowed) throw new Error("node_test_path_not_allowed");
     }
+  } else if (operation.kind === "git-program") {
+    validateGitProgramDescriptor(operation.descriptor);
   } else {
     throw new Error("unsupported_operation");
   }
@@ -89,7 +93,7 @@ export function validateRequest(request, {
       limits.timeout_seconds > 300) {
     throw new Error("invalid_timeout");
   }
-  if (limits.network !== false) throw new Error("network_must_be_false");
+  if (limits.network !== false && !(operation.kind === "git-program" && limits.network === true)) throw new Error("network_must_be_false");
   if (limits.repository_write !== false) throw new Error("repository_write_must_be_false");
 
   const returnSpec = request.return;
@@ -187,6 +191,7 @@ export function executeNodeTestRequest(request, {
 export function executeRequest(request, options = {}) {
   if (request.operation?.kind === "sha256-file") return executeSha256Request(request, options);
   if (request.operation?.kind === "node-test") return executeNodeTestRequest(request, options);
+  if (request.operation?.kind === "git-program") return executeGitProgram(request, options);
   throw new Error("unsupported_operation");
 }
 
@@ -314,6 +319,7 @@ async function main() {
       ref: request.repository.ref,
       issue: request.return.github_issue,
       timeout_seconds: request.limits.timeout_seconds,
+      operation_kind: request.operation.kind,
     });
     return;
   }
