@@ -165,6 +165,7 @@ jobs:
         id: admission
         if: steps.replay.outputs.skip != 'true'
         env:
+          GH_TOKEN: ${{ github.token }}
           TIMEOUT_SECONDS: ${{ steps.request.outputs.timeout_seconds }}
         run: |
           node "$RUNNER_TEMP/compute-adapter/github-compute-resource-cli.js" before \
@@ -226,6 +227,8 @@ jobs:
 
       - name: Attach before/after resource accounting
         if: steps.replay.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           node "$RUNNER_TEMP/compute-adapter/github-compute-resource-cli.js" after \
             "$RUNNER_TEMP/compute-resource-before.json" \
