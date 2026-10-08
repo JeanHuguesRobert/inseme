@@ -98,28 +98,14 @@ jobs:
 
       - name: Report failure boundary to Issue 120
         if: failure()
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          status="secret status unavailable"
-          if [ -f "$RUNNER_TEMP/secret-status.txt" ]; then
-            status=$(cat "$RUNNER_TEMP/secret-status.txt")
-          fi
-          body=$(cat <<EOF
-## Watchers Supabase activation — BLOCKED
-
-The bounded migration workflow stopped fail-closed. No success is claimed.
-
-Inspect run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-Secret presence only (values are never exposed):
-
-```text
-$status
-```
-
-The preflight also refuses to push if any migration other than $TARGET_MIGRATION is pending.
-EOF
-)
-          gh issue comment 120 --repo "${{ github.repository }}" --body "$body"
+          printf '%s\n' \
+            '## Watchers Supabase activation — BLOCKED' \
+            'The bounded migration was not applied successfully.' \
+            "Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            'No success is claimed. Review the job logs.' > "$RUNNER_TEMP/watchers-failure.txt"
+          gh issue comment 120 --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/watchers-failure.txt" || true
