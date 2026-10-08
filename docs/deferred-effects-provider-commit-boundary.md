@@ -74,3 +74,30 @@ External references:
 - GitHub Git References REST API: https://docs.github.com/en/rest/git/refs
 
 No live distributed revocation test or cross-provider atomicity has been demonstrated. No existing COP normative source modified.
+
+## Recovery and reconciliation as an alternative to impossible global atomicity
+
+**Research hypothesis, not COP normative change:** because real social, legal, financial and organizational systems operate through correction, conciliation, restitution, compensation and repair despite imperfect synchronization, distributed agent systems may use an explicit *recovery envelope* rather than demanding universal cross-provider transactions. This might surpass some human workflows in speed, traceability, early detection and bounded cost, but improvement remains to be demonstrated.
+
+The existing Cogentia source [Measured Risk](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/measured_risk.md) already distinguishes *Reversibility Envelope*, compensability, rectifiability, restitutability, repairability, recovery costs and residual harm. Do **not** reinvent these concepts as a new COP core entity.
+
+Separate distinct operations:
+- **Technical reversal**: return a machine state, when possible.
+- **Rectification**: amend an inaccurate claim or record without erasing the historical act.
+- **Restitution**: return property, capability, access or value to the affected party.
+- **Compensation**: address loss that cannot be undone, with legitimate authority and proportional valuation.
+- **Repair**: restore function, trust or capability as far as realistically possible.
+- **Conciliation**: negotiate among principals whose interests or interpretations conflict; an algorithm must not silently decide rights.
+- **Residual-harm acknowledgement**: explicitly retain the part no remedy removes.
+
+Candidate workflow (non-prescriptive): trace original act → detect contradiction/revocation/harm → contain further propagation → identify affected parties, mandates and rights → enumerate remedies and residuals → seek appropriate human judgment/conciliation when needed → enact authorized remedies idempotently → obtain receipt → reassess effect and cost. A compensating act does not delete the original event; it creates new causal evidence.
+
+### Rival hypotheses and failure cases
+
+- H1: bounded compensating effects can make a multi-provider workflow *effectively recoverable* without global atomicity.
+- H2: compensation can conceal unacceptable rights violations or irrecoverable third-party harm; stronger preventive exclusion is necessary.
+- H3: a hybrid selects prevention, recovery or both according to exposure and reversibility envelope.
+
+Tests must distinguish technical restoration from repair of social/legal consequences. Measure completion time, correctness, residual harm, unconsented externalities, cost (including attention and unknowns), repeatability and ability to challenge a remedy. No guarantee of "exactly once" is implied.
+
+Peripheral observation: the target may not be *absence of mistakes* but **governed error detection, contestation, and effective repair**, with consequences visible to all affected principals. This is an experimentally testable candidate, not a theorem.
