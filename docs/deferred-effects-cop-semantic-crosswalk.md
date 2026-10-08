@@ -110,3 +110,13 @@ Synthetic bounded Node tests: [source](../scripts/topic-stream-semantic-probe.te
 **Peripheral observation (serendipity discipline):** what appeared to be a conflict between two names may instead be a confusion between two questions: the identity of an ordering scope and the locus of its authorization/governance. Preserve this as a new question, not as a settled conclusion. Continue without manufacturing an A/B campaign.
 
 **Resource/attention accounting:** one synthetic test execution, three tests; actual provider resource/attention cost not reliably observable here. Do not represent as zero.
+
+### Second semantic probe — stream governance and independent authority (2026-10-08)
+
+[Source test](../scripts/stream-governance-semantic-probe.test.js), [GitHub Compute receipt](https://github.com/JeanHuguesRobert/inseme/issues/121#issuecomment-6068976905), 4/4 synthetic tests passed.
+
+The experiment separates three concerns: stable stream identity, append ordering, and authorization to append. Revoking or versioning a mandate changes who may append without requiring mutation of historical events or replacement of the stream ID. An actor being permitted to append says nothing about atomic allocation of the next sequence number. This is consistent with current [COP/Identity](../packages/cop-core/COP_IDENTITY.md) and [Mandated Agent Security](../packages/cop-core/COP_MANDATED_AGENT_SECURITY.md), but does not prove that an implementation supplies required transactional semantics.
+
+**New possible discovered en route:** a Topic/stream distinction may be better understood as a governance projection over a stable ordered event scope, instead of either (a) an independent universal core noun or (b) a bare name with no authorization semantics. This is a hypothesis, not a COP amendment or a universal constraint.
+
+**Missing Reality Tests:** real concurrent appends and crash/restart recovery; provenance and revocation arriving during a write; explicit atomicity/consistency contract at adapter boundary; cost of enforcing governance. Preserve alternative hypotheses until evidence discriminates.
