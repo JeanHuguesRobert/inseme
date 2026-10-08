@@ -1,0 +1,11 @@
+import test from "node:test";import assert from "node:assert/strict";
+import{createDeferredEffect,classifyEffectFailure}from"./deferred-effect.js";
+import{planDeferredForward,projectDeferredEffect}from"./deferred-effect-queue.js";
+const effect=()=>createDeferredEffect({effectId:"effect:a",capability:"document.update",operation:"replace",target:"draft:1",inputs:{body:"v2"},failure:classifyEffectFailure({code:"transient",transient:true}),mandateRef:"m",budgetRef:"b",expectedTargetRevision:"rev1"});
+const observed={now:"2026-10-08T13:00:00Z",latestTargetRevision:"rev1",observationCurrent:true,mandateValid:true,budgetAvailable:true,claimCurrent:true};
+test("store-and-forward remains inert without current observation",()=>{assert.equal(planDeferredForward(effect()).decision,"deferred")});
+test("late alternative completion makes queued write no-op",()=>{const e=effect();const ev=[{effect_id:e.effect_id,type:"satisfied_elsewhere",evidence_ref:"receipt:second-agent"}];assert.equal(planDeferredForward(e,ev,observed).decision,"no_op")});
+test("later supersession cancels deferred write even if originally eligible",()=>{const e=effect();const ev=[{effect_id:e.effect_id,type:"superseded",by:"effect:b"}];assert.equal(planDeferredForward(e,ev,observed).reason,"obsolete")});
+test("new target version requires reconciliation",()=>{assert.equal(planDeferredForward(effect(),[],{...observed,latestTargetRevision:"rev2"}).decision,"reconcile")});
+test("eligible result still cannot commit without atomic checks",()=>{const x=planDeferredForward(effect(),[],observed);assert.equal(x.decision,"eligible_preflight_only");assert.equal(x.atomic_revalidation_required,true)});
+test("a completed effect cannot be rescheduled by later failed event",()=>{const e=effect();assert.throws(()=>projectDeferredEffect(e,[{effect_id:e.effect_id,type:"delivered",evidence_ref:"receipt:ok"},{effect_id:e.effect_id,type:"attempt_failed"}]))});
