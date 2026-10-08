@@ -63,3 +63,36 @@ lifecycle_state: working
 E1 established a synthetic canonical artifact and checksum; E3 and E4 exercised pure decisions; E5 observed two distinct GitHub Actions jobs competing for one Git ref; E6 exercised pure lease/accounting policies. Neither persistent-agent-memory durability, fully portable atomic leases, nor provider-level exactly-once arbitrary effects has been established. E2 across independent conversations and the original agent-memory deletion test remain unverified.
 
 No change in COP is implied by this analysis.
+
+
+## Convergence as a systemic feedback loop (working hypothesis)
+
+Treat specification S, implementation/experiments E, observed reality R, and resource budget B as coupled evolving states, not a one-way compliance pipeline. An iteration is: choose a falsifiable discrepancy → experiment within budget → measure effects and unintended consequences → compare with S → revise E, S, both or neither → repeat.
+
+A stable fixed point (`S ≈ E` according to our chosen tests) **is not evidence of a global optimum**. Stability can arise from shared blind spots, restricted test diversity, path dependence, lock-in, or reward/measurement capture. Multiple local attractors may coexist. Distinguish:
+- *syntactic conformance* (same vocabulary), *semantic consistency* (same meaning), *operational effectiveness* (desired effects in reality), *systemic desirability* (net effects over contexts and stakeholders);
+- *equilibrium* (little observed change) from *optimum* (best attainable under explicitly stated, contested criteria);
+- *convergence* from premature closure, oscillation and hysteresis.
+
+### Small experimental loop — first cycle
+
+Question: Is a `COP Topic` truly a separate durable entity, or does a `streamId` ordering scope preserve the same invariants?
+
+Current source A: `packages/cop-core/Invariants.md` §2 requires Topic-local total, gap-free ordering with `topicSeq`.
+Current source B: `packages/cop-core/COP_STORE_AND_PERSISTENCE.md` §2 and §5 uses `streamId`, `streamSeq` and does not posit Topic as an autonomous core object.
+
+Hypothesis H1: renaming Topic→streamId loses no required ordering semantics, **provided** append is atomic per stream, replay is deterministic, and independent streams do not gain hidden global ordering.
+Competing H2: Topic has extra indispensable identity/lifecycle/authority semantics which cannot be reduced to stream metadata.
+Reality Test: construct two independent streams; concurrent appends; duplicate delivery; crash-and-replay; then inspect whether H1 and H2 predict observably different outcomes. Record counterexamples, not just successes. Do not rewrite COP sources before evidence.
+
+Decision dimensions: fidelity of ordering, traceability, recoverability, simplicity/number of core entities, cross-store portability, resource consumption including unknown costs, authority and locality. No scalar global 'fitness' without declared stakeholder weights.
+
+### Anti-lock-in discipline
+
+1. Each cycle must preserve a live alternative and identify at least one falsification condition.
+2. Measure both intended and unintended consequences, and count test/coordination/lease costs.
+3. Record uncertainty, source provenance and limits, including unmeasurable dimensions.
+4. Permit reversible amendments and exploration outside the current COP vocabulary.
+5. Trigger renewed exploration when an apparent equilibrium is sensitive to changed environments, agents or measurement choices.
+
+The loop is an *epistemic and engineering method*, **not** a newly mandated COP runtime primitive. Both the present specifications and this proposal remain revisable.
