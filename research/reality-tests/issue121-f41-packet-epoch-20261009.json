@@ -1,8 +1,8 @@
 {
   "schema": "cop.f41-github-epoch-probe/v1",
   "packet_ref": "research:issue121:f41",
-  "epoch": 1,
-  "holder": "handler-A",
+  "epoch": 2,
+  "holder": "handler-B",
   "effect": "none",
-  "note": "synthetic packet control record; GitHub contents SHA is sole provider-enforced CAS"
+  "note": "B takes over; old A snapshot must not write"
 }
