@@ -19,3 +19,12 @@ test("invalid and orphan sources never vanish quietly",()=>{
  assert.ok(r.anomalies.some(x=>x.code==="UNMATCHED_PAYMENT"));
  assert.ok(r.anomalies.some(x=>x.code==="INVALID_SOURCE"));
 });
+
+test("not-yet-constituted fund cannot own accounting ledger", () => {
+ const invalid=reconcileTriplets({legal_entity:"Fonds Barons Mariani",prospective_fund_status:"not_constituted"});
+ assert.ok(invalid.anomalies.some(a=>a.code==="INVALID_LEGAL_LEDGER_OWNER"));
+ const hosted=reconcileTriplets({legal_entity:"C.O.R.S.I.C.A.",analytic_project:"Barons Mariani",prospective_fund_status:"not_constituted"});
+ assert.equal(hosted.anomalies.length,0);
+ assert.equal(hosted.legal_entity,"C.O.R.S.I.C.A.");
+ assert.equal(hosted.ready_for_filing,false);
+});
