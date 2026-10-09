@@ -1,5 +1,7 @@
 {
   "schema": "cop.f42-target/v1",
-  "value": "initial",
-  "mutation_count": 0
+  "value": "A-stale-effect-applied",
+  "mutation_count": 1,
+  "writer": "A",
+  "claimed_epoch": 1
 }
