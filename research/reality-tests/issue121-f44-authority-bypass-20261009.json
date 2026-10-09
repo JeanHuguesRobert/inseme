@@ -6,8 +6,10 @@
     "holder": "B"
   },
   "target": {
-    "value": "initial",
-    "mutation_count": 0
+    "value": "A-unauthorized-but-current-SHA",
+    "mutation_count": 1,
+    "writer": "A",
+    "claimed_epoch": 1
   },
-  "note": "Synthetic only. Current SHA will be supplied to unauthorized A."
+  "note": "Deliberately unauthorized synthetic edit: correct SHA, authority still B epoch 2"
 }
