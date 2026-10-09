@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile, appendFile } from "node:fs/promises";
+import { classifyEffectObservation } from "../../../packages/cop-kernel/src/effectObservation.js";
 import { createCapabilityCatalog } from "@inseme/magistral/capabilities";
 import { COPBus } from "../../../packages/cop-kernel/src/bus.js";
 import { COPScheduler } from "../../../packages/cop-kernel/src/scheduler.js";
@@ -45,7 +46,22 @@ scheduler.stop();
 assert.equal(invokes, 1);
 assert.equal(receipt.continuation.continuationId, origin.data.continuationId);
 assert.equal(receipt.execution.result.execution_receipt.status, "completed");
+// The Handler completed a synthetic task; this is NOT independent evidence
+// that an externally administered provider effect was actually applied.
+const observation = classifyEffectObservation({
+  intentId: origin.data.continuationId,
+});
+await bus.publish({
+  type: "cop.effect.observed",
+  source: "c4-consumer",
+  data: observation,
+});
 const final = (await readFile(journal, "utf8")).trim().split("\n").map(JSON.parse);
 assert.equal(final.filter(e => e.type === "cop.continuation.resume").length, 2);
 assert.equal(final.filter(e => e.type === "cop.continuation.execution_failed").length, 1);
+const observed = final.filter(e => e.type === "cop.effect.observed");
+assert.equal(observed.length, 1);
+assert.equal(observed[0].data.intent_id, origin.data.continuationId);
+assert.equal(observed[0].data.status, "unclaimed");
+assert.equal(observed[0].data.automatic_retry_allowed, false);
 console.log("C4 CONSUMER", origin.data.continuationId, process.env.GITHUB_RUN_ID || "local");
