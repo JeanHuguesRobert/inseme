@@ -6,8 +6,10 @@
     "holder": "B"
   },
   "target": {
-    "value": "initial",
-    "mutation_count": 0
+    "value": "B-authorized-synthetic-effect",
+    "mutation_count": 1,
+    "writer": "B",
+    "claim_epoch": 2
   },
-  "note": "B took over; target unchanged but combined blob version advanced"
+  "note": "B writes target in same CAS domain at epoch 2"
 }
