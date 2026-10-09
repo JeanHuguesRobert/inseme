@@ -25,7 +25,10 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Verify producer run provenance
+        continue-on-error: true
+      - id: provenance
+        name: Verify producer run provenance
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           PRODUCER_RUN_ID: ${{ inputs.producer_run_id }}
@@ -40,19 +43,26 @@ jobs:
           test "$event" = "workflow_dispatch"
           test "$ref" = "main"
           test "$conclusion" = "success"
-      - uses: actions/download-artifact@v4
+      - id: artifact_download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
         with:
           name: cop-c4-handoff
           run-id: ${{ inputs.producer_run_id }}
           github-token: ${{ github.token }}
           path: c4-artifact/
       - name: Reconstruct and retry from prior independent run
-        run: node apps/platform/mcp/c4-consumer.mjs c4-artifact
-      - uses: actions/upload-artifact@v4
+        if: always()
+        env:
+          C4_PROVENANCE_OK: ${{ steps.provenance.outcome }}
+          C4_DOWNLOAD_OK: ${{ steps.artifact_download.outcome }}
+        run: node apps/platform/mcp/c4-supervisor.mjs consume c4-artifact
+      - if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: cop-c4-consumer-evidence
           path: |
             c4-artifact/
             provenance.tsv
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7

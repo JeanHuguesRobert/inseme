@@ -7,6 +7,9 @@ import { createMagistralCapabilityResolver } from "./cop/magistralCapabilityReso
 
 const dir = process.argv[2] || "c4-artifact";
 const journal = dir + "/routing-events.jsonl";
+const sourceOutcome = JSON.parse(await readFile(dir + "/outcome.json", "utf8"));
+assert.equal(sourceOutcome.status, "completed", "producer was not successful");
+assert.equal(sourceOutcome.phase, "produce");
 const saved = (await readFile(journal, "utf8")).trim().split("\n").map(JSON.parse);
 const origin = saved.find(e => e.type === "cop.continuation.resume");
 const failure = saved.find(e => e.type === "cop.continuation.execution_failed");

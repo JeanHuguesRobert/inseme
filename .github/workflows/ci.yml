@@ -55,10 +55,17 @@ jobs:
       - name: C2 and C3 COP route persistence and cold-retry Reality Tests
         run: node --test apps/platform/mcp/test/cop-routing-decision-persistence.test.js
 
-      - name: C4 producer and consumer subprocess smoke test
+      - name: C4 double-check — successful handoff and exception as output
         run: |
-          node apps/platform/mcp/c4-producer.mjs c4-artifact
-          node apps/platform/mcp/c4-consumer.mjs c4-artifact
+          node apps/platform/mcp/c4-supervisor.mjs produce c4-artifact
+          node apps/platform/mcp/c4-supervisor.mjs consume c4-artifact
+          node -e "const fs=require('fs'); const a=JSON.parse(fs.readFileSync('c4-artifact/outcome.json')); const b=JSON.parse(fs.readFileSync('c4-artifact/consumer-outcome.json')); if(a.status!=='completed'||b.status!=='completed'||a.phase!=='produce'||b.phase!=='consume')process.exit(1);"
+          C4_INJECT_ERROR=1 node apps/platform/mcp/c4-supervisor.mjs produce c4-error-artifact
+          node -e "const fs=require('fs'); const a=JSON.parse(fs.readFileSync('c4-error-artifact/outcome.json')); if(a.status!=='error'||a.errors.length===0||a.errors[0].code!=='EXCEPTION')process.exit(1);"
+          node apps/platform/mcp/c4-supervisor.mjs consume c4-missing-source
+          node -e "const fs=require('fs'); const a=JSON.parse(fs.readFileSync('c4-missing-source/consumer-outcome.json')); if(a.status!=='error'||a.errors.length===0)process.exit(1);"
+          C4_PROVENANCE_OK=failure node apps/platform/mcp/c4-supervisor.mjs consume c4-invalid-provenance
+          node -e "const fs=require('fs'); const a=JSON.parse(fs.readFileSync('c4-invalid-provenance/consumer-outcome.json')); if(a.status!=='error'||!a.errors.some(e=>e.message.includes('provenance')))process.exit(1);"
 
       - name: Watch the Watchers invariants (Issue #120)
         run: >-
