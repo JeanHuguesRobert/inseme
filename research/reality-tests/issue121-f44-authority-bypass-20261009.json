@@ -6,10 +6,11 @@
     "holder": "B"
   },
   "target": {
-    "value": "A-unauthorized-but-current-SHA",
-    "mutation_count": 1,
-    "writer": "A",
-    "claimed_epoch": 1
+    "value": "initial-restored",
+    "mutation_count": 2,
+    "writer": "B",
+    "claimed_epoch": 2,
+    "correction_of": "be650728dacfb57bf93888e594d61c40825bc52d"
   },
-  "note": "Deliberately unauthorized synthetic edit: correct SHA, authority still B epoch 2"
+  "note": "B corrects unauthorized synthetic mutation; Git history retained"
 }
