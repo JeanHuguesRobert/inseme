@@ -1,6 +1,6 @@
 {
   "schema": "cop.f42-authority/v1",
   "packet_ref": "research:issue121:f42",
-  "epoch": 1,
-  "holder": "A"
+  "epoch": 2,
+  "holder": "B"
 }
