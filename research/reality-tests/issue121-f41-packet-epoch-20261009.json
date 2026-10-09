@@ -3,6 +3,6 @@
   "packet_ref": "research:issue121:f41",
   "epoch": 2,
   "holder": "handler-B",
-  "effect": "none",
-  "note": "B takes over; old A snapshot must not write"
+  "effect": "synthetic-control-update-only",
+  "note": "B retains epoch 2; legitimate follow-up update after A stale conflict"
 }
