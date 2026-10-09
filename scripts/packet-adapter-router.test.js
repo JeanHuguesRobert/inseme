@@ -1,0 +1,6 @@
+import test from "node:test";import assert from "node:assert/strict";import {githubCapabilities,routePacketEffect} from "./packet-adapter-router.js";
+const request={packet_ref:"p",mode:"MUTATE",idempotency_key:"e",claim:{handler_ref:"A",epoch:2},authority:{mandate_ref:"m"},target:{expected_version:"sha"}};
+test("GitHub capability profile truthfully declines atomic authority",()=>assert.deepEqual(routePacketEffect({request:{...request,require_atomic_authority:true},capabilities:githubCapabilities,authorityCurrent:true}),{ok:false,code:"ATOMIC_AUTHORITY_UNAVAILABLE"}));
+test("bounded GitHub route is explicitly preflight only",()=>assert.deepEqual(routePacketEffect({request,capabilities:githubCapabilities,authorityCurrent:true}),{ok:true,code:"PREFLIGHT_ONLY",guarantee:"target-cas-only",must_reconcile:true}));
+test("stale or unverified mandate blocks even with valid target SHA",()=>assert.equal(routePacketEffect({request,capabilities:githubCapabilities,authorityCurrent:false}).code,"AUTHORITY_NOT_CONFIRMED"));
+test("no proven CAS blocks mutation",()=>assert.equal(routePacketEffect({request,capabilities:{...githubCapabilities,target_cas:"unknown"},authorityCurrent:true}).code,"CAS_NOT_VERIFIED"));
