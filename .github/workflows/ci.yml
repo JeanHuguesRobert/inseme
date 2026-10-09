@@ -67,6 +67,9 @@ jobs:
           C4_PROVENANCE_OK=failure node apps/platform/mcp/c4-supervisor.mjs consume c4-invalid-provenance
           node -e "const fs=require('fs'); const a=JSON.parse(fs.readFileSync('c4-invalid-provenance/consumer-outcome.json')); if(a.status!=='error'||!a.errors.some(e=>e.message.includes('provenance')))process.exit(1);"
 
+      - name: C5 duplicate effect fencing Reality Test
+        run: node --test apps/platform/mcp/test/cop-c5-duplicate-effect.test.js
+
       - name: Watch the Watchers invariants (Issue #120)
         run: >-
           node --test
