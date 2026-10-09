@@ -27,6 +27,7 @@ export * from "./scheduler.js";
 
 // Continuation helpers (restored as part of priority B)
 export * from "./continuation.js";
+export * from "./effectObservation.js";
 export * from "./call.js";
 
 // Higher-level Job Scheduler (cron-like, with exponential backoff + obsolescence)
