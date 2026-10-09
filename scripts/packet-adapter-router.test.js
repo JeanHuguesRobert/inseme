@@ -4,3 +4,7 @@ test("GitHub capability profile truthfully declines atomic authority",()=>assert
 test("bounded GitHub route is explicitly preflight only",()=>assert.deepEqual(routePacketEffect({request,capabilities:githubCapabilities,authorityCurrent:true}),{ok:true,code:"PREFLIGHT_ONLY",guarantee:"target-cas-only",must_reconcile:true}));
 test("stale or unverified mandate blocks even with valid target SHA",()=>assert.equal(routePacketEffect({request,capabilities:githubCapabilities,authorityCurrent:false}).code,"AUTHORITY_NOT_CONFIRMED"));
 test("no proven CAS blocks mutation",()=>assert.equal(routePacketEffect({request,capabilities:{...githubCapabilities,target_cas:"unknown"},authorityCurrent:true}).code,"CAS_NOT_VERIFIED"));
+
+test("consequential exposure rejected even with current mandate and fresh SHA",()=>assert.equal(routePacketEffect({request:{...request,exposure:{classification:"high",recovery_ref:"plan:r"}},capabilities:githubCapabilities,authorityCurrent:true}).code,"CONSEQUENTIAL_EFFECT_REQUIRES_STRONGER_GATE"));
+test("bounded exposure requires a recovery reference",()=>assert.equal(routePacketEffect({request:{...request,exposure:{classification:"bounded-synthetic"}},capabilities:githubCapabilities,authorityCurrent:true}).code,"RECOVERY_UNSPECIFIED"));
+test("bounded and recoverable effect remains only preflight",()=>assert.equal(routePacketEffect({request:{...request,exposure:{classification:"bounded-synthetic",recovery_ref:"plan:r"}},capabilities:githubCapabilities,authorityCurrent:true}).code,"PREFLIGHT_ONLY"));
