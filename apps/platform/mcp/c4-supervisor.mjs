@@ -16,6 +16,8 @@ function execute(label, cmd, args) {
 try {
   if (!["produce","consume"].includes(phase)) throw Error("invalid phase");
   if (process.env.C4_INJECT_ERROR === "1") throw Error("C4 controlled exception test");
+  if (phase === "consume" && process.env.C4_PROVENANCE_OK && process.env.C4_PROVENANCE_OK !== "success") throw Error("C4 source provenance verification failed");
+  if (phase === "consume" && process.env.C4_DOWNLOAD_OK && process.env.C4_DOWNLOAD_OK !== "success") throw Error("C4 source artifact download failed");
   if (execute("build-cop-core","pnpm",["--filter","@inseme/cop-core","run","build"])) {
     if (execute(phase,"node",["apps/platform/mcp/c4-"+(phase==="produce"?"producer":"consumer")+".mjs",dir])) {
       report.status="completed";
