@@ -17,6 +17,7 @@ export * from "./packetAccounting.js";
 export * from "./supabaseAccountingStore.js";
 export * from "./followTheMoney.js";
 export * from "./effectObservationAudit.js";
+export * from "./auditWorkingPapers.js";
 
 /**
  * Main entry point for accounting operations.
