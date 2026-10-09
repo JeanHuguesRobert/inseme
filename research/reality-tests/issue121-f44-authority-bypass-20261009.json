@@ -1,0 +1,13 @@
+{
+  "schema": "cop.f44-authority-probe/v1",
+  "packet_ref": "research:issue121:f44",
+  "authority": {
+    "epoch": 2,
+    "holder": "B"
+  },
+  "target": {
+    "value": "initial",
+    "mutation_count": 0
+  },
+  "note": "Synthetic only. Current SHA will be supplied to unauthorized A."
+}
