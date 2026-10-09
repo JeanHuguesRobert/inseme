@@ -1,7 +1,9 @@
 {
   "schema": "cop.f42-target/v1",
-  "value": "A-stale-effect-applied",
-  "mutation_count": 1,
-  "writer": "A",
-  "claimed_epoch": 1
+  "value": "initial-restored",
+  "mutation_count": 2,
+  "writer": "B",
+  "claimed_epoch": 2,
+  "correction_of": "840c75faf6557518211942daca843d5f8718a0c5",
+  "note": "Restoration of synthetic target, historical stale effect retained in git log"
 }
