@@ -2,8 +2,11 @@
  * Synthetic audit working papers; NOT an official French tax return.
  * Exact integer cents, strict provenance and unclosed exception ledger.
  */
-export function reconcileTriplets({usage=[],invoices=[],payments=[]}={}) {
+export function reconcileTriplets({usage=[],invoices=[],payments=[],legal_entity=null,analytic_project=null,prospective_fund_status=null}={}) {
  const anomalies=[],rows=[],ids=new Set();
+ if (prospective_fund_status === "not_constituted" && legal_entity !== "C.O.R.S.I.C.A.") {
+   anomalies.push({code:"INVALID_LEGAL_LEDGER_OWNER",legal_entity,reason:"future fund not constituted"});
+ }
  const byId=(records,kind)=>{const out=new Map();for(const r of records){if(!r.id||!r.intent_id||!Number.isSafeInteger(r.cents)||r.cents<0||!r.evidence){anomalies.push({code:"INVALID_SOURCE",kind,id:r.id||null});continue;}if(ids.has(kind+":"+r.id)){anomalies.push({code:"DUPLICATE_SOURCE",kind,id:r.id});continue;}ids.add(kind+":"+r.id);const k=r.intent_id;out.set(k,[...(out.get(k)||[]),r]);}return out;};
  const U=byId(usage,"usage"),I=byId(invoices,"invoice"),P=byId(payments,"payment");
  const keys=[...new Set([...U.keys(),...I.keys(),...P.keys()])].sort();
@@ -22,7 +25,7 @@ export function reconcileTriplets({usage=[],invoices=[],payments=[]}={}) {
    if(p.length&&!i.length)anomalies.push({code:"UNMATCHED_PAYMENT",intent_id:key,cents:pc});
  }
  return {schema:"cop.audit-working-papers/v1",synthetic:true,legal_filing:false,
-   period:"2026-demo",currency:"EUR",rows,anomalies,
+   period:"2026-demo",currency:"EUR",legal_entity,analytic_project,prospective_fund_status,rows,anomalies,
    checklist:["Legal entity and tax regime unidentified","Opening balances unverified",
      "VAT treatment unverified","Chart of accounts mapping missing",
      "Fiscal adjustments missing","External supporting documents not certified"],
