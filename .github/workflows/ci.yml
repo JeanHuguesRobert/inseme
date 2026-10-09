@@ -55,6 +55,19 @@ jobs:
       - name: C2 and C3 COP route persistence and cold-retry Reality Tests
         run: node --test apps/platform/mcp/test/cop-routing-decision-persistence.test.js
 
+      - name: COP audit dossier — deterministic synthetic reconciliation
+        run: |
+          node apps/platform/mcp/generate-audit-dossier.mjs cop-audit-dossier
+          node -e "const fs=require('fs'); const a=JSON.parse(fs.readFileSync('cop-audit-dossier/audit.json')); if(a.ready_for_filing!==false || !a.anomalies.some(e=>e.code==='INVOICE_MISSING') || !a.anomalies.some(e=>e.code==='PAYMENT_INCOMPLETE') || !a.anomalies.some(e=>e.code==='USAGE_INVOICE_MISMATCH') || !a.anomalies.some(e=>e.code==='UNMATCHED_PAYMENT'))process.exit(1);"
+      - name: Upload synthetic audit dossier
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cop-audit-dossier-synthetic
+          path: cop-audit-dossier/
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: C4 double-check — successful handoff and exception as output
         run: |
           node apps/platform/mcp/c4-supervisor.mjs produce c4-artifact
