@@ -1,0 +1,58 @@
+name: COP C4 Consumer
+
+on:
+  workflow_dispatch:
+    inputs:
+      producer_run_id:
+        description: Successful COP C4 Producer workflow run ID on main
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  consume:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify producer run provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRODUCER_RUN_ID: ${{ inputs.producer_run_id }}
+        run: |
+          case "$PRODUCER_RUN_ID" in
+            ''|*[!0-9]*) echo "Invalid run ID"; exit 1 ;;
+          esac
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${PRODUCER_RUN_ID}" \
+            --jq '[.name, .event, .head_branch, .conclusion] | @tsv' > provenance.tsv
+          IFS="$(printf '\t')" read -r name event ref conclusion < provenance.tsv
+          test "$name" = "COP C4 Producer"
+          test "$event" = "workflow_dispatch"
+          test "$ref" = "main"
+          test "$conclusion" = "success"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cop-c4-handoff
+          run-id: ${{ inputs.producer_run_id }}
+          github-token: ${{ github.token }}
+          path: c4-artifact/
+      - name: Reconstruct and retry from prior independent run
+        run: node apps/platform/mcp/c4-consumer.mjs c4-artifact
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cop-c4-consumer-evidence
+          path: |
+            c4-artifact/
+            provenance.tsv
+          if-no-files-found: error
+          retention-days: 7
