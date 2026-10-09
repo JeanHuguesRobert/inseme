@@ -26,7 +26,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
         continue-on-error: true
-      - name: Verify producer run provenance
+      - id: provenance
+        name: Verify producer run provenance
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -42,7 +43,8 @@ jobs:
           test "$event" = "workflow_dispatch"
           test "$ref" = "main"
           test "$conclusion" = "success"
-      - continue-on-error: true
+      - id: artifact_download
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: cop-c4-handoff
@@ -51,6 +53,9 @@ jobs:
           path: c4-artifact/
       - name: Reconstruct and retry from prior independent run
         if: always()
+        env:
+          C4_PROVENANCE_OK: ${{ steps.provenance.outcome }}
+          C4_DOWNLOAD_OK: ${{ steps.artifact_download.outcome }}
         run: node apps/platform/mcp/c4-supervisor.mjs consume c4-artifact
       - if: always()
         uses: actions/upload-artifact@v4
