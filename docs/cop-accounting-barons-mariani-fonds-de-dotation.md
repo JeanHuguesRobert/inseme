@@ -4,9 +4,26 @@
 
 **Purpose:** Treat the **French fonds de dotation** as the strict accounting/conformance target for COP and for issue [#133](https://github.com/JeanHuguesRobert/inseme/issues/133). A commercial-company "liasse fiscale" is **not** the default target output. The priority is the annual accounts, annexes, operating report, audit trails and documents required for this entity's actual legal and fiscal regime.
 
+## Current legal and accounting perimeter — hosted by C.O.R.S.I.C.A. (2026-10-09)
+
+**Authoritative clarification from project principal:** The prospective **Barons Mariani fonds de dotation is currently a project hosted by the existing association C.O.R.S.I.C.A.** It does **not yet** have its own legal personality or legal capacity. Until formation/publication, financial information and legal accounting reports must be those of **C.O.R.S.I.C.A.**, the existing legal entity, with an analytical/project-level view for the hosted initiative.
+
+**Entity segregation is mandatory:**
+- **Legal entity / ledger owner now:** C.O.R.S.I.C.A. — the association's actual identity, statutory purposes, fiscal regime, registrations, bank accounts, chart of accounts and annual periods must be verified from source documents before any real output.
+- **Analytical project:** “Projet de fonds de dotation Barons Mariani” — track attributable receipts, expenditure, restricted resources, mandates, supporting evidence and inter-project allocations **within C.O.R.S.I.C.A.'s accounts**, without inventing a separate legal entity or bank balance.
+- **Prospective legal entity:** “Fonds de dotation Barons Mariani” — an explicit **future-only profile**, no autonomous account, grants, tax receipts, patrimony, contracts or obligations attributed to it until legally acquired. Under [article 140 as in force since June 27, 2026](https://www.legifrance.gouv.fr/affichTexteArticle.do?cidTexte=LEGITEXT000019284897&idArticle=LEGIARTI000019285221), legal personality arises upon the **Journal officiel publication** of the declaration to the prefecture; preparing statutes or filing a declaration alone is not equivalent.
+- **No implicit transfer:** Money collected or obligations undertaken by C.O.R.S.I.C.A. do not automatically become property or debt of the future fund. Any transfer requires a valid documented legal basis, competent approvals, source and recipient evidence, accounting entries on the relevant books and reconciliation. Restricted donations and donor intention must be respected; distinguish funds held for a project from assets intended as future endowment.
+- **Never backdate:** No retrospective reclassification making the future fund appear to have had legal personality or to have issued receipts before publication. Store historical records, cutover date, approvals and cross-entity transfer receipts.
+
+**Output priority until incorporation:** C.O.R.S.I.C.A. annual financial statements and evidence register, including a separately attributable analytical schedule for the hosted Barons Mariani project; project-specific commitments, outstanding exceptions and projected future endowment are **not** the fund's accounts. Determine which ANC rules, accounting/reporting duties, grants/donations restrictions and tax regimes actually apply to C.O.R.S.I.C.A., and whether activity segmentation is authorized by its statutes and decisions, rather than copy-pasting obligations applicable to a constituted fund.
+
+**Transition gate:** verify prefectural publication in the Journal officiel, approved statutes, governing bodies, identification/banking, and a legally documented asset/liability transfer decision before switching the COP legal-ledger owner for *new* operations to the fund. Maintain a paired, reconcilable cutover report for both legal entities.
+
+**Test-first next action:** Extend the synthetic audit dossier with `legal_entity=C.O.R.S.I.C.A.`, `analytic_project=Barons Mariani / proposed fund`, and `prospective_fund_status=not_constituted`. Reject records purporting to post directly to the future fund before verified legal personality; classify prospective capital/dotations as intentions or legally evidenced commitments, not automatically owned assets. Report cross-entity cutover as blocked until a legally attributable transfer is evidenced.
+
 ## Primary legal sources (review currency before use)
 
-- [Article 140, law 2008-776, version in force from 27 June 2026](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000038610543/) — legal status, accounts, oversight and CAC threshold.
+- [Article 140, law 2008-776, version in force from 27 June 2026](https://www.legifrance.gouv.fr/affichTexteArticle.do?cidTexte=LEGITEXT000019284897&idArticle=LEGIARTI000019285221) — legal status, accounts, oversight and CAC threshold.
 - [Decree 2009-158](https://www.legifrance.gouv.fr/loda/id/LEGITEXT000020248532/) — minimum founder endowment, administration, submissions, CAC timeline, transparency.
 - [ANC 2018-06 accounting standard](https://www.anc.gouv.fr/reglement-ndeg-2018-06-du-5-decembre-2018) and subsequent amendments — non-profit legal entities, endowments, fund accounting and appendices.
 - [Ministry of Economy FAQ on fonds de dotation](https://www.economie.gouv.fr/daj/fonds-de-dotation/questions-reponses).
