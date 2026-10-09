@@ -4,6 +4,7 @@ const dir=process.argv[2]||"cop-audit-dossier";
 await mkdir(dir,{recursive:true});
 const d=(id,intent_id,cents)=>({id,intent_id,cents,evidence:"synthetic:"+id});
 const audit=reconcileTriplets({
+ legal_entity:"C.O.R.S.I.C.A.",analytic_project:"Barons Mariani — fonds en projet",prospective_fund_status:"not_constituted",
  usage:[d("u-001","intent-001",12000),d("u-002","intent-002",5500),d("u-003","intent-003",3200)],
  invoices:[d("f-001","intent-001",12000),d("f-002","intent-002",5800)],
  payments:[d("p-001","intent-001",12000),d("p-002","intent-002",2000),d("p-003","intent-004",1000)]
