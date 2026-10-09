@@ -4,7 +4,7 @@ import { createCapabilityCatalog } from "@inseme/magistral/capabilities";
 import { COPBus } from "../../../packages/cop-kernel/src/bus.js";
 import { COPScheduler } from "../../../packages/cop-kernel/src/scheduler.js";
 import { createContinuationDescriptor } from "../../../packages/cop-kernel/src/continuation.js";
-import { createMagistralCapabilityResolver, MAGISTRAL_CAPABILITY_RESOLUTION } from "../cop/magistralCapabilityResolver.js";
+import { createMagistralCapabilityResolver, MAGISTRAL_CAPABILITY_RESOLUTION } from "./cop/magistralCapabilityResolver.js";
 
 const directory = process.argv[2] || "c4-artifact";
 await mkdir(directory, { recursive: true });
