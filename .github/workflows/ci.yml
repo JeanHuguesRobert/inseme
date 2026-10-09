@@ -70,6 +70,9 @@ jobs:
       - name: C5 duplicate effect fencing Reality Test
         run: node --test apps/platform/mcp/test/cop-c5-duplicate-effect.test.js
 
+      - name: C6 crash-after-claim uncertainty Reality Test
+        run: node --test apps/platform/mcp/test/cop-c6-claim-crash.test.js
+
       - name: Watch the Watchers invariants (Issue #120)
         run: >-
           node --test
