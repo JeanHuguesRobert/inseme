@@ -2,12 +2,12 @@
   "schema": "cop.f43-combined-cas-probe/v1",
   "packet_ref": "research:issue121:f43",
   "authority": {
-    "epoch": 1,
-    "holder": "A"
+    "epoch": 2,
+    "holder": "B"
   },
   "target": {
     "value": "initial",
     "mutation_count": 0
   },
-  "note": "Synthetic authority and target in one GitHub Contents CAS domain"
+  "note": "B took over; target unchanged but combined blob version advanced"
 }
