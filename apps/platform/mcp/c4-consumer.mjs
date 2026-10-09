@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile, appendFile } from "node:fs/promises";
+import { auditEffectObservations } from "../../../packages/cop-kernel/src/accounting/effectObservationAudit.js";
 import { classifyEffectObservation } from "../../../packages/cop-kernel/src/effectObservation.js";
 import { createCapabilityCatalog } from "@inseme/magistral/capabilities";
 import { COPBus } from "../../../packages/cop-kernel/src/bus.js";
@@ -64,4 +65,10 @@ assert.equal(observed.length, 1);
 assert.equal(observed[0].data.intent_id, origin.data.continuationId);
 assert.equal(observed[0].data.status, "unclaimed");
 assert.equal(observed[0].data.automatic_retry_allowed, false);
+const accounting = auditEffectObservations({ observations: observed });
+assert.equal(accounting.ok, false);
+assert.equal(accounting.unresolved.length, 1);
+assert.equal(accounting.unresolved[0].intent_id, origin.data.continuationId);
+assert.deepEqual(accounting.generated_transactions, []);
+await appendFile(journal, JSON.stringify({ type:"cop.accounting.audit", source:"c4-consumer", data:accounting }) + "\n");
 console.log("C4 CONSUMER", origin.data.continuationId, process.env.GITHUB_RUN_ID || "local");
