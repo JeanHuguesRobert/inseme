@@ -3,7 +3,7 @@ import { readFile, appendFile } from "node:fs/promises";
 import { createCapabilityCatalog } from "@inseme/magistral/capabilities";
 import { COPBus } from "../../../packages/cop-kernel/src/bus.js";
 import { COPScheduler } from "../../../packages/cop-kernel/src/scheduler.js";
-import { createMagistralCapabilityResolver } from "../cop/magistralCapabilityResolver.js";
+import { createMagistralCapabilityResolver } from "./cop/magistralCapabilityResolver.js";
 
 const dir = process.argv[2] || "c4-artifact";
 const journal = dir + "/routing-events.jsonl";
