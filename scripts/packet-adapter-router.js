@@ -3,6 +3,8 @@ export function routePacketEffect({request,capabilities,authorityCurrent}){
  if(!request||request.mode!=="MUTATE"||!request.packet_ref||!request.idempotency_key||!request.target?.expected_version||!request.claim?.handler_ref||!Number.isInteger(request.claim.epoch)||!request.authority?.mandate_ref)return {ok:false,code:"INVALID_REQUEST"};
  if(authorityCurrent!==true)return {ok:false,code:"AUTHORITY_NOT_CONFIRMED"};
  if(request.require_atomic_authority===true && (capabilities.atomic_authority_and_target!=="verified"||capabilities.provider_enforced_epoch!=="verified"))return {ok:false,code:"ATOMIC_AUTHORITY_UNAVAILABLE"};
+ if(request.exposure?.classification && !["bounded-synthetic","low"].includes(request.exposure.classification))return {ok:false,code:"CONSEQUENTIAL_EFFECT_REQUIRES_STRONGER_GATE"};
+ if(request.exposure?.classification && !request.exposure.recovery_ref)return {ok:false,code:"RECOVERY_UNSPECIFIED"};
  if(capabilities.target_cas!=="verified")return {ok:false,code:"CAS_NOT_VERIFIED"};
  return {ok:true,code:"PREFLIGHT_ONLY",guarantee:"target-cas-only",must_reconcile:true};
 }
