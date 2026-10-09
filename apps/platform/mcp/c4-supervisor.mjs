@@ -24,6 +24,6 @@ try {
 } catch (error) {
   report.errors.push({stage:"supervisor",code:error.code || "EXCEPTION",message:error.message || String(error)});
 } finally {
-  await writeFile(dir+"/outcome.json",JSON.stringify(report,null,2)+"\n");
+  await writeFile(dir+"/"+(phase === "consume" ? "consumer-outcome.json" : "outcome.json"),JSON.stringify(report,null,2)+"\n");
   console.log("C4_OUTCOME "+JSON.stringify(report));
 }
