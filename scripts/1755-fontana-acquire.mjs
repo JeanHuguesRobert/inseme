@@ -1,0 +1,17 @@
+import fs from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+const id='ConstitutionPaoliCorse'; const md=await (await fetch('https://archive.org/metadata/'+id)).json();
+const uri='https://'+(md.d1||md.server)+(md.dir||'/'+id)+'/'+id+'_djvu.txt';
+const response=await fetch(uri);
+if(!response.ok)throw new Error('OCR HTTP '+response.status);
+const content=await response.text();
+if(!content.includes('Pascal')||content.length<100000)throw new Error('OCR inadequate');
+await fs.writeFile('scripts/1755-fontana-ocr.txt',content);
+const terms=['APPENDICE','Appendice','DIÈTE','Dieta generale','Dieta Generale','Dieta','CONSTITUTION','Constitution'];
+const positions=terms.map(term=>({term,hits:[...content.matchAll(new RegExp(term,'gi'))].map(m=>m.index).slice(-15)}));
+const lastAppendix=Math.max(...positions.filter(x=>x.term.toLowerCase()==='appendice').flatMap(x=>x.hits));
+const excerpt=content.slice(Math.max(0,lastAppendix-900),Math.min(content.length,lastAppendix+16500));
+await fs.writeFile('scripts/1755-fontana-appendix-extract.txt',excerpt);
+const summary={source:uri,bytes:Buffer.byteLength(content),sha256:createHash('sha256').update(content).digest('hex'),lastAppendix,terms:positions,excerpt_start:Math.max(0,lastAppendix-900),excerpt_end:Math.min(content.length,lastAppendix+16500),excerpt_preview:excerpt.slice(0,6500)};
+await fs.writeFile('scripts/1755-fontana-acquisition.json',JSON.stringify(summary,null,2));
+console.log(JSON.stringify(summary).slice(0,10000));
