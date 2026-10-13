@@ -1,0 +1,7 @@
+import fs from 'node:fs/promises';import {execFileSync} from 'node:child_process';
+const id='ConstitutionPaoliCorse',m=await(await fetch('https://archive.org/metadata/'+id)).json(),u='https://'+(m.d1||m.server)+m.dir+'/'+id+'.pdf';
+const r=await fetch(u);if(!r.ok)throw Error('PDF HTTP '+r.status);const bytes=Buffer.from(await r.arrayBuffer());await fs.writeFile('/tmp/1755-fontana.pdf',bytes);
+const out={url:u,bytes:bytes.length,tools:{}};
+for(const name of ['pdfinfo','pdftotext','pdftoppm']){try{out.tools[name]=execFileSync('which',[name],{encoding:'utf8'}).trim()}catch(e){out.tools[name]=null}}
+if(out.tools.pdftotext){execFileSync('pdftotext',['-layout','/tmp/1755-fontana.pdf','/tmp/1755-fontana-pdf.txt']);const pages=(await fs.readFile('/tmp/1755-fontana-pdf.txt','utf8')).split('\f');out.pdf_pages=pages.length;out.matches=pages.map((s,i)=>({page:i+1,has:/Résolution\s+votée/i.test(s),excerpt:s.slice(0,160)})).filter(x=>x.has);const start=out.matches[0]?.page;if(start&&out.tools.pdftoppm){out.rendered=[];for(let i=start;i<=start+3;i++){const stem='/tmp/fontana-1755-'+i;execFileSync('pdftoppm',['-f',String(i),'-l',String(i),'-freetype','yes','-scale-to','1500','-singlefile','-jpeg','/tmp/1755-fontana.pdf',stem],{timeout:45000});const filename='scripts/1755-fontana-page-'+(i-start+161)+'.jpg';await fs.copyFile(stem+'.jpg',filename);out.rendered.push({pdf_page:i,printed_candidate:i-start+161,path:filename})}}}
+await fs.writeFile('scripts/1755-fontana-images-manifest.json',JSON.stringify(out,null,2));console.log(JSON.stringify(out));
