@@ -15,6 +15,7 @@ const computationId=request?.computation_id||idFromBody||`unparsed-${event.comme
 const marker=`<!-- cop-compute-result:${computationId} -->`;
 const resultFile=process.env.RUNNER_TEMP+"/compute-result.json";
 let result=load(resultFile);
+const firstDiagnostic = load(path.join(process.env.RUNNER_TEMP, "compute-first-error.json"));
 const runUrl=`${process.env.GITHUB_SERVER_URL||"https://github.com"}/${repository}/actions/runs/${process.env.GITHUB_RUN_ID}`;
 if (!result || result.schema!=="cop.compute-result/v1") {
   const fallback=request||{
@@ -24,8 +25,17 @@ if (!result || result.schema!=="cop.compute-result/v1") {
   };
   result=recoverComputeFailure({
     request:fallback,runId:process.env.GITHUB_RUN_ID,runUrl,
-    reason:request?"compute_pipeline_interrupted":"compute_request_not_admitted_or_invalid",
+    reason:firstDiagnostic?.message || (request?"compute_pipeline_interrupted":"compute_request_not_admitted_or_invalid"),
   });
+}
+// The first fault remains authoritative; a downstream finalizer fault must not erase it.
+if (firstDiagnostic && result.execution_receipt?.status === "failed") {
+  result.result = { ...result.result, phase: firstDiagnostic.phase,
+    error_code: firstDiagnostic.error_code,
+    root_cause: firstDiagnostic,
+    error: firstDiagnostic.message };
+  result.execution_receipt = { ...result.execution_receipt,
+    error: firstDiagnostic.message };
 }
 const outbox=path.join(process.env.RUNNER_TEMP,"compute-outbox");
 fs.mkdirSync(outbox,{recursive:true});
