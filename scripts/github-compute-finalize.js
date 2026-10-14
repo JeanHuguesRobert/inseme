@@ -68,7 +68,11 @@ if(list.status===0){
       fs.renameSync(path.join(outbox,"pending.json"),path.join(outbox,"delivered.json"));
       console.log("Compute receipt already published");process.exit(0);
     }
-  }catch{}
+  }catch(err){
+    console.error('callback_idempotency_invalid_response', String(err.message));
+    process.exitCode = 0;
+    process.exit();
+  }
 }
 const comment=envelope.body;
 const posted=runGh([`repos/${repository}/issues/${issue}/comments`,"-f",`body=${comment}`]);
