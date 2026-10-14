@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { spawnSync } from "node:child_process";
 
 import {
   executeNodeTestRequest,
@@ -189,4 +190,29 @@ test("accepts generic git-program separately from legacy operations", () => {
       expectedIssue: 120,
     }));
   }
+});
+
+test("CLI parse failure preserves first root cause for the generic finalizer", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cop-compute-fbf-"));
+  try {
+    const eventPath = path.join(dir, "event.json");
+    const outputPath = path.join(dir, "outputs");
+    const requestPath = path.join(dir, "request.json");
+    const bad = request({
+      operation: {kind:"git-program",descriptor:{schema:"fractanet.compute-program/v1"}},
+    });
+    fs.writeFileSync(eventPath, JSON.stringify({issue:{number:120},comment:{body:"```json\\n"+JSON.stringify(bad)+"\\n```"}}));
+    fs.writeFileSync(outputPath, "");
+    const p = spawnSync(process.execPath, ["scripts/github-compute-request.js","parse-event",
+      "--event",eventPath,"--github-output",outputPath,"--request-file",requestPath], {
+      cwd: process.cwd(), encoding:"utf8",
+      env:{...process.env,RUNNER_TEMP:dir,GITHUB_REPOSITORY:"JeanHuguesRobert/inseme"},
+    });
+    assert.equal(p.status, 1);
+    const diagnostic=JSON.parse(fs.readFileSync(path.join(dir,"compute-first-error.json"),"utf8"));
+    assert.equal(diagnostic.phase,"parse-event");
+    assert.equal(diagnostic.schema,"cop.compute-diagnostic/v1");
+    assert.match(diagnostic.message,/invalid_inputs/);
+    assert.equal(fs.existsSync(requestPath),false);
+  } finally {fs.rmSync(dir,{recursive:true,force:true});}
 });
