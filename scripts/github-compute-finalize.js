@@ -49,6 +49,12 @@ if (firstDiagnostic && result.execution_receipt?.status === "failed") {
     error: firstDiagnostic.message };
 }
 const outbox=path.join(process.env.RUNNER_TEMP,"compute-outbox");
+const deliveryFailure = (phase, cause) => {
+  const diagnostic={schema:"cop.compute-delivery-error/v1",phase,computation_id:computationId,
+    error:String(cause||"unknown").slice(0,400),run_url:runUrl};
+  fs.writeFileSync(path.join(outbox,"delivery-error.json"),JSON.stringify(diagnostic,null,2));
+  console.error(phase,diagnostic.error);
+};
 fs.mkdirSync(outbox,{recursive:true});
 const envelope={schema:"cop.compute-outbox/v1",repository,issue,computation_id:computationId,marker,body:["<!-- cop-compute-result:"+computationId+" -->","## COP compute result","","```json",JSON.stringify(result,null,2),"```"].join("\n")};
 fs.writeFileSync(path.join(outbox,"pending.json"),JSON.stringify(envelope,null,2));
@@ -58,7 +64,7 @@ if (!Number.isInteger(issue)||issue<1||!repository) {
 }
 const list=runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`]);
 if(list.status!==0){
-  console.error("callback_idempotency_read_failed",String(list.stderr||list.error?.message||"unknown").slice(0,300));
+  deliveryFailure("callback_idempotency_read_failed",list.stderr||list.error?.message);
   if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"\nCallback pending: idempotency read failed.\n");
   process.exit(0);
 }
@@ -69,7 +75,7 @@ if(list.status===0){
       console.log("Compute receipt already published");process.exit(0);
     }
   }catch(err){
-    console.error('callback_idempotency_invalid_response', String(err.message));
+    deliveryFailure('callback_idempotency_invalid_response',err.message);
     process.exitCode = 0;
     process.exit();
   }
@@ -82,5 +88,5 @@ if(posted.status===0){
 }
 const summary=process.env.GITHUB_STEP_SUMMARY;
 if(summary) fs.appendFileSync(summary,`\nCompute result callback temporarily unavailable for ${computationId}. Run: ${runUrl}.\n`);
-console.log("Compute result publication unavailable; diagnostic left in workflow summary");
+deliveryFailure("callback_post_failed",posted.stderr||posted.error?.message);
 // GitHub provider unavailability cannot be transformed into a durable callback.
