@@ -348,6 +348,22 @@ async function main() {
 
 if (import.meta.url === `file://${process.argv[1]?.replaceAll("\\", "/")}`) {
   main().catch((error) => {
+    // Preserve the first phase failure before the finalizer replaces context.
+    const phase = process.argv[2] || "unknown";
+    const raw = String(error?.message || error);
+    const safe = raw.replace(/[\r\n]+/g, " ").replace(/(gh[pousr]_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+)/g, "[REDACTED]").slice(0, 500);
+    const diagnostic = {
+      schema: "cop.compute-diagnostic/v1",
+      phase,
+      error_code: String(error?.code || safe.split(":")[0] || "exception").slice(0, 100),
+      message: safe,
+      error_type: String(error?.name || "Error").slice(0, 80),
+      exit_code: 1,
+    };
+    if (process.env.RUNNER_TEMP) {
+      try { fs.writeFileSync(path.join(process.env.RUNNER_TEMP, "compute-first-error.json"), JSON.stringify(diagnostic, null, 2)); }
+      catch (writeError) { console.error("diagnostic_persistence_failed", writeError?.message); }
+    }
     console.error(error?.stack || String(error));
     process.exitCode = 1;
   });
