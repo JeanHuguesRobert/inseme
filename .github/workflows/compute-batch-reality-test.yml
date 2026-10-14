@@ -270,6 +270,11 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+          COMPUTE_PHASE_REQUEST: ${{ steps.request.outcome }}
+          COMPUTE_PHASE_REPLAY: ${{ steps.replay.outcome }}
+          COMPUTE_PHASE_ADMISSION: ${{ steps.admission.outcome }}
+          COMPUTE_PHASE_VERIFY: ${{ steps.verify.outcome }}
+          COMPUTE_PHASE_EXECUTE: ${{ steps.execute.outcome }}
         run: |
           if [ -f "$RUNNER_TEMP/compute-supervisor/github-compute-finalize.js" ]; then
             node "$RUNNER_TEMP/compute-supervisor/github-compute-finalize.js"
