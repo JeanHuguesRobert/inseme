@@ -57,6 +57,11 @@ if (!Number.isInteger(issue)||issue<1||!repository) {
   process.exit(0);
 }
 const list=runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`]);
+if(list.status!==0){
+  console.error("callback_idempotency_read_failed",String(list.stderr||list.error?.message||"unknown").slice(0,300));
+  if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"\nCallback pending: idempotency read failed.\n");
+  process.exit(0);
+}
 if(list.status===0){
   try {
     if(JSON.parse(list.stdout).some(c=>String(c.body).includes(marker))) {
