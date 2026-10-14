@@ -29,9 +29,9 @@ for(const a of candidates){
        envelope.marker!==`<!-- cop-compute-result:${envelope.computation_id} -->`||
        !envelope.body?.startsWith(envelope.marker))throw Error("invalid_outbox_envelope");
     scanned++;
-    const comments=json([`repos/${repo}/issues/${envelope.issue}/comments?per_page=100`,"--paginate"]);
-    if(!Array.isArray(comments))throw Error("invalid_comments_response");
-    if(comments.some(c=>String(c.body||"").includes(envelope.marker))){already++;continue;}
+    const checked=gh([`repos/${repo}/issues/${envelope.issue}/comments?per_page=100`,"--paginate","--jq",".[].body"],3000000);
+    if(checked.status!==0)fail("idempotency_check",checked);
+    if(checked.stdout.includes(envelope.marker)){already++;continue;}
     const posted=gh([`repos/${repo}/issues/${envelope.issue}/comments`,"-f",`body=${envelope.body}`]);
     if(posted.status!==0)fail("publish",posted);
     replayed++;
