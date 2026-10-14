@@ -212,7 +212,7 @@ test("CLI parse failure preserves first root cause for the generic finalizer", (
     const diagnostic=JSON.parse(fs.readFileSync(path.join(dir,"compute-first-error.json"),"utf8"));
     assert.equal(diagnostic.phase,"parse-event");
     assert.equal(diagnostic.schema,"cop.compute-diagnostic/v1");
-    assert.match(diagnostic.message,/invalid_inputs/);
+    assert.equal(diagnostic.message,"exact_program_source_required");
     assert.equal(fs.existsSync(requestPath),false);
   } finally {fs.rmSync(dir,{recursive:true,force:true});}
 });
