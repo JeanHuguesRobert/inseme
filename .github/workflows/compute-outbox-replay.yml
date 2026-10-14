@@ -1,0 +1,27 @@
+name: COP Compute Outbox Replay
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
+permissions:
+  contents: read
+  actions: read
+  issues: write
+concurrency:
+  group: cop-compute-outbox-replay
+  cancel-in-progress: false
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Replay durable pending receipts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/github-compute-outbox-replay.js
