@@ -1,5 +1,9 @@
 name: COP Compute Outbox Replay
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/compute-outbox-replay.yml'
   workflow_dispatch:
   schedule:
     - cron: '17 * * * *'
