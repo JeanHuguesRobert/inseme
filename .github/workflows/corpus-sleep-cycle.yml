@@ -1,6 +1,10 @@
 name: Preemptible Corpus Sleep Cycle
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/corpus-sleep-cycle.yml'
   schedule:
     # Nightly at 02:00 UTC
     - cron: '0 2 * * *'
@@ -76,9 +80,9 @@ jobs:
         id: sleep_cycle
         continue-on-error: true
         env:
-          INPUT_BUDGET_MIN: ${{ inputs.budget_minutes || '20' }}
-          INPUT_MAX_PAIRS: ${{ inputs.max_pairs || '50' }}
-          INPUT_DRY_RUN: ${{ inputs.dry_run || false }}
+          INPUT_BUDGET_MIN: ${{ github.event_name == 'push' && '1' || inputs.budget_minutes || '20' }}
+          INPUT_MAX_PAIRS: ${{ github.event_name == 'push' && '1' || inputs.max_pairs || '50' }}
+          INPUT_DRY_RUN: ${{ github.event_name == 'push' || inputs.dry_run || false }}
         run: |
           BUDGET_MS=$(( ${INPUT_BUDGET_MIN} * 60 * 1000 ))
           DRY_RUN_FLAG=""
