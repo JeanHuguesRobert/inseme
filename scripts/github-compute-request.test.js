@@ -201,7 +201,7 @@ test("CLI parse failure preserves first root cause for the generic finalizer", (
     const bad = request({
       operation: {kind:"git-program",descriptor:{schema:"fractanet.compute-program/v1"}},
     });
-    fs.writeFileSync(eventPath, JSON.stringify({issue:{number:120},comment:{body:"```json\\n"+JSON.stringify(bad)+"\\n```"}}));
+    fs.writeFileSync(eventPath, JSON.stringify({issue:{number:120},comment:{body:"```json\n"+JSON.stringify(bad)+"\n```"}}));
     fs.writeFileSync(outputPath, "");
     const p = spawnSync(process.execPath, ["scripts/github-compute-request.js","parse-event",
       "--event",eventPath,"--github-output",outputPath,"--request-file",requestPath], {
