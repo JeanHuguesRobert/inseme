@@ -40,5 +40,8 @@ for(const a of candidates){
     console.error("outbox_replay_failed",a.id,String(e.message||e).slice(0,300));
   }finally{fs.rmSync(dir,{recursive:true,force:true});}
 }
-console.log(JSON.stringify({schema:"cop.outbox-replay-summary/v1",scanned,replayed,already,failed}));
-if(failed)process.exitCode=1;
+const summary={schema:"cop.outbox-replay-summary/v1",scanned,replayed,already,failed};
+console.log(JSON.stringify(summary));
+// Individual callback failures remain pending for the next scheduled retry.
+// The provider workflow fails only for a control-plane failure (e.g. API discovery unavailable).
+if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,`\nCOP outbox: scanned=${scanned}, replayed=${replayed}, already=${already}, pending_errors=${failed}.\n`);
