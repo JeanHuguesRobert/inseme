@@ -15,7 +15,18 @@ const computationId=request?.computation_id||idFromBody||`unparsed-${event.comme
 const marker=`<!-- cop-compute-result:${computationId} -->`;
 const resultFile=process.env.RUNNER_TEMP+"/compute-result.json";
 let result=load(resultFile);
-const firstDiagnostic = load(path.join(process.env.RUNNER_TEMP, "compute-first-error.json"));
+const phaseOutcomes = [
+  ["parse-event",process.env.COMPUTE_PHASE_REQUEST],
+  ["idempotency-check",process.env.COMPUTE_PHASE_REPLAY],
+  ["resource-admission",process.env.COMPUTE_PHASE_ADMISSION],
+  ["source-verification",process.env.COMPUTE_PHASE_VERIFY],
+  ["execute",process.env.COMPUTE_PHASE_EXECUTE],
+];
+const failedPhase = phaseOutcomes.find(([, outcome]) => outcome === "failure")?.[0];
+const firstDiagnostic = load(path.join(process.env.RUNNER_TEMP, "compute-first-error.json"))
+  || (failedPhase ? {schema:"cop.compute-diagnostic/v1",phase:failedPhase,
+    error_code:"control_phase_failed",message:`control_phase_failed:${failedPhase}`,
+    error_type:"WorkflowStepFailure",exit_code:null} : null);
 const runUrl=`${process.env.GITHUB_SERVER_URL||"https://github.com"}/${repository}/actions/runs/${process.env.GITHUB_RUN_ID}`;
 if (!result || result.schema!=="cop.compute-result/v1") {
   const fallback=request||{
