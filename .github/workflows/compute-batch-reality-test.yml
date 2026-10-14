@@ -288,6 +288,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: compute-outbox-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/compute-outbox/pending.json
+          path: |
+            ${{ runner.temp }}/compute-outbox/pending.json
+            ${{ runner.temp }}/compute-outbox/delivery-error.json
           if-no-files-found: ignore
           retention-days: 30
