@@ -1,0 +1,42 @@
+name: Senate Gatel ASR Chunk Recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/gatel-asr-chunks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  transcribe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        chunk: [5,6,7,8,9,10,11,12,13,14,15]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Process bounded HLS chunk
+        continue-on-error: true
+        env:
+          CHUNK_INDEX: ${{ matrix.chunk }}
+          OUTPUT_DIR: gatel-output
+        run: node scripts/gatel-asr-chunk.js
+      - name: Upload status and transcription
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gatel-asr-chunk-${{ matrix.chunk }}-${{ github.run_id }}
+          path: gatel-output/*
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Publish job summary
+        if: always()
+        run: |
+          echo "Gatel Senate ASR chunk ${{ matrix.chunk }}. Machine transcript only; use artifact status and timecoded JSON. Parent https://github.com/JeanHuguesRobert/barons-Mariani/issues/120" >> "$GITHUB_STEP_SUMMARY"
