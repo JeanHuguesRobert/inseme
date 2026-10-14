@@ -74,6 +74,7 @@ jobs:
 
       - name: Run Corpus Sleep Cycle Harness
         id: sleep_cycle
+        continue-on-error: true
         env:
           INPUT_BUDGET_MIN: ${{ inputs.budget_minutes || '20' }}
           INPUT_MAX_PAIRS: ${{ inputs.max_pairs || '50' }}
@@ -90,7 +91,7 @@ jobs:
             --max-pairs "$INPUT_MAX_PAIRS" \
             --root ./cogentia \
             $DRY_RUN_FLAG \
-            --json > sleep-cycle-report.json
+            --json > sleep-cycle-report.json 2>sleep-cycle-stderr.log
 
           cat sleep-cycle-report.json
 
@@ -99,7 +100,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sleep-cycle-report-${{ github.run_id }}
-          path: sleep-cycle-report.json
+          path: |
+            sleep-cycle-report.json
+            sleep-cycle-stderr.log
           retention-days: 14
 
       - name: Publish Sleep Cycle Receipt
@@ -113,13 +116,16 @@ jobs:
           RUN_URL="$SERVER_URL/$REPOSITORY/actions/runs/$RUN_ID"
           OUTCOME="${{ steps.sleep_cycle.outcome }}"
 
-          BODY=$(printf '%s\\n' \\
-            '## Corpus Sleep Cycle Execution Receipt' \\
-            '' \\
-            "- **Status**: \`$OUTCOME\`" \\
-            "- **Run URL**: $RUN_URL" \\
-            '- **Concurrency Group**: \`compute-background\`' \\
-            '- **Evidence Schema**: \`cop.preemption-receipt/v1\`' \\
+          # Only the provider/control channel may fail this job. The harness
+          # outcome is reported in the durable receipt, with stderr as an artifact.
+          BODY=$(printf '%s\n' \
+            '## Corpus Sleep Cycle Execution Receipt' \
+            '' \
+            "- **Status**: $OUTCOME" \
+            "- **Run URL**: $RUN_URL" \
+            '- **Concurrency Group**: compute-background' \
+            '- **Evidence Schema**: cop.preemption-receipt/v1' \
+            '- **Diagnostics**: sleep-cycle-report and sleep-cycle-stderr workflow artifacts' \
             '- **Reference**: inseme#116 (GitHub Compute Fabric 3/5)')
 
-          gh api "repos/$REPOSITORY/issues/116/comments" -f body="$BODY" || true
+          gh api "repos/$REPOSITORY/issues/116/comments" -f body="$BODY"
