@@ -49,6 +49,15 @@ jobs:
       - name: Run Test Suites (cop-core, cop-kernel, magistral)
         run: pnpm run test
 
+      - name: E5 atomic claim and contention finalizer regressions (Issue #120)
+        run: |
+          node --test \
+            scripts/github-compute-claim.test.js \
+            scripts/github-compute-claim-cli.test.js \
+            scripts/github-compute-atomic-gate.test.js \
+            scripts/github-compute-contention-finalize.test.js \
+            scripts/github-compute-replay.test.js
+
       - name: C1 COP no-route Reality Test
         run: node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js
 
