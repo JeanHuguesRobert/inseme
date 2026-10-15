@@ -1,0 +1,16 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {reconcileComputeClaim as decide} from "./github-compute-reconcile.js";
+const claim={status:"contended",computation_id:"abc",payload_sha256:"digest",prior_run_id:"12"};
+const provider={authoritative:true,run_id:"12",status:"completed",conclusion:"failure"};
+const run=(override={})=>decide({claim,provider,receipts:[],delivery:{status:"unknown"},...override});
+test("winner crashes after claim: candidate only, no retry",()=>{const r=run();assert.equal(r.state,"orphan_candidate");assert.equal(r.automatic_retry_authorized,false)});
+test("active owner with delayed callback",()=>assert.equal(run({provider:{...provider,status:"in_progress"}}).state,"awaiting_owner"));
+test("owner completed but callback absent",()=>assert.equal(run({provider:{...provider,conclusion:"success"}}).state,"manual_review"));
+test("provider timeout or unavailable",()=>assert.equal(run({provider:null}).state,"inconclusive"));
+test("stale or uncorrelated owner",()=>assert.equal(run({provider:{...provider,run_id:"13"}}).state,"inconclusive"));
+test("two reconcilers cannot authorize duplicate retry",()=>{for(const r of [run(),run()])assert.equal(r.automatic_retry_authorized,false)});
+test("payload digest collision",()=>assert.equal(run({claim:{...claim,status:"collision"}}).state,"blocked"));
+test("terminal receipt is authoritative business state",()=>assert.equal(run({receipts:[{computation_id:"abc",terminal:true,status:"completed",payload_sha256:"digest"}]}).state,"healthy"));
+test("duplicate terminal receipts require review",()=>assert.equal(run({receipts:[{computation_id:"abc",terminal:true,status:"completed"},{computation_id:"abc",terminal:true,status:"failed"}]}).state,"manual_review"));
+test("untrusted provider is inconclusive",()=>assert.equal(run({provider:{...provider,authoritative:false}}).state,"inconclusive"));
