@@ -39,3 +39,12 @@ if (process.argv[1]?.endsWith("/github-compute-failure.js")) {
   try {existing=JSON.parse(fs.readFileSync(resultFile,"utf8"));} catch {}
   fs.writeFileSync(resultFile,JSON.stringify(recoverComputeFailure({request,priorResult:existing,runId,runUrl,reason}),null,2));
 }
+
+// Kept in this supervisor module because the workflow copies only the
+// finalizer and failure module into the detached execution supervisor.
+export function isSkippedComputeReplay({request,result,diagnostic,phases}) {
+  return Boolean(request && !result && !diagnostic &&
+    phases.request==="success" && phases.replay==="success" &&
+    phases.admission==="skipped" && phases.verify==="skipped" &&
+    phases.execute==="skipped");
+}

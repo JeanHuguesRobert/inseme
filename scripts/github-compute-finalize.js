@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { recoverComputeFailure } from "./github-compute-failure.js";
+import { recoverComputeFailure, isSkippedComputeReplay } from "./github-compute-failure.js";
+
 
 const load = p => { try { return JSON.parse(fs.readFileSync(p,"utf8")); } catch { return null; } };
 const runGh = args => spawnSync("gh",["api",...args],{encoding:"utf8",timeout:15000,maxBuffer:2e6,env:process.env});
@@ -28,6 +29,25 @@ const firstDiagnostic = load(path.join(process.env.RUNNER_TEMP, "compute-first-e
     error_code:"control_phase_failed",message:`control_phase_failed:${failedPhase}`,
     error_type:"WorkflowStepFailure",exit_code:null} : null);
 const runUrl=`${process.env.GITHUB_SERVER_URL||"https://github.com"}/${repository}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+
+// Replayed requests are intentionally skipped by the workflow. A skipped
+// execution is NOT an interrupted computation and must not mint a failed receipt.
+// Verify the prior durable callback first. Fail closed if it cannot be seen.
+const replaySkipped = isSkippedComputeReplay({request,result,diagnostic:firstDiagnostic,
+  phases:{request:process.env.COMPUTE_PHASE_REQUEST,replay:process.env.COMPUTE_PHASE_REPLAY,
+    admission:process.env.COMPUTE_PHASE_ADMISSION,verify:process.env.COMPUTE_PHASE_VERIFY,
+    execute:process.env.COMPUTE_PHASE_EXECUTE}});
+if (replaySkipped) {
+  const prior = runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`,"--paginate","--jq",".[].body"]);
+  if (prior.status === 0 && prior.stdout.includes(marker)) {
+    console.log("Compute request replay: existing receipt retained; no new receipt");
+    process.exit(0);
+  }
+  console.error("Compute replay skipped without independently verified prior receipt");
+  process.exitCode = 1;
+  process.exit();
+}
+
 if (!result || result.schema!=="cop.compute-result/v1") {
   const fallback=request||{
     computation_id:computationId,
