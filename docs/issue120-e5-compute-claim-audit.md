@@ -53,3 +53,19 @@ Use separate durable receipts for **claim attempt**, **binding**, **execution**,
 Start with an isolated pull-request branch and synthetic tests. Once provider behavior is verified, connect a reusable GitHub-ref reservation helper between `Check idempotent durable result` and `Snapshot provider quota`, change all downstream guards to require `claim == won`, and preserve finalizer behavior for `contended`/deferred. Do not deploy the E5 synthetic workflow as a compute dispatcher. A separate loss-recovery mechanism is required before claiming exactly-once processing.
 
 Until these gates are proven, the proven property of #120 is successful bounded compute and **sequential replay suppression**, not simultaneous execution exclusivity.
+
+## Prototype implementation (PR #145)
+
+`scripts/github-compute-claim.js` implements a pure/adapter-injected one-shot E5 reservation protocol: fixed key by repository + `computation_id`, digest of the full request payload, exclusive provider ref-create and independent read-back distinguishing `claimed`, `contended`, `collision` and `deferred`. `scripts/github-compute-claim.test.js` covers parallel claim attempts, changed-payload collision, ambiguous provider failure, key stability, and a holder interrupted after claiming.
+
+**This adapter is not yet wired into the live GitHub Actions workflow**. Its mock ref-create must be replaced by GitHub's real atomic `POST /git/refs` backed by an annotated tag whose content preserves the exact payload digest and run identity. The private tag creation step must validate the request *first*, and its workflow job needs explicitly scoped `contents:write`; do not widen authorization merely to execute arbitrary operations described in issue comments.
+
+For a safe local source-level check on fracta2, fetch this PR into an isolated working tree or use:
+```bash
+git fetch origin pull/145/head
+git show FETCH_HEAD:scripts/github-compute-claim.js >/tmp/github-compute-claim.mjs
+git show FETCH_HEAD:scripts/github-compute-claim.test.js >/tmp/github-compute-claim.test.mjs
+sed -i 's|"./github-compute-claim.js"|"./github-compute-claim.mjs"|' /tmp/github-compute-claim.test.mjs
+node --test /tmp/github-compute-claim.test.mjs
+```
+The source-level concurrency test is NOT a provider-side race test; only a GitHub-native two-job run can validate provider contention.
