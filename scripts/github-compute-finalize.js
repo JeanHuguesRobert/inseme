@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { recoverComputeFailure } from "./github-compute-failure.js";
+import { recoverComputeFailure, isSkippedComputeReplay } from "./github-compute-failure.js";
 
 
 const load = p => { try { return JSON.parse(fs.readFileSync(p,"utf8")); } catch { return null; } };
