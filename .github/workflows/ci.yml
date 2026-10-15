@@ -86,6 +86,15 @@ jobs:
       - name: C6 crash-after-claim uncertainty Reality Test
         run: node --test apps/platform/mcp/test/cop-c6-claim-crash.test.js
 
+      - name: Compute claim and finalizer regression tests (Issue #120)
+        run: >-
+          node --test
+          scripts/github-compute-claim.test.js
+          scripts/github-compute-claim-cli.test.js
+          scripts/github-compute-atomic-gate.test.js
+          scripts/github-compute-contention-finalize.test.js
+          scripts/github-compute-replay.test.js
+
       - name: Watch the Watchers invariants (Issue #120)
         run: >-
           node --test
