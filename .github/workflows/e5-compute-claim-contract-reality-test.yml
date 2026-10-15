@@ -1,0 +1,34 @@
+name: E5 Compute Claim Contract Reality Test
+on:
+  workflow_dispatch:
+    inputs:
+      computation_id:
+        description: "Unique synthetic claim ID; retry with same value to test contention"
+        required: true
+        type: string
+      payload_label:
+        description: "Use same payload for contenders"
+        required: true
+        default: same
+        type: string
+permissions:
+  contents: write
+  issues: write
+jobs:
+  contender:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/issue120-e5-compute-claim-design-20261015
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Attempt Git ref reservation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLAIM_ID: ${{ inputs.computation_id }}
+          PAYLOAD_LABEL: ${{ inputs.payload_label }}
+        run: node scripts/github-compute-claim-reality.js "$CLAIM_ID" "$PAYLOAD_LABEL"
