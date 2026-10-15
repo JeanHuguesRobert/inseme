@@ -9,6 +9,8 @@ export function decodeComputeReceipts(comments, computationId) {
   for (const comment of comments) {
     const body = String(comment?.body ?? "");
     if (!body.startsWith(marker)) continue;
+    if (comment?.user?.login !== "github-actions[bot]" || Number(comment?.user?.id) !== 41898282)
+      throw Error("untrusted_terminal_comment_author");
     const json = body.match(/```json\s*([\s\S]*?)\s*```/);
     if (!json) throw Error("malformed_terminal_comment");
     const obj = JSON.parse(json[1]);
@@ -17,7 +19,10 @@ export function decodeComputeReceipts(comments, computationId) {
     const receipt = obj.execution_receipt;
     if (!receipt || receipt.schema !== "magistral.execution-receipt/v1")
       throw Error("invalid_execution_receipt");
-    out.push({computation_id: obj.computation_id, status:receipt.status,
+    if (obj.source?.repository == null || !/^[0-9a-f]{40}$/.test(obj.source?.ref ?? ""))
+      throw Error("unverified_receipt_source");
+    out.push({computation_id: obj.computation_id, source_repository:obj.source.repository,
+      source_ref:obj.source.ref, status:receipt.status,
       terminal:receipt.terminal, run_id:receipt.binding?.provider_execution_id,
       raw_comment_id: comment.id ?? null});
   }
@@ -54,6 +59,8 @@ export async function reconcileGithubCompute({request, issue, api}) {
     if (run?.repository?.full_name !== repository || String(run.id) !== String(identity.run_id))
       return inconclusive("provider_run_identity_mismatch");
     const receipts = decodeComputeReceipts(comments, request.computation_id);
+    if (receipts.some(r => r.source_repository !== repository || r.source_ref !== request.repository.ref))
+      return inconclusive("receipt_source_mismatch");
     return reconcileComputeClaim({
       claim:{...identity, repository, status:"claimed"},
       provider:{authoritative:true, repository, run_id:String(run.id),
