@@ -37,7 +37,7 @@ const replaySkipped = isSkippedComputeReplay({request,result,diagnostic:firstDia
   phases:{request:process.env.COMPUTE_PHASE_REQUEST,replay:process.env.COMPUTE_PHASE_REPLAY,
     admission:process.env.COMPUTE_PHASE_ADMISSION,verify:process.env.COMPUTE_PHASE_VERIFY,
     execute:process.env.COMPUTE_PHASE_EXECUTE}});
-if (replaySkipped) {
+if (replaySkipped && !process.env.COMPUTE_PHASE_CLAIM) {
   const prior = runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`,"--paginate","--jq",".[].body"]);
   if (prior.status === 0 && prior.stdout.includes(marker)) {
     console.log("Compute request replay: existing receipt retained; no new receipt");
@@ -50,7 +50,7 @@ if (replaySkipped) {
 
 // Only a confirmed claim holder may finalize a computation. For contenders,
 // collisions and ambiguous API failures, do not manufacture a terminal receipt.
-if (request && process.env.COMPUTE_PHASE_CLAIM !== "claimed" && !replaySkipped) {
+if (request && process.env.COMPUTE_PHASE_CLAIM !== "claimed") {
   console.log("Compute not claimed ("+process.env.COMPUTE_PHASE_CLAIM+"); no result published");
   process.exit(0);
 }
