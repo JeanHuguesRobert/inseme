@@ -48,6 +48,14 @@ if (replaySkipped) {
   process.exit();
 }
 
+// Only a confirmed claim holder may finalize a computation. For contenders,
+// collisions and ambiguous API failures, do not manufacture a terminal receipt.
+if (process.env.COMPUTE_PHASE_CLAIM &&
+    process.env.COMPUTE_PHASE_CLAIM !== "claimed" &&
+    !replaySkipped) {
+  console.log("Compute not claimed ("+process.env.COMPUTE_PHASE_CLAIM+"); no result published");
+  process.exit(0);
+}
 if (!result || result.schema!=="cop.compute-result/v1") {
   const fallback=request||{
     computation_id:computationId,
