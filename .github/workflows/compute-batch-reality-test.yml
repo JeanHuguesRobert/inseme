@@ -15,7 +15,7 @@ on:
     types: [created]
 
 permissions:
-  contents: write # only trusted owner-authored, validated typed requests may reserve a Git ref
+  contents: read
   issues: write
 
 jobs:
@@ -119,6 +119,9 @@ jobs:
       github.event.comment.user.login == github.repository_owner &&
       contains(github.event.comment.body, '"schema": "cop.compute-request/v1"')
     name: typed compute request / bounded GitHub adapter
+    permissions:
+      contents: write # required for atomic Git-ref creation
+      issues: write
     runs-on: ubuntu-latest
 
     steps:
