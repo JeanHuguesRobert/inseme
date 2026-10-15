@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { recoverComputeFailure } from "./github-compute-failure.js";
+import { isSkippedComputeReplay } from "./github-compute-replay.js";
 
 const load = p => { try { return JSON.parse(fs.readFileSync(p,"utf8")); } catch { return null; } };
 const runGh = args => spawnSync("gh",["api",...args],{encoding:"utf8",timeout:15000,maxBuffer:2e6,env:process.env});
@@ -32,12 +33,10 @@ const runUrl=`${process.env.GITHUB_SERVER_URL||"https://github.com"}/${repositor
 // Replayed requests are intentionally skipped by the workflow. A skipped
 // execution is NOT an interrupted computation and must not mint a failed receipt.
 // Verify the prior durable callback first. Fail closed if it cannot be seen.
-const replaySkipped = request && !result && !firstDiagnostic &&
-  process.env.COMPUTE_PHASE_REQUEST === "success" &&
-  process.env.COMPUTE_PHASE_REPLAY === "success" &&
-  process.env.COMPUTE_PHASE_ADMISSION === "skipped" &&
-  process.env.COMPUTE_PHASE_VERIFY === "skipped" &&
-  process.env.COMPUTE_PHASE_EXECUTE === "skipped";
+const replaySkipped = isSkippedComputeReplay({request,result,diagnostic:firstDiagnostic,
+  phases:{request:process.env.COMPUTE_PHASE_REQUEST,replay:process.env.COMPUTE_PHASE_REPLAY,
+    admission:process.env.COMPUTE_PHASE_ADMISSION,verify:process.env.COMPUTE_PHASE_VERIFY,
+    execute:process.env.COMPUTE_PHASE_EXECUTE}});
 if (replaySkipped) {
   const prior = runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`,"--paginate","--jq",".[].body"]);
   if (prior.status === 0 && prior.stdout.includes(marker)) {
