@@ -11,9 +11,10 @@ function stub({balanceError=false,indexError=false}={}) {
  return {calls,from(name){
   const entry={select(){return this},eq(){return this},
     async maybeSingle(){if(name==="cop_accounting_event")return {data:{...event,id:4},error:null};return {data:null,error:null}},
-    async upsert(){calls.push(name);if(name==="cop_accounting_balance")return {error:balanceError?{message:"balance denied"}:null};
-      if(name==="cop_accounting_packet_spend")return {error:indexError?{message:"index denied"}:null};
-      return {error:null}},
+    upsert(){calls.push(name);return this;},
+    then(resolve){return Promise.resolve({error:
+      name==="cop_accounting_balance"&&balanceError?{message:"balance denied"}:
+      name==="cop_accounting_packet_spend"&&indexError?{message:"index denied"}:null}).then(resolve)},
   };
   return entry;
  }};
