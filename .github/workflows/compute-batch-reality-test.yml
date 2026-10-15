@@ -225,7 +225,7 @@ jobs:
       - name: Execute allowlisted computation
         continue-on-error: true
         id: execute
-        if: steps.verify.outcome == 'success' && steps.admission.outputs.admission == 'admitted'
+        if: steps.claim.outputs.outcome == 'claimed' && steps.verify.outcome == 'success' && steps.admission.outputs.admission == 'admitted'
         env:
           TIMEOUT_SECONDS: ${{ steps.request.outputs.timeout_seconds }}
         run: |
