@@ -73,8 +73,16 @@ export function createSupabaseAccountingStore(options = {}) {
 
       const isDuplicate = !data;
       if (data && !isDuplicate) {
-        await projectBalanceFromTransaction(sb, data);
-        await indexPacketSpend(sb, data);
+        // Event insertion is durable before non-transactional projections.
+        // Never claim successful accounting if a derived view failed.
+        try {
+          await projectBalanceFromTransaction(sb, data);
+          await indexPacketSpend(sb, data);
+        } catch (cause) {
+          return {ok:false, error:"accounting_projection_incomplete",
+            persisted_event:true, recovery_required:true,
+            idempotency_key, event:data, cause:String(cause?.message || cause)};
+        }
       }
 
       return {
@@ -168,9 +176,10 @@ async function projectBalanceFromTransaction(sb, eventRow) {
       updated_at: new Date().toISOString(),
     };
 
-    await sb.from("cop_accounting_balance").upsert(row, {
+    const {error: projectionError} = await sb.from("cop_accounting_balance").upsert(row, {
       onConflict: "account_id,unit,domain",
     });
+    if(projectionError) throw Error("balance_projection_failed:" + (projectionError.message || projectionError.code));
   }
 
   // unused for now but kept for analytical filters
@@ -186,8 +195,8 @@ async function indexPacketSpend(sb, eventRow) {
   const spend = (payload.postings || []).find((p) => p.posting_type === "debit");
   if (!spend?.quantity) return;
 
-  try {
-    await sb.from("cop_accounting_packet_spend").upsert(
+  {
+    const {error: indexError} = await sb.from("cop_accounting_packet_spend").upsert(
       {
         packet_id,
         treatment_id: meta.treatment_id || null,
@@ -202,8 +211,7 @@ async function indexPacketSpend(sb, eventRow) {
       },
       { onConflict: "idempotency_key" }
     );
-  } catch {
-    // table may not exist yet on older hosts
+    if(indexError) throw Error("packet_spend_projection_failed:" + (indexError.message || indexError.code));
   }
 }
 
