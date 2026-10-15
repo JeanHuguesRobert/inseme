@@ -93,3 +93,12 @@ jobs:
           scripts/watch-the-watchers-http.test.js
           apps/platform/mcp/test/artifactAccessSupabaseStore.test.js
           apps/platform/mcp/test/artifactAccessRouter.test.js
+
+      - name: E5 atomic claim and compute finalizer regression tests (Issue #120)
+        run: >-
+          node --test
+          scripts/github-compute-claim.test.js
+          scripts/github-compute-claim-cli.test.js
+          scripts/github-compute-atomic-gate.test.js
+          scripts/github-compute-contention-finalize.test.js
+          scripts/github-compute-replay.test.js
