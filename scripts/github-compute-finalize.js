@@ -33,6 +33,14 @@ const runUrl=`${process.env.GITHUB_SERVER_URL||"https://github.com"}/${repositor
 // Replayed requests are intentionally skipped by the workflow. A skipped
 // execution is NOT an interrupted computation and must not mint a failed receipt.
 // Verify the prior durable callback first. Fail closed if it cannot be seen.
+// A competing handler did not skip because a completed receipt was seen; it
+// skipped because another run owns the claim. Never require a terminal result
+// that may not exist yet, and never publish a synthetic compute failure.
+if (request && ["contended","collision","deferred"].includes(process.env.COMPUTE_PHASE_CLAIM)) {
+  console.log("Compute claim "+process.env.COMPUTE_PHASE_CLAIM+": no computation and no terminal receipt");
+  process.exit(0);
+}
+
 const replaySkipped = isSkippedComputeReplay({request,result,diagnostic:firstDiagnostic,
   phases:{request:process.env.COMPUTE_PHASE_REQUEST,replay:process.env.COMPUTE_PHASE_REPLAY,
     admission:process.env.COMPUTE_PHASE_ADMISSION,verify:process.env.COMPUTE_PHASE_VERIFY,
