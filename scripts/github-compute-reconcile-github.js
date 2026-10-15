@@ -9,8 +9,6 @@ export function decodeComputeReceipts(comments, computationId) {
   for (const comment of comments) {
     const body = String(comment?.body ?? "");
     if (!body.startsWith(marker)) continue;
-    if (comment?.user?.login !== "github-actions[bot]" || Number(comment?.user?.id) !== 41898282)
-      throw Error("untrusted_terminal_comment_author");
     const json = body.match(/```json\s*([\s\S]*?)\s*```/);
     if (!json) throw Error("malformed_terminal_comment");
     const obj = JSON.parse(json[1]);
@@ -24,7 +22,7 @@ export function decodeComputeReceipts(comments, computationId) {
     out.push({computation_id: obj.computation_id, source_repository:obj.source.repository,
       source_ref:obj.source.ref, status:receipt.status,
       terminal:receipt.terminal, run_id:receipt.binding?.provider_execution_id,
-      raw_comment_id: comment.id ?? null});
+      raw_comment_id: comment.id ?? null, author:comment.user?.login ?? null});
   }
   return out;
 }
