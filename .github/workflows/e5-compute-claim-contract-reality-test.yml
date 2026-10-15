@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: feat/issue120-e5-compute-claim-design-20261015
+          ref: main
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
