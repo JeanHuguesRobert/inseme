@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {isSkippedComputeReplay} from "./github-compute-replay.js";
+import {isSkippedComputeReplay} from "./github-compute-failure.js";
 const phases={request:"success",replay:"success",admission:"skipped",verify:"skipped",execute:"skipped"};
 test("completed prior request is a replay skip, never a failed computation",()=>{
  assert.equal(isSkippedComputeReplay({request:{computation_id:"same"},result:null,diagnostic:null,phases}),true);
