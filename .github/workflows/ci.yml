@@ -94,6 +94,7 @@ jobs:
           scripts/github-compute-replay.test.js
           scripts/github-compute-atomic-gate.test.js
           scripts/github-compute-contention-finalize.test.js
+          scripts/github-compute-reconcile.test.js
 
       - name: Watch the Watchers invariants (Issue #120)
         run: >-
