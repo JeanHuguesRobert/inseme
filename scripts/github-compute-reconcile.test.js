@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {reconcileComputeClaim as decide} from "./github-compute-reconcile.js";
-const claim={status:"contended",computation_id:"abc",payload_sha256:"digest",prior_run_id:"12"};
-const provider={authoritative:true,run_id:"12",status:"completed",conclusion:"failure"};
+const claim={status:"contended",computation_id:"abc",payload_sha256:"digest",repository:"JeanHuguesRobert/inseme",prior_run_id:"12"};
+const provider={authoritative:true,repository:"JeanHuguesRobert/inseme",run_id:"12",status:"completed",conclusion:"failure"};
 const run=(override={})=>decide({claim,provider,receipts:[],delivery:{status:"unknown"},...override});
 test("winner crashes after claim: candidate only, no retry",()=>{const r=run();assert.equal(r.state,"orphan_candidate");assert.equal(r.automatic_retry_authorized,false)});
 test("active owner with delayed callback",()=>assert.equal(run({provider:{...provider,status:"in_progress"}}).state,"awaiting_owner"));
@@ -11,6 +11,9 @@ test("provider timeout or unavailable",()=>assert.equal(run({provider:null}).sta
 test("stale or uncorrelated owner",()=>assert.equal(run({provider:{...provider,run_id:"13"}}).state,"inconclusive"));
 test("two reconcilers cannot authorize duplicate retry",()=>{for(const r of [run(),run()])assert.equal(r.automatic_retry_authorized,false)});
 test("payload digest collision",()=>assert.equal(run({claim:{...claim,status:"collision"}}).state,"blocked"));
-test("terminal receipt is authoritative business state",()=>assert.equal(run({receipts:[{computation_id:"abc",terminal:true,status:"completed",payload_sha256:"digest"}]}).state,"healthy"));
-test("duplicate terminal receipts require review",()=>assert.equal(run({receipts:[{computation_id:"abc",terminal:true,status:"completed"},{computation_id:"abc",terminal:true,status:"failed"}]}).state,"manual_review"));
+test("terminal receipt is authoritative business state",()=>assert.equal(run({receipts:[{computation_id:"abc",terminal:true,status:"completed",run_id:"12",payload_sha256:"digest"}]}).state,"healthy"));
+test("duplicate terminal receipts require review",()=>assert.equal(run({receipts:[{computation_id:"abc",terminal:true,status:"completed",run_id:"12"},{computation_id:"abc",terminal:true,status:"failed",run_id:"12"}]}).state,"manual_review"));
 test("untrusted provider is inconclusive",()=>assert.equal(run({provider:{...provider,authoritative:false}}).state,"inconclusive"));
+test("provider repository mismatch cannot authorize",()=>assert.equal(run({provider:{...provider,repository:"attacker/repo"}}).state,"inconclusive"));
+test("terminal receipt without owner correlation is inconclusive",()=>assert.equal(run({receipts:[{computation_id:"abc",terminal:true,status:"completed"}]}).state,"inconclusive"));
+test("terminal result from wrong run requires review",()=>assert.equal(run({receipts:[{computation_id:"abc",terminal:true,status:"completed",run_id:"13"}]}).state,"manual_review"));
