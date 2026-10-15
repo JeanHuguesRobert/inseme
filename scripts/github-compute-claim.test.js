@@ -26,3 +26,13 @@ test("one-shot reservation keys are deterministic and ID-isolated",()=>{
  assert.equal(computeClaimRef({repository:"JeanHuguesRobert/inseme",computation_id:"same"}),computeClaimRef({repository:"JeanHuguesRobert/inseme",computation_id:"same"}));
  assert.notEqual(computeClaimRef({repository:"JeanHuguesRobert/inseme",computation_id:"same"}),computeClaimRef({repository:"JeanHuguesRobert/inseme",computation_id:"other"}));
 });
+
+test("claimed but unfinished remains reserved: no blind retry",async()=>{
+ const s=store();
+ const first=await reserveComputeClaim({request:mk(),runId:101,...s});
+ const afterCrash=await reserveComputeClaim({request:mk(),runId:102,...s});
+ assert.equal(first.status,"claimed");
+ assert.equal(afterCrash.status,"contended");
+ assert.equal(afterCrash.prior_run_id,"101");
+ assert.equal(s.winners,1);
+});
