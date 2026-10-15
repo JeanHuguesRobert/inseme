@@ -15,7 +15,7 @@ on:
     types: [created]
 
 permissions:
-  contents: read
+  contents: write # only trusted owner-authored, validated typed requests may reserve a Git ref
   issues: write
 
 jobs:
@@ -167,9 +167,18 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Preserve trusted resource adapter across source checkout
+      - name: Reserve atomic computation identity (E5)
+        id: claim
         continue-on-error: true
         if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/github-compute-claim-cli.js "$RUNNER_TEMP/compute-request.json" "$GITHUB_OUTPUT"
+
+      - name: Preserve trusted resource adapter across source checkout
+        continue-on-error: true
+        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.claim.outputs.outcome == 'claimed'
         run: |
           mkdir -p "$RUNNER_TEMP/compute-adapter"
           cp scripts/github-compute-resource-cli.js scripts/github-compute-resources.js scripts/github-compute-failure.js "$RUNNER_TEMP/compute-adapter/"
@@ -178,7 +187,7 @@ jobs:
       - name: Snapshot provider quota and decide resource admission
         continue-on-error: true
         id: admission
-        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true'
+        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.claim.outputs.outcome == 'claimed'
         env:
           GH_TOKEN: ${{ github.token }}
           TIMEOUT_SECONDS: ${{ steps.request.outputs.timeout_seconds }}
@@ -190,7 +199,7 @@ jobs:
 
       - name: Return non-admission as structured result
         continue-on-error: true
-        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission != 'admitted'
+        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.claim.outputs.outcome == 'claimed' && steps.admission.outputs.admission != 'admitted'
         run: |
           node "$RUNNER_TEMP/compute-adapter/github-compute-resource-cli.js" refuse \
             "$RUNNER_TEMP/compute-request.json" \
@@ -199,7 +208,7 @@ jobs:
 
       - name: Checkout exact requested source commit
         continue-on-error: true
-        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted'
+        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.claim.outputs.outcome == 'claimed' && steps.admission.outputs.admission == 'admitted'
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.request.outputs.ref }}
@@ -208,7 +217,7 @@ jobs:
       - name: Verify exact source commit
         id: verify
         continue-on-error: true
-        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted'
+        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.claim.outputs.outcome == 'claimed' && steps.admission.outputs.admission == 'admitted'
         env:
           EXPECTED_REF: ${{ steps.request.outputs.ref }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_REF"
@@ -226,7 +235,7 @@ jobs:
 
       - name: Recover interrupted compute into a failed receipt
         continue-on-error: true
-        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted' && steps.execute.outcome != 'success'
+        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.claim.outputs.outcome == 'claimed' && steps.admission.outputs.admission == 'admitted' && steps.execute.outcome != 'success'
         env:
           RUN_ID: ${{ github.run_id }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -238,7 +247,7 @@ jobs:
 
       - name: Upload generic program outputs
         continue-on-error: true
-        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.admission.outputs.admission == 'admitted' && steps.request.outputs.operation_kind == 'git-program'
+        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.claim.outputs.outcome == 'claimed' && steps.admission.outputs.admission == 'admitted' && steps.request.outputs.operation_kind == 'git-program'
         uses: actions/upload-artifact@v4
         with:
           name: compute-${{ steps.request.outputs.computation_id }}
@@ -248,7 +257,7 @@ jobs:
 
       - name: Attach before/after resource accounting
         continue-on-error: true
-        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true'
+        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.claim.outputs.outcome == 'claimed'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -259,7 +268,7 @@ jobs:
 
       - name: Render structured result
         continue-on-error: true
-        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true'
+        if: steps.replay.outcome == 'success' && steps.replay.outputs.skip != 'true' && steps.claim.outputs.outcome == 'claimed'
         run: |
           node scripts/github-compute-request.js format-result \
             --result-file "$RUNNER_TEMP/compute-result.json" \
@@ -272,6 +281,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           COMPUTE_PHASE_REQUEST: ${{ steps.request.outcome }}
           COMPUTE_PHASE_REPLAY: ${{ steps.replay.outcome }}
+          COMPUTE_PHASE_CLAIM: ${{ steps.claim.outputs.outcome }}
           COMPUTE_PHASE_ADMISSION: ${{ steps.admission.outcome }}
           COMPUTE_PHASE_VERIFY: ${{ steps.verify.outcome }}
           COMPUTE_PHASE_EXECUTE: ${{ steps.execute.outcome }}
