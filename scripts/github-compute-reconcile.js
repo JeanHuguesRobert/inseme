@@ -16,7 +16,7 @@ export function reconcileComputeClaim({claim, provider, receipts, delivery} = {}
   if (!["claimed", "contended"].includes(claim.status) || !claim.prior_run_id && claim.status === "contended" && !claim.run_id)
     return reply("inconclusive", "unresolved_claim_owner");
   const owner = String(claim.status === "claimed" ? claim.run_id : claim.prior_run_id ?? claim.run_id);
-  if (!/^\\d+$/.test(owner) || String(provider.run_id ?? "") !== owner)
+  if (!/^[0-9]+$/.test(owner) || String(provider.run_id ?? "") !== owner)
     return reply("inconclusive", "provider_owner_not_correlated");
   if (provider.authoritative !== true)
     return reply("inconclusive", "provider_observation_not_authoritative");
