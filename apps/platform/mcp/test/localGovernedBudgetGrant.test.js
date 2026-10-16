@@ -39,7 +39,7 @@ test("signed budget grant route enforces current authority and never trusts requ
   const {port}=await runtime.listen();
   const base="http://127.0.0.1:"+port;
   assert.equal((await post(base)).status,401);
-  assert.equal((await post(base,transportOnly)).status,400);
+  assert.equal((await post(base,transportOnly)).status,403);
   const ok=await post(base,authorized);
   assert.equal(ok.status,201);
   assert.equal(calls.length,1);
@@ -48,14 +48,14 @@ test("signed budget grant route enforces current authority and never trusts requ
   assert.equal(calls[0].authority_ref,"mandate:mandate:test:budget:v1");
 
   current=new Date(current.getTime()+31_000);
-  assert.equal((await post(base,authorized)).status,400);
+  assert.equal((await post(base,authorized)).status,401);
   assert.equal(calls.length,1);
 
   current=new Date("2026-10-16T10:00:00.000Z");
   const db2=new DatabaseSync(dbPath);
   try {db2.prepare("UPDATE cop_mandates SET status='revoked' WHERE mandate_ref=?").run("mandate:test:budget");}
   finally {db2.close();}
-  assert.equal((await post(base,authorized)).status,400);
+  assert.equal((await post(base,authorized)).status,401);
   assert.equal(calls.length,1);
  } finally {
   if(issuer) issuer.close();
