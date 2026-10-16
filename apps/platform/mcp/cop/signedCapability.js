@@ -198,6 +198,6 @@ export function createSignedCapabilityContextResolver({
         "Mandate no longer belongs to this principal"
       );
     }
-    return { principal: { id: claims.subject, issuer: claims.issuer }, mandate };
+    return { principal: { id: claims.subject, issuer: claims.issuer }, mandate, mandateRef: claims.mandateRef, mandateVersion: claims.mandateVersion };
   };
 }
