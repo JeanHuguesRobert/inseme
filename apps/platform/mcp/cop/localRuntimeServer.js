@@ -6,6 +6,7 @@ import path from "node:path";
 import { createPortableCopRuntimeGateway } from "./portableRuntimeGateway.js";
 import { createPortableCopRuntimeHandlers } from "./portableRuntimeHandlers.js";
 import { createSignedCapabilityContextResolver } from "./signedCapability.js";
+import { createGovernedEpochBudgetGrantHandler } from "./governedEpochBudget.js";
 import { createSqliteCopRuntimeStore } from "./sqliteRuntimeStore.js";
 
 const ROUTES = new Map([
@@ -68,6 +69,7 @@ export async function createJhnLocalCopRuntime({
   host = "127.0.0.1",
   port = 0,
   clock,
+  grantBudget,
 } = {}) {
   if (!LOOPBACK_HOSTS.has(host))
     throw new TypeError("JHN local COP runtime may bind only to 127.0.0.1 or ::1");
@@ -93,18 +95,20 @@ export async function createJhnLocalCopRuntime({
     clock,
   });
   const handlers = createPortableCopRuntimeHandlers({ gateway, resolveContext });
+  const budgetHandler = grantBudget ? createGovernedEpochBudgetGrantHandler({ resolveContext, grantBudget }) : null;
   const server = createServer(async (request, response) => {
     if (request.method === "GET" && request.url === "/health") {
       json(response, 200, { status: "ok", scope: "loopback" });
       return;
     }
+    const isBudgetGrant = request.method === "POST" && request.url === "/cop/accounting/budgets/grant";
     const handlerName = request.method === "POST" && ROUTES.get(request.url);
-    if (!handlerName) {
+    if (!handlerName && !isBudgetGrant) {
       json(response, 404, { error: "COP runtime route not found", code: "COP_ROUTE_NOT_FOUND" });
       return;
     }
     try {
-      const outcome = await handlers[handlerName]({
+      const outcome = await (isBudgetGrant ? budgetHandler ?? (async () => ({status:503,body:{code:"COP_ACCOUNTING_NOT_CONFIGURED"}})) : handlers[handlerName])({
         headers: request.headers,
         body: await readJsonBody(request),
       });
