@@ -1,10 +1,16 @@
 import path from "node:path";
+import { existsSync } from "node:fs";
+import { loadEnvFile } from "node:process";
 import { fileURLToPath } from "node:url";
 import { createJhnLocalCopRuntime } from "../mcp/cop/localRuntimeServer.js";
 import { resolveAccountingGrantAdapter } from "../mcp/cop/hostAccountingGrantConfig.js";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const defaultStateDirectory = path.resolve(scriptDirectory, "..", "instances", "jhn-cop-local");
+
+// Reuse the existing Inseme root .env; never create a second secret namespace.
+const insemeEnvFile = path.resolve(scriptDirectory, "../../..", ".env");
+if (existsSync(insemeEnvFile)) loadEnvFile(insemeEnvFile);
 
 function argumentValue(name) {
   const index = process.argv.indexOf(name);
