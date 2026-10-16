@@ -15,8 +15,8 @@ test("trusted host config resolves RPC without leaking supplied credentials",asy
  let passed;
  const adapter=resolveAccountingGrantAdapter({
   env:{COP_ACCOUNTING_Z0_GRANT_ENABLED:"1",
-   COP_ACCOUNTING_SUPABASE_URL:"https://ndiysuhzmztatpxbkezn.supabase.co",
-   COP_ACCOUNTING_SUPABASE_SERVICE_ROLE_KEY:"synthetic-test-key"},
+   SUPABASE_URL:"https://ndiysuhzmztatpxbkezn.supabase.co",
+   SUPABASE_SERVICE_ROLE_KEY:"synthetic-test-key"},
   createClient:(url,key,opts)=>{
    passed={url,key,opts};
    return {rpc:async()=>({data:{duplicate:false},error:null})};
@@ -30,7 +30,15 @@ test("trusted host config resolves RPC without leaking supplied credentials",asy
 });
 test("unexpected URL host rejected before client creation",()=>{
  assert.throws(()=>resolveAccountingGrantAdapter({
- env:{COP_ACCOUNTING_Z0_GRANT_ENABLED:"1",COP_ACCOUNTING_SUPABASE_URL:"https://evil.example",
- COP_ACCOUNTING_SUPABASE_SERVICE_ROLE_KEY:"test"},createClient:()=>{throw Error("not reached");}}),
+ env:{COP_ACCOUNTING_Z0_GRANT_ENABLED:"1",SUPABASE_URL:"https://evil.example",
+ SUPABASE_SERVICE_ROLE_KEY:"test"},createClient:()=>{throw Error("not reached");}}),
  /exact hosted project endpoint/);
+});
+
+test("legacy canonical SUPABASE_SERVICE_KEY alias is supported",()=>{
+ const adapter=resolveAccountingGrantAdapter({
+  env:{COP_ACCOUNTING_Z0_GRANT_ENABLED:"1",SUPABASE_URL:"https://ndiysuhzmztatpxbkezn.supabase.co",SUPABASE_SERVICE_KEY:"synthetic-alias"},
+  createClient:(_url,key)=>{assert.equal(key,"synthetic-alias");return {rpc:async()=>({data:{ok:true},error:null})};}
+ });
+ assert.equal(typeof adapter,"function");
 });
