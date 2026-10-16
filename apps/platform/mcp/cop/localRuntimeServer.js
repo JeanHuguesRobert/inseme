@@ -5,7 +5,8 @@ import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
 import { createPortableCopRuntimeGateway } from "./portableRuntimeGateway.js";
 import { createPortableCopRuntimeHandlers } from "./portableRuntimeHandlers.js";
-import { createSignedCapabilityContextResolver } from "./signedCapability.js";
+import { createSignedCapabilityContextResolver, CopCapabilityError } from "./signedCapability.js";
+import { CopAccessDeniedError } from "./portableRuntimeGateway.js";
 import { createGovernedEpochBudgetGrantHandler } from "./governedEpochBudget.js";
 import { createSqliteCopRuntimeStore } from "./sqliteRuntimeStore.js";
 
@@ -114,7 +115,8 @@ export async function createJhnLocalCopRuntime({
       });
       json(response, outcome.status, outcome.body);
     } catch (error) {
-      json(response, 400, { error: error.message, code: "COP_INVALID_REQUEST" });
+      const status = error instanceof CopCapabilityError ? 401 : error instanceof CopAccessDeniedError ? 403 : error instanceof TypeError ? 400 : 500;
+      json(response, status, { error: error.message, code: error.code ?? (status === 500 ? "COP_RUNTIME_WRITE_FAILED" : "COP_INVALID_REQUEST") });
     }
   });
 
