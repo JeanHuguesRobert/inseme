@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createJhnLocalCopRuntime } from "../mcp/cop/localRuntimeServer.js";
-import { createSupabaseEpochBudgetGrant } from "../mcp/cop/supabaseEpochBudgetGrant.js";
+import { resolveAccountingGrantAdapter } from "../mcp/cop/hostAccountingGrantConfig.js";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const defaultStateDirectory = path.resolve(scriptDirectory, "..", "instances", "jhn-cop-local");
@@ -11,21 +11,6 @@ function argumentValue(name) {
   return index === -1 ? null : (process.argv[index + 1] ?? null);
 }
 
-/**
- * Opt-in only: this host's trusted process owns the service credential.
- * Neither network calls nor public configs may supply or enable the key.
- */
-export async function resolveAccountingGrantAdapter({ env = process.env, createClient } = {}) {
-  if (env.COP_ACCOUNTING_Z0_GRANT_ENABLED !== "1") return undefined;
-  const url = env.COP_ACCOUNTING_SUPABASE_URL;
-  const key = env.COP_ACCOUNTING_SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("COP Accounting enabled without host-only Supabase credentials");
-  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url))
-    throw new Error("COP Accounting Supabase URL must be an exact hosted project endpoint");
-  if (typeof createClient !== "function") throw new TypeError("trusted Supabase client factory is required");
-  const supabase = createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
-  return createSupabaseEpochBudgetGrant({supabase});
-}
 const grantBudget = await resolveAccountingGrantAdapter({
   createClient: (await import("@supabase/supabase-js")).createClient,
 });
