@@ -11,9 +11,11 @@ function argumentValue(name) {
   return index === -1 ? null : (process.argv[index + 1] ?? null);
 }
 
-const grantBudget = await resolveAccountingGrantAdapter({
-  createClient: (await import("@supabase/supabase-js")).createClient,
-});
+const grantBudget = process.env.COP_ACCOUNTING_Z0_GRANT_ENABLED === "1"
+  ? resolveAccountingGrantAdapter({
+      createClient: (await import("@supabase/supabase-js")).createClient,
+    })
+  : undefined;
 const portArgument = argumentValue("--port");
 const runtime = await createJhnLocalCopRuntime({
   stateDirectory: argumentValue("--state-dir") ?? defaultStateDirectory,
