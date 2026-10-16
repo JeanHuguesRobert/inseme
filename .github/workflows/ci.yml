@@ -86,6 +86,14 @@ jobs:
       - name: C6 crash-after-claim uncertainty Reality Test
         run: node --test apps/platform/mcp/test/cop-c6-claim-crash.test.js
 
+      - name: Governed Z0 budget authorization regression (Issue #163)
+        run: >-
+          node --test
+          apps/platform/mcp/test/governedEpochBudget.test.js
+          apps/platform/mcp/test/supabaseEpochBudgetGrant.test.js
+          apps/platform/mcp/test/localBudgetGrantRoute.test.js
+          apps/platform/mcp/test/localGovernedBudgetGrant.test.js
+
       - name: COP compute claim and finalizer regression (Issue #120)
         run: >-
           node --test
