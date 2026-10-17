@@ -1,7 +1,7 @@
 ---
 title: Packet Attractor — Fractanet Distributed Demand and Capability Routing
 subtitle: COP-side crystallization of reactive demand, legitimacy, and intermittent capable nodes
-version: '0.1'
+version: '0.2'
 status: working-paper — source document
 date: '2026-07-03'
 author: Jean Hugues Noël Robert, baron Mariani
@@ -29,7 +29,7 @@ related_projects:
   - FractaVolta
 ai_assisted_by:
   - Grok
-last_stamped_at: 2026-07-03T00:00:00.000Z
+last_stamped_at: 2026-10-17T00:00:00.000Z
 corpus_role: source
 document_role: source
 document_kind: research-paper
@@ -106,6 +106,7 @@ Read together with:
 - [Inox serve — session cognitive packets](https://github.com/JeanHuguesRobert/Inox/blob/master/research/inox-session-packets.md)
   — `inox.session.v1` packet loop;
 - [Cogentia as a Cognitive Continuation Packet Router](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/cogentia_continuation_packet_routing.md);
+- [Locality Principle](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/locality_principle.md) — Minimum Sufficient Locality and Locality Closure;
 - [Cognitive Packets](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/cognitive_packets.md);
 - [Fractanet — Generalized Control Planes](https://github.com/JeanHuguesRobert/FractaVolta/blob/main/research/fractanet.md)
   — verb registry, control/data plane, RAIX.
@@ -374,6 +375,48 @@ Fracta's role in MVP: **weak gateway** that routes envelopes and may **aggregate
 advertisements** — bootstrap only, not the long-term authority (see Fractanet RAIX constraints in
 [`fractanet.md`](https://github.com/JeanHuguesRobert/FractaVolta/blob/main/research/fractanet.md)).
 
+### Operational continuity when one board disappears
+
+The 2026-10-17 FractaX RT-1 experiments narrow the operational meaning of **no single board**.
+
+A board or aggregator may improve current discovery and freshness without becoming the only place
+where already acquired routing knowledge, pending work, or packet identity survives. Deterministic
+tests now show the following bounded path:
+
+```text
+blackboard reachable
+→ local route / peer knowledge acquired
+→ blackboard unavailable
+→ admissible cached knowledge remains locally inspectable
+→ local work continues where sufficient
+   or COP work remains in a durable outbox
+→ retry after transport recovery
+→ receiver deduplicates the replayed envelope
+```
+
+This is evidence for **degraded continuity**, not for stale attractors as permanent truth. In
+particular:
+
+```text
+cached route / peer / capability observation
+= reachability or prior-availability evidence
+≠ mandate
+≠ authorization
+≠ current legitimacy
+```
+
+An attractor that is stale, withdrawn, outside its accepted regime, or no longer covered by
+applicable control MUST NOT become legitimate merely because a local cache remembers it. Capability
+discovery and continuity remain separate from authority.
+
+The deterministic evidence is recorded in
+[Cogentia RT-1 #255](https://github.com/JeanHuguesRobert/cogentia/issues/255):
+the [Cogentia cache-fallback receipt](https://github.com/JeanHuguesRobert/inseme/issues/120#issuecomment-6240899139)
+and the [Operium/COP failure-recovery receipt](https://github.com/JeanHuguesRobert/inseme/issues/120#issuecomment-6240898038).
+The remaining discriminant is a bounded live test on an authorized FractaNode with the blackboard
+made unreachable for one client process only. Until that test passes, this document does not claim
+full live Fractanet decentralization.
+
 ---
 
 ## 9. Worked example — `retrieval.batch`
@@ -457,6 +500,7 @@ existing Guide mandates.
 
 ### Level A — Established in corpus
 
+- 2026-10-17 RT-1 deterministic executions establish local cache fallback, peer-state retention, durable COP retry, and receiver-side envelope-id deduplication under simulated coordinator/transport loss.
 - Reactive Cognitive COP Extension proposes `cop/packet-attractor`.
 - Inox implementation path names native `PacketAttractor`.
 - `inox.session.v1` demonstrates continuation loop closure.
@@ -470,6 +514,7 @@ existing Guide mandates.
 
 ### Level C — Hypothesis to implement
 
+- A real authorized FractaNode can preserve a governed Cognitive Packet continuation while the `fracta` blackboard is unreachable to that client process, without authority widening and with clean reconciliation after recovery.
 - Guide can select retrieval backend from attractor snapshot without service restart.
 - RAIX-mirrored attractor advertisements reduce capture vs single aggregator.
 
