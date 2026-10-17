@@ -34,10 +34,10 @@ export function createGithubComputeAccountingConsumer({ lifecycle, fetchResult }
       return bridge.reserve({epoch_id,budget_ref,unit,
         reservation_key:reservationKey(computation_id,run_id),maximum,actor});
     },
-    async settle({ epoch_id, computation_id, run_id, repository, source_ref, actor, usage_dimension }) {
+    async settle({ epoch_id, computation_id, run_id, repository, source_ref, actor, usage_dimension, issue_number }) {
       const expected={computation_id:text(computation_id,"computation_id"),run_id:text(run_id,"run_id"),
         repository:text(repository,"repository"),source_ref:text(source_ref,"source_ref")};
-      const result=checkResult(await fetchResult(expected),expected);
+      if (issue_number !== undefined) {\n        if (!Number.isSafeInteger(issue_number) || issue_number < 1) throw new TypeError("invalid issue_number");\n        expected.issue_number=issue_number;\n      }\n      const result=checkResult(await fetchResult(expected),expected);
       return bridge.settle({epoch_id,
         reservation_key:reservationKey(computation_id,run_id),actor,result,usage_dimension});
     }
