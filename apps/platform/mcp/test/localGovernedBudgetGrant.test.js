@@ -45,7 +45,8 @@ test("signed budget grant route enforces current authority and never trusts requ
   assert.equal(calls.length,1);
   assert.equal(calls[0].actor,"principal:test-budget");
   assert.equal(calls[0].mandate_ref,"mandate:test:budget");
-  assert.equal(calls[0].authority_ref,"mandate:mandate:test:budget:v1");
+  assert.equal(calls[0].authority_ref,"mandate:test:budget:v1");
+  assert.equal(calls[0].mandate_version,1);
 
   current=new Date(current.getTime()+31_000);
   assert.equal((await post(base,authorized)).status,401);
