@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readPendingAccounting,runPendingAccounting,savePendingAccounting } from "../cop/githubComputeAccountingQueue.js";
+import { readPendingAccounting,runPendingAccounting,savePendingAccounting,registerPendingAccounting } from "../cop/githubComputeAccountingQueue.js";
 import { githubCommentResultFetcher, runAccountingTick } from "../../scripts/run-github-accounting-tick.js";
 
 test("ONA-style tick is disabled by default and dormant without queue",async()=>{
@@ -36,4 +36,20 @@ test("trusted GitHub comment parser rejects unrelated author",async()=>{
  const body='<!-- cop-compute-result:job1 -->\n\`\`\`json\n'+JSON.stringify({computation_id:"job1",execution_binding:{provider_execution_id:"12"}})+'\n\`\`\`';
  const fetch=githubCommentResultFetcher({exec:()=>JSON.stringify([{user:{login:"stranger"},body}])});
  await assert.rejects(()=>fetch({computation_id:"job1",run_id:"12",repository:"JeanHuguesRobert/inseme",issue_number:85}),/NOT_READY/);
+});
+
+test("registration rejects unreserved work and conflicting replay",async()=>{
+ const dir=await mkdtemp(path.join(os.tmpdir(),"accounting-register-"));
+ const file=path.join(dir,"queue.json");
+ const base={reserved:true,epoch_id:"z0",budget_ref:"budget",unit:"runner_wall_seconds",
+  computation_id:"c1",run_id:"42",issue_number:85,repository:"JeanHuguesRobert/inseme",
+  source_ref:"a".repeat(40),actor:"instance:fracta2",usage_dimension:"runner_wall_seconds",
+  reservation_key:"github-compute:c1:42"};
+ try {
+  await assert.rejects(()=>registerPendingAccounting(file,{...base,reserved:false}),/UNRESERVED/);
+  assert.deepEqual(await registerPendingAccounting(file,base),{duplicate:false});
+  assert.deepEqual(await registerPendingAccounting(file,base),{duplicate:true});
+  await assert.rejects(()=>registerPendingAccounting(file,{...base,source_ref:"b".repeat(40)}),/IDENTITY_CONFLICT/);
+  assert.equal((await readPendingAccounting(file)).length,1);
+ }finally{await rm(dir,{recursive:true,force:true});}
 });
