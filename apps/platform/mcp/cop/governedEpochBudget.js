@@ -23,12 +23,13 @@ export function createGovernedEpochBudgetGrantHandler({ resolveContext, grantBud
     if (!context.mandateRef || !Number.isInteger(context.mandateVersion)) {
       throw new TypeError("verified mandate identity and version required");
     }
-    const authority_ref = `mandate:${context.mandateRef}:v${context.mandateVersion}`;
+    const authority_ref = `${context.mandateRef}:v${context.mandateVersion}`;
     // Never trust client-supplied actor, mandate or authority references.
     const result = await grantBudget({
       epoch_id, budget_ref, unit, amount,
       actor: context.principal.id,
       mandate_ref: context.mandateRef,
+      mandate_version: context.mandateVersion,
       authority_ref,
     });
     return { status: 201, body: { data: result } };
