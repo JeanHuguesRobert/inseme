@@ -5,12 +5,27 @@ import { readPendingAccounting,runPendingAccounting,savePendingAccounting } from
 
 /** ONA script job, tick-only. No new daemon, no public listener. */
 export function githubCommentResultFetcher({ exec = execFileSync }={}) {
-  return async ({computation_id,repository,run_id}) => {
-    if(!/^[-\w]+\/[-\w.]+$/.test(repository) || !/^\d+$/.test(run_id))
+  return async ({computation_id,repository,run_id,issue_number}) => {
+    if(!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)
+      || !/^[0-9]+$/.test(run_id)
+      || !Number.isSafeInteger(issue_number) || issue_number < 1)
       throw Error("invalid_github_identity");
-    // Search a bounded window of comments on the run's issuing issue.
-    // In production each pending job must specify issue_number (added below).
-    throw Error("COP_COMPUTE_NOT_READY");
+    const apiPath=`repos/${repository}/issues/${issue_number}/comments?per_page=100`;
+    const raw=exec("gh",["api",apiPath],{encoding:"utf8",timeout:20000,maxBuffer:4*1024*1024});
+    // gh --paginate can concatenate JSON arrays; --slurp creates a single array.
+    // Explicitly request one page only until pagination uses a tested JSON parser.
+    const comments=JSON.parse(raw);
+    if(!Array.isArray(comments)) throw Error("invalid_github_comments");
+    for(const comment of comments) {
+      if(!["github-actions[bot]","github-actions"].includes(comment.user?.login)) continue;
+      if(!comment.body?.includes(`<!-- cop-compute-result:${computation_id} -->`)) continue;
+      const block=comment.body.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/);
+      if(!block) continue;
+      const result=JSON.parse(block[1]);
+      if(result.computation_id===computation_id &&
+        String(result.execution_binding?.provider_execution_id)===run_id) return result;
+    }
+    const error=Error("COP_COMPUTE_NOT_READY");error.code="COP_COMPUTE_NOT_READY";throw error;
   };
 }
 
