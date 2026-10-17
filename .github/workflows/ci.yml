@@ -95,6 +95,7 @@ jobs:
           apps/platform/mcp/test/localGovernedBudgetGrant.test.js
           apps/platform/mcp/test/hostAccountingGrantConfig.test.js
           apps/platform/mcp/test/internalBudgetLifecycle.test.js
+          apps/platform/mcp/test/githubComputeAccountingBridge.test.js
 
       - name: COP compute claim and finalizer regression (Issue #120)
         run: >-
