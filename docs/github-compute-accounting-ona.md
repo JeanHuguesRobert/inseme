@@ -38,3 +38,27 @@ lifecycle_state: working
 ## Boundary
 
 ONA remains the scheduler, Inseme owns accounting and the result consumer, Supabase records authoritative transactions, GitHub issues carry computational receipts. Operium inventory references the service and its env *paths*, not secrets.
+
+## Trusted enrollment (implemented)
+
+The host control plane must invoke the idempotent enrollment command **after**
+the GitHub run id and issuing issue are known, rather than relying on the
+GitHub Actions runner to carry Supabase credentials:
+
+```sh
+node apps/platform/scripts/run-github-accounting-tick.js enroll /path/to/approved-compute-obligation.json
+```
+
+The private JSON describes `epoch_id`, `budget_ref`, `unit`,
+`maximum`, `computation_id`, `run_id`, `issue_number`,
+`repository`, `source_ref`, `actor`, `usage_dimension`, and
+`reservation_key=github-compute:<computation_id>:<run_id>`.
+The command uses `COP_ACCOUNTING_PENDING_FILE` and existing Supabase
+host credentials. It calls the **durable SQL reserve RPC first**, then writes
+the pending queue projection; retries are idempotent.
+
+A host-local originator is still responsible for invoking this command on
+actual submission/claim. No automatic hook is installed yet in GitHub Actions:
+the runner must **not** receive the service-role key. For production, protect
+the private queue directory against concurrent writers or add a host-local
+serializing lock before multiple producers are enabled.
