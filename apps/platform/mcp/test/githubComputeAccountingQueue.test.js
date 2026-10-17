@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { readPendingAccounting,runPendingAccounting,savePendingAccounting,registerPendingAccounting } from "../cop/githubComputeAccountingQueue.js";
-import { githubCommentResultFetcher, runAccountingTick } from "../../scripts/run-github-accounting-tick.js";
+import { githubCommentResultFetcher, runAccountingTick, enrollAccountingJob } from "../../scripts/run-github-accounting-tick.js";
 
 test("ONA-style tick is disabled by default and dormant without queue",async()=>{
  assert.deepEqual(await runAccountingTick({env:{}}),{status:"disabled"});
@@ -51,5 +51,35 @@ test("registration rejects unreserved work and conflicting replay",async()=>{
   assert.deepEqual(await registerPendingAccounting(file,base),{duplicate:true});
   await assert.rejects(()=>registerPendingAccounting(file,{...base,source_ref:"b".repeat(40)}),/IDENTITY_CONFLICT/);
   assert.equal((await readPendingAccounting(file)).length,1);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test("trusted enrollment reserves SQL first and replays without extra queue entries",async()=>{
+ const dir=await mkdtemp(path.join(os.tmpdir(),"accounting-enroll-"));
+ const file=path.join(dir,"queue.json");
+ const job={epoch_id:"z0",budget_ref:"b",unit:"runner_wall_seconds",maximum:"300",
+  computation_id:"c2",run_id:"19",issue_number:85,repository:"JeanHuguesRobert/inseme",
+  source_ref:"a".repeat(40),actor:"instance:fracta2",usage_dimension:"runner_wall_seconds",
+  reservation_key:"github-compute:c2:19"};
+ const saved=new Set();
+ const lifecycle={reserve:async x=>{const duplicate=saved.has(x.reservation_key);
+  saved.add(x.reservation_key);return {duplicate};}};
+ try{
+  const env={COP_ACCOUNTING_PENDING_FILE:file};
+  const a=await enrollAccountingJob({job,env,lifecycle});
+  const b=await enrollAccountingJob({job,env,lifecycle});
+  assert.equal(a.registered,true);assert.equal(b.registered,false);
+  assert.equal(b.duplicate,true);
+  assert.equal((await readPendingAccounting(file)).length,1);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+test("SQL failure cannot enqueue an unreserved job",async()=>{
+ const dir=await mkdtemp(path.join(os.tmpdir(),"accounting-enroll-fail-"));
+ const file=path.join(dir,"queue.json");
+ try {
+  await assert.rejects(()=>enrollAccountingJob({job:{epoch_id:"z0",budget_ref:"b",
+   computation_id:"c",run_id:"20",issue_number:85,reservation_key:"github-compute:c:20"},
+   env:{COP_ACCOUNTING_PENDING_FILE:file},lifecycle:{reserve:async()=>{throw Error("budget_exhausted");}}}),/budget_exhausted/);
+  assert.deepEqual(await readPendingAccounting(file),[]);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
