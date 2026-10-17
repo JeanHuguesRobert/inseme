@@ -1,7 +1,8 @@
+import { readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseInternalBudgetLifecycle } from "../mcp/cop/supabaseEpochBudgetGrant.js";
-import { readPendingAccounting,runPendingAccounting,savePendingAccounting } from "../mcp/cop/githubComputeAccountingQueue.js";
+import { readPendingAccounting,runPendingAccounting,savePendingAccounting,registerPendingAccounting } from "../mcp/cop/githubComputeAccountingQueue.js";
 
 /** ONA script job, tick-only. No new daemon, no public listener. */
 export function githubCommentResultFetcher({ exec = execFileSync }={}) {
@@ -43,8 +44,34 @@ export async function runAccountingTick({env=process.env,fetchResult}={}) {
   await savePendingAccounting(file,result.jobs);
   return {status:"completed",outcomes:result.outcomes};
 }
+/** Reserve on the trusted host before the local scheduler can see the job.
+ * A retry after a crash between SQL reserve and queue write is harmless:
+ * SQL returns the same reservation by idempotency key.
+ */
+export async function enrollAccountingJob({job,env=process.env,lifecycle}={}) {
+  if(!job || !env.COP_ACCOUNTING_PENDING_FILE) throw Error("accounting_enrollment_configuration_required");
+  const key=`github-compute:${job.computation_id}:${job.run_id}`;
+  if(job.reservation_key!==key || !Number.isSafeInteger(job.issue_number) || job.issue_number<1)
+    throw Error("accounting_enrollment_invalid_identity");
+  let store=lifecycle;
+  if(!store) {
+    if(!env.SUPABASE_URL || !(env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_KEY))
+      throw Error("accounting_enrollment_missing_credentials");
+    store=createSupabaseInternalBudgetLifecycle({supabase:createClient(
+      env.SUPABASE_URL,env.SUPABASE_SERVICE_ROLE_KEY||env.SUPABASE_SERVICE_KEY,
+      {auth:{persistSession:false,autoRefreshToken:false}}
+    )});
+  }
+  const receipt=await store.reserve({epoch_id:job.epoch_id,budget_ref:job.budget_ref,
+    unit:job.unit,reservation_key:key,amount:job.maximum,actor:job.actor});
+  if(!receipt || typeof receipt!=="object") throw Error("accounting_reservation_unconfirmed");
+  const registered=await registerPendingAccounting(env.COP_ACCOUNTING_PENDING_FILE,
+    {...job,reservation_key:key,reserved:true});
+  return {reservation_key:key,duplicate:!!receipt.duplicate,registered:!registered.duplicate};
+}
+
 if(process.argv[1] && import.meta.url===new URL("file://"+process.argv[1]).href) {
-  runAccountingTick().then(r=>console.log(JSON.stringify(r))).catch(e=>{
+  (process.argv[2]==="enroll" ? readFile(process.argv[3],"utf8").then(JSON.parse).then(job=>enrollAccountingJob({job})) : runAccountingTick()).then(r=>console.log(JSON.stringify(r))).catch(e=>{
     console.error("accounting_tick_failed",String(e.code||e.message).slice(0,100));process.exitCode=1;
   });
 }
