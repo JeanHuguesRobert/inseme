@@ -15,7 +15,7 @@ test("verified authority fixes principal and mandate for budget grant",async()=>
  assert.equal(result.status,201);
  assert.equal(calls.length,1);
  assert.deepEqual(calls[0],{epoch_id:"z0",budget_ref:"budget:test",unit:"TEST_UNIT",
-  amount:"2",actor:"principal:test",mandate_ref:"mandate:verified",authority_ref:"mandate:mandate:verified:v2"});
+  amount:"2",actor:"principal:test",mandate_ref:"mandate:verified",mandate_version:2,authority_ref:"mandate:verified:v2"});
 });
 test("missing or ungranted mandate never reaches budget store",async()=>{
  let calls=0;
