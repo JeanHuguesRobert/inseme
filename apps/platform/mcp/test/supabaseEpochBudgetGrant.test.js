@@ -15,3 +15,15 @@ test("database error propagates",async()=>{
  const grant=createSupabaseEpochBudgetGrant({supabase:{rpc:async()=>({error:{code:"42501"}})}});
  await assert.rejects(()=>grant({}),/COP_ACCOUNTING_GRANT_FAILED/);
 });
+
+test("trusted host uses internal grant RPC without a COP mandate round-trip",async()=>{
+ const {createSupabaseInternalBudgetGrant}=await import("../cop/supabaseEpochBudgetGrant.js");
+ let name,params;
+ const grant=createSupabaseInternalBudgetGrant({supabase:{rpc:async(n,p)=>{name=n;params=p;return {data:{duplicate:false},error:null};}}});
+ const out=await grant({epoch_id:"z0",budget_ref:"test",unit:"TEST_UNIT",amount:"1",actor:"instance:jhn",authority_ref:"internal:trust-perimeter"});
+ assert.equal(name,"cop_grant_epoch_budget_internal");
+ assert.equal(params.p_actor,"instance:jhn");
+ assert.equal(params.p_mandate_ref,undefined);
+ assert.equal(out.duplicate,false);
+ await assert.rejects(()=>grant({epoch_id:"z0",budget_ref:"test",unit:"TEST_UNIT",amount:"1"}),/audit identity/);
+});
