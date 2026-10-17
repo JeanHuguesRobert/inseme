@@ -65,7 +65,7 @@ export function createSupabaseInternalBudgetLifecycle({ supabase } = {}) {
   return {
     reserve: async ({ epoch_id, budget_ref, unit, reservation_key, amount, actor }) => {
       if (![epoch_id, budget_ref, unit, reservation_key, actor].every(v => typeof v === "string" && v.length > 0)
-        || typeof amount !== "string" || !/^(?:0*[1-9][0-9]*|[0-9]*\\.[0-9]*[1-9][0-9]*)$/.test(amount)) {
+        || typeof amount !== "string" || !/^(?:0*[1-9][0-9]*|[0-9]*\.[0-9]*[1-9][0-9]*)$/.test(amount)) {
         throw new TypeError("valid reservation and audit identity required");
       }
       const { data, error } = await supabase.from("cop_accounting_epoch_budget")
@@ -78,7 +78,7 @@ export function createSupabaseInternalBudgetLifecycle({ supabase } = {}) {
     },
     settle: async ({ epoch_id, reservation_key, spent, actor }) => {
       if (![epoch_id, reservation_key, actor].every(v => typeof v === "string" && v.length > 0)
-        || typeof spent !== "string" || !/^(?:0*[0-9]+)(?:\\.[0-9]+)?$/.test(spent)) {
+        || typeof spent !== "string" || !/^(?:0*[0-9]+)(?:\.[0-9]+)?$/.test(spent)) {
         throw new TypeError("valid settlement and audit identity required");
       }
       return rpc("cop_settle_epoch_budget_recorded", {
