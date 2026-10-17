@@ -98,6 +98,7 @@ jobs:
           apps/platform/mcp/test/githubComputeAccountingBridge.test.js
           apps/platform/mcp/test/githubComputeAccountingConsumer.test.js
           apps/platform/mcp/test/githubComputeAccountingPollPolicy.test.js
+          apps/platform/mcp/test/githubComputeAccountingQueue.test.js
 
       - name: COP compute claim and finalizer regression (Issue #120)
         run: >-
