@@ -37,3 +37,25 @@ export async function runPendingAccounting({jobs,fetchResult,lifecycle,nowMs=Dat
   }
   return {jobs:updated,outcomes};
 }
+
+/**
+ * Register a previously reserved computation, preserving a single immutable
+ * binding per key. SQL reservation is the authority; this file is a replayable
+ * projection for the node scheduler.
+ */
+export async function registerPendingAccounting(file, job) {
+  const expected=`github-compute:${job.computation_id}:${job.run_id}`;
+  if(job.reserved!==true || job.reservation_key!==expected ||
+    !Number.isSafeInteger(job.issue_number) || job.issue_number<1)
+    throw Error("COP_ACCOUNTING_UNRESERVED_REGISTRATION");
+  const jobs=await readPendingAccounting(file);
+  const old=jobs.find(j=>j.reservation_key===expected);
+  if(old) {
+    const identity=["epoch_id","budget_ref","unit","computation_id","run_id","repository",
+      "source_ref","issue_number","actor","usage_dimension","reservation_key"];
+    if(identity.some(k=>old[k]!==job[k])) throw Error("COP_ACCOUNTING_QUEUE_IDENTITY_CONFLICT");
+    return {duplicate:true};
+  }
+  await savePendingAccounting(file,[...jobs,{...job,state:"pending",failures:0,nextAtMs:0}]);
+  return {duplicate:false};
+}
