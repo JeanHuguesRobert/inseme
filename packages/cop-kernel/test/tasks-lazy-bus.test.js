@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { defaultBus } from "../src/bus.js";
-import { asCognitivePacket } from "../src/Cop-kerneltasks.js";
+import {
+  asCognitivePacket,
+  createPacketWithInitialContinuation,
+  createTaskWithInitialContinuation,
+} from "../src/Cop-kerneltasks.js";
 
 async function nextTurn() {
   await new Promise((resolve) => setImmediate(resolve));
@@ -95,4 +99,60 @@ test("asCognitivePacket binds a continuation to packet identity and placement wi
 
   packet.payload.packetPlacementWitness[0].store_id = "mutated-copy";
   assert.equal(placements[0].store_id, "sqlite:node-a");
+});
+
+
+test("createPacketWithInitialContinuation makes Packet identity primary", async () => {
+  const placements = [
+    {
+      store_id: "sqlite:packet-first",
+      store_kind: "sqlite",
+      locator: "sqlite:packet-first#packet-first-001",
+      is_primary: true,
+    },
+  ];
+
+  const result = await createPacketWithInitialContinuation({
+    packetId: "packet-first-001",
+    packetKind: "research-work",
+    placements,
+    resumeTo: "handler:research",
+    resumeIntent: "continue-research",
+    state: { question: "bounded" },
+    retry: { attempt: 1, maxAttempts: 3, retryDelayMs: 1000 },
+    emit: false,
+  });
+
+  assert.equal(result.packet.packet_id, "packet-first-001");
+  assert.equal(result.packet.envelope.id, "packet-first-001");
+  assert.equal(result.continuation.packetRef, "packet-first-001");
+  assert.deepEqual(result.continuation.packetPlacementWitness, placements);
+  assert.equal(result.packet.payload.packetRef, "packet-first-001");
+  assert.equal(result.scheduleHint.packetRef, "packet-first-001");
+  assert.equal(result.scheduleHint.jobId, "packet-packet-first-001");
+  assert.notEqual(result.scheduleHint.jobId, result.packet.packet_id);
+});
+
+test("createTaskWithInitialContinuation is a compatibility projection around Packet-first orchestration", async () => {
+  const result = await createTaskWithInitialContinuation({
+    taskType: "compatibility-task",
+    workerHandlerName: "handler:compatibility",
+    packetId: "packet-compatibility-001",
+    resumeTo: "handler:resume",
+    resumeIntent: "resume-compatible-work",
+    state: { value: 42 },
+    emit: false,
+  });
+
+  assert.equal(result.packet.packet_id, "packet-compatibility-001");
+  assert.equal(result.continuation.packetRef, "packet-compatibility-001");
+  assert.equal(result.continuation.taskId, result.task.id);
+  assert.equal(result.task.metadata.packet_ref, "packet-compatibility-001");
+  assert.equal(result.task.metadata.projection_of, "cognitive-packet");
+  assert.equal(result.scheduleHint.packetRef, "packet-compatibility-001");
+  assert.equal(result.scheduleHint.taskId, result.task.id);
+  assert.equal(result.scheduleHint.jobId, "task-" + result.task.id);
+
+  assert.notEqual(result.task.id, result.packet.packet_id);
+  assert.notEqual(result.scheduleHint.jobId, result.packet.packet_id);
 });
