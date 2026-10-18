@@ -5,6 +5,7 @@ on:
       - 'apps/platform/mcp/cop/magistralCapabilityResolver.js'
       - 'apps/platform/mcp/test/magistralCapabilityResolver.test.js'
       - '.github/workflows/fbf-magistral-receipts.yml'
+      - 'scripts/ops/supervise-result*.js'
   workflow_dispatch:
 permissions:
   contents: read
@@ -16,25 +17,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install and test under a non-failing result supervisor
+      - name: Install and test with shared non-failing supervisor
         shell: bash
         run: |
           set +e
-          npm ci --ignore-scripts > /tmp/fbf-install.log 2>&1
-          install_rc=$?
-          if [ "$install_rc" -eq 0 ]; then
-            node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js > /tmp/fbf-magistral.log 2>&1
-            rc=$?
-            phase=test
+          node scripts/ops/supervise-result.js --out fbf-install --phase install -- npm ci --ignore-scripts
+          if node -e 'const r=require("./fbf-install/result.json");process.exit(r.passed?0:1)'; then
+            node scripts/ops/supervise-result.js --out fbf-evidence --phase test -- node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js
           else
-            cp /tmp/fbf-install.log /tmp/fbf-magistral.log
-            rc=$install_rc
-            phase=install
+            mkdir -p fbf-evidence
+            cp fbf-install/result.json fbf-evidence/result.json
+            cp fbf-install/test.log fbf-evidence/test.log
           fi
-          cat /tmp/fbf-magistral.log
-          mkdir -p fbf-evidence
-          cp /tmp/fbf-magistral.log fbf-evidence/test.log
-          printf '{"schema":"fbf.test-result/v1","phase":"%s","exit_code":%s,"passed":%s}\n' "$phase" "$rc" "$([ "$rc" -eq 0 ] && echo true || echo false)" > fbf-evidence/result.json
+          cat fbf-evidence/test.log
           exit 0
       - name: Upload result independently of workflow outcome
         if: always()
