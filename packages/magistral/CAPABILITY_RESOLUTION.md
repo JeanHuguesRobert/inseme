@@ -4,7 +4,7 @@ subtitle: Generic interface between COP orchestration and heterogeneous work cap
 author: Jean Hugues Noël Robert, baron Mariani
 date: '2026-08-23'
 last_modified_at: '2026-10-18'
-version: '0.7'
+version: '0.8'
 document_role: source
 document_kind: architecture-decision
 visibility: public
@@ -24,7 +24,8 @@ review:
   status: unreviewed
   reviewed_by: []
 changelog:
-  - v0.7 (2026-10-18) — clarifies that COP owns logical WorkClaim/lease/fencing semantics; Magistral resolves capabilities and creates ExecutionBindings but does not own logical work coordination.
+  - v0.8 (2026-10-18) — converges the temporary PacketClaim wording onto the already implemented COP PacketClaim (`cop.packet-claim/v1`) from packet coordination issue #121; Magistral remains responsible only for capability resolution and ExecutionBinding.
+  - v0.7 (2026-10-18) — clarifies that COP owns logical claim/lease/fencing semantics; Magistral resolves capabilities and creates ExecutionBindings but does not own logical work coordination.
   - v0.6 (2026-09-19) — records GitHub Issues + Actions + callbacks/polling as a deliberately replaceable control-substrate profile for governed Continuations; GitHub must never own logical continuity.
   - v0.5 (2026-09-19) — adds quota-aware control-capacity governance: control-plane actions consume scarce provider/API/compute/attention resources and should preserve recovery reserve.
   - v0.4 (2026-09-19) — executable provider-neutral ExecutionBinding/ExecutionReceipt seam; asynchronous continuity rule: webhook fast path plus recovery polling/discovery with idempotent reconciliation.
@@ -85,11 +86,11 @@ Fractanet capability
 
 Magistral does not create authority. A capability offer or successful invocation proves neither a Mandate nor entitlement to use the capability.
 
-Magistral also does not own the logical concurrency claim for the work. When exclusive or incompatible work requires single-writer coordination, COP establishes or verifies the applicable `WorkClaim` before or alongside capability resolution. Magistral then binds the already-coordinated logical work to a concrete provider/runtime.
+Magistral also does not own the logical concurrency claim for the work. When exclusive or incompatible work requires single-writer coordination, COP establishes or verifies the applicable `PacketClaim` before or alongside capability resolution. Magistral then binds the already-coordinated logical work to a concrete provider/runtime.
 
 ```text
 COP Continuation / task
-→ COP WorkClaim
+→ COP PacketClaim
 → CapabilityRequirement
 → Magistral resolution
 → ExecutionBinding
@@ -98,7 +99,7 @@ COP Continuation / task
 → COP reconciliation / release
 ```
 
-Provider-native reservations, Git refs, SQL leases, filesystem exclusive-create, queue claims or similar mechanisms MAY enforce a COP WorkClaim on a particular surface. They MUST NOT be promoted into competing logical coordination layers.
+Provider-native reservations, Git refs, SQL leases, filesystem exclusive-create, queue claims or similar mechanisms MAY enforce the COP PacketClaim semantics on a particular surface. They MUST NOT be promoted into competing logical coordination layers.
 
 A resolution MUST NOT widen the mandate carried by the requesting work. Provider capabilities are an upper bound on what can technically be done, never a grant of what may legitimately be done.
 
@@ -293,7 +294,7 @@ This is not vendor avoidance. It is dependency proportionality.
 The stable vocabulary SHOULD distinguish the entity providing useful work from the mechanism used to reach it:
 
 ```text
-COP WorkClaim
+COP PacketClaim
         |
         v
 CapabilityRequirement
