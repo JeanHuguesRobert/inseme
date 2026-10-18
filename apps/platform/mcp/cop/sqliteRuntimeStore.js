@@ -1,6 +1,7 @@
 const WRITABLE_TABLES = new Set([
   "cop_handlers",
   "cop_logical_agents",
+  "cop_packets",
   "cop_tasks",
   "cop_steps",
   "cop_events",
