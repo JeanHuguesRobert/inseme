@@ -36,6 +36,20 @@ function createSqliteExecutor(database) {
         .run(...Object.values(row));
       return row;
     },
+    upsert(table, row, { conflictColumns = ["id"], preserveColumns = [] } = {}) {
+      const columns = Object.keys(row);
+      const placeholders = columns.map(() => "?").join(", ");
+      const preserve = new Set([...conflictColumns, ...preserveColumns]);
+      const updates = columns
+        .filter((column) => !preserve.has(column))
+        .map((column) => `${column} = excluded.${column}`);
+      database
+        .prepare(
+          `INSERT INTO ${table} (${columns.join(", ")}) VALUES (${placeholders}) ON CONFLICT(${conflictColumns.join(", ")}) DO UPDATE SET ${updates.join(", ")}`
+        )
+        .run(...Object.values(row));
+      return row;
+    },
   };
 }
 
@@ -82,6 +96,7 @@ test("portable gateway enforces a mandate before writing the SQLite-validated sc
     packet_id: "packet:1",
     status: "dispatched",
     mandate_id: "mandate:jhn:cop-mandate:1",
+    created_at: "2026-07-01T00:00:00.000Z",
     placements: [
       {
         store_id: "sqlite:jhn-local",
@@ -91,6 +106,12 @@ test("portable gateway enforces a mandate before writing the SQLite-validated sc
       },
     ],
     payload: { objective: "Specify COP/Mandate" },
+  });
+  await gateway.upsertPacket(context, {
+    packet_id: "packet:1",
+    status: "solved",
+    mandate_id: "mandate:jhn:cop-mandate:1",
+    payload: { objective: "Specify COP/Mandate", result: "done" },
   });
   await gateway.upsertTask(context, { id: "task:1", name: "Specify COP/Mandate" });
   await gateway.upsertStep(context, { id: "step:1", task_id: "task:1", name: "Validate SQL" });
@@ -103,11 +124,16 @@ test("portable gateway enforces a mandate before writing the SQLite-validated sc
     content: { version: 1 },
   });
 
-  const packetRow = database.prepare("SELECT id, status, mandate_id, packet_json FROM cop_packets").get();
+  const packetRow = database
+    .prepare("SELECT id, status, mandate_id, packet_json, created_at FROM cop_packets")
+    .get();
+  assert.equal(database.prepare("SELECT count(*) AS count FROM cop_packets").get().count, 1);
   assert.equal(packetRow.id, "packet:1");
-  assert.equal(packetRow.status, "dispatched");
+  assert.equal(packetRow.status, "solved");
   assert.equal(packetRow.mandate_id, "mandate:jhn:cop-mandate:1");
+  assert.equal(packetRow.created_at, "2026-07-01T00:00:00.000Z");
   assert.equal(JSON.parse(packetRow.packet_json).packet_id, "packet:1");
+  assert.equal(JSON.parse(packetRow.packet_json).payload.result, "done");
   assert.equal(database.prepare("SELECT payload FROM cop_events").get().payload, "{}");
   assert.equal(
     database.prepare("SELECT content FROM cop_artifacts").get().content,
