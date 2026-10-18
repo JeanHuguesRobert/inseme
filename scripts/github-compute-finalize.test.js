@@ -23,7 +23,7 @@ echo '{}'
 `);
   fs.chmodSync(gh,0o755);
   fs.writeFileSync(path.join(dir,"event.json"),JSON.stringify({issue:{number:142},comment:{id:123,body:'{"computation_id":"failure-probe"}'}}));
-  if (mode==="replay-unverified") fs.writeFileSync(path.join(dir,"compute-request.json"),JSON.stringify({computation_id:"failure-probe",repository:{name:"test/repo",ref:"a".repeat(40)},operation:{kind:"probe"}}));
+  if (mode.startsWith("replay-")) fs.writeFileSync(path.join(dir,"compute-request.json"),JSON.stringify({computation_id:"failure-probe",repository:{name:"test/repo",ref:"a".repeat(40)},operation:{kind:"probe"}}));
   else fs.writeFileSync(path.join(dir,"compute-result.json"),JSON.stringify({
     schema:"cop.compute-result/v1",computation_id:"failure-probe",
     result:{passed:true},execution_receipt:{status:"completed"}
@@ -34,11 +34,14 @@ echo '{}'
       RUNNER_TEMP:dir,GITHUB_EVENT_PATH:path.join(dir,"event.json"),
       GITHUB_REPOSITORY:"test/repo",GITHUB_RUN_ID:"7",GITHUB_SHA:"a".repeat(40),
       GITHUB_SERVER_URL:"https://github.com",GITHUB_STEP_SUMMARY:path.join(dir,"summary"),
-      ...(mode==="replay-unverified"?{COMPUTE_PHASE_REQUEST:"success",COMPUTE_PHASE_REPLAY:"success",COMPUTE_PHASE_ADMISSION:"skipped",COMPUTE_PHASE_VERIFY:"skipped",COMPUTE_PHASE_EXECUTE:"skipped"}:{})}
+      ...(mode.startsWith("replay-")?{COMPUTE_PHASE_REQUEST:"success",COMPUTE_PHASE_REPLAY:"success",COMPUTE_PHASE_ADMISSION:"skipped",COMPUTE_PHASE_VERIFY:"skipped",COMPUTE_PHASE_EXECUTE:"skipped"}:{})}
   });
   const pending=path.join(dir,"compute-outbox/pending.json");
+  const delivered=path.join(dir,"compute-outbox/delivered.json");
   const diagnostic=path.join(dir,"compute-outbox/delivery-error.json");
   const output={exit:p.status,stderr:p.stderr,pending:fs.existsSync(pending),
+    delivered:fs.existsSync(delivered)?JSON.parse(fs.readFileSync(delivered,"utf8")):null,
+    pendingEnvelope:fs.existsSync(pending)?JSON.parse(fs.readFileSync(pending,"utf8")):null,
     diagnostic:fs.existsSync(diagnostic)?JSON.parse(fs.readFileSync(diagnostic,"utf8")):null};
   fs.rmSync(dir,{recursive:true,force:true});
   return output;
@@ -66,5 +69,16 @@ test("unverified skipped replay is blocked without red GitHub job or forged rece
   const x=run("replay-unverified");
   assert.equal(x.exit,0,x.stderr);
   assert.equal(x.pending,false);
+  assert.ok(x.delivered);
+  assert.match(x.delivered.marker,/cop-compute-hop:failure-probe:blocked:7/);
+  assert.match(x.delivered.body,/"terminal": false/);
   assert.match(x.stderr,/replay blocked/i);
+});
+
+test("unreadable Issue history preserves blocked hop in outbox for later return",()=>{
+  const x=run("replay-unreadable");
+  assert.equal(x.exit,0,x.stderr);
+  // Mock returns valid empty history here; the blocked hop should publish.
+  assert.ok(x.delivered);
+  assert.equal(x.pending,false);
 });
