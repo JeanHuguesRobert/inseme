@@ -43,17 +43,20 @@ test("MUTATE resolves PacketClaim coordinator from the Packet primary placement"
       },
     }),
     packetClaimCoordinatorResolver: localityResolver,
-    coordinationResolver: async () => ({
+    coordinationResolver: async (continuation) => ({
       mode: "MUTATE",
-      packetRef: targetPacket.packet_id,
+      packetRef: continuation.packetRef,
       handlerRef: "handler:node-a",
-      packet: targetPacket,
       ttlMs: 10_000,
     }),
   });
 
   const receipt = await scheduler.execute(
-    createContinuationDescriptor({ resumeTo: "capability:local-mutation" })
+    createContinuationDescriptor({
+      resumeTo: "capability:local-mutation",
+      packetRef: targetPacket.packet_id,
+      packetPlacementWitness: targetPacket.placements,
+    })
   );
 
   assert.equal(executed, 1);
