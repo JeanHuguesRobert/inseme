@@ -140,9 +140,29 @@ export default {
           return;
         }
 
+        const followupContinuation = {
+          ...ctx.currentContinuation,
+          continuationId: `research-review-followup-${Date.now()}`,
+          resumeTo: "reviewer",
+          resumeIntent: "followup-review",
+          packetRef: ctx.currentPacket?.packet_id || ctx.currentContinuation?.packetRef,
+          packetPlacementWitness:
+            ctx.currentPacket?.placements ||
+            ctx.currentContinuation?.packetPlacementWitness ||
+            undefined,
+          state: {
+            originalCorrelationId: "research-001",
+            topicId,
+            note: "Scheduled via COPJobScheduler on per-topic sub-bus",
+          },
+        };
+
         const scheduled = await ctx.jobScheduler.schedule({
           jobId: `review-followup-${Date.now()}`,
           type: "continuation",
+          packetRef: followupContinuation.packetRef,
+          packetPlacementWitness: followupContinuation.packetPlacementWitness,
+          continuation: followupContinuation,
           schedule: {
             type: "exponentialBackoff",
             baseDelayMs: 500,
@@ -151,13 +171,6 @@ export default {
           obsolescence: {
             enabled: true,
             policy: "agent-decided",
-          },
-          resumeTo: "reviewer",
-          resumeIntent: "followup-review",
-          payload: {
-            originalCorrelationId: "research-001",
-            topicId,
-            note: "Scheduled via COPJobScheduler on per-topic sub-bus",
           },
         });
 
