@@ -5,6 +5,7 @@ import { recoverComputeFailure, isSkippedComputeReplay } from "./github-compute-
 
 
 const load = p => { try { return JSON.parse(fs.readFileSync(p,"utf8")); } catch { return null; } };
+const hasMarker = (raw,marker) => { const pages=JSON.parse(raw); if (!Array.isArray(pages) || !pages.every(p=>Array.isArray(p) && p.every(c=>typeof c?.body==="string"))) throw Error("invalid_comment_pages"); return pages.some(p=>p.some(c=>c.body.includes(marker))); }; 
 const runGh = args => spawnSync("gh",["api",...args],{encoding:"utf8",timeout:15000,maxBuffer:2e6,env:process.env});
 const event=load(process.env.GITHUB_EVENT_PATH)||{};
 const issue=Number(event.issue?.number);
@@ -46,8 +47,8 @@ const replaySkipped = isSkippedComputeReplay({request,result,diagnostic:firstDia
     admission:process.env.COMPUTE_PHASE_ADMISSION,verify:process.env.COMPUTE_PHASE_VERIFY,
     execute:process.env.COMPUTE_PHASE_EXECUTE}});
 if (replaySkipped) {
-  const prior = runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`,"--paginate","--jq",".[].body"]);
-  if (prior.status === 0 && prior.stdout.includes(marker)) {
+  const prior = runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`,"--paginate","--slurp"]);
+  if (prior.status === 0 && (()=>{try{return hasMarker(prior.stdout,marker)}catch{return false}})()) {
     console.log("Compute request replay: existing receipt retained; no new receipt");
     process.exit(0);
   }
@@ -96,7 +97,7 @@ if (!Number.isInteger(issue)||issue<1||!repository) {
   console.log("Compute callback unavailable: cannot identify originating Issue");
   process.exit(0);
 }
-const list=runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`,"--paginate","--jq",".[].body"]);
+const list=runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`,"--paginate","--slurp"]);
 if(list.status!==0){
   deliveryFailure("callback_idempotency_read_failed",list.stderr||list.error?.message);
   if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"\nCallback pending: idempotency read failed.\n");
@@ -104,7 +105,7 @@ if(list.status!==0){
 }
 if(list.status===0){
   try {
-    if(list.stdout.includes(marker)) {
+    if(hasMarker(list.stdout,marker)) {
       fs.renameSync(path.join(outbox,"pending.json"),path.join(outbox,"delivered.json"));
       console.log("Compute receipt already published");process.exit(0);
     }
