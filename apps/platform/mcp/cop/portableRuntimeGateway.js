@@ -73,6 +73,13 @@ export function createPortableCopRuntimeGateway({
     authorize({ ...context, action });
     return executor.insert(table, row);
   };
+  const upsert = async (action, context, table, row, options = {}) => {
+    authorize({ ...context, action });
+    if (typeof executor.upsert !== "function") {
+      throw new TypeError("executor.upsert(table, row, options) is required for mutable projections");
+    }
+    return executor.upsert(table, row, options);
+  };
 
   return {
     async registerHandler(context, handler) {
@@ -112,14 +119,14 @@ export function createPortableCopRuntimeGateway({
         ...packet,
         packet_id: packetId,
       };
-      return write(ACTIONS.upsertPacket, context, "cop_packets", {
+      return upsert(ACTIONS.upsertPacket, context, "cop_packets", {
         id: packetId,
         status: packet.status ?? packet.envelope?.status ?? "draft",
         mandate_id: packet.mandate_id ?? packet.envelope?.mandate_id ?? null,
         packet_json: jsonText(normalized),
         created_at: packet.created_at ?? packet.envelope?.createdAt ?? now,
         updated_at: now,
-      });
+      }, { conflictColumns: ["id"], preserveColumns: ["created_at"] });
     },
 
     async upsertTask(context, task) {
@@ -206,6 +213,15 @@ export function createSupabasePortableExecutor(client) {
   return {
     async insert(table, row) {
       const { data, error } = await client.from(table).insert(row).select().maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    async upsert(table, row, { conflictColumns = ["id"] } = {}) {
+      const { data, error } = await client
+        .from(table)
+        .upsert(row, { onConflict: conflictColumns.join(",") })
+        .select()
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
