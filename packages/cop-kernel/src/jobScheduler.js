@@ -1,15 +1,17 @@
 /**
  * jobScheduler.js
  *
- * Higher-level "Job Scheduler" for COP, inspired by cron (Unix) / Task Scheduler (Windows)
- * and building on the Task/Step model.
+ * Higher-level scheduling projection for COP, inspired by cron (Unix) / Task Scheduler (Windows).
+ *
+ * CognitivePacket is the canonical work identity. A Job is only a runtime scheduling view over a
+ * Packet and/or Continuation; jobId MUST NOT become routing, locality, claim, or effect authority.
  *
  * Lineage:
  * - Draws from l8's Task/Step scheduler (cooperating steps, resumption, synchronization).
  * - Designed to be implementable efficiently in Inox (concatenative actors with control/data separation).
  *
  * Purpose:
- * - Provide reliable, persistent scheduling of continuations and tasks.
+ * - Provide reliable, persistent scheduling of Packet-bound continuations and compatibility jobs.
  * - Native support for exponential backoff on retries.
  * - First-class support for obsolescence (decided by handlers, especially AI handlers).
  * - Survives restarts when backed by persistent storage.
@@ -61,8 +63,24 @@ export class COPJobScheduler {
 
     const now = new Date().toISOString();
 
+    const cont = job.continuation || {};
+    const packetRef =
+      job.packetRef ||
+      cont.packetRef ||
+      job.packet?.packet_id ||
+      job.packet?.envelope?.id ||
+      null;
+    const packetPlacementWitness =
+      job.packetPlacementWitness ||
+      cont.packetPlacementWitness ||
+      job.packet?.placements ||
+      job.packet?.envelope?.placements ||
+      null;
+
     const scheduledJob = {
       ...job,
+      packetRef,
+      packetPlacementWitness,
       status: "scheduled",
       createdAt: now,
       nextRunAt: this._computeNextRun(job, now),
@@ -72,7 +90,6 @@ export class COPJobScheduler {
     // the JobScheduler can consult the (shared) capabilityRegistry for validation or
     // to record the satisfaction. This complements the higher-level Cogentia router
     // handler on the bus (which does the primary envelope-based routing decision).
-    const cont = job.continuation || {};
     const reqCap =
       job.requiredCapability ||
       cont.requiredCapability ||
@@ -140,6 +157,10 @@ export class COPJobScheduler {
         continuationId: `job-${job.jobId}`,
         resumeTo: job.resumeTo || "*",
         topicId: topicId || undefined,
+        packetRef: packetRef || undefined,
+        packetPlacementWitness: packetPlacementWitness
+          ? structuredClone(packetPlacementWitness)
+          : undefined,
         conditions: {
           resumeAfter: scheduledJob.nextRunAt,
         },
@@ -151,7 +172,7 @@ export class COPJobScheduler {
                 retryDelayMs: job.schedule.baseDelayMs || 1000,
               }
             : undefined,
-        meta: { jobId: job.jobId, type: "scheduled-job", topicId },
+        meta: { jobId: job.jobId, type: "scheduled-job", topicId, packetRef },
       };
 
       this.scheduler.register(continuationLike);
@@ -162,12 +183,14 @@ export class COPJobScheduler {
       const packetProjection = cont
         ? asCognitivePacket({
             envelope: {
-              packetKind: "job",
+              id: packetRef || undefined,
+              packetKind: packetRef ? "continuation" : "job",
               requiredCapability: reqCap,
+              placements: packetPlacementWitness || undefined,
               ...(job.envelope || cont.envelope || {}),
             },
             payload: cont,
-            kind: "job",
+            kind: packetRef ? "continuation" : "job",
           })
         : null;
 
@@ -176,6 +199,7 @@ export class COPJobScheduler {
         source: "cop-job-scheduler",
         data: {
           jobId: job.jobId,
+          packetRef,
           nextRunAt: scheduledJob.nextRunAt,
           topicId: topicId || null,
           packet: packetProjection, // cop.packet projection wrapper around task/job events (follow-up)
@@ -223,16 +247,28 @@ export class COPJobScheduler {
       const packetProjection =
         job && (job.continuation || job)
           ? asCognitivePacket({
-              envelope: { packetKind: "job", ...(job.envelope || {}) },
+              envelope: {
+                id: job.packetRef || undefined,
+                packetKind: job.packetRef ? "continuation" : "job",
+                placements: job.packetPlacementWitness || undefined,
+                ...(job.envelope || {}),
+              },
               payload: job.continuation || job,
-              kind: "job",
+              kind: job.packetRef ? "continuation" : "job",
             })
           : null;
 
       await effectiveBus.publish({
         type: "cop.job.obsoleted",
         source: "cop-job-scheduler",
-        data: { jobId, reason, decidedBy, topicId: topicId || null, packet: packetProjection },
+        data: {
+          jobId,
+          packetRef: job.packetRef || null,
+          reason,
+          decidedBy,
+          topicId: topicId || null,
+          packet: packetProjection,
+        },
       });
     }
 
@@ -289,6 +325,9 @@ export class COPJobScheduler {
           await this.schedule({
             jobId: "hybrid-from-routed-" + pkt.payload.continuationId,
             type: "continuation",
+            packetRef: pkt.packet_id || pkt.envelope?.id || pkt.payload.packetRef || null,
+            packetPlacementWitness:
+              pkt.placements || pkt.envelope?.placements || pkt.payload.packetPlacementWitness || null,
             continuation: pkt.payload,
             routingDecision: evt.data.routingDecision || null,
             topicId: pkt.envelope && pkt.envelope.topicId,
