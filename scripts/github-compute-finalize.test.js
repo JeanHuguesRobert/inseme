@@ -23,7 +23,8 @@ echo '{}'
 `);
   fs.chmodSync(gh,0o755);
   fs.writeFileSync(path.join(dir,"event.json"),JSON.stringify({issue:{number:142},comment:{id:123,body:'{"computation_id":"failure-probe"}'}}));
-  fs.writeFileSync(path.join(dir,"compute-result.json"),JSON.stringify({
+  if (mode==="replay-unverified") fs.writeFileSync(path.join(dir,"compute-request.json"),JSON.stringify({computation_id:"failure-probe",repository:{name:"test/repo",ref:"a".repeat(40)},operation:{kind:"probe"}}));
+  else fs.writeFileSync(path.join(dir,"compute-result.json"),JSON.stringify({
     schema:"cop.compute-result/v1",computation_id:"failure-probe",
     result:{passed:true},execution_receipt:{status:"completed"}
   }));
@@ -32,7 +33,8 @@ echo '{}'
     env:{...process.env,PATH:bin+path.delimiter+process.env.PATH,MOCK_GH_MODE:mode,
       RUNNER_TEMP:dir,GITHUB_EVENT_PATH:path.join(dir,"event.json"),
       GITHUB_REPOSITORY:"test/repo",GITHUB_RUN_ID:"7",GITHUB_SHA:"a".repeat(40),
-      GITHUB_SERVER_URL:"https://github.com",GITHUB_STEP_SUMMARY:path.join(dir,"summary")}
+      GITHUB_SERVER_URL:"https://github.com",GITHUB_STEP_SUMMARY:path.join(dir,"summary"),
+      ...(mode==="replay-unverified"?{COMPUTE_PHASE_REQUEST:"success",COMPUTE_PHASE_REPLAY:"success",COMPUTE_PHASE_ADMISSION:"skipped",COMPUTE_PHASE_VERIFY:"skipped",COMPUTE_PHASE_EXECUTE:"skipped"}:{})}
   });
   const pending=path.join(dir,"compute-outbox/pending.json");
   const diagnostic=path.join(dir,"compute-outbox/delivery-error.json");
@@ -58,4 +60,11 @@ test("old hop found by paginated Issue search prevents duplicate callback",()=>{
   assert.equal(x.exit,0,x.stderr);
   assert.equal(x.pending,false,"existing comment should be treated as delivered");
   assert.equal(x.diagnostic,null);
+});
+
+test("unverified skipped replay is blocked without red GitHub job or forged receipt",()=>{
+  const x=run("replay-unverified");
+  assert.equal(x.exit,0,x.stderr);
+  assert.equal(x.pending,false);
+  assert.match(x.stderr,/replay blocked/i);
 });
