@@ -87,6 +87,34 @@ external proper name, or in a compound term such as `LogicalAgent`.
 
 ### 2.9 Schemas, Versions, Compatibility Rules
 
+### 2.10 Cognitive Packet composition and scalability
+
+Cognitive Packets compose fractally. An autonomous downstream Packet is linked by stable identity
+(`upstream_packet_id` / `downstream_packet_ids`) and remains independently placeable,
+claimable, resumable and auditable.
+
+Containment and reference have different semantics:
+
+- references express canonical Packet identity and lineage;
+- embedded descendant material is a bounded projection, snapshot or closure witness;
+- an embedded copy is never a second authoritative Packet.
+
+A runtime MAY physically co-locate many Packets in one database, file, process or object store. This
+does not create a global semantic locality. Coordination follows the smallest sufficient locality.
+
+Packet composition MUST remain locally boundable. Implementations SHOULD expose limits appropriate
+to their execution surface, including fan-out, active descendants, retry count, queue size,
+recursion/depth, memory, cost and elapsed time. These limits are local governance/runtime controls,
+not a mandatory global quota service.
+
+For fan-in, upstream Packets and Ithaca SHOULD consume aggregate Yields or reconstructible
+projections where possible rather than materializing complete descendant subgraphs. Routine hot-path
+decisions SHOULD likewise use reconstructible projections instead of unbounded recursive traversal.
+
+A shared database or index MAY host many logical localities. No COP-conformant implementation should
+require a single global Packet registry, scheduler or claim service merely to preserve Packet
+identity.
+
 ## 3. Causality, Ordering, and Time
 
 ### 3.1 Event Ordering (topicSeq)
