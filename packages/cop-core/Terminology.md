@@ -5,7 +5,7 @@ author: "Jean Hugues Noël Robert, baron Mariani"
 affiliation: "Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica"
 date: "2026-08-01"
 last_modified_at: "2026-10-18"
-version: "1.1"
+version: "1.2"
 status: "stable — normative"
 license: "CC BY-SA 4.0"
 language: "en"
@@ -49,7 +49,7 @@ mandate enforcement a universal Core claim.
 
 ```text
 Principal → Mandate → LogicalAgent → HandlerProfile → HandlerInstance
-          → WorkClaim → CapabilityInvocation → Act → Trace → Imputation
+          → PacketClaim → CapabilityInvocation → Act → Trace → Imputation
 ```
 
 ### 1.2 Evidential and Epistemic Chain
@@ -84,7 +84,7 @@ execution, or the protocol used to communicate with an executor.
 | **HandlerInstance**        | A concrete, identifiable incarnation of a Handler Profile executing work in a bounded context. It may be durable, suspended, restarted, substituted, or ephemeral.                                                                              |
 | **Capability**             | A declared ability to perform a bounded transformation or effect. Capability proves neither authority nor entitlement to use it.                                                                                                                |
 | **CapabilityRequirement**  | A transport- and provider-neutral description of work that requires one or more capabilities, together with relevant constraints such as locality, cost, latency, trust, quality, deadline, or execution class.                                 |
-| **WorkClaim**              | A durable coordination record reserving one incompatible unit of logical work for a HandlerInstance or recovery generation. A WorkClaim may carry scope, baseline revision, lease/expiry, generation/fencing token, and idempotency identity. It coordinates execution but creates no Mandate, authority, truth, or permanent ownership. |
+| **PacketClaim**            | A durable COP coordination record (`cop.packet-claim/v1`) reserving incompatible mutation of a Cognitive Packet for a HandlerInstance during a bounded lease epoch. The claim carries Packet identity, holder, fencing epoch and expiry; Packet generation, snapshots and effect-boundary idempotency/version checks provide the complementary stale-state protections. It coordinates execution but creates no Mandate, authority, truth, or permanent ownership. |
 | **CapabilityInvocation**   | One recorded attempt or execution of a Capability by a HandlerInstance.                                                                                                                                                                         |
 | **Act**                    | A meaningful operation or effect asserted by COP. An Act MAY be proposed, authorized, attempted, completed, refused, compensated, or observed; these states MUST NOT be conflated.                                                              |
 | **FractaLog Document**     | A canonical, versioned JSON document (`fractalog.act-record/v1`) containing the complete durable account of one semantic Act phase (`attempt`, `committed`, `failed`, `refused`, `observed`). Relational database columns are strictly projections of this document. |
@@ -178,18 +178,18 @@ processes cease to exist.
 
 ## 6.1 Work coordination and single-writer convergence
 
-COP owns the **logical semantics** of concurrent work coordination. Implementations MAY enforce a WorkClaim through a local filesystem primitive, SQL row/RPC, provider-native compare-and-swap, Git reference, queue reservation, or another atomic mechanism. Those are adapters or enforcement strategies, not separate architectural concepts.
+COP owns the **logical semantics** of concurrent work coordination through the Packet coordination model defined by `cop.packet-coordination/v1` and `cop.packet-claim/v1`. Implementations MAY enforce a PacketClaim through a local filesystem primitive, SQL row/RPC, provider-native compare-and-swap, Git reference, queue reservation, or another atomic mechanism. Those are adapters or enforcement strategies, not separate architectural concepts.
 
 Canonical distinctions:
 
 ```text
-WorkClaim ≠ Mandate
-WorkClaim ≠ ExecutionBinding
-WorkClaim ≠ CapabilityRequirement
-WorkClaim ≠ provider lock primitive
+PacketClaim ≠ Mandate
+PacketClaim ≠ ExecutionBinding
+PacketClaim ≠ CapabilityRequirement
+PacketClaim ≠ provider lock primitive
 ```
 
-A WorkClaim answers:
+A PacketClaim answers:
 
 > Which HandlerInstance or recovery generation currently owns the right to continue this incompatible unit of logical work?
 
@@ -201,7 +201,8 @@ For effectful or otherwise incompatible work, the preferred sequence is:
 
 ```text
 Continuation / task identity
-→ WorkClaim(scope, baseline_revision, generation, idempotency_key)
+→ PacketClaim(packet_ref, handler_ref, epoch, expiry)
+→ Packet snapshot / expected generation / idempotency at the effect boundary
 → CapabilityRequirement
 → capability resolution
 → ExecutionBinding
@@ -219,7 +220,7 @@ current claim generation changed
 → do not silently commit stale effect
 ```
 
-The same logical WorkClaim may be enforced differently on different execution surfaces. COP should not accumulate parallel notions such as "Cogentia claim", "SQL lease", and "GitHub reservation" when they serve the same coordination role. Refactor toward one semantic primitive when duplicated mechanisms begin to diverge.
+The same logical PacketClaim may be enforced differently on different execution surfaces. COP should not accumulate parallel notions such as "Cogentia claim", "SQL lease", and "GitHub reservation" when they serve the same coordination role. Refactor toward one semantic primitive when duplicated mechanisms begin to diverge.
 
 ## 7. Capability resolution boundary
 
