@@ -789,7 +789,11 @@ open → in_progress → exhausted → closed
 
 ## 2.4 Task Object
 
-A **Task** represents a unit of work within a Topic.
+A **Task** represents an optional objective/lifecycle projection within a Topic.
+
+For routable work, the canonical work identity is a **CognitivePacket**. A Task MAY project the
+Packet into workflow-, UI-, reporting-, or storage-oriented state, but Task identity MUST NOT become
+a second source of routing, locality, claim, or effect authority.
 
 ### 2.4.1 JSON Structure
 
@@ -827,10 +831,16 @@ Terminal states: `done`, `failed`, `cancelled`.
 - A Task MUST belong to exactly one Topic.
 - A Task’s lifecycle MUST be explainable by Events in its Topic.
 - Tasks are mutable projections, not primary records.
+- When a Task projects a CognitivePacket, the stable Packet reference SHOULD be retained explicitly.
+- A Task MUST NOT silently replace Packet identity, placement, PacketClaim, budget, Ithaca, or effect-boundary semantics.
 
 ## 2.5 Step Object
 
-A **Step** is a finer-grained subunit inside a Task.
+A **Step** is a finer-grained local execution projection inside a Task or Packet-local plan.
+
+A Step is appropriate while the work remains inside the same relevant locality and does not need
+independent routing, placement, suspension, claim, budget, effect boundary, or Ithaca. When those
+properties become independent, the work SHOULD be promoted to a downstream CognitivePacket.
 
 ### 2.5.1 JSON Structure
 
@@ -886,6 +896,11 @@ Artifacts MUST be immutable. Corrections or revisions MUST produce new Artifacts
 ## 2.7 Continuation Artifact (Standardized)
 
 A **Continuation** is represented as a reserved Artifact type with a specific payload schema.
+
+A Continuation is subordinate to resumable work rather than a competing work identity. When a
+Continuation resumes a CognitivePacket, it SHOULD retain the Packet reference and the minimum
+placement witness needed to resolve the Packet's current authoritative locality. Full Packet state
+need not be embedded in the Continuation.
 
 ### 2.7.1 JSON Structure
 
