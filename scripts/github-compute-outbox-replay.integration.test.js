@@ -22,7 +22,7 @@ case "$*" in
  *actions/artifacts/17/zip*) cat "$MOCK_ZIP"; exit 0;;
  *actions/artifacts*) echo '{"artifacts":[{"id":17,"name":"compute-outbox-100-1","expired":false}]}'; exit 0;;
  *issues/142/comments*) 
-   if [ "$MOCK_REPLAY" = "already" ]; then echo '<!-- cop-compute-result:replay-test -->'; else echo ''; fi
+   if [ "$MOCK_REPLAY" = "already" ]; then echo '[[{"body":"<!-- cop-compute-result:replay-test -->"}]]'; else echo '[[]]'; fi
    exit 0;;
 esac
 echo '{"id":1}'
