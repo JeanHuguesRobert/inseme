@@ -73,3 +73,4 @@ export * from "./copComposition.js";
 
 // Packet-level scheduler coordination (F1 exclusive mutation reference implementation)
 export * from "./packetCoordination.js";
+export * from "./packetClaimLocality.js";
