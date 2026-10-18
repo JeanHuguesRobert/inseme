@@ -96,7 +96,7 @@ if (!Number.isInteger(issue)||issue<1||!repository) {
   console.log("Compute callback unavailable: cannot identify originating Issue");
   process.exit(0);
 }
-const list=runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`]);
+const list=runGh([`repos/${repository}/issues/${issue}/comments?per_page=100`,"--paginate","--jq",".[].body"]);
 if(list.status!==0){
   deliveryFailure("callback_idempotency_read_failed",list.stderr||list.error?.message);
   if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,"\nCallback pending: idempotency read failed.\n");
@@ -104,7 +104,7 @@ if(list.status!==0){
 }
 if(list.status===0){
   try {
-    if(JSON.parse(list.stdout).some(c=>String(c.body).includes(marker))) {
+    if(list.stdout.includes(marker)) {
       fs.renameSync(path.join(outbox,"pending.json"),path.join(outbox,"delivered.json"));
       console.log("Compute receipt already published");process.exit(0);
     }
