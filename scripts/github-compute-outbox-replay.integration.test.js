@@ -41,3 +41,10 @@ echo '{"id":1}'
   }
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+test("forward and outbox replay stay syntactically valid",()=>{
+ for(const script of ["scripts/github-compute-forward.js","scripts/github-compute-outbox-replay.js"]){
+  const r=spawnSync(process.execPath,["--check",script],{encoding:"utf8"});
+  assert.equal(r.status,0,script+": "+r.stderr);
+ }
+});
