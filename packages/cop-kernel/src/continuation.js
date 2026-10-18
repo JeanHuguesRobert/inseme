@@ -72,6 +72,8 @@ export function createContinuationDescriptor(params = {}) {
     retry = null,
     label = null,
     meta = {},
+    packetRef = null,
+    packetPlacementWitness = null,
   } = params;
 
   if (!resumeTo) {
@@ -96,6 +98,10 @@ export function createContinuationDescriptor(params = {}) {
     retry: retry || undefined,
     label,
     meta,
+    packetRef: packetRef || undefined,
+    packetPlacementWitness: packetPlacementWitness
+      ? structuredClone(packetPlacementWitness)
+      : undefined,
     createdAt: new Date().toISOString(),
   };
 
@@ -249,6 +255,10 @@ export function attachContinuationToMessage(message, continuation) {
         correlationId: continuation.correlationId,
         taskId: continuation.taskId,
         stepId: continuation.stepId,
+        packetRef: continuation.packetRef,
+        packetPlacementWitness: continuation.packetPlacementWitness
+          ? structuredClone(continuation.packetPlacementWitness)
+          : undefined,
       },
     },
   };
