@@ -13,6 +13,7 @@ import { createSqliteCopRuntimeStore } from "./sqliteRuntimeStore.js";
 const ROUTES = new Map([
   ["/cop/handlers", "registerHandler"],
   ["/cop/logical-agents", "upsertLogicalAgent"],
+  ["/cop/packets", "upsertPacket"],
   ["/cop/tasks", "upsertTask"],
   ["/cop/steps", "upsertStep"],
   ["/cop/events", "appendEvent"],
