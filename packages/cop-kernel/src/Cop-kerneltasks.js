@@ -440,8 +440,27 @@ export function asCognitivePacket({
   const status = envelope.status || "draft";
   const hops = envelope.hops ? [...envelope.hops] : [];
   const residue = envelope.residue ? [...envelope.residue] : [];
+  const placements = Array.isArray(envelope.placements)
+    ? structuredClone(envelope.placements)
+    : Array.isArray(payload.placements)
+      ? structuredClone(payload.placements)
+      : [];
+
+  const packagedPayload =
+    payload && typeof payload === "object"
+      ? structuredClone(payload)
+      : payload;
+
+  if (packagedPayload?.continuationId) {
+    packagedPayload.packetRef = packagedPayload.packetRef || id;
+    if (!packagedPayload.packetPlacementWitness && placements.length > 0) {
+      packagedPayload.packetPlacementWitness = structuredClone(placements);
+    }
+  }
 
   const packet = {
+    packet_id: id,
+    placements,
     packetKind: kind,
     envelope: {
       protocol: "cognitive_packet.v0",
@@ -457,7 +476,7 @@ export function asCognitivePacket({
         correlationId: payload.correlationId || payload.continuationId || payload.id,
       },
     },
-    payload,
+    payload: packagedPayload,
   };
 
   if (envelope.yield || payload.yield) {
