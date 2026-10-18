@@ -34,10 +34,11 @@ jobs:
           cat /tmp/fbf-magistral.log
           mkdir -p fbf-evidence
           cp /tmp/fbf-magistral.log fbf-evidence/test.log
-          printf '{"schema":"fbf.test-result/v1","exit_code":%s,"passed":%s}\n' "$rc" "$([ "$rc" -eq 0 ] && echo true || echo false)" > fbf-evidence/result.json
+          printf '{"schema":"fbf.test-result/v1","phase":"%s","exit_code":%s,"passed":%s}\n' "$phase" "$rc" "$([ "$rc" -eq 0 ] && echo true || echo false)" > fbf-evidence/result.json
           exit 0
       - name: Upload result independently of workflow outcome
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: fbf-magistral-receipts
