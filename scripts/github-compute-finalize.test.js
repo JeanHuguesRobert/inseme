@@ -13,6 +13,7 @@ function run(mode) {
   const gh=path.join(bin,"gh");
   fs.writeFileSync(gh,`#!/bin/sh
 if [ "$1" = "api" ] && [ "$2" = "repos/test/repo/issues/142/comments?per_page=100" ]; then
+  if [ "$MOCK_GH_MODE" = "old-hop" ]; then echo '<!-- cop-compute-result:failure-probe -->'; exit 0; fi
   if [ "$MOCK_GH_MODE" = "read-fail" ]; then echo 'read failure' >&2; exit 7; fi
   if [ "$MOCK_GH_MODE" = "invalid-json" ]; then echo '{broken'; exit 0; fi
   echo '[]'; exit 0
@@ -51,3 +52,10 @@ for(const [mode,phase] of [["read-fail","callback_idempotency_read_failed"],
     assert.equal(x.diagnostic.computation_id,"failure-probe");
   });
 }
+
+test("old hop found by paginated Issue search prevents duplicate callback",()=>{
+  const x=run("old-hop");
+  assert.equal(x.exit,0,x.stderr);
+  assert.equal(x.pending,false,"existing comment should be treated as delivered");
+  assert.equal(x.diagnostic,null);
+});
