@@ -52,9 +52,12 @@ if (replaySkipped) {
     console.log("Compute request replay: existing receipt retained; no new receipt");
     process.exit(0);
   }
-  console.error("Compute replay skipped without independently verified prior receipt");
-  process.exitCode = 1;
-  process.exit();
+  // Unknown replay state is a blocked operation, not a failed Actions transport.
+  // Never publish a synthetic terminal receipt without an independently seen prior result.
+  console.error("Compute replay blocked: prior receipt could not be verified; manual reconciliation needed");
+  if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+    `\nCompute replay blocked: prior receipt unverified for ${computationId}; reconcile the originating Issue before retry.\n`);
+  process.exit(0);
 }
 
 // Only a confirmed claim holder may finalize a computation. For contenders,
