@@ -44,7 +44,8 @@ export function createMagistralCapabilityResolver({ capabilityCatalog, hostRunti
     assertRuntimeBinding(offer, hostRuntimeClient.list());
 
     return {
-      async execute() {
+      async execute({ executionContext = {} } = {}) {
+        const packetClaim = executionContext.packetClaim || null;
         let executionBinding = createExecutionBinding({
           requirement_ref:
             request.requirement_ref ||
@@ -54,6 +55,8 @@ export function createMagistralCapabilityResolver({ capabilityCatalog, hostRunti
           handler_instance_ref: offer.handler_instance_ref,
           execution_surface: offer.execution_surface,
           provider_ref: offer.provider_ref,
+          packet_claim_ref: packetClaim?.claim_id || null,
+          claim_epoch: packetClaim?.epoch || null,
         });
 
         const output = await hostRuntimeClient.invoke({
