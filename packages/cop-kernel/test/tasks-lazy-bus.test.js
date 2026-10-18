@@ -59,3 +59,40 @@ test("asCognitivePacket delivers concurrent fallback emissions after lazy bus lo
     unsubscribe();
   }
 });
+
+
+test("asCognitivePacket binds a continuation to packet identity and placement without mutating the source", () => {
+  const continuation = {
+    continuationId: "continuation-packet-bound",
+    resumeTo: "magistral:capability-resolution",
+    state: { input: "preserve" },
+  };
+  const original = structuredClone(continuation);
+  const placements = [
+    {
+      store_id: "sqlite:node-a",
+      store_kind: "sqlite",
+      locator: "sqlite:node-a#packet-bound",
+      is_primary: true,
+    },
+  ];
+
+  const packet = asCognitivePacket({
+    kind: "continuation",
+    envelope: {
+      id: "packet-bound",
+      placements,
+    },
+    payload: continuation,
+    emit: false,
+  });
+
+  assert.deepEqual(continuation, original);
+  assert.equal(packet.packet_id, "packet-bound");
+  assert.deepEqual(packet.placements, placements);
+  assert.equal(packet.payload.packetRef, "packet-bound");
+  assert.deepEqual(packet.payload.packetPlacementWitness, placements);
+
+  packet.payload.packetPlacementWitness[0].store_id = "mutated-copy";
+  assert.equal(placements[0].store_id, "sqlite:node-a");
+});
