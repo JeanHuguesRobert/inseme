@@ -1,10 +1,16 @@
 import bus from "../cop/supabaseBus.js";
 import store from "../cop/supabaseStore.js";
+import process from "node:process";
+import { legacyTaskWorkersEnabled } from "../cop/legacyTaskRuntime.js";
 
 export const name = "rag-agent";
 export const taskTypes = ["rag_answer"];
 
 export async function onEvent(event, ctx) {
+  // This agent still uses the historical cop_task/cop_step queue.
+  // Do not populate that queue unless its legacy workers were explicitly enabled.
+  if (!legacyTaskWorkersEnabled(process?.env || {})) return;
+
   // Optionally respond to events to create tasks
   if (event.type === "user_message") {
     const _store = ctx?.store || store;
@@ -41,6 +47,7 @@ export async function onEvent(event, ctx) {
 }
 
 export async function onTask(task, ctx) {
+  if (!legacyTaskWorkersEnabled(process?.env || {})) return;
   if (!task || task.type !== "rag_answer") return;
   try {
     const _store = ctx?.store || store;
@@ -62,6 +69,7 @@ export async function onTask(task, ctx) {
 }
 
 export async function onStep(task, step, ctx) {
+  if (!legacyTaskWorkersEnabled(process?.env || {})) return;
   const _store = ctx?.store || store;
   const _bus = ctx?.bus || bus;
   try {
