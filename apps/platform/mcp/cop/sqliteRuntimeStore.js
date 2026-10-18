@@ -278,6 +278,28 @@ export function createSqliteCopRuntimeStore(database) {
           .run(...Object.values(row));
         return row;
       },
+      upsert(table, row, { conflictColumns = ["id"], preserveColumns = [] } = {}) {
+        if (!WRITABLE_TABLES.has(table)) throw new TypeError(`COP table is not writable: ${table}`);
+        const columns = Object.keys(row);
+        if (
+          columns.length === 0 ||
+          !columns.every(validColumn) ||
+          !conflictColumns.every(validColumn) ||
+          !preserveColumns.every(validColumn)
+        ) {
+          throw new TypeError("COP upsert has invalid columns");
+        }
+        const placeholders = columns.map(() => "?").join(", ");
+        const preserve = new Set([...conflictColumns, ...preserveColumns]);
+        const updates = columns
+          .filter((column) => !preserve.has(column))
+          .map((column) => `${column} = excluded.${column}`);
+        const statement =
+          `INSERT INTO ${table} (${columns.join(", ")}) VALUES (${placeholders}) ` +
+          `ON CONFLICT(${conflictColumns.join(", ")}) DO UPDATE SET ${updates.join(", ")}`;
+        database.prepare(statement).run(...Object.values(row));
+        return row;
+      },
     },
 
     async resolveMandate(mandateRef) {
