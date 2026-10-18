@@ -3,7 +3,7 @@ canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/packages/cop
 author: Jean Hugues Noël Robert, baron Mariani
 affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
 license: CC BY-SA 4.0
-last_modified_at: 2026-09-19T00:00:00.000Z
+last_modified_at: 2026-10-18T00:00:00.000Z
 last_stamped_at: 2026-06-01T00:00:00.000Z
 language: en
 date: '2026-09-15'
@@ -186,6 +186,49 @@ This ensures:
 - clear causality,
 - inspectable interactions,
 - elimination of hidden dependencies.
+
+### 6.1 Cognitive Packet scalability and bounded fractality
+
+Cognitive Packet composition MUST remain scalable without requiring a universal registry, scheduler,
+claim service, or globally ordered packet graph.
+
+The following invariants apply:
+
+- **Reference is canonical for autonomous descendants.** A downstream Cognitive Packet that has its
+  own identity, placement, claim, continuation, budget, effect boundary, or Ithaca MUST remain an
+  independently addressable Packet. Upstream Packets SHOULD retain stable references such as
+  `lineage.downstream_packet_ids`, not authoritative nested copies.
+- **Embedding is bounded and non-authoritative.** A Packet MAY embed a descendant snapshot,
+  materialized projection, witness, or aggregate when closure or locality justifies it. Such embedded
+  material MUST identify its source Packet and MUST NOT silently become a second source of authority.
+- **Propagation is explicitly boundable.** Runtimes MUST be able to bound locally relevant
+  propagation dimensions such as fan-out, queue size, retries, recursion/depth, memory, cost, time,
+  and concurrent downstream work. COP does not require one global quota; limits SHOULD be enforced
+  at the smallest sufficient locality.
+- **Aggregate before convergence.** When many downstream Packets return toward one upstream Packet
+  or Ithaca, handlers SHOULD return the smallest useful Yield or aggregate projection rather than
+  synchronously transporting every intermediate trace or full descendant state.
+- **Projection beats routine graph traversal.** Hot decisions SHOULD use reconstructible projections
+  (for example active descendant counts, terminal counts, aggregate Yield refs, current claim state)
+  rather than repeatedly traversing an arbitrarily large Packet graph. The projection remains
+  derived state and MUST be rebuildable.
+- **Historical truth and hot-path state are distinct.** Append-only Events/Artifacts remain the
+  durable causal record. Implementations MAY maintain current-state projections, indexes, caches, or
+  compacted summaries for latency, provided those accelerators are reconstructible and do not become
+  competing authority.
+- **No mandatory global packet singleton.** Packet identity MUST NOT imply that every Packet is
+  registered, scheduled, claimed, indexed, or stored through one globally mandatory service.
+  Physical infrastructure MAY be shared by many logical localities without making that
+  infrastructure a semantic global authority.
+
+The intended scaling property is:
+
+> **System cost should primarily follow the number of Packets that must share the same invariant at
+> the same time, not the total number of Packets that merely exist.**
+
+A single Packet that legitimately requires one-writer mutation may become a hot spot. The correct
+response is to reduce the scope or frequency of convergence when semantics allow it (for example
+through downstream aggregation or additional independent sub-Packets), not to weaken the invariant.
 
 ---
 
