@@ -27,7 +27,7 @@ export default {
     {
       name: "research-initial",
       description:
-        "L'agent Researcher crée un Task + Step + Continuation via les helpers génériques du kernel (démontre la généricité au niveau COP).",
+        "L'agent Researcher crée un CognitivePacket + Continuation liée via le helper Packet-first du kernel.",
       async run(ctx) {
         ctx.emit({
           type: "agent.thought",
@@ -35,14 +35,12 @@ export default {
         });
 
         try {
-          // Use the new generic kernel helper that ties Task/Step/Continuation together
-          // This is the kind of high-level primitive that prevents every app/brique from reinventing the same orchestration.
-          const { createTaskWithInitialContinuation } =
+          const { createPacketWithInitialContinuation } =
             await import("../../../packages/cop-kernel/src/Cop-kerneltasks.js");
 
-          const { task, continuation } = await createTaskWithInitialContinuation({
-            taskType: "research-review",
-            workerAgentName: "researcher",
+          const { packet, continuation } = await createPacketWithInitialContinuation({
+            packetId: "research-review-001",
+            packetKind: "research-review",
             resumeTo: "reviewer",
             resumeIntent: "provide-critique",
             state: {
@@ -50,16 +48,17 @@ export default {
               confidence: 0.7,
             },
             rootCorrelationId: "research-001",
-            channel: "bac-a-sable-demo",
           });
 
-          ctx.currentTask = task;
+          ctx.currentPacket = packet;
           ctx.currentContinuation = continuation;
 
-          console.log(`[SCENARIO] Generic Task+Continuation created via kernel: task=${task.id}`);
+          console.log(
+            `[SCENARIO] Packet+Continuation created via kernel: packet=${packet.packet_id}`
+          );
         } catch (e) {
           console.warn(
-            "[SCENARIO] Generic helper not fully wired or real call failed, using fallback:",
+            "[SCENARIO] Packet-first helper failed, using fallback continuation:",
             e.message
           );
           // Fallback keeps the scenario runnable while the kernel matures
