@@ -334,6 +334,7 @@ export class COPScheduler {
           triggeringEvent,
           reason: resumeReason,
           payload,
+          executionContext: packetClaim ? { packetClaim } : {},
         });
 
         if (packetClaim) {
