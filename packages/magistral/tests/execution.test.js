@@ -101,3 +101,35 @@ test("nonterminal receipts preserve correlation while execution is still pending
   assert.equal(receipt.terminal, false);
   assert.equal(receipt.binding.provider_execution_id, "job-b-100");
 });
+
+
+test("execution binding can trace the COP PacketClaim without treating it as authority", () => {
+  const binding = bindingFor("provider:a", {
+    packet_claim_ref: "packet:42:claim:7",
+    claim_epoch: 7,
+  });
+
+  assert.equal(binding.packet_claim_ref, "packet:42:claim:7");
+  assert.equal(binding.claim_epoch, 7);
+  assert.equal(binding.mandate_ref, undefined);
+  assert.throws(
+    () => bindingFor("provider:a", { packet_claim_ref: "packet:42:claim:7" }),
+    /packet_claim_ref and claim_epoch must be provided together/
+  );
+  assert.throws(
+    () => bindingFor("provider:a", { packet_claim_ref: "packet:42:claim:7", claim_epoch: 0 }),
+    /claim_epoch must be null or an integer >= 1/
+  );
+});
+
+test("provider execution attachment preserves PacketClaim correlation", () => {
+  const pending = bindingFor("provider:a", {
+    packet_claim_ref: "packet:42:claim:8",
+    claim_epoch: 8,
+  });
+  const bound = attachProviderExecution(pending, "native-run-claim-8");
+
+  assert.equal(bound.packet_claim_ref, "packet:42:claim:8");
+  assert.equal(bound.claim_epoch, 8);
+  assert.equal(bound.provider_execution_id, "native-run-claim-8");
+});
