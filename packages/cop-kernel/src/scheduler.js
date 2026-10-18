@@ -24,6 +24,8 @@ export class COPScheduler {
     this.bus = busInstance;
     this.handlerResolver = options.handlerResolver || null;
     this.readOnlyStore = options.readOnlyStore || null;
+    this.packetClaimCoordinator = options.packetClaimCoordinator || null;
+    this.coordinationResolver = options.coordinationResolver || null;
     this.pending = new Map(); // continuationId -> { continuation, registeredAt, timeoutId? }
     this.topicBuses = new Map(); // topicId -> SubBus (per-topic isolation for Fractanet)
     this.unsubscribe = null;
@@ -108,9 +110,16 @@ export class COPScheduler {
    * profiles.  With one, it executes the designated Step through the handler
    * supplied by the host (for example Magistral).
    */
-  setExecutionContext({ handlerResolver = null, readOnlyStore = null } = {}) {
+  setExecutionContext({
+    handlerResolver = null,
+    readOnlyStore = null,
+    packetClaimCoordinator = null,
+    coordinationResolver = null,
+  } = {}) {
     this.handlerResolver = handlerResolver;
     this.readOnlyStore = readOnlyStore;
+    this.packetClaimCoordinator = packetClaimCoordinator;
+    this.coordinationResolver = coordinationResolver;
     return this;
   }
 
@@ -283,8 +292,41 @@ export class COPScheduler {
     await effectiveBus.publish(resumeMsg);
 
     let execution = null;
+    let packetClaim = null;
+
     if (this.handlerResolver) {
       try {
+        if (this.coordinationResolver) {
+          const coordination = await this.coordinationResolver(finalContinuation, {
+            triggeringEvent,
+            reason: resumeReason,
+            payload,
+          });
+
+          if (coordination?.mode === "MUTATE") {
+            if (!this.packetClaimCoordinator || typeof this.packetClaimCoordinator.tryClaim !== "function") {
+              throw new Error("packet_claim_coordinator_required");
+            }
+            const { packetRef, handlerRef, ttlMs = 60_000 } = coordination;
+            if (!packetRef || !handlerRef) {
+              throw new Error("packet_mutation_coordination_requires_packetRef_and_handlerRef");
+            }
+            const claimed = await this.packetClaimCoordinator.tryClaim({
+              packetRef,
+              handlerRef,
+              ttlMs,
+            });
+            if (!claimed?.ok) {
+              const error = new Error(claimed?.code || "PACKET_BUSY");
+              error.code = claimed?.code || "PACKET_BUSY";
+              error.packet_ref = packetRef;
+              error.active_claim = claimed?.active_claim || null;
+              throw error;
+            }
+            packetClaim = claimed.claim;
+          }
+        }
+
         execution = await executeContinuation({
           continuation: finalContinuation,
           handlerResolver: this.handlerResolver,
@@ -293,7 +335,35 @@ export class COPScheduler {
           reason: resumeReason,
           payload,
         });
+
+        if (packetClaim) {
+          const completed = await this.packetClaimCoordinator.complete({
+            packetRef: packetClaim.packet_ref,
+            claimId: packetClaim.claim_id,
+            handlerRef: packetClaim.handler_ref,
+            epoch: packetClaim.epoch,
+            resultRef: `continuation:${finalContinuation.continuationId}:execution`,
+          });
+          if (!completed?.ok) {
+            const error = new Error(completed?.code || "STALE_CLAIM");
+            error.code = completed?.code || "STALE_CLAIM";
+            throw error;
+          }
+        }
       } catch (error) {
+        if (packetClaim && typeof this.packetClaimCoordinator?.release === "function") {
+          try {
+            await this.packetClaimCoordinator.release({
+              packetRef: packetClaim.packet_ref,
+              claimId: packetClaim.claim_id,
+              handlerRef: packetClaim.handler_ref,
+              epoch: packetClaim.epoch,
+            });
+          } catch {
+            // Best effort only. An unreleased lease still expires and can be reclaimed.
+          }
+        }
+
         await effectiveBus.publish({
           type: "cop.continuation.execution_failed",
           source: "cop-scheduler",
