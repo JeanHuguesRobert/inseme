@@ -49,6 +49,7 @@ export function createPortableCopRuntimeHandlers({ gateway, resolveContext } = {
   return {
     registerHandler: write("registerHandler"),
     upsertLogicalAgent: write("upsertLogicalAgent"),
+    upsertPacket: write("upsertPacket"),
     upsertTask: write("upsertTask"),
     upsertStep: write("upsertStep"),
     appendEvent: write("appendEvent"),
