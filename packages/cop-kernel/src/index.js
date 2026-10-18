@@ -15,10 +15,9 @@ export * from "./events.js";
 export * from "./artifacts.js";
 export * from "./runtimeModel.js";
 
-// Task / Step / Continuation orchestration helpers (generic foundation)
-// These provide the reusable Task/Step lifecycle + tight integration with
-// Continuations and JobScheduler so that apps and briques do not have to
-// reinvent coordination logic at their level.
+// Packet-first orchestration helpers.
+// CognitivePacket is the primary work identity; Continuation is resumable state.
+// Task/Step helpers remain as optional compatibility/execution projections.
 export * from "./Cop-kerneltasks.js";
 
 // New for priority C (minimal bus + scheduler)
@@ -30,8 +29,8 @@ export * from "./continuation.js";
 export * from "./effectObservation.js";
 export * from "./call.js";
 
-// Higher-level Job Scheduler (cron-like, with exponential backoff + obsolescence)
-// See lineage in jobScheduler.js: l8 Task/Step scheduler → COP → future Inox implementation.
+// Higher-level runtime scheduling projection (cron-like, backoff + obsolescence).
+// Job identifiers schedule Packet/Continuation work; they are not COP work identity.
 export * from "./jobScheduler.js";
 
 // Capability registry stub for Cogentia-style envelope routing decisions
