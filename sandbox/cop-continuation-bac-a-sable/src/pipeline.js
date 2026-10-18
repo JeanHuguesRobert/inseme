@@ -127,7 +127,9 @@ export async function runScenario(scenarioName, { scenariosDir }) {
     },
 
     scheduler: defaultScheduler,
-    jobScheduler: defaultJobScheduler, // Higher-level COPJobScheduler (with backoff + obsolescence)
+    // Runtime scheduling projection over Packet/Continuation work.
+    // jobId is not the canonical work identity; packetRef is when available.
+    jobScheduler: defaultJobScheduler,
 
     // Capability registry stub: allows router agents to make envelope-only decisions
     // using requiredCapability etc. (see cognitive-packet-router-demo).
