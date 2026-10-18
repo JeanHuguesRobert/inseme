@@ -17,12 +17,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Install and test with shared non-failing supervisor
         shell: bash
         run: |
           set +e
-          node scripts/ops/supervise-result.js --out fbf-install --phase install -- npm ci --ignore-scripts
+          corepack enable
+          node scripts/ops/supervise-result.js --out fbf-install --phase install -- corepack pnpm install --frozen-lockfile --ignore-scripts
           if node -e 'const r=require("./fbf-install/result.json");process.exit(r.passed?0:1)'; then
             node scripts/ops/supervise-result.js --out fbf-evidence --phase test -- node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js scripts/github-compute-finalize.test.js scripts/ops/supervise-result.test.js
           else
