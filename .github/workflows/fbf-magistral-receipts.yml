@@ -1,0 +1,39 @@
+name: FBF Magistral receipt regression
+on:
+  push:
+    paths:
+      - 'apps/platform/mcp/cop/magistralCapabilityResolver.js'
+      - 'apps/platform/mcp/test/magistralCapabilityResolver.test.js'
+      - '.github/workflows/fbf-magistral-receipts.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install monorepo dependencies
+        run: npm ci --ignore-scripts
+      - name: Run exact resolver tests and preserve outcome
+        shell: bash
+        run: |
+          set +e
+          node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js > /tmp/fbf-magistral.log 2>&1
+          rc=$?
+          cat /tmp/fbf-magistral.log
+          mkdir -p fbf-evidence
+          cp /tmp/fbf-magistral.log fbf-evidence/test.log
+          printf '{"schema":"fbf.test-result/v1","exit_code":%s,"passed":%s}\n' "$rc" "$([ "$rc" -eq 0 ] && echo true || echo false)" > fbf-evidence/result.json
+          exit 0
+      - name: Upload result independently of workflow outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fbf-magistral-receipts
+          path: fbf-evidence/
+          if-no-files-found: warn
+          retention-days: 14
