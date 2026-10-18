@@ -4,6 +4,7 @@ import { createCapabilityCatalog, codexAcpCapabilityOffer } from "@inseme/magist
 import { createContinuationDescriptor } from "../../../../packages/cop-kernel/src/continuation.js";
 import { COPScheduler } from "../../../../packages/cop-kernel/src/scheduler.js";
 import { COPBus } from "../../../../packages/cop-kernel/src/bus.js";
+import { InMemoryPacketClaimCoordinator } from "../../../../packages/cop-kernel/src/packetCoordination.js";
 import { createHostRuntimeClient, codexAcpRuntime } from "../cop/hostRuntimeClient.js";
 import {
   createMagistralCapabilityResolver,
@@ -219,4 +220,44 @@ test("FBF: runtime error without explicit status yields failed receipt", async (
   assert.equal(result.execution_receipt.status, "failed");
   assert.equal(result.execution_receipt.error, "provider_timeout");
   assert.equal(result.execution_receipt.binding.provider_execution_id, "run-timeout-1");
+});
+
+
+test("PacketClaim acquired by COP is traced into the Magistral ExecutionBinding", async () => {
+  const catalog = createCapabilityCatalog({ offers: [codexAcpCapabilityOffer()] });
+  const runtimeClient = createHostRuntimeClient({
+    runtimes: [codexAcpRuntime({ command: "codex-acp.cmd" })],
+  });
+  runtimeClient.invoke = async () => ({
+    text: "mutating result",
+    status: "completed",
+    provider_execution_id: "native-packet-claim-1",
+  });
+
+  const continuation = createContinuationDescriptor({
+    resumeTo: MAGISTRAL_CAPABILITY_RESOLUTION,
+    state: capabilityContinuation().state,
+  });
+  const coordinator = new InMemoryPacketClaimCoordinator();
+  const scheduler = new COPScheduler(new COPBus({ name: "magistral-packet-claim" }), {
+    handlerResolver: createMagistralCapabilityResolver({
+      capabilityCatalog: catalog,
+      hostRuntimeClient: runtimeClient,
+    }),
+    packetClaimCoordinator: coordinator,
+    coordinationResolver: async () => ({
+      mode: "MUTATE",
+      packetRef: "packet:magistral-binding-test",
+      handlerRef: "handler:scheduler:test",
+      ttlMs: 60_000,
+    }),
+  });
+
+  const receipt = await scheduler.execute(continuation);
+  const binding = receipt.execution.result.execution_binding;
+
+  assert.equal(binding.packet_claim_ref, "packet:magistral-binding-test:claim:1");
+  assert.equal(binding.claim_epoch, 1);
+  assert.equal(binding.provider_execution_id, "native-packet-claim-1");
+  assert.equal(coordinator.inspect("packet:magistral-binding-test").active_claim, null);
 });
