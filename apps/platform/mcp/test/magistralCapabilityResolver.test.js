@@ -5,6 +5,7 @@ import { createContinuationDescriptor } from "../../../../packages/cop-kernel/sr
 import { COPScheduler } from "../../../../packages/cop-kernel/src/scheduler.js";
 import { COPBus } from "../../../../packages/cop-kernel/src/bus.js";
 import { InMemoryPacketClaimCoordinator } from "../../../../packages/cop-kernel/src/packetCoordination.js";
+import { createPrimaryPlacementPacketClaimResolver } from "../../../../packages/cop-kernel/src/packetClaimLocality.js";
 import { createHostRuntimeClient, codexAcpRuntime } from "../cop/hostRuntimeClient.js";
 import {
   createMagistralCapabilityResolver,
@@ -260,4 +261,60 @@ test("PacketClaim acquired by COP is traced into the Magistral ExecutionBinding"
   assert.equal(binding.claim_epoch, 1);
   assert.equal(binding.provider_execution_id, "native-packet-claim-1");
   assert.equal(coordinator.inspect("packet:magistral-binding-test").active_claim, null);
+});
+
+
+test("packetized JHN ACP delegation preserves Packet locality through Continuation and ExecutionBinding", async () => {
+  const catalog = createCapabilityCatalog({ offers: [codexAcpCapabilityOffer()] });
+  const runtimeClient = createHostRuntimeClient({
+    runtimes: [codexAcpRuntime({ command: "codex-acp.cmd" })],
+  });
+  runtimeClient.invoke = async () => ({
+    text: "packet-bound mutation",
+    status: "completed",
+    provider_execution_id: "native-packetized-jhn-1",
+  });
+
+  const coordinator = new InMemoryPacketClaimCoordinator();
+  const packet = {
+    packet_id: "packet:jhn-acp-locality",
+    placements: [
+      {
+        store_id: "sqlite:jhn-local",
+        store_kind: "sqlite",
+        locator: "sqlite:jhn-local#packet:jhn-acp-locality",
+        is_primary: true,
+      },
+    ],
+  };
+
+  const packetClaimCoordinatorResolver = createPrimaryPlacementPacketClaimResolver({
+    async resolveCoordinator({ storeId }) {
+      return storeId === "sqlite:jhn-local" ? coordinator : null;
+    },
+  });
+
+  const handler = createMagistralAcpContinuationHandler({
+    capabilityCatalog: catalog,
+    hostRuntimeClient: runtimeClient,
+    working_directory: process.cwd(),
+    packetClaimCoordinatorResolver,
+    coordinationResolver: async (continuation) => ({
+      mode: "MUTATE",
+      packetRef: continuation.packetRef,
+      handlerRef: "handler:jhn-acp-locality",
+      ttlMs: 60_000,
+    }),
+  });
+
+  const effect = await handler.invoke({
+    message: "Apply a bounded packet-governed mutation.",
+    packet,
+  });
+
+  assert.equal(effect.text, "packet-bound mutation");
+  assert.equal(effect.execution_binding.packet_claim_ref, "packet:jhn-acp-locality:claim:1");
+  assert.equal(effect.execution_binding.claim_epoch, 1);
+  assert.equal(effect.execution_binding.provider_execution_id, "native-packetized-jhn-1");
+  assert.equal(coordinator.inspect(packet.packet_id).active_claim, null);
 });
