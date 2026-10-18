@@ -71,7 +71,7 @@ export function createMagistralCapabilityResolver({ capabilityCatalog, hostRunti
 
         const executionReceipt = createExecutionReceipt({
           binding: executionBinding,
-          status: output?.status || "completed",
+          status: output?.status || (output?.error ? "failed" : "completed"),
           artifact_refs: output?.artifact_refs || [],
           result_refs: output?.result_refs || [],
           log_refs: output?.log_refs || [],
