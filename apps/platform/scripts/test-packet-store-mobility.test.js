@@ -7,6 +7,7 @@ import {
   transferPacket,
 } from "../../../packages/cop-core/dist/packet-store.js";
 import { resumePacket, computeContentHash } from "../../../packages/cop-core/dist/closure.js";
+import { InMemoryPacketClaimCoordinator } from "../../../packages/cop-kernel/src/packetCoordination.js";
 
 test("SQLite -> PostgreSQL mobility reality test: same packet moves across stores and resumes on destination node", async () => {
   // 1. Initialize SQLite store on Node A and PostgreSQL store on Node B
@@ -180,4 +181,63 @@ test("primary placement is optional for an unplaced packet but can be required e
     () => primaryPacketPlacement(packet, { required: true }),
     /has no primary placement/
   );
+});
+
+
+test("placement handoff plus PacketClaim epoch fences the former primary holder", async () => {
+  let now = Date.parse("2026-10-18T13:00:00.000Z");
+  const coordinator = new InMemoryPacketClaimCoordinator({ now: () => now });
+  const source = createSqlitePacketStore("sqlite:node-a");
+  const target = createPostgresPacketStore("postgres:node-b");
+  const packetId = "pkt-authority-handoff";
+
+  await source.savePacket({
+    packet_id: packetId,
+    created_at: new Date(now).toISOString(),
+    hops: [],
+    payload: { operation: "mutate-after-handoff" },
+    status: "dispatched",
+  });
+
+  const claimA = await coordinator.tryClaim({
+    packetRef: packetId,
+    handlerRef: "handler:node-a",
+    ttlMs: 1_000,
+  });
+  assert.equal(claimA.ok, true);
+  assert.equal(claimA.claim.epoch, 1);
+
+  const { packet: moved } = await transferPacket(packetId, source, target, {
+    setTargetPrimary: true,
+  });
+  assert.equal(primaryPacketPlacement(moved, { required: true }).store_id, target.store_id);
+
+  // Authority moves only after the old lease can no longer authorize canonical mutation.
+  now += 1_001;
+  const claimB = await coordinator.tryClaim({
+    packetRef: packetId,
+    handlerRef: "handler:node-b",
+    ttlMs: 1_000,
+  });
+  assert.equal(claimB.ok, true);
+  assert.equal(claimB.claim.epoch, 2);
+
+  const staleA = await coordinator.complete({
+    packetRef: packetId,
+    claimId: claimA.claim.claim_id,
+    handlerRef: claimA.claim.handler_ref,
+    epoch: claimA.claim.epoch,
+    resultRef: "artifact:late-node-a-result",
+  });
+  assert.equal(staleA.ok, false);
+  assert.equal(staleA.code, "STALE_CLAIM");
+
+  const currentB = await coordinator.complete({
+    packetRef: packetId,
+    claimId: claimB.claim.claim_id,
+    handlerRef: claimB.claim.handler_ref,
+    epoch: claimB.claim.epoch,
+    resultRef: "artifact:node-b-result",
+  });
+  assert.equal(currentB.ok, true);
 });
