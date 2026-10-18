@@ -13,8 +13,28 @@ export function createPrimaryPlacementPacketClaimResolver({ resolveCoordinator }
   }
 
   return async function resolvePacketClaimCoordinator(coordination = {}, context = {}) {
-    const packet = coordination.packet || null;
-    const packetRef = coordination.packetRef || packet?.packet_id || packet?.id || null;
+    const continuation = context.continuation || null;
+    const packetRef =
+      coordination.packetRef ||
+      coordination.packet?.packet_id ||
+      coordination.packet?.id ||
+      continuation?.packetRef ||
+      null;
+
+    const placementWitness =
+      continuation?.packetPlacementWitness &&
+      Array.isArray(continuation.packetPlacementWitness)
+        ? continuation.packetPlacementWitness
+        : null;
+
+    const packet =
+      coordination.packet ||
+      (packetRef && placementWitness
+        ? {
+            packet_id: packetRef,
+            placements: structuredClone(placementWitness),
+          }
+        : null);
 
     if (!packet) {
       return {
