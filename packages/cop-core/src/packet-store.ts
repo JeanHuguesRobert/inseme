@@ -132,6 +132,17 @@ function extractPacketId(packet: any): string {
   return id;
 }
 
+function decodeStoredPacket(value: unknown): CognitivePacket | null {
+  if (value == null) return null;
+  if (typeof value === "string") {
+    return JSON.parse(value) as CognitivePacket;
+  }
+  if (typeof value === "object") {
+    return value as CognitivePacket;
+  }
+  throw new Error("Stored CognitivePacket payload is neither JSON text nor an object");
+}
+
 /**
  * In-Memory / Ephemeral Packet Store implementation.
  */
@@ -305,12 +316,16 @@ export function createPostgresPacketStore(
       };
 
       if (options.supabaseClient) {
-        await options.supabaseClient.from("cop_packets").upsert({
+        const now = new Date().toISOString();
+        const { error } = await options.supabaseClient.from("cop_packets").upsert({
           id: packetId,
-          packet_json: toStore,
+          packet_json: JSON.stringify(toStore),
           status: packet.status || "draft",
-          updated_at: new Date().toISOString(),
+          mandate_id: packet.mandate_id || null,
+          created_at: packet.created_at || now,
+          updated_at: now,
         });
+        if (error) throw error;
       } else {
         fallback.set(packetId, JSON.stringify(toStore));
       }
@@ -320,12 +335,13 @@ export function createPostgresPacketStore(
 
     async getPacket(packet_id: string): Promise<CognitivePacket | null> {
       if (options.supabaseClient) {
-        const { data } = await options.supabaseClient
+        const { data, error } = await options.supabaseClient
           .from("cop_packets")
           .select("packet_json")
           .eq("id", packet_id)
           .maybeSingle();
-        return data?.packet_json || null;
+        if (error) throw error;
+        return decodeStoredPacket(data?.packet_json);
       }
       const raw = fallback.get(packet_id);
       return raw ? JSON.parse(raw) : null;
@@ -335,8 +351,11 @@ export function createPostgresPacketStore(
       if (options.supabaseClient) {
         let query = options.supabaseClient.from("cop_packets").select("packet_json");
         if (filter.status) query = query.eq("status", filter.status);
-        const { data } = await query;
-        return (data || []).map((row: any) => row.packet_json);
+        const { data, error } = await query;
+        if (error) throw error;
+        return (data || [])
+          .map((row: any) => decodeStoredPacket(row.packet_json))
+          .filter((packet: CognitivePacket | null): packet is CognitivePacket => packet !== null);
       }
       const results: CognitivePacket[] = [];
       for (const raw of fallback.values()) {
