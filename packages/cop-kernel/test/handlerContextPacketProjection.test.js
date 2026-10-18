@@ -2,55 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { createHandlerContext } from "../src/handlerContext.js";
-import { setStorage } from "../src/storage.js";
-
-function createTaskStepStorageFixture() {
-  const tasks = new Map();
-  const steps = new Map();
-
-  return {
-    tasks: {
-      async upsert(row) {
-        tasks.set(row.id, structuredClone(row));
-        return structuredClone(row);
-      },
-      async update(id, patch) {
-        const current = tasks.get(id);
-        const next = { ...current, ...structuredClone(patch) };
-        tasks.set(id, next);
-        return structuredClone(next);
-      },
-      async get(id) {
-        return tasks.has(id) ? structuredClone(tasks.get(id)) : null;
-      },
-      async list() {
-        return [...tasks.values()].map((row) => structuredClone(row));
-      },
-    },
-    steps: {
-      async upsert(row) {
-        steps.set(row.id, structuredClone(row));
-        return structuredClone(row);
-      },
-      async get(id) {
-        return steps.has(id) ? structuredClone(steps.get(id)) : null;
-      },
-      async list() {
-        return [...steps.values()].map((row) => structuredClone(row));
-      },
-      async update(taskId, id, patch) {
-        const current = steps.get(id);
-        if (!current || current.task_id !== taskId) return null;
-        const next = { ...current, ...structuredClone(patch) };
-        steps.set(id, next);
-        return structuredClone(next);
-      },
-    },
-  };
-}
+import { initStorage, setStorage } from "../src/storage.js";
 
 test("HandlerContext keeps Step local while preserving Packet correlation through Task projection", async () => {
-  setStorage(createTaskStepStorageFixture());
+  const storage = await initStorage({ type: "memory" });
+  storage.clearCache();
+  setStorage(storage);
 
   try {
     const context = createHandlerContext({
