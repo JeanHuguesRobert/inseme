@@ -1,5 +1,7 @@
 import bus from "../cop/supabaseBus.js";
 import store from "../cop/supabaseStore.js";
+import process from "node:process";
+import { legacyTaskWorkersEnabled } from "../cop/legacyTaskRuntime.js";
 
 // TODO: jhr, should get that from vault
 const BOT_NAME = import.meta.env?.VITE_BOT_NAME || "Ophélia";
@@ -18,9 +20,21 @@ export async function onEvent(event, ctx) {
 
       if (!topicId || !userText) return;
 
-      // Idempotency: ensure we don't create duplicate tasks for same source event
+      // Fast reflex remains independent of the legacy background Task queue.
+      const fastReply = `${BOT_NAME}: Merci — j'ai bien noté : ${userText.slice(0, 140)}`;
+      await _bus.publish({
+        topicId,
+        type: "assistant_reflex",
+        payload: { text: fastReply, kind: "fast" },
+        createdBy: null,
+      });
+
+      if (!legacyTaskWorkersEnabled(process?.env || {})) {
+        return;
+      }
+
+      // Legacy deep-reply queue (cop_task/cop_step), opt-in only.
       const sourceEventId = event.id || event.payload?.eventId || event.meta?.eventId || null;
-      // Create a task for deep reply (write-ahead): persist task and step before publishing events
       const taskPayload = {
         topic_id: topicId,
         type: "deep_reply",
@@ -31,22 +45,12 @@ export async function onEvent(event, ctx) {
       const task = await _store.saveTask(taskPayload);
       if (!task) return;
 
-      // Create initial step in idempotent way (task_id,name unique)
       await _store.saveStep({
         task_id: task.id,
         name: "compose",
         status: "pending",
         input: { text: userText },
         created_by: null,
-      });
-
-      // Fast reply (immediate small message) - publish *after* we persisted the intent
-      const fastReply = `${BOT_NAME}: Merci — j'ai bien noté : ${userText.slice(0, 140)}`;
-      await _bus.publish({
-        topicId,
-        type: "assistant_reflex",
-        payload: { text: fastReply, kind: "fast" },
-        createdBy: null,
       });
 
       // Publish task_state_changed event only if the task appears newly created (best-effort heuristic)
@@ -77,6 +81,7 @@ export async function onTick(_ctx) {
 }
 
 export async function onTask(task, _ctx) {
+  if (!legacyTaskWorkersEnabled(process?.env || {})) return;
   // Handle a single claimed task by delegating to onStep for sequential steps.
   try {
     if (!task || task.type !== "deep_reply") return;
@@ -107,6 +112,7 @@ export async function onTask(task, _ctx) {
 }
 
 export async function onStep(task, step, _ctx) {
+  if (!legacyTaskWorkersEnabled(process?.env || {})) return;
   try {
     if (!task || task.type !== "deep_reply") return;
     const _bus = _ctx?.bus || bus;
