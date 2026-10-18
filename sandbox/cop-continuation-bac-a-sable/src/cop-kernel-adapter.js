@@ -34,13 +34,14 @@ try {
   console.warn("[ADAPTER] Impossible de charger certains modules de cop-kernel :", e.message);
 }
 
-// Create a default higher-level JobScheduler wired to the low-level components.
-// This is the main stable entry point for scheduling resumable work with backoff/obsolescence.
+// Create a default JobScheduler projection wired to the low-level components.
+// CognitivePacket remains the work identity; this object only projects Packet/Continuation
+// work into time/backoff/obsolescence scheduling state.
 // Hybrid wiring: we also pass the capabilityRegistry so that JobScheduler can consult
 // policy decisions (e.g. requiredCapability satisfaction) during scheduling/obsolescence.
-// The primary "Cogentia router" policy still lives as a higher agent on the bus (via
-// cogentiaRoutePacket / createCogentiaRouterAgent), but the scheduler can react to or
-// validate using the same registry.
+// The primary Cogentia routing policy still lives as a higher handler on the bus (via
+// cogentiaRoutePacket / createCogentiaRouterAgent); the scheduler can react to or
+// validate using the same registry without becoming the routing authority.
 const defaultJobScheduler = new COPJobScheduler({
   scheduler: defaultScheduler,
   bus: defaultBus,
