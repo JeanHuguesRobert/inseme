@@ -202,3 +202,21 @@ test("C1: unavailable capability returns a no-route failure without invoking any
   );
   assert.equal(invocations, 0);
 });
+
+test("FBF: runtime error without explicit status yields failed receipt", async () => {
+  const catalog = createCapabilityCatalog({ offers: [codexAcpCapabilityOffer()] });
+  const runtimeClient = createHostRuntimeClient({
+    runtimes: [codexAcpRuntime({ command: "codex-acp.cmd" })],
+  });
+  runtimeClient.invoke = async () => ({
+    error: "provider_timeout", provider_execution_id: "run-timeout-1",
+  });
+  const resolver = createMagistralCapabilityResolver({
+    capabilityCatalog: catalog, hostRuntimeClient: runtimeClient,
+  });
+  const handler = await resolver(MAGISTRAL_CAPABILITY_RESOLUTION, capabilityContinuation());
+  const result = await handler.execute();
+  assert.equal(result.execution_receipt.status, "failed");
+  assert.equal(result.execution_receipt.error, "provider_timeout");
+  assert.equal(result.execution_receipt.binding.provider_execution_id, "run-timeout-1");
+});
