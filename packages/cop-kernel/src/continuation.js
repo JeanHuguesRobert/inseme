@@ -408,6 +408,7 @@ export async function executeContinuation(params = {}) {
     triggeringEvent = null,
     reason = "manual",
     payload = {},
+    executionContext = {},
   } = params;
 
   if (!continuation?.continuationId || !continuation?.resumeTo) {
@@ -442,6 +443,7 @@ export async function executeContinuation(params = {}) {
     reason,
     readOnlyStore,
     payload,
+    executionContext,
   });
 
   return {
