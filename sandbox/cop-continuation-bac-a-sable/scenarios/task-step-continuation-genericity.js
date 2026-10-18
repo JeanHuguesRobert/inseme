@@ -1,33 +1,32 @@
 /**
  * Scenario: task-step-continuation-genericity
  *
- * Validates the high-level generic helpers we added in Cop-kerneltasks.js
- * (`createTaskWithInitialContinuation`, etc.) work correctly together with
- * the scheduler and topic-scoped buses.
+ * Validates the Packet-first orchestration helper from Cop-kerneltasks.js
+ * together with the scheduler and topic-scoped buses.
  *
- * Goal: ensure we have real genericity at the kernel level instead of
- * forcing every application to reinvent Task + Step + Continuation coordination.
+ * Goal: ensure applications can start resumable work from CognitivePacket +
+ * Continuation directly, without inventing a Task identity first.
  */
 
 export default {
   name: "task-step-continuation-genericity",
   description:
-    "Exercises the generic Task/Step + Continuation orchestration helpers with topic scoping and the scheduler.",
+    "Exercises generic CognitivePacket + Continuation orchestration with topic scoping and the scheduler.",
 
   defaultTopicId: "genericity-test-topic",
 
   steps: [
     {
-      name: "create-task-with-linked-continuation",
+      name: "create-packet-with-linked-continuation",
       description:
-        "Use the high-level generic helper to create a Task + linked Continuation in one call.",
+        "Use the Packet-first helper to create a CognitivePacket + linked Continuation in one call.",
       async run(ctx) {
-        const { createTaskWithInitialContinuation } =
+        const { createPacketWithInitialContinuation } =
           await import("../../../packages/cop-kernel/src/Cop-kerneltasks.js");
 
-        const result = await createTaskWithInitialContinuation({
-          taskType: "test-genericity",
-          workerAgentName: "test-agent",
+        const result = await createPacketWithInitialContinuation({
+          packetId: "genericity-packet-001",
+          packetKind: "test-genericity",
           resumeTo: "reviewer",
           resumeIntent: "continue-work",
           state: { draft: "initial state for genericity test" },
@@ -35,19 +34,18 @@ export default {
           retry: { maxAttempts: 3, baseDelayMs: 200 },
         });
 
-        ctx.genericity = { task: result.task, continuation: result.continuation };
+        ctx.genericity = { packet: result.packet, continuation: result.continuation };
 
         ctx.emit({
-          type: "generic.task.created",
+          type: "generic.packet.created",
           data: {
-            taskId: result.task.id,
+            packetId: result.packet.packet_id,
             continuationId: result.continuation.continuationId,
-            synthetic: !!result.task.synthetic,
           },
         });
 
         console.log(
-          `[GENERICITY-TEST] Created Task ${result.task.id} with linked Continuation via kernel helper.`
+          `[GENERICITY-TEST] Created Packet ${result.packet.packet_id} with linked Continuation via kernel helper.`
         );
       },
     },
@@ -80,7 +78,7 @@ export default {
 
         await topicBus.publish({
           type: "genericity.trigger",
-          data: { note: "resuming generic task" },
+          data: { note: "resuming generic packet" },
         });
 
         // Give the scheduler a moment
