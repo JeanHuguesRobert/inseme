@@ -5,6 +5,7 @@ import store from "./cop/supabaseStore.js";
 import opheliaAgent from "./agents/opheliaAgent.js";
 import ragAgent from "./agents/ragAgent.js";
 import process from "node:process";
+import { legacyTaskWorkersEnabled } from "./cop/legacyTaskRuntime.js";
 
 let running = true;
 let subs = [];
@@ -14,6 +15,7 @@ let lastHeartbeat = new Date().toISOString();
 let workers = [];
 let readClient = null;
 let bus = null;
+let legacyWorkersEnabled = legacyTaskWorkersEnabled(process?.env || {});
 
 async function init() {
   // Allow switching bus implementation via env var COP_BUS
@@ -253,6 +255,13 @@ async function startWorkers(
       : 2
   )
 ) {
+  if (!legacyWorkersEnabled) {
+    console.warn(
+      "ws-runner: legacy cop_task/cop_step workers disabled; set COP_ENABLE_LEGACY_TASK_WORKERS=1 to opt in"
+    );
+    return;
+  }
+
   for (let i = 0; i < count; i++) {
     const spawnWorker = async () => {
       while (running) {
@@ -299,7 +308,7 @@ function startHealthServer(
 async function initRunner() {
   await init();
 
-  // subscribe and start workers
+  // Subscribe to events. Legacy singular-table Task/Step claim workers are opt-in.
   let backoff = 500;
   while (running) {
     try {
@@ -312,7 +321,7 @@ async function initRunner() {
     }
   }
 
-  startWorkers();
+  await startWorkers();
   startHealthServer();
   // start reclaimer: scan running tasks and clear stale leases (best-effort)
   setInterval(async () => {
@@ -339,6 +348,7 @@ export {
   init,
   bus,
   store,
+  legacyWorkersEnabled,
   opheliaAgent,
   ragAgent,
   initRunner,
