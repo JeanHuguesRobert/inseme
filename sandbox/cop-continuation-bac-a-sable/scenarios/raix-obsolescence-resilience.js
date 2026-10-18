@@ -7,13 +7,13 @@
  * - An "AI agent" running on Node A (or via the jobScheduler) decides the work is obsolete (markObsolete)
  * - The obsoleted event propagates across the federation
  * - Node B (independent jurisdiction / redundant capacity) detects it and provides a replacement:
- *     * Uses createTaskWithInitialContinuation (kernel genericity helper)
- *     * Associates via associateContinuationToTask
+ *     * Forks a downstream CognitivePacket from the obsolete Packet
+ *     * Creates a Continuation bound to that downstream Packet
  *     * Registers the replacement continuation on its own scheduler
  * - Full causal/event trace preserved; no silent loss of work.
  *
  * This directly proves that obsolescence decisions by agents do not brick work when RAIX redundancy exists,
- * and that the kernel-level Task/Continuation helpers + federation are sufficient.
+ * and that Packet lineage + Continuation + federation are sufficient.
  *
  * Part of the "we must be sure that COP works" series before any platform/brique integration.
  */
@@ -21,7 +21,7 @@
 export default {
   name: "raix-obsolescence-resilience",
   description:
-    "RAIX resilience test: AI agent on federated Node A obsoletes a job; independent Node B detects via federation and seamlessly provides a replacement continuation using kernel Task helpers. Exercises obsolescence propagation, createTaskWithInitialContinuation, federation interest, and cross-node handoff.",
+    "RAIX resilience test: Node A obsoletes scheduled Packet work; independent Node B detects via federation and provides a downstream replacement Packet + Continuation. Exercises obsolescence propagation, Packet lineage, federation interest, and cross-node handoff.",
 
   defaultTopicId: "raix-resilience-topic-42",
 
@@ -79,24 +79,38 @@ export default {
       async run(ctx) {
         const { jobSchedulerA, topicId } = ctx.raix;
 
+        const { createPacketWithInitialContinuation } =
+          await import("../../../packages/cop-kernel/src/Cop-kerneltasks.js");
+
+        const initial = await createPacketWithInitialContinuation({
+          packetId: "raix-critical-deliberation-packet-001",
+          packetKind: "regulatory-deliberation",
+          resumeTo: "primary-deliberation-agent",
+          resumeIntent: "advance-regulatory-analysis",
+          state: {
+            matter: "loi-constitutionnelle-2026",
+            sensitivity: "high",
+          },
+          retry: { maxAttempts: 5, retryDelayMs: 400 },
+        });
+
         const scheduled = await jobSchedulerA.schedule({
-          jobId: "raix-critical-deliberation-001",
+          jobId: "raix-critical-deliberation-job-001",
           type: "continuation",
+          packetRef: initial.packet.packet_id,
+          packetPlacementWitness: initial.continuation.packetPlacementWitness,
+          continuation: initial.continuation,
           schedule: {
             type: "exponentialBackoff",
             baseDelayMs: 400,
             maxRetries: 5,
           },
-          obsolescence: { enabled: true, policy: "agent-decided" },
-          resumeTo: "primary-deliberation-agent",
-          resumeIntent: "advance-regulatory-analysis",
+          obsolescence: { enabled: true, policy: "handler-decided" },
           topicId,
-          payload: {
-            matter: "loi-constitutionnelle-2026",
-            sensitivity: "high",
-          },
         });
 
+        ctx.raix.initialPacket = initial.packet;
+        ctx.raix.initialContinuation = initial.continuation;
         ctx.raix.initialJob = scheduled;
         ctx.emit({
           type: "raix.work.scheduled.on.a",
@@ -146,56 +160,68 @@ export default {
           );
         }
 
-        // === KEY GENERICITY + RAIX HANDOFF DEMO ===
-        const { createTaskWithInitialContinuation, associateContinuationToTask } =
-          await import("../../../packages/cop-kernel/src/Cop-kerneltasks.js");
+        // === PACKET-FIRST RAIX HANDOFF DEMO ===
+        const { copFork } =
+          await import("../../../packages/cop-kernel/src/copComposition.js");
+        const { createContinuationDescriptor } =
+          await import("../../../packages/cop-kernel/src/continuation.js");
 
-        const replacement = await createTaskWithInitialContinuation({
-          taskType: "regulatory-deliberation-replacement",
-          workerAgentName: "node-b-resilient-agent",
+        const replacementPacket = copFork(
+          ctx.raix.initialPacket,
+          {
+            id: "raix-critical-deliberation-replacement-packet-001",
+            kind: "regulatory-deliberation-replacement",
+            intent: "continue-from-obsoleted-state",
+            routeTo: "node-b-deliberation-pool",
+            spawnReason: "replacement-after-obsolescence",
+            payload: {
+              previousJobId: ctx.raix.initialJob?.jobId,
+              takeoverReason: ctx.raix.obsoleteDecision?.reason,
+              previousPacketRef: ctx.raix.initialPacket?.packet_id,
+              originalState: ctx.raix.initialContinuation?.state,
+              raixHandoff: true,
+            },
+          },
+          { emit: true }
+        );
+
+        const replacementContinuation = createContinuationDescriptor({
           resumeTo: "node-b-deliberation-pool",
           resumeIntent: "continue-from-obsoleted-state",
-          state: {
-            previousJobId: ctx.raix.initialJob?.jobId,
-            takeoverReason: ctx.raix.obsoleteDecision?.reason,
-            originalPayload: ctx.raix.initialJob?.payload,
-            raixHandoff: true,
+          state: replacementPacket.payload,
+          retry: { maxAttempts: 3, retryDelayMs: 300 },
+          packetRef: replacementPacket.packet_id,
+          packetPlacementWitness: replacementPacket.placements || null,
+          meta: {
+            topicId,
+            upstreamPacketRef: ctx.raix.initialPacket?.packet_id,
+            spawnReason: "replacement-after-obsolescence",
           },
-          topicId,
-          retry: { maxAttempts: 3, baseDelayMs: 300 },
         });
-
-        const association = await associateContinuationToTask(
-          replacement.continuation.continuationId,
-          replacement.task?.id || "synthetic-raix-task",
-          null
-        );
 
         // Register replacement on the (topic-scoped) scheduler available in context
         if (schedulerB && typeof schedulerB.register === "function") {
-          schedulerB.register(replacement.continuation);
+          schedulerB.register(replacementContinuation);
         } else if (ctx.scheduler && typeof ctx.scheduler.register === "function") {
-          ctx.scheduler.register(replacement.continuation);
+          ctx.scheduler.register(replacementContinuation);
         }
 
         ctx.raix.replacementCreated = {
-          task: replacement.task,
-          continuation: replacement.continuation,
-          association,
+          packet: replacementPacket,
+          continuation: replacementContinuation,
         };
 
         ctx.emit({
           type: "raix.replacement.created.on.b",
           data: {
-            taskId: replacement.task?.id,
-            continuationId: replacement.continuation.continuationId,
-            associatedTo: association.taskId,
-            synthetic: !!replacement.task?.synthetic,
+            packetId: replacementPacket.packet_id,
+            upstreamPacketId: replacementPacket.envelope.lineage?.upstream_packet_id,
+            continuationId: replacementContinuation.continuationId,
           },
         });
 
         console.log(
-          `[RAIX] Replacement Task+Continuation created via kernel helper and registered. Work rescued across the federated mesh.`
+          `[RAIX] Replacement Packet+Continuation created with explicit lineage and registered. Work rescued across the federated mesh.`
         );
       },
     },
@@ -216,7 +242,7 @@ export default {
           success = false;
         } else {
           console.log(
-            `[RAIX] Replacement continuation ${replacement.continuation.continuationId} registered on scheduler B.`
+            `[RAIX] Replacement Packet ${replacement.packet.packet_id} / continuation ${replacement.continuation.continuationId} registered on scheduler B.`
           );
         }
 
@@ -253,7 +279,9 @@ export default {
             success,
             issues,
             obsoleteSeenOnB: r.obsoletedOnB.length,
+            replacementPacketId: replacement?.packet?.packet_id,
             replacementContinuationId: replacement?.continuation?.continuationId,
+            upstreamPacketId: replacement?.packet?.envelope?.lineage?.upstream_packet_id,
             initialJobObsoleted: !!r.obsoleteDecision,
           },
         });
