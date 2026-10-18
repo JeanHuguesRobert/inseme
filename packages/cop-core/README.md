@@ -83,16 +83,23 @@ from concrete runtimes, interfaces, adapters, and integration surfaces.
 
 ## Core Concepts
 
-COP defines a small set of foundational primitives:
+COP defines a small set of foundational primitives and projections:
 
 - **Event** — immutable record of a cognitive action
 - **Topic** — unit of cognitive coherence
-- **Task** — structured objective within a Topic
-- **Step** — atomic unit of work inside a Task
+- **CognitivePacket** — primary routable unit of bounded work, identity, locality and return
+- **Continuation** — durable suspended/resumable state bound to a CognitivePacket
+- **Task** — optional objective/lifecycle projection within a Topic; not a competing work identity
+- **Step** — optional local execution projection inside a Task or Packet-local plan
 - **Artifact** — durable cognitive output
-- **Continuation** — suspended, resumable execution state
 
-All durable state lives in Events and Artifacts.
+When work becomes independently routable, placeable, resumable, claimable or governed, it SHOULD be
+represented as its own CognitivePacket rather than as an autonomous Task/Step hidden inside another
+Packet. Task, Step and runtime Job identifiers MAY remain useful projections, but they MUST NOT
+silently replace Packet identity or Packet authority.
+
+All durable state lives in Events and Artifacts; mutable Task/Step/Job views are reconstructible
+projections.
 
 Handlers are **stateless**.
 
