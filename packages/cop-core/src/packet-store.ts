@@ -3,6 +3,31 @@ import type { CognitivePacket, PacketPlacement } from "./packet.js";
 /**
  * Common interface for storage backends capable of holding Cognitive Packets.
  */
+export function primaryPacketPlacement(
+  packet: Pick<CognitivePacket, "packet_id" | "placements">,
+  options: { required?: boolean } = {}
+): PacketPlacement | null {
+  const placements = packet.placements || [];
+  const primaries = placements.filter((placement) => placement.is_primary === true);
+
+  if (primaries.length > 1) {
+    throw new Error(
+      `Packet ${packet.packet_id} has ambiguous primary placements: ${primaries
+        .map((placement) => placement.store_id)
+        .join(", ")}`
+    );
+  }
+
+  if (primaries.length === 0) {
+    if (options.required) {
+      throw new Error(`Packet ${packet.packet_id} has no primary placement`);
+    }
+    return null;
+  }
+
+  return primaries[0];
+}
+
 export interface PacketStore {
   readonly store_id: string;
   readonly store_kind: "sqlite" | "postgres" | "github" | "object_storage" | "memory";
@@ -55,6 +80,13 @@ export async function transferPacket(
 
   const setPrimary = options.setTargetPrimary ?? true;
 
+  const currentPrimary = primaryPacketPlacement(packet);
+  if (currentPrimary && currentPrimary.store_id !== sourceStore.store_id) {
+    throw new Error(
+      `Packet ${packet_id} primary placement is ${currentPrimary.store_id}, not source store ${sourceStore.store_id}`
+    );
+  }
+
   // Save in target store
   const targetPlacement = await targetStore.savePacket({
     ...packet,
@@ -73,13 +105,16 @@ export async function transferPacket(
   // Re-fetch the updated packet with all placement traces
   const updatedPacket = (await targetStore.getPacket(packet_id))!;
 
-  const sourcePlacement: PacketPlacement = packet.placements?.find(
+  const originalSourcePlacement = packet.placements?.find(
     (p) => p.store_id === sourceStore.store_id
-  ) || {
-    store_id: sourceStore.store_id,
-    store_kind: sourceStore.store_kind,
-    locator: `${sourceStore.store_id}#${packet.packet_id}`,
-    is_primary: !setPrimary,
+  );
+  const sourcePlacement: PacketPlacement = {
+    ...(originalSourcePlacement || {
+      store_id: sourceStore.store_id,
+      store_kind: sourceStore.store_kind,
+      locator: `${sourceStore.store_id}#${packet.packet_id}`,
+    }),
+    is_primary: setPrimary ? false : (originalSourcePlacement?.is_primary ?? true),
   };
 
   return {
