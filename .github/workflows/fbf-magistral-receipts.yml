@@ -24,7 +24,14 @@ jobs:
           set +e
           node scripts/ops/supervise-result.js --out fbf-install --phase install -- corepack pnpm install --frozen-lockfile --ignore-scripts
           if node -e 'const r=require("./fbf-install/result.json");process.exit(r.passed?0:1)'; then
-            node scripts/ops/supervise-result.js --out fbf-evidence --phase test -- node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js scripts/github-compute-finalize.test.js scripts/ops/supervise-result.test.js
+            node scripts/ops/supervise-result.js --out fbf-build --phase build -- corepack pnpm --filter @inseme/cop-core run build
+            if node -e 'const r=require("./fbf-build/result.json");process.exit(r.passed?0:1)'; then
+              node scripts/ops/supervise-result.js --out fbf-evidence --phase test -- node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js scripts/github-compute-finalize.test.js scripts/ops/supervise-result.test.js
+            else
+              mkdir -p fbf-evidence
+              cp fbf-build/result.json fbf-evidence/result.json
+              cp fbf-build/test.log fbf-evidence/test.log
+            fi
           else
             mkdir -p fbf-evidence
             cp fbf-install/result.json fbf-evidence/result.json
