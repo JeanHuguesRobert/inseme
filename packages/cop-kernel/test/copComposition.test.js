@@ -145,3 +145,93 @@ test("copComposition: copCascadeCancel aborts parent and all active children", a
   assert.equal(c3.envelope.status, "cancelled");
   assert.equal(result.totalCancelled, 3);
 });
+
+
+test("copComposition: local maxFanOut refuses excess descendants without mutating parent lineage", () => {
+  const parent = asCognitivePacket({
+    kind: "parent",
+    envelope: { id: "parent-bounded-fanout" },
+    emit: false,
+  });
+
+  const first = copFork(
+    parent,
+    { id: "child-bounded-1", payload: { n: 1 } },
+    { emit: false, maxFanOut: 1 }
+  );
+
+  assert.equal(first.envelope.lineage.upstream_packet_id, "parent-bounded-fanout");
+  assert.deepEqual(parent.envelope.lineage.downstream_packet_ids, ["child-bounded-1"]);
+
+  assert.throws(
+    () =>
+      copFork(
+        parent,
+        { id: "child-bounded-2", payload: { n: 2 } },
+        { emit: false, maxFanOut: 1 }
+      ),
+    (error) =>
+      error?.code === "PACKET_FANOUT_LIMIT_REACHED" &&
+      error?.packet_ref === "parent-bounded-fanout" &&
+      error?.max_fan_out === 1
+  );
+
+  assert.deepEqual(parent.envelope.lineage.downstream_packet_ids, ["child-bounded-1"]);
+});
+
+test("copComposition: autonomous descendants are canonically referenced, not embedded in parent", () => {
+  const parent = asCognitivePacket({
+    kind: "parent",
+    envelope: { id: "parent-reference-only" },
+    payload: { stable: true },
+    emit: false,
+  });
+
+  const child = copFork(
+    parent,
+    { id: "child-reference-only", payload: { large: { nested: "state" } } },
+    { emit: false }
+  );
+
+  assert.deepEqual(parent.envelope.lineage.downstream_packet_ids, ["child-reference-only"]);
+  assert.equal(parent.payload.child, undefined);
+  assert.equal(parent.payload.children, undefined);
+  assert.equal(parent.payload.downstream_packets, undefined);
+  assert.equal(child.envelope.lineage.upstream_packet_id, "parent-reference-only");
+});
+
+test("copComposition: copAll aggregates child Yields without copying child packet state into parent", async () => {
+  const parent = asCognitivePacket({
+    kind: "parent",
+    envelope: { id: "parent-aggregate-only" },
+    payload: { request: "aggregate results" },
+    emit: false,
+  });
+
+  const c1 = copFork(parent, { id: "aggregate-child-1" }, { emit: false });
+  const c2 = copFork(parent, { id: "aggregate-child-2" }, { emit: false });
+
+  await markPacketSolved(c1, {
+    yieldData: { semantic_yield: { value: 2 } },
+    emit: false,
+  });
+  await markPacketSolved(c2, {
+    yieldData: { semantic_yield: { value: 3 } },
+    emit: false,
+  });
+
+  const result = await copAll([c1, c2], {
+    combiner: (yields) => ({
+      total: yields.reduce((sum, entry) => sum + entry.semantic_yield.value, 0),
+    }),
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.combinedYield, { total: 5 });
+  assert.deepEqual(parent.envelope.lineage.downstream_packet_ids, [
+    "aggregate-child-1",
+    "aggregate-child-2",
+  ]);
+  assert.equal(parent.payload.downstream_packets, undefined);
+  assert.equal(parent.payload.children, undefined);
+});
