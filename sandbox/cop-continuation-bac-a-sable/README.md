@@ -2,6 +2,7 @@
 title: COP Continuation Bac-à-Sable
 author: unknown
 date: '2026-06-12'
+last_modified_at: '2026-10-18'
 document_role: source
 document_kind: documentation
 visibility: public
@@ -70,11 +71,12 @@ node index.js replay trace-xxx.jsonl
 ## Structure
 
 - `index.js` — CLI unique (style Cogentia)
-- `src/pipeline.js` — Moteur d'exécution des scénarios (utilise le vrai cop-kernel quand possible, y
-  compris COPJobScheduler + Fractanet bus primitives)
+- `src/pipeline.js` — Moteur d'exécution des scénarios (utilise le vrai cop-kernel quand possible,
+  avec CognitivePacket comme identité du travail, COPJobScheduler comme projection temporelle, et
+  les primitives Fractanet)
 - `src/cop-simulator.js` — Helpers légers
 - `src/cop-kernel-adapter.js` — Pont vers le vrai code de `packages/cop-kernel` (bus + sub-buses +
-  federation, COPScheduler, COPJobScheduler, continuations)
+  federation, COPScheduler, projection COPJobScheduler, CognitivePackets et continuations)
 - `scenarios/` — Scénarios de test (inclut `federation-demo` pour tester les bus fédérés + sub-buses
   par topic)
 
@@ -117,7 +119,8 @@ node index.js replay trace-xxx.jsonl
   avec multiples suspensions, maturation, couches émotionnelles et mode maintenance.
 - `personal-decision-workflow` — Workflow de prise de décision avec délégation à différentes "parts
   de soi", recherche et checkpoints.
-- `research-review` — Scénario plus simple de recherche + revue (point de départ).
+- `research-review` — Scénario simple de recherche + revue désormais Packet-first de bout en bout
+  (Packet → Continuation → reprise → projection de scheduling).
 - `federation-demo` — Petit test de fédération Fractanet : deux bus connectés, sub-buses par topic,
   subscriptions scopées, et traversée d’événements/continuations entre nœuds.
 
@@ -129,11 +132,12 @@ node index.js replay trace-xxx.jsonl
   `propagateInterest()`.
 - Nouveaux scénarios de validation lourde (réponse directe à "add more scenario to the bac à sable,
   we must be sure that COP works") :
-  - `job-scheduler-stress-test` — 120+ jobs, exponentialBackoff, 30+ markObsolete par "agents IA",
-    vérification événements cop.job.\* sur topic sub-buses, maths de backoff, cleanup.
-  - `raix-obsolescence-resilience` — Deux nœuds fédérés (topic sub-buses), obsolescence décidée par
-    agent sur A, remplacement via `createTaskWithInitialContinuation` +
-    `associateContinuationToTask` sur B. Démonstration RAIX + généricité kernel.
+  - `job-scheduler-stress-test` — 120 CognitivePackets chacun liés à une Continuation puis projetés
+    dans COPJobScheduler, exponentialBackoff, 30+ markObsolete, vérification que `packetRef` survit
+    dans les événements `cop.job.*`, maths de backoff et cleanup.
+  - `raix-obsolescence-resilience` — Deux nœuds fédérés (topic sub-buses), obsolescence décidée sur
+    A, puis reprise sur B par un nouveau CognitivePacket créé avec `copFork()`, lineage
+    `upstream_packet_id` explicite et Continuation liée. Démonstration RAIX + fractalité Packet-first.
   - `cognitive-packet-router-demo` (clean lightweight version) — Exercises `asCognitivePacket` +
     explicit Cogentia-style router that decides routing **using only the envelope** (never the
     payload). Uses federated topic sub-buses as the switching fabric. See
