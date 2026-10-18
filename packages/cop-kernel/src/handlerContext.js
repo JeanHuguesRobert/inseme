@@ -66,6 +66,8 @@ export function createHandlerContext(params) {
       channel,
       rootCorrelationId,
       priority,
+      packetRef = null,
+      metadata = {},
       markStarted = true,
     } = options || {};
 
@@ -78,6 +80,12 @@ export function createHandlerContext(params) {
       sourceEntityType: sourceEntityType || null,
       idempotencyHash: idempotencyHash || null,
       priority: priority != null ? priority : 0,
+      metadata: {
+        ...metadata,
+        ...(packetRef
+          ? { packet_ref: packetRef, projection_of: "cognitive-packet" }
+          : {}),
+      },
     });
 
     if (markStarted) {
@@ -98,6 +106,14 @@ export function createHandlerContext(params) {
       indexInTask,
       inputHash,
     });
+
+    // A Step is deliberately local execution detail. Preserve Packet correlation
+    // when the Task is a Packet projection, but do not grant the Step independent
+    // routing/locality/claim authority. Autonomous work must become a downstream Packet.
+    const packetRef = task.metadata?.packet_ref || null;
+    if (packetRef) {
+      step.packetRef = packetRef;
+    }
 
     // Start wall-clock and CPU timing for this step
     step._timing = {
