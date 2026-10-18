@@ -1,6 +1,7 @@
 const ACTIONS = Object.freeze({
   registerHandler: "cop.handlers.write",
   upsertLogicalAgent: "cop.logical-agents.write",
+  upsertPacket: "cop.packets.write",
   upsertTask: "cop.tasks.write",
   upsertStep: "cop.steps.write",
   appendEvent: "cop.events.append",
@@ -97,6 +98,26 @@ export function createPortableCopRuntimeGateway({
         active_mandate_ref: identity.active_mandate_ref ?? null,
         metadata: jsonText(identity.metadata),
         created_at: identity.created_at ?? now,
+        updated_at: now,
+      });
+    },
+
+    async upsertPacket(context, packet) {
+      const now = timestamp();
+      const packetId = requireText(
+        packet.packet_id ?? packet.id ?? packet.envelope?.id,
+        "packet.packet_id"
+      );
+      const normalized = {
+        ...packet,
+        packet_id: packetId,
+      };
+      return write(ACTIONS.upsertPacket, context, "cop_packets", {
+        id: packetId,
+        status: packet.status ?? packet.envelope?.status ?? "draft",
+        mandate_id: packet.mandate_id ?? packet.envelope?.mandate_id ?? null,
+        packet_json: jsonText(normalized),
+        created_at: packet.created_at ?? packet.envelope?.createdAt ?? now,
         updated_at: now,
       });
     },
