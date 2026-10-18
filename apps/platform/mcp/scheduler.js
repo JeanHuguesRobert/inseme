@@ -2,18 +2,15 @@ import createBus from "./cop/bus.js";
 import store from "./cop/supabaseStore.js";
 import ophAgent from "./agents/ophéliaAgent.js";
 import process from "node:process";
+import { legacyTaskWorkersEnabled } from "./cop/legacyTaskRuntime.js";
 
 const DEFAULT_POLL_MS = 1000;
-
-export function legacyTaskWorkersEnabled(env = process?.env || {}) {
-  return env?.COP_ENABLE_LEGACY_TASK_WORKERS === "1";
-}
 
 export class MCPscheduler {
   constructor({
     agents = [ophAgent],
     pollIntervalMs = DEFAULT_POLL_MS,
-    enableLegacyTaskWorkers = legacyTaskWorkersEnabled(),
+    enableLegacyTaskWorkers = legacyTaskWorkersEnabled(process?.env || {}),
   } = {}) {
     this.agents = agents;
     this.pollIntervalMs = pollIntervalMs;
