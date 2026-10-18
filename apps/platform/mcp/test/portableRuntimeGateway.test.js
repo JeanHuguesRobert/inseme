@@ -8,13 +8,22 @@ import {
   createSupabasePortableExecutor,
 } from "../cop/portableRuntimeGateway.js";
 
-const migration = await readFile(
-  new URL(
-    "../../supabase/migrations/20260801120000_cop_runtime_portable_tables.sql",
-    import.meta.url
+const migration = [
+  await readFile(
+    new URL(
+      "../../supabase/migrations/20260801120000_cop_runtime_portable_tables.sql",
+      import.meta.url
+    ),
+    "utf8"
   ),
-  "utf8"
-);
+  await readFile(
+    new URL(
+      "../../supabase/migrations/20261019004500_cop_packet_projection.sql",
+      import.meta.url
+    ),
+    "utf8"
+  ),
+].join("\n");
 const now = "2026-08-01T12:00:00.000Z";
 
 function createSqliteExecutor(database) {
@@ -37,6 +46,7 @@ function fullMandate() {
     permissions: [
       "cop.handlers.write",
       "cop.logical-agents.write",
+      "cop.packets.write",
       "cop.tasks.write",
       "cop.steps.write",
       "cop.events.append",
@@ -68,6 +78,20 @@ test("portable gateway enforces a mandate before writing the SQLite-validated sc
     twin_root_ref: "twin:jhn",
     active_mandate_ref: "mandate:jhn:cop-mandate:1",
   });
+  await gateway.upsertPacket(context, {
+    packet_id: "packet:1",
+    status: "dispatched",
+    mandate_id: "mandate:jhn:cop-mandate:1",
+    placements: [
+      {
+        store_id: "sqlite:jhn-local",
+        store_kind: "sqlite",
+        locator: "sqlite:jhn-local#packet:1",
+        is_primary: true,
+      },
+    ],
+    payload: { objective: "Specify COP/Mandate" },
+  });
   await gateway.upsertTask(context, { id: "task:1", name: "Specify COP/Mandate" });
   await gateway.upsertStep(context, { id: "step:1", task_id: "task:1", name: "Validate SQL" });
   await gateway.appendEvent(context, { topic_id: "topic:1", type: "mission.started" });
@@ -79,6 +103,11 @@ test("portable gateway enforces a mandate before writing the SQLite-validated sc
     content: { version: 1 },
   });
 
+  const packetRow = database.prepare("SELECT id, status, mandate_id, packet_json FROM cop_packets").get();
+  assert.equal(packetRow.id, "packet:1");
+  assert.equal(packetRow.status, "dispatched");
+  assert.equal(packetRow.mandate_id, "mandate:jhn:cop-mandate:1");
+  assert.equal(JSON.parse(packetRow.packet_json).packet_id, "packet:1");
   assert.equal(database.prepare("SELECT payload FROM cop_events").get().payload, "{}");
   assert.equal(
     database.prepare("SELECT content FROM cop_artifacts").get().content,
