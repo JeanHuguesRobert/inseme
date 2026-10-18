@@ -45,6 +45,8 @@ export class COPJobScheduler {
    * @param {string} job.jobId
    * @param {string} [job.type = 'continuation']
    * @param {Object} [job.continuation] - the continuation descriptor
+   * @param {string} [job.packetRef] - canonical CognitivePacket identity, when known
+   * @param {Array<Object>} [job.packetPlacementWitness] - bounded placement witness for the Packet
    * @param {Object} [job.schedule]
    * @param {string} [job.schedule.type] - 'once' | 'delay' | 'cron' | 'exponentialBackoff'
    * @param {number} [job.schedule.delayMs]
@@ -113,10 +115,14 @@ export class COPJobScheduler {
     // (higher handler style) to influence scheduling decisions directly inside JobScheduler.
     if (this.routingPolicy && typeof this.routingPolicy === "function") {
       const pktForPolicy = {
-        packetKind: "job",
+        packet_id: packetRef || undefined,
+        placements: packetPlacementWitness || undefined,
+        packetKind: packetRef ? "continuation" : "job",
         envelope: {
-          packetKind: "job",
+          id: packetRef || undefined,
+          packetKind: packetRef ? "continuation" : "job",
           requiredCapability: reqCap,
+          placements: packetPlacementWitness || undefined,
           ...(job.envelope || cont.envelope || {}),
         },
         payload: cont || job,
@@ -202,7 +208,7 @@ export class COPJobScheduler {
           packetRef,
           nextRunAt: scheduledJob.nextRunAt,
           topicId: topicId || null,
-          packet: packetProjection, // cop.packet projection wrapper around task/job events (follow-up)
+          packet: packetProjection,
         },
       });
     }
