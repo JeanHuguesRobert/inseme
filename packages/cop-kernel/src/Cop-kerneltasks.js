@@ -34,6 +34,25 @@ function genId() {
   return String(Date.now()) + "-" + Math.random().toString(16).slice(2);
 }
 
+
+function unwrapStorageResult(result, entityKeys = []) {
+  if (!result || typeof result !== "object") return result;
+  if (result.ok === false) {
+    const error = new Error(result.error || result.code || "storage operation failed");
+    error.code = result.code || "STORAGE_OPERATION_FAILED";
+    throw error;
+  }
+  for (const key of ["data", ...entityKeys]) {
+    if (result[key] !== undefined) return result[key];
+  }
+  return result;
+}
+
+function unwrapStorageList(result, entityKeys = []) {
+  const value = unwrapStorageResult(result, entityKeys);
+  return Array.isArray(value) ? value : [];
+}
+
 /**
  * Internal helper to emit a COP event via the bus when available.
  * This is the key genericity mechanism: Task/Step lifecycles become first-class observable events
@@ -133,7 +152,7 @@ export async function createTask(params) {
     error_message: null,
   };
 
-  const inserted = await storage.tasks.upsert(row);
+  const inserted = unwrapStorageResult(await storage.tasks.upsert(row), ["task"]);
 
   await emitTaskEvent(null, "created", {
     taskId: inserted.id,
@@ -182,7 +201,7 @@ export async function createTaskStep(params) {
     error_message: null,
   };
 
-  const inserted = await storage.steps.upsert(row);
+  const inserted = unwrapStorageResult(await storage.steps.upsert(row), ["step"]);
 
   await emitTaskEvent(null, "step.created", {
     taskId,
@@ -203,7 +222,7 @@ export async function markTaskStarted(taskId) {
     started_at: nowIso(),
     updated_at: nowIso(),
   };
-  const result = await storage.tasks.update(taskId, patch);
+  const result = unwrapStorageResult(await storage.tasks.update(taskId, patch), ["task"]);
 
   await emitTaskEvent(null, "started", { taskId });
 
@@ -217,7 +236,7 @@ export async function markTaskCompleted(taskId) {
     completed_at: nowIso(),
     updated_at: nowIso(),
   };
-  const result = await storage.tasks.update(taskId, patch);
+  const result = unwrapStorageResult(await storage.tasks.update(taskId, patch), ["task"]);
 
   await emitTaskEvent(null, "completed", { taskId });
 
@@ -231,7 +250,7 @@ export async function markTaskFailed(taskId, errorMessage) {
     error_message: errorMessage || null,
     updated_at: nowIso(),
   };
-  const result = await storage.tasks.update(taskId, patch);
+  const result = unwrapStorageResult(await storage.tasks.update(taskId, patch), ["task"]);
 
   await emitTaskEvent(null, "failed", { taskId, errorMessage });
 
@@ -247,10 +266,10 @@ export async function markTaskStepCompleted(stepId) {
   // Robust lookup: prefer direct get if available, fallback to list filter
   let step = null;
   if (typeof storage.steps.get === "function") {
-    step = await storage.steps.get(stepId);
+    step = unwrapStorageResult(await storage.steps.get(stepId), ["step"]);
   } else if (typeof storage.steps.list === "function") {
-    const all = await storage.steps.list({ limit: 1000 });
-    step = (all || []).find((s) => s.id === stepId);
+    const all = unwrapStorageList(await storage.steps.list({ limit: 1000 }), ["steps"]);
+    step = all.find((s) => s.id === stepId);
   }
 
   if (!step || !step.task_id) {
@@ -262,7 +281,10 @@ export async function markTaskStepCompleted(stepId) {
     completed_at: completedAt,
     updated_at: completedAt,
   };
-  const result = await storage.steps.update(step.task_id, stepId, patch);
+  const result = unwrapStorageResult(
+    await storage.steps.update(step.task_id, stepId, patch),
+    ["step"]
+  );
 
   await emitTaskEvent(null, "step.completed", { taskId: step.task_id, stepId });
 
@@ -275,10 +297,10 @@ export async function markTaskStepFailed(stepId, errorMessage) {
 
   let step = null;
   if (typeof storage.steps.get === "function") {
-    step = await storage.steps.get(stepId);
+    step = unwrapStorageResult(await storage.steps.get(stepId), ["step"]);
   } else if (typeof storage.steps.list === "function") {
-    const all = await storage.steps.list({ limit: 1000 });
-    step = (all || []).find((s) => s.id === stepId);
+    const all = unwrapStorageList(await storage.steps.list({ limit: 1000 }), ["steps"]);
+    step = all.find((s) => s.id === stepId);
   }
 
   if (!step || !step.task_id) {
@@ -290,7 +312,10 @@ export async function markTaskStepFailed(stepId, errorMessage) {
     error_message: errorMessage || null,
     updated_at: updatedAt,
   };
-  const result = await storage.steps.update(step.task_id, stepId, patch);
+  const result = unwrapStorageResult(
+    await storage.steps.update(step.task_id, stepId, patch),
+    ["step"]
+  );
 
   await emitTaskEvent(null, "step.failed", { taskId: step.task_id, stepId, errorMessage });
 
