@@ -298,26 +298,121 @@ export async function markTaskStepFailed(stepId, errorMessage) {
 }
 
 // --- Generic high-level orchestration helpers (genericity layer) ---
-// These prevent application-level reinvention of Task + Step + Continuation coordination.
+// CognitivePacket is the primary work identity. Task / Step / Job shapes below
+// are optional projections or runtime scheduling views around that Packet.
 
 /**
- * Create a Task together with an initial Continuation that is linked to it.
- * This is a common generic pattern: "start this unit of work and make it resumable".
+ * Create a CognitivePacket together with its initial durable Continuation.
+ *
+ * The Packet is the canonical work identity. The Continuation is a resumable
+ * state bound to that Packet. Scheduling identifiers are runtime projections
+ * and MUST NOT become competing work identities.
  */
-export async function createTaskWithInitialContinuation(params) {
+export async function createPacketWithInitialContinuation(params) {
   const {
-    taskType,
-    workerHandlerName,
-    // continuation params
+    packetId = `pkt-${genId()}`,
+    packetKind = "work",
+    packetEnvelope = {},
+    placements = [],
+    ithaca = null,
+    status = "draft",
     resumeTo,
     resumeIntent,
     state = {},
     waitForEvents = [],
     resumeAfter = null,
+    resumeBefore = null,
     retry = null,
-    // optional linkage
+    taskId = null,
+    stepId = null,
+    rootCorrelationId = null,
+    meta = {},
+    bus = null,
+    emit = true,
+  } = params || {};
+
+  if (!resumeTo) {
+    throw new Error("createPacketWithInitialContinuation: resumeTo is required");
+  }
+
+  const placementWitness = Array.isArray(placements)
+    ? structuredClone(placements)
+    : [];
+
+  const { createContinuationDescriptor } = await import("./continuation.js");
+  const continuation = createContinuationDescriptor({
+    resumeTo,
+    resumeIntent,
+    taskId,
+    stepId,
+    state,
+    waitForEvents,
+    resumeAfter,
+    resumeBefore,
+    retry,
+    correlationId: rootCorrelationId || undefined,
+    packetRef: packetId,
+    packetPlacementWitness: placementWitness.length > 0 ? placementWitness : null,
+    meta: {
+      ...meta,
+      source: meta.source || "createPacketWithInitialContinuation",
+    },
+  });
+
+  const packet = asCognitivePacket({
+    kind: packetKind,
+    envelope: {
+      ...packetEnvelope,
+      id: packetId,
+      status,
+      ithaca: ithaca ?? packetEnvelope.ithaca ?? undefined,
+      placements: placementWitness,
+    },
+    payload: continuation,
+    bus,
+    emit,
+  });
+
+  return {
+    packet,
+    continuation: packet.payload,
+    scheduleHint: {
+      jobId: `packet-${packetId}`,
+      type: "continuation",
+      packetRef: packetId,
+      continuation: packet.payload,
+      schedule: retry ? { type: "exponentialBackoff", ...retry } : undefined,
+    },
+  };
+}
+
+/**
+ * Compatibility facade: create a Task projection around a Packet-first
+ * orchestration result. Existing callers keep their Task/Continuation shape,
+ * but the Packet is the canonical work identity.
+ */
+export async function createTaskWithInitialContinuation(params) {
+  const {
+    taskType,
+    workerHandlerName,
+    resumeTo,
+    resumeIntent,
+    state = {},
+    waitForEvents = [],
+    resumeAfter = null,
+    resumeBefore = null,
+    retry = null,
     rootCorrelationId = null,
     channel = null,
+    taskMetadata = {},
+    packetId = `pkt-${genId()}`,
+    packetKind = taskType || "work",
+    packetEnvelope = {},
+    placements = [],
+    ithaca = null,
+    packetStatus = "draft",
+    bus = null,
+    emit = true,
   } = params || {};
 
   if (!taskType || !workerHandlerName || !resumeTo) {
@@ -328,55 +423,76 @@ export async function createTaskWithInitialContinuation(params) {
 
   let task = null;
   try {
-    // 1. Try to create the Task (requires storage tasks support)
     task = await createTask({
       taskType,
       workerHandlerName,
       rootCorrelationId,
       channel,
+      metadata: {
+        ...taskMetadata,
+        packet_ref: packetId,
+        projection_of: "cognitive-packet",
+      },
     });
   } catch (_error) {
-    // Graceful degradation for environments without full task storage (e.g. early bac-à-sable runs)
     task = {
       id: genId(),
       task_type: taskType,
       worker_handler_name: workerHandlerName,
       status: "pending",
+      metadata: {
+        ...taskMetadata,
+        packet_ref: packetId,
+        projection_of: "cognitive-packet",
+      },
       synthetic: true,
-      note: "Task created in degraded mode (no persistent storage)",
+      note: "Task compatibility projection created in degraded mode (no persistent storage)",
     };
   }
 
-  // 2. Create linked Continuation (always works via existing generic helper)
-  const { createContinuationDescriptor } = await import("./continuation.js");
-  const continuation = createContinuationDescriptor({
+  const packetFirst = await createPacketWithInitialContinuation({
+    packetId,
+    packetKind,
+    packetEnvelope,
+    placements,
+    ithaca,
+    status: packetStatus,
     resumeTo,
     resumeIntent,
-    taskId: task?.id || null,
     state,
     waitForEvents,
     resumeAfter,
+    resumeBefore,
     retry,
-    correlationId: rootCorrelationId || undefined,
-    meta: { source: "createTaskWithInitialContinuation", taskSynthetic: !!task?.synthetic },
+    taskId: task?.id || null,
+    rootCorrelationId,
+    meta: {
+      source: "createTaskWithInitialContinuation",
+      taskSynthetic: !!task?.synthetic,
+      taskProjectionId: task?.id || null,
+    },
+    bus,
+    emit,
   });
 
-  // 3. Emit a high-level orchestration event (very useful for generic subscribers)
   await emitTaskEvent(null, "orchestrated", {
     taskId: task?.id,
-    continuationId: continuation.continuationId,
+    packetId: packetFirst.packet.packet_id,
+    continuationId: packetFirst.continuation.continuationId,
     syntheticTask: !!task?.synthetic,
   });
 
-  // 4. Return both — this is the generic contract applications can rely on.
   return {
     task,
-    continuation,
+    packet: packetFirst.packet,
+    continuation: packetFirst.continuation,
     scheduleHint: {
+      ...packetFirst.scheduleHint,
+      // Preserve the historical compatibility identifier for current callers.
+      // packetRef remains the canonical work identity.
       jobId: `task-${task?.id || "synthetic"}`,
-      type: "continuation",
-      continuation,
-      schedule: retry ? { type: "exponentialBackoff", ...retry } : undefined,
+      taskId: task?.id || null,
+      packetRef: packetFirst.packet.packet_id,
     },
   };
 }
