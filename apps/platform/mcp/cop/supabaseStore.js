@@ -1,3 +1,12 @@
+// Legacy singular-table COP Task/Step adapter.
+//
+// New Packet-first work MUST NOT depend on this module for work identity or coordination.
+// Its historical claimTask()/claimStep() methods call cop_claim_task/cop_claim_step RPCs;
+// those RPCs are not assumed to exist. Runtime consumers are opt-in only through
+// COP_ENABLE_LEGACY_TASK_WORKERS=1 while migration to durable CognitivePacket work proceeds.
+//
+// Keep this adapter only for bounded compatibility until the remaining consumers are migrated.
+//
 import { createClient } from "@supabase/supabase-js";
 
 let client = null;
