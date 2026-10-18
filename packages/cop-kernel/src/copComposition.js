@@ -22,6 +22,21 @@ export function copFork(parentPacket, params, options = {}) {
     parentPacket.envelope.lineage.downstream_packet_ids = [];
   }
 
+  if (options.maxFanOut !== undefined) {
+    if (!Number.isInteger(options.maxFanOut) || options.maxFanOut < 0) {
+      throw new TypeError("copFork: maxFanOut must be an integer >= 0");
+    }
+    if (parentPacket.envelope.lineage.downstream_packet_ids.length >= options.maxFanOut) {
+      const error = new Error(
+        `copFork: fan-out limit reached for ${parentPacket.envelope.id} (maxFanOut=${options.maxFanOut})`
+      );
+      error.code = "PACKET_FANOUT_LIMIT_REACHED";
+      error.packet_ref = parentPacket.envelope.id;
+      error.max_fan_out = options.maxFanOut;
+      throw error;
+    }
+  }
+
   const childId = params.id || `pkt-child-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
   parentPacket.envelope.lineage.downstream_packet_ids.push(childId);
 
