@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   createSqlitePacketStore,
   createPostgresPacketStore,
+  primaryPacketPlacement,
   transferPacket,
 } from "../../../packages/cop-core/dist/packet-store.js";
 import { resumePacket, computeContentHash } from "../../../packages/cop-core/dist/closure.js";
@@ -63,8 +64,15 @@ test("SQLite -> PostgreSQL mobility reality test: same packet moves across store
   assert.equal(transferredPacket.placements.length, 2);
   assert.equal(targetPlacement.store_kind, "postgres");
   assert.equal(targetPlacement.is_primary, true);
+  assert.equal(sourcePlacement.is_primary, false);
+  assert.equal(
+    primaryPacketPlacement(transferredPacket, { required: true }).store_id,
+    postgresNodeB.store_id
+  );
 
-  // Node A can delete or keep its cached copy
+  // Node A can delete or keep its cached copy. If it keeps it, that copy is stale:
+  // PacketClaim epoch fencing in cop-kernel, not placement metadata alone, prevents
+  // an old holder from committing a canonical mutation after handoff.
   await sqliteNodeA.deletePacket(originalPacket.packet_id);
   assert.equal(await sqliteNodeA.hasPacket(originalPacket.packet_id), false);
 
@@ -113,4 +121,63 @@ test("SQLite -> PostgreSQL mobility reality test: same packet moves across store
   assert.equal(finalPacket.hops[1].node_id, "node:cloud:fracta");
   assert.equal(finalPacket.hops[1].instance_id, "agent:ophelia");
   assert.match(finalPacket.yield.semantic_yield.summary, /nœud B/);
+});
+
+
+test("packet transfer rejects ambiguous or non-source primary authority", async () => {
+  const source = createSqlitePacketStore("sqlite:source");
+  const target = createPostgresPacketStore("postgres:target");
+
+  await source.savePacket({
+    packet_id: "pkt-primary-mismatch",
+    created_at: new Date().toISOString(),
+    hops: [],
+    payload: {},
+    placements: [
+      {
+        store_id: "postgres:other",
+        store_kind: "postgres",
+        locator: "postgres://other/pkt-primary-mismatch",
+        is_primary: true,
+      },
+    ],
+  });
+
+  await assert.rejects(
+    () => transferPacket("pkt-primary-mismatch", source, target),
+    /primary placement is postgres:other, not source store sqlite:source/
+  );
+
+  const ambiguous = {
+    packet_id: "pkt-ambiguous-primary",
+    placements: [
+      {
+        store_id: "sqlite:a",
+        store_kind: "sqlite",
+        locator: "sqlite://a/pkt-ambiguous-primary",
+        is_primary: true,
+      },
+      {
+        store_id: "postgres:b",
+        store_kind: "postgres",
+        locator: "postgres://b/pkt-ambiguous-primary",
+        is_primary: true,
+      },
+    ],
+  };
+
+  assert.throws(
+    () => primaryPacketPlacement(ambiguous, { required: true }),
+    /ambiguous primary placements/
+  );
+});
+
+test("primary placement is optional for an unplaced packet but can be required explicitly", () => {
+  const packet = { packet_id: "pkt-unplaced", placements: [] };
+
+  assert.equal(primaryPacketPlacement(packet), null);
+  assert.throws(
+    () => primaryPacketPlacement(packet, { required: true }),
+    /has no primary placement/
+  );
 });
