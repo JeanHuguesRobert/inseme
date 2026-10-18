@@ -20,6 +20,8 @@ export function createExecutionBinding({
   execution_surface,
   provider_ref,
   provider_execution_id = null,
+  packet_claim_ref = null,
+  claim_epoch = null,
 } = {}) {
   for (const [name, value] of Object.entries({
     requirement_ref,
@@ -41,6 +43,19 @@ export function createExecutionBinding({
     throw new TypeError("provider_execution_id must be null or a non-empty string");
   }
 
+  if ((packet_claim_ref === null) !== (claim_epoch === null)) {
+    throw new TypeError("packet_claim_ref and claim_epoch must be provided together");
+  }
+  if (
+    packet_claim_ref !== null &&
+    (typeof packet_claim_ref !== "string" || packet_claim_ref.length === 0)
+  ) {
+    throw new TypeError("packet_claim_ref must be null or a non-empty string");
+  }
+  if (claim_epoch !== null && (!Number.isInteger(claim_epoch) || claim_epoch < 1)) {
+    throw new TypeError("claim_epoch must be null or an integer >= 1");
+  }
+
   return freezePlain({
     schema: "magistral.execution-binding/v1",
     requirement_ref,
@@ -50,6 +65,8 @@ export function createExecutionBinding({
     execution_surface,
     provider_ref,
     provider_execution_id,
+    packet_claim_ref,
+    claim_epoch,
   });
 }
 
