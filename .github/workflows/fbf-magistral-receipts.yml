@@ -22,7 +22,6 @@ jobs:
         shell: bash
         run: |
           set +e
-          corepack enable
           node scripts/ops/supervise-result.js --out fbf-install --phase install -- corepack pnpm install --frozen-lockfile --ignore-scripts
           if node -e 'const r=require("./fbf-install/result.json");process.exit(r.passed?0:1)'; then
             node scripts/ops/supervise-result.js --out fbf-evidence --phase test -- node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js scripts/github-compute-finalize.test.js scripts/ops/supervise-result.test.js
