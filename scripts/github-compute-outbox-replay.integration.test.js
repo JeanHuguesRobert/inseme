@@ -69,7 +69,6 @@ case "$*" in
    if [ "$MOCK_REPLAY" = "unreadable" ]; then echo unavailable >&2; exit 9; fi
    if [ "$MOCK_REPLAY" = "already" ]; then echo '[[{"body":"<!-- cop-compute-hop:replay-test:blocked:100 -->"}]]'; else echo '[[]]'; fi
    exit 0;;
- *issues/142/comments\ -f*) echo '{"id":1}'; exit 0;;
 esac
 echo '{"id":1}'
 `);
