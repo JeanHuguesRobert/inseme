@@ -5,13 +5,22 @@ import process from "node:process";
 
 const DEFAULT_POLL_MS = 1000;
 
+export function legacyTaskWorkersEnabled(env = process?.env || {}) {
+  return env?.COP_ENABLE_LEGACY_TASK_WORKERS === "1";
+}
+
 export class MCPscheduler {
-  constructor({ agents = [ophAgent], pollIntervalMs = DEFAULT_POLL_MS } = {}) {
+  constructor({
+    agents = [ophAgent],
+    pollIntervalMs = DEFAULT_POLL_MS,
+    enableLegacyTaskWorkers = legacyTaskWorkersEnabled(),
+  } = {}) {
     this.agents = agents;
     this.pollIntervalMs = pollIntervalMs;
     this.lastSeen = new Date().toISOString();
     this.intervalId = null;
     this.running = false;
+    this.enableLegacyTaskWorkers = !!enableLegacyTaskWorkers;
   }
 
   async init() {
@@ -47,10 +56,14 @@ export class MCPscheduler {
       }
     }
 
-    // Claim and process distributed tasks using store.claimTask if available
+    // Legacy singular-table Task/Step workers are opt-in only.
+    // The Packet-first runtime is the default work model; the historical
+    // cop_task/cop_step claim RPCs are not assumed to exist.
+    if (!this.enableLegacyTaskWorkers) return;
+
     try {
       const workerId = `mcp-${import.meta.env?.pid}-${Math.random().toString(36).slice(2, 6)}`;
-      let claimed = await store.claimTask({ workerId, leaseSeconds: 60 }).catch(() => null);
+      let claimed = await store.claimTask({ workerId, leaseSeconds: 60 });
       let processed = 0;
       while (claimed && processed < 20) {
         // dispatch to agent that can handle task type
@@ -87,7 +100,7 @@ export class MCPscheduler {
           }
         }
         processed++;
-        claimed = await store.claimTask({ workerId, leaseSeconds: 60 }).catch(() => null);
+        claimed = await store.claimTask({ workerId, leaseSeconds: 60 });
       }
     } catch (err) {
       console.error("Distributed task processing error", err?.message || err);
@@ -124,7 +137,9 @@ export class MCPscheduler {
         console.error("Scheduler loop error", _err?.message || _err);
       }
     }, this.pollIntervalMs);
-    console.log("MCP Scheduler started");
+    console.log(
+      `MCP Scheduler started (legacy Task/Step workers: ${this.enableLegacyTaskWorkers ? "enabled" : "disabled"})`
+    );
   }
 
   async stop() {
