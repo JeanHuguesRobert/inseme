@@ -16,14 +16,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install monorepo dependencies
-        run: npm ci --ignore-scripts
-      - name: Run exact resolver tests and preserve outcome
+      - name: Install and test under a non-failing result supervisor
         shell: bash
         run: |
           set +e
-          node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js > /tmp/fbf-magistral.log 2>&1
-          rc=$?
+          npm ci --ignore-scripts > /tmp/fbf-install.log 2>&1
+          install_rc=$?
+          if [ "$install_rc" -eq 0 ]; then
+            node --test apps/platform/mcp/test/magistralCapabilityResolver.test.js > /tmp/fbf-magistral.log 2>&1
+            rc=$?
+            phase=test
+          else
+            cp /tmp/fbf-install.log /tmp/fbf-magistral.log
+            rc=$install_rc
+            phase=install
+          fi
           cat /tmp/fbf-magistral.log
           mkdir -p fbf-evidence
           cp /tmp/fbf-magistral.log fbf-evidence/test.log
