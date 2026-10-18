@@ -20,10 +20,16 @@ import { repairJhnLocalAgentAuthority } from "./repair-jhn-local-agent-authority
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const platformDirectory = path.resolve(scriptDirectory, "..");
 const defaultStateDirectory = path.join(platformDirectory, "instances", "jhn-cop-local");
-const migration = await readFile(
-  new URL("../supabase/migrations/20260801120000_cop_runtime_portable_tables.sql", import.meta.url),
-  "utf8"
-);
+const migration = [
+  await readFile(
+    new URL("../supabase/migrations/20260801120000_cop_runtime_portable_tables.sql", import.meta.url),
+    "utf8"
+  ),
+  await readFile(
+    new URL("../supabase/migrations/20261019004500_cop_packet_projection.sql", import.meta.url),
+    "utf8"
+  ),
+].join("\n");
 
 function argumentValue(name) {
   const index = process.argv.indexOf(name);
@@ -91,7 +97,7 @@ export async function bootstrapJhnLocalTransportAuthority({
         "active",
         JHN_TRANSPORT_ISSUER_REF,
         JHN_TRANSPORT_GRANTEE_REF,
-        '["cop.tasks.write","cop.steps.write","cop.events.append","cop.artifacts.append"]',
+        '["cop.packets.write","cop.tasks.write","cop.steps.write","cop.events.append","cop.artifacts.append"]',
         now,
         now,
         now
