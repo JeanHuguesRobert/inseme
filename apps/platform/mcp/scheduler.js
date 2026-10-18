@@ -1,6 +1,6 @@
 import createBus from "./cop/bus.js";
 import store from "./cop/supabaseStore.js";
-import ophAgent from "./agents/ophéliaAgent.js";
+import ophAgent from "./agents/opheliaAgent.js";
 import process from "node:process";
 import { legacyTaskWorkersEnabled } from "./cop/legacyTaskRuntime.js";
 
