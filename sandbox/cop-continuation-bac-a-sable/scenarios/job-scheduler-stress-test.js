@@ -1,17 +1,17 @@
 /**
  * Scenario: job-scheduler-stress-test
  *
- * Heavy-load validation for COPJobScheduler + exponentialBackoff + agent-decided obsolescence.
+ * Heavy-load validation for Packet scheduling projections + exponentialBackoff + handler-decided obsolescence.
  * Part of the "add more scenario to the bac à sable, we must be sure that COP works" mandate.
  *
  * Exercises:
- * - Scheduling 100+ mixed jobs (delay + exponentialBackoff)
+ * - Scheduling 100+ CognitivePackets through JobScheduler projections (delay + exponentialBackoff)
  * - Per-topic sub-bus usage inside the JobScheduler (Fractanet pattern)
  * - Multiple concurrent markObsolete calls (simulating independent AI agents deciding)
  * - Verification of cop.job.scheduled and cop.job.obsoleted events
  * - Backoff math sanity (nextRunAt increasing)
  * - No leaks: after obsoletes and manual cleanup, internal state is consistent
- * - Works with ctx.jobScheduler (the stable high-level entry point)
+ * - Keeps Packet identity canonical while ctx.jobScheduler remains a runtime scheduling projection
  *
  * This is deliberately a "stress + correctness" scenario, not a tiny unit test.
  */
@@ -19,7 +19,7 @@
 export default {
   name: "job-scheduler-stress-test",
   description:
-    "Stress test COPJobScheduler with 100+ jobs, exponential backoff, mid-flight AI-agent obsolescence (markObsolete), event verification, and cleanup assertions. Validates resilience primitives before platform integration.",
+    "Stress test scheduling 100+ CognitivePackets through COPJobScheduler projections, with exponential backoff, mid-flight obsolescence, event verification, and cleanup assertions.",
 
   defaultTopicId: "stress-topic-raix-001",
 
@@ -43,6 +43,7 @@ export default {
           topicBus,
           jobEvents,
           unsubs: [unsubScheduled, unsubObsoleted],
+          packetsCreated: [],
           jobsScheduled: [],
           jobsObsoleted: [],
         };
@@ -67,6 +68,9 @@ export default {
         const N = 120;
         const now = Date.now();
         const scheduled = [];
+        const packets = [];
+        const { createPacketWithInitialContinuation } =
+          await import("../../../packages/cop-kernel/src/Cop-kerneltasks.js");
 
         for (let i = 0; i < N; i++) {
           const useBackoff = i % 3 !== 0; // 2/3 use backoff
@@ -84,29 +88,53 @@ export default {
               };
 
           try {
+            const packetWork = await createPacketWithInitialContinuation({
+              packetId: `stress-packet-${i}-${now}`,
+              packetKind: "stress-work-item",
+              resumeTo: i % 5 === 0 ? "special-handler" : "*",
+              resumeIntent: "stress-work-item",
+              state: { index: i, stress: true },
+              retry:
+                schedule.type === "exponentialBackoff"
+                  ? {
+                      maxAttempts: schedule.maxRetries,
+                      retryDelayMs: schedule.baseDelayMs,
+                    }
+                  : null,
+              emit: false,
+            });
+
             const s = await jobScheduler.schedule({
               jobId,
               type: "continuation",
+              packetRef: packetWork.packet.packet_id,
+              packetPlacementWitness: packetWork.continuation.packetPlacementWitness,
+              continuation: packetWork.continuation,
               schedule,
-              obsolescence: { enabled: true, policy: "agent-decided" },
-              resumeTo: i % 5 === 0 ? "special-agent" : "*",
-              resumeIntent: "stress-work-item",
+              obsolescence: { enabled: true, policy: "handler-decided" },
               topicId: ctx.stress.topicId,
-              payload: { index: i, stress: true },
               meta: { stressRun: true },
             });
+            packets.push(packetWork.packet);
             scheduled.push(s);
           } catch (e) {
             console.warn(`[STRESS] schedule failed for ${jobId}: ${e.message}`);
           }
         }
 
+        ctx.stress.packetsCreated = packets;
         ctx.stress.jobsScheduled = scheduled;
         ctx.emit({
-          type: "stress.jobs.scheduled",
-          data: { count: scheduled.length, topicId: ctx.stress.topicId },
+          type: "stress.packets.scheduled",
+          data: {
+            packetCount: packets.length,
+            scheduleProjectionCount: scheduled.length,
+            topicId: ctx.stress.topicId,
+          },
         });
-        console.log(`[STRESS] Scheduled ${scheduled.length} jobs (mixed delay/backoff).`);
+        console.log(
+          `[STRESS] Scheduled ${scheduled.length} Packet-bound job projections (mixed delay/backoff).`
+        );
       },
     },
 
@@ -169,6 +197,10 @@ export default {
 
         const expectedScheduledMin = Math.max(1, s.jobsScheduled.length - 5); // allow a few scheduling hiccups in early impl
         const expectedObsoletedMin = Math.max(1, s.jobsObsoleted.length - 3);
+        const packetRefs = new Set(s.jobsScheduled.map((job) => job.packetRef).filter(Boolean));
+        const scheduledEventPacketRefs = new Set(
+          scheduledEvents.map((event) => event.data?.packetRef).filter(Boolean)
+        );
 
         console.log(
           `[STRESS] Events seen — scheduled: ${scheduledEvents.length}, obsoleted: ${obsoletedEvents.length}`
@@ -198,6 +230,19 @@ export default {
         }
         console.log(`[STRESS] Jobs marked obsolete in scheduler map: ${obsoleteInMap}`);
 
+        if (packetRefs.size !== s.jobsScheduled.length) {
+          console.warn(
+            `[STRESS] Packet identity loss: ${packetRefs.size}/${s.jobsScheduled.length} scheduled projections carry unique packetRef.`
+          );
+          pass = false;
+        }
+        if (scheduledEventPacketRefs.size < expectedScheduledMin) {
+          console.warn(
+            `[STRESS] Too few scheduled events preserve packetRef (${scheduledEventPacketRefs.size} < ${expectedScheduledMin}).`
+          );
+          pass = false;
+        }
+
         if (obsoleteInMap < expectedObsoletedMin) {
           console.warn("[STRESS] Internal map obsolescence count lower than expected.");
           pass = false;
@@ -208,6 +253,8 @@ export default {
           data: {
             scheduledEvents: scheduledEvents.length,
             obsoletedEvents: obsoletedEvents.length,
+            packetRefs: packetRefs.size,
+            scheduledEventPacketRefs: scheduledEventPacketRefs.size,
             obsoleteInMap,
             pass,
           },
