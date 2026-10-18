@@ -91,7 +91,7 @@ async function emitTaskEvent(busOrScheduler, eventType, payload) {
  * @returns {Promise<object>} task créé (row renvoyée par storage)
  */
 export async function createTask(params) {
-  const storage = getStorage();
+  const storage = await getStorage();
   const {
     taskType,
     workerHandlerName,
@@ -157,7 +157,7 @@ export async function createTask(params) {
  * @returns {Promise<object>} step
  */
 export async function createTaskStep(params) {
-  const storage = getStorage();
+  const storage = await getStorage();
   const { taskId, name, indexInTask = 0, inputHash = null } = params || {};
 
   if (!taskId) {
@@ -197,7 +197,7 @@ export async function createTaskStep(params) {
 // --- Changement d'état des tasks ---
 
 export async function markTaskStarted(taskId) {
-  const storage = getStorage();
+  const storage = await getStorage();
   const patch = {
     status: "running",
     started_at: nowIso(),
@@ -211,7 +211,7 @@ export async function markTaskStarted(taskId) {
 }
 
 export async function markTaskCompleted(taskId) {
-  const storage = getStorage();
+  const storage = await getStorage();
   const patch = {
     status: "completed",
     completed_at: nowIso(),
@@ -225,7 +225,7 @@ export async function markTaskCompleted(taskId) {
 }
 
 export async function markTaskFailed(taskId, errorMessage) {
-  const storage = getStorage();
+  const storage = await getStorage();
   const patch = {
     status: "failed",
     error_message: errorMessage || null,
@@ -241,7 +241,7 @@ export async function markTaskFailed(taskId, errorMessage) {
 // --- Changement d'état des steps (fixed & generic) ---
 
 export async function markTaskStepCompleted(stepId) {
-  const storage = getStorage();
+  const storage = await getStorage();
   const completedAt = nowIso();
 
   // Robust lookup: prefer direct get if available, fallback to list filter
@@ -270,7 +270,7 @@ export async function markTaskStepCompleted(stepId) {
 }
 
 export async function markTaskStepFailed(stepId, errorMessage) {
-  const storage = getStorage();
+  const storage = await getStorage();
   const updatedAt = nowIso();
 
   let step = null;
