@@ -104,6 +104,8 @@ export function createMagistralAcpContinuationHandler({
   hostRuntimeClient,
   working_directory,
   requirement = { capability: "coding.assist.read", execution_surface: "acp" },
+  packetClaimCoordinatorResolver = null,
+  coordinationResolver = null,
 } = {}) {
   if (!isAbsolute(working_directory)) {
     throw new TypeError("working_directory must be absolute");
@@ -127,13 +129,25 @@ export function createMagistralAcpContinuationHandler({
     async invoke(input = {}) {
       const prompt = String(input.message || input.prompt || "").trim();
       if (!prompt) throw new TypeError("governed ACP handler prompt is required");
+      const packet = input.packet || null;
+      const packetRef = packet?.packet_id || packet?.envelope?.id || null;
+      const packetPlacementWitness = Array.isArray(packet?.placements)
+        ? packet.placements
+        : Array.isArray(packet?.envelope?.placements)
+          ? packet.envelope.placements
+          : null;
+
       const continuation = createContinuationDescriptor({
         resumeTo: MAGISTRAL_CAPABILITY_RESOLUTION,
         resumeIntent: "resolve-capability",
         state: { capability_request: { requirement, prompt, working_directory } },
+        packetRef,
+        packetPlacementWitness,
       });
       const scheduler = new COPScheduler(new COPBus({ name: "jhn-magistral-acp" }), {
         handlerResolver: resolve,
+        packetClaimCoordinatorResolver,
+        coordinationResolver,
       });
       const receipt = await scheduler.execute(continuation, { reason: "jhn-governed-delegation" });
       const output = receipt.execution?.result?.output;
