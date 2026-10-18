@@ -25,6 +25,7 @@ export class COPScheduler {
     this.handlerResolver = options.handlerResolver || null;
     this.readOnlyStore = options.readOnlyStore || null;
     this.packetClaimCoordinator = options.packetClaimCoordinator || null;
+    this.packetClaimCoordinatorResolver = options.packetClaimCoordinatorResolver || null;
     this.coordinationResolver = options.coordinationResolver || null;
     this.pending = new Map(); // continuationId -> { continuation, registeredAt, timeoutId? }
     this.topicBuses = new Map(); // topicId -> SubBus (per-topic isolation for Fractanet)
@@ -114,11 +115,13 @@ export class COPScheduler {
     handlerResolver = null,
     readOnlyStore = null,
     packetClaimCoordinator = null,
+    packetClaimCoordinatorResolver = null,
     coordinationResolver = null,
   } = {}) {
     this.handlerResolver = handlerResolver;
     this.readOnlyStore = readOnlyStore;
     this.packetClaimCoordinator = packetClaimCoordinator;
+    this.packetClaimCoordinatorResolver = packetClaimCoordinatorResolver;
     this.coordinationResolver = coordinationResolver;
     return this;
   }
@@ -293,6 +296,8 @@ export class COPScheduler {
 
     let execution = null;
     let packetClaim = null;
+    let packetClaimCoordinator = null;
+    let packetClaimPlacement = null;
 
     if (this.handlerResolver) {
       try {
@@ -304,14 +309,38 @@ export class COPScheduler {
           });
 
           if (coordination?.mode === "MUTATE") {
-            if (!this.packetClaimCoordinator || typeof this.packetClaimCoordinator.tryClaim !== "function") {
-              throw new Error("packet_claim_coordinator_required");
-            }
             const { packetRef, handlerRef, ttlMs = 60_000 } = coordination;
             if (!packetRef || !handlerRef) {
               throw new Error("packet_mutation_coordination_requires_packetRef_and_handlerRef");
             }
-            const claimed = await this.packetClaimCoordinator.tryClaim({
+
+            packetClaimCoordinator = this.packetClaimCoordinator;
+
+            if (this.packetClaimCoordinatorResolver) {
+              const locality = await this.packetClaimCoordinatorResolver(coordination, {
+                continuation: finalContinuation,
+                triggeringEvent,
+                reason: resumeReason,
+                payload,
+              });
+              if (!locality?.ok) {
+                const error = new Error(locality?.code || "PACKET_CLAIM_LOCALITY_UNAVAILABLE");
+                error.code = locality?.code || "PACKET_CLAIM_LOCALITY_UNAVAILABLE";
+                error.packet_ref = locality?.packet_ref || packetRef;
+                error.required_store_id = locality?.required_store_id || null;
+                error.primary_placement = locality?.primary_placement || null;
+                error.reason = locality?.reason || null;
+                throw error;
+              }
+              packetClaimCoordinator = locality.coordinator;
+              packetClaimPlacement = locality.primary_placement || null;
+            }
+
+            if (!packetClaimCoordinator || typeof packetClaimCoordinator.tryClaim !== "function") {
+              throw new Error("packet_claim_coordinator_required");
+            }
+
+            const claimed = await packetClaimCoordinator.tryClaim({
               packetRef,
               handlerRef,
               ttlMs,
@@ -334,11 +363,13 @@ export class COPScheduler {
           triggeringEvent,
           reason: resumeReason,
           payload,
-          executionContext: packetClaim ? { packetClaim } : {},
+          executionContext: packetClaim
+            ? { packetClaim, packetClaimPlacement }
+            : {},
         });
 
         if (packetClaim) {
-          const completed = await this.packetClaimCoordinator.complete({
+          const completed = await packetClaimCoordinator.complete({
             packetRef: packetClaim.packet_ref,
             claimId: packetClaim.claim_id,
             handlerRef: packetClaim.handler_ref,
@@ -352,9 +383,9 @@ export class COPScheduler {
           }
         }
       } catch (error) {
-        if (packetClaim && typeof this.packetClaimCoordinator?.release === "function") {
+        if (packetClaim && typeof packetClaimCoordinator?.release === "function") {
           try {
-            await this.packetClaimCoordinator.release({
+            await packetClaimCoordinator.release({
               packetRef: packetClaim.packet_ref,
               claimId: packetClaim.claim_id,
               handlerRef: packetClaim.handler_ref,
