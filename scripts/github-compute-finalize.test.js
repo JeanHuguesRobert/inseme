@@ -14,6 +14,7 @@ function run(mode) {
   fs.writeFileSync(gh,`#!/bin/sh
 if [ "$1" = "api" ] && [ "$2" = "repos/test/repo/issues/142/comments?per_page=100" ]; then
   if [ "$MOCK_GH_MODE" = "old-hop" ]; then echo '[[{"body":"<!-- cop-compute-result:failure-probe -->"}]]'; exit 0; fi
+  if [ "$MOCK_GH_MODE" = "replay-unreadable" ]; then echo broken >&2; exit 7; fi
   if [ "$MOCK_GH_MODE" = "read-fail" ]; then echo 'read failure' >&2; exit 7; fi
   if [ "$MOCK_GH_MODE" = "invalid-json" ]; then echo '{broken'; exit 0; fi
   echo '[[]]'; exit 0
@@ -78,7 +79,7 @@ test("unverified skipped replay is blocked without red GitHub job or forged rece
 test("unreadable Issue history preserves blocked hop in outbox for later return",()=>{
   const x=run("replay-unreadable");
   assert.equal(x.exit,0,x.stderr);
-  // Mock returns valid empty history here; the blocked hop should publish.
-  assert.ok(x.delivered);
-  assert.equal(x.pending,false);
+  assert.equal(x.delivered,null);
+  assert.equal(x.pending,true);
+  assert.match(x.pendingEnvelope.marker,/cop-compute-hop:failure-probe:blocked:7/);
 });
