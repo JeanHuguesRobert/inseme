@@ -55,6 +55,34 @@ if (replaySkipped) {
   // Unknown replay state is a blocked operation, not a failed Actions transport.
   // Never publish a synthetic terminal receipt without an independently seen prior result.
   console.error("Compute replay blocked: prior receipt could not be verified; manual reconciliation needed");
+  // Nonterminal hop, NOT a compute execution receipt. Keep it with its Issue.
+  // A separate marker ensures it cannot impersonate a terminal result.
+  const blockedMarker=`<!-- cop-compute-hop:${computationId}:blocked:${process.env.GITHUB_RUN_ID||"unknown"} -->`;
+  const blocked={schema:"cop.compute-hop/v1",computation_id:computationId,
+    status:"blocked",terminal:false,phase:"idempotency-check",
+    reason:"prior_receipt_unverified",run_url:runUrl,
+    next_action:"reconcile originating Issue and verify prior receipt before resuming"};
+  const outbox=path.join(process.env.RUNNER_TEMP,"compute-outbox");
+  fs.mkdirSync(outbox,{recursive:true});
+  const envelope={schema:"cop.compute-outbox/v1",repository,issue,computation_id:computationId,
+    marker:blockedMarker,body:[blockedMarker,"## COP compute hop (nonterminal)","","```json",JSON.stringify(blocked,null,2),"```"].join("\n")};
+  fs.writeFileSync(path.join(outbox,"pending.json"),JSON.stringify(envelope,null,2));
+  // Never publish when Issue history could not be independently read.
+  let readable=false, already=false;
+  if(prior.status===0) {
+    try {
+      const pages=JSON.parse(prior.stdout);
+      readable=Array.isArray(pages)&&pages.every(p=>Array.isArray(p)&&p.every(c=>typeof c?.body==="string"));
+      if(readable) already=pages.some(p=>p.some(c=>c.body.includes(blockedMarker)));
+    } catch {}
+  }
+  if(readable && Number.isInteger(issue) && issue>0 && repository) {
+    const posted=already?{status:0}:runGh([`repos/${repository}/issues/${issue}/comments`,"-f",`body=${envelope.body}`]);
+    if(posted.status===0) {
+      fs.renameSync(path.join(outbox,"pending.json"),path.join(outbox,"delivered.json"));
+      console.log("Nonterminal blocked hop recorded in originating Issue");
+    }
+  }
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
     `\nCompute replay blocked: prior receipt unverified for ${computationId}; reconcile the originating Issue before retry.\n`);
   process.exit(0);
