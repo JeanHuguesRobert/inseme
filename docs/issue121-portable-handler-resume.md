@@ -11,6 +11,9 @@ lifecycle_state: working
 
 **Packet:** https://github.com/JeanHuguesRobert/inseme/issues/121
 
+**Placement / lifecycle:** the issue is the authoritative Packet state. This checked-in file is only a portable execution projection currently read by `scripts/issue121-portable-handler-pilot.test.js`; it must not become a second status ledger. Keep it minimal, refresh only operational prerequisites, and delete it once its cold-resume consumer is redirected to the Packet itself or an equivalent durable packet-native entrypoint. Generic guidance lives in Cogentia; findings and receipts live at their natural sources.
+
+
 **Canonical guidance:** https://github.com/JeanHuguesRobert/cogentia/blob/main/docs/portable-agent-guidance-and-classification.md
 
 **Instructions:** https://github.com/JeanHuguesRobert/inseme/blob/main/AGENTS.md and https://github.com/JeanHuguesRobert/cogentia/blob/main/instructions/AGENTS.shared.md
