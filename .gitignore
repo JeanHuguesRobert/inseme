@@ -67,6 +67,10 @@ scripts/test-scratch-*.js
 *.backup
 *.txt
 
+# Cogentia public corpus projections
+!/llms.txt
+!/llms-full.txt
+
 # --- Executables & Binaries ---
 *.exe
 *.dll
