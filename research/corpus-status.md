@@ -85,49 +85,47 @@ graph LR
   r_github[".github"]
   r_acorsica_org["acorsica.org"]
   r_structenv["StructEnv"]
-  r_cogentia -->|150| r_barons_mariani
-  r_barons_mariani -->|115| r_cogentia
+  r_cogentia -->|139| r_barons_mariani
+  r_barons_mariani -->|111| r_cogentia
   r_jeanhuguesrobert -->|96| r_barons_mariani
-  r_inseme -->|67| r_cogentia
+  r_inseme -->|56| r_cogentia
   r_fractavolta -->|54| r_cogentia
   r_barons_mariani -->|42| r_jeanhuguesrobert
-  r_cogentia -->|42| r_inseme
   r_jeanhuguesrobert -->|39| r_cogentia
+  r_cogentia -->|37| r_inseme
   r_fractavolta -->|37| r_marenostrum
   r_barons_mariani -->|24| r_marenostrum
+  r_barons_mariani -->|23| r_fractavolta
   r_fractavolta -->|22| r_inseme
   r_fractavolta -->|21| r_barons_mariani
-  r_barons_mariani -->|20| r_fractavolta
   r_inseme -->|20| r_barons_mariani
+  r_barons_mariani -->|19| r_inseme
   r_cogentia -->|19| r_marenostrum
-  r_inox -->|19| r_cogentia
   r_marenostrum -->|19| r_cogentia
-  r_barons_mariani -->|18| r_inseme
-  r_operium -->|18| r_cogentia
+  r_inox -->|16| r_cogentia
   r_jeanhuguesrobert -->|16| r_marenostrum
+  r_operium -->|16| r_cogentia
   r_inseme -->|12| r_fractavolta
   r_inseme -->|12| r_inox
   r_marenostrum -->|12| r_fractavolta
-  r_cogentia -->|11| r_jeanhuguesrobert
   r_inox -->|11| r_barons_mariani
   r_marenostrum -->|11| r_barons_mariani
   r_cogentia -->|10| r_fractavolta
-  r_inox -->|10| r_inseme
   r_inox -->|10| r_fractavolta
+  r_cogentia -->|9| r_jeanhuguesrobert
+  r_inox -->|9| r_inseme
   r_jeanhuguesrobert -->|9| r_fractavolta
   r_barons_mariani -->|8| r_ubikia
   r_fractavolta -->|8| r_inox
   r_inox -->|8| r_marenostrum
+  r_ubikia -->|8| r_cogentia
   r_barons_mariani -->|7| r_inox
   r_inseme -->|7| r_jeanhuguesrobert
   r_jeanhuguesrobert -->|7| r_inseme
-  r_cogentia -->|6| r_operium
   r_inseme -->|6| r_kudos
   r_jeanhuguesrobert -->|6| r_inox
-  r_ubikia -->|6| r_cogentia
-  r_ubikia -->|6| r_barons_mariani
   r_cogentia -->|5| r_privai
-  r_inseme -->|5| r_operium
+  r_ubikia -->|5| r_barons_mariani
   r_barons_mariani -->|4| r_operium
   r_cogentia -->|4| r_inox
   r_fractavolta -->|4| r_jeanhuguesrobert
@@ -139,10 +137,8 @@ graph LR
   r_kudos -->|3| r_barons_mariani
   r_operium -->|3| r_barons_mariani
   r_operium -->|3| r_inseme
-  r_ubikia -->|3| r_suicide_corse
-  r_ubikia -->|3| r_operium
   r_barons_mariani -->|2| r_privai
-  r_gouvernance -->|2| r_inseme
+  r_cogentia -->|2| r_operium
   r_gouvernance -->|2| r_barons_mariani
   r_gouvernance -->|2| r_fractavolta
   r_inox -->|2| r_jeanhuguesrobert
@@ -157,10 +153,12 @@ graph LR
   r_cogentia -->|1| r_kudos
   r_gouvernance -->|1| r_jeanhuguesrobert
   r_gouvernance -->|1| r_cogentia
+  r_gouvernance -->|1| r_inseme
   r_gouvernance -->|1| r_marenostrum
   r_gouvernance -->|1| r_inox
   r_gouvernance -->|1| r_kudos
   r_gouvernance -->|1| r_marianivillage
+  r_inseme -->|1| r_operium
   r_inseme -->|1| r_privai
   r_inseme -->|1| r_ubikia
   r_institut_mariani -->|1| r_privai
@@ -173,8 +171,6 @@ graph LR
   r_jeanhuguesrobert -->|1| r_operium
   r_kudos -->|1| r_institut_mariani
   r_marianivillage -->|1| r_institut_mariani
-  r_operium -->|1| r_ubikia
-  r_operium -->|1| r_suicide_corse
   r_privai -->|1| r_barons_mariani
   r_privai -->|1| r_institut_mariani
   r_suicide_corse -->|1| r_operium
