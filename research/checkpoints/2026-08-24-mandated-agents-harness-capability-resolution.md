@@ -152,13 +152,33 @@ real use
 -> stabilization when justified
 ```
 
-## 8. Rule of Two
+## 8. Pré-généralisation et Rule of Two (clarification 2026-10-28)
 
-A candidate abstraction should normally become a stable-core candidate only when at least two independent real uses or implementations expose substantially the same need.
+**Dès le premier cas**, séparer au besoin deux couches :
 
-Security, legal constraints or very costly future incompatibility may justify an earlier exception, but the exception should be explicit.
+1. **Contrat abstrait minimal** : la capacité requise, ses invariants, les identités et données canoniques, et la frontière qui rend un remplacement possible.
+2. **Réalisation concrète** : la première implémentation, éventuellement unique, choisie pour sa simplicité et soumise à ce contrat.
 
-This is a heuristic against both premature abstraction and vendor-shaped architecture.
+Il ne s'agit pas de bâtir d'avance un framework général, une hiérarchie de plugins ou plusieurs implémentations fictives. Il s'agit de **ne pas rendre irréversible une dépendance contingente**. L'abstraction initiale est une *couture* légère, explicite, modifiable ; elle peut se réduire à un type, une fonction, un protocole standard, un format de données ou une configuration.
+
+**La Rule of Two change de portée :** attendre deux cas réels indépendants (ou davantage de preuves) pour *généraliser et stabiliser une abstraction réutilisable dans le cœur* ; ne pas attendre le second cas pour *identifier et préserver la frontière abstrait/concret* lorsque le remplacement est plausible ou coûteux.
+
+Séquence préférée :
+
+```text
+premier cas réel
+  -> contrat minimal / frontière de substitution
+  -> une implémentation concrète, la plus simple suffisante
+  -> test du réel : invariants, réversibilité, coût de sortie
+  -> second cas réel / friction observée
+  -> généralisation et stabilisation, si justifiées
+```
+
+**Critère pragmatique :** le coût de la couture précoce doit rester inférieur au coût probable de l'enfermement futur ; ne créer une couche explicite que si elle protège une liberté réelle de choix. Privilégier les standards déjà disponibles plutôt qu'une abstraction maison.
+
+**Exemple OAuth/MCP (Cogentia #294) :** `(issuer, subject) -> principal Cogentia -> mandats` est la frontière canonique dès le premier fournisseur ; l'émission des jetons reste confiée à une réalisation OAuth/OIDC standard (ZITADEL, Auth0, Keycloak ou autre). Le second fournisseur ne sera nécessaire que pour éprouver la substituabilité et enrichir éventuellement l'adaptateur, pas pour justifier la séparation initiale entre identité externe et mandat.
+
+Cette règle conserve l'intention anti-surarchitecture de la Rule of Two tout en corrigeant son interprétation trop tardive et le risque d'une architecture façonnée par un fournisseur.
 
 ## 9. Capability-resolution layering
 
@@ -223,7 +243,7 @@ INTEGRATION
 Integrate from use; generalize from experience.
 
 ABSTRACTION
-Rule of Two: stabilize after independent convergence of real needs.
+Pré-généralisation dès le premier cas : séparer contrat minimal et réalisation ; Rule of Two : stabiliser après convergence de besoins réels indépendants.
 ```
 
 A fourth rule follows from the portability work:
