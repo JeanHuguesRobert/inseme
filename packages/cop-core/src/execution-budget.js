@@ -498,8 +498,30 @@ export function createEventSourcedExecutionBudgetLedger({
     return state;
   }
 
+  function applyLocal(event) {
+    if (!cached || cachedVersion !== event.topic.seq - 1) return;
+    const snap=cached.snapshot, active=activeHardDimensions(snap.limits);
+    const payload=event.payload;
+    if (event.event_type === "ExecutionBudgetReservation") {
+      const reservation=structuredClone(payload.reservation);
+      cached.reservations.set(reservation.reservation_id,reservation);
+      snap.reserved=add(snap.reserved,reservation.demand,active);
+    } else if (event.event_type === "ExecutionBudgetSettlement" || event.event_type === "ExecutionBudgetRelease") {
+      const reservation=cached.reservations.get(payload.reservation_id);
+      if (!reservation || reservation.status!=="reserved") {cached=null;return;}
+      snap.reserved=subtract(snap.reserved,reservation.demand,active);
+      if (event.event_type === "ExecutionBudgetSettlement") {
+        reservation.status="settled";
+        reservation.settled=structuredClone(payload.usage);
+        snap.settled=add(snap.settled,payload.usage,active);
+      } else reservation.status="released";
+    } else {cached=null;return;}
+    snap.version=event.topic.seq;
+    snap.available=subtract(snap.limits,add(snap.reserved,snap.settled,active),active);
+    cachedVersion=snap.version;
+  }
   function append(event_type, expected_version, idempotency_key, payload) {
-    return store.append({
+    const result=store.append({
       ...event_context,
       event_type,
       topic: { id: topic, seq: expected_version + 1 },
@@ -508,6 +530,8 @@ export function createEventSourcedExecutionBudgetLedger({
       visibility: "restricted",
       payload: { budget_id, ...payload },
     });
+    if (result.ok && !result.duplicate && result.event) applyLocal(result.event);
+    return result;
   }
 
   function conflict(snapshot) {
@@ -524,9 +548,7 @@ export function createEventSourcedExecutionBudgetLedger({
       const parsed = normalizeExactVector(demand, "demand", state.snapshot.limits);
       if (!parsed.ok) return rejectedVector(parsed, state.snapshot);
       const requested = parsed.vector;
-      const existing = [...state.reservations.values()].find(
-        (reservation) => reservation.idempotency_key === idempotency_key
-      );
+      const existing = state.reservations.get(`reservation:${budget_id}:${idempotency_key}`);
       if (existing) {
         return {
           ok: true,
@@ -586,9 +608,7 @@ export function createEventSourcedExecutionBudgetLedger({
       if (!parsed.ok) return rejectedVector(parsed, state.snapshot);
       const observed = parsed.vector;
       const active = activeHardDimensions(state.snapshot.limits);
-      const prior = listTopicEvents(store, topic).find(
-        (event) => event.idempotency_key === appendKey
-      );
+      const prior = store.eventByIdempotency?.(appendKey) ?? (store.eventByIdempotency ? null : listTopicEvents(store, topic).find(event => event.idempotency_key === appendKey));
       if (prior) {
         const priorUsage = readActive(
           prior.payload.usage,
@@ -649,7 +669,7 @@ export function createEventSourcedExecutionBudgetLedger({
       const reservation = state.reservations.get(reservation_id);
       if (!reservation)
         return { ok: false, error: "unknown_reservation", snapshot: state.snapshot };
-      if (listTopicEvents(store, topic).some((event) => event.idempotency_key === appendKey)) {
+      if (store.eventByIdempotency ? store.eventByIdempotency(appendKey) : listTopicEvents(store, topic).some((event) => event.idempotency_key === appendKey)) {
         return {
           ok: true,
           duplicate: true,

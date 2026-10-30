@@ -88,6 +88,7 @@ export function createSqliteCopEventStore(filename) {
       }
     },
     topicCommitment(id) { return readHead.get(id) || null; },
+    eventByIdempotency(key) { const row=byIdem.get(key); return row ? JSON.parse(row.envelope) : null; },
     listTopic(id) { return topicRows.all(id).map(r => JSON.parse(r.envelope)); },
     replay() { return allRows.all().map(r => JSON.parse(r.envelope)); },
     close() { db.close(); },

@@ -94,3 +94,22 @@ test('budget snapshot reuses projection until transactional topic version change
   assert.equal(reads,after);
  } finally {source.close();}
 });
+
+test('repeated SQLite budget operations avoid full journal scans after warmup',()=>{
+ const source=createSqliteCopEventStore(':memory:');
+ try{
+  recordExecutionBudgetGrant(source,{budget_id:'many',mandate_ref:'mandate:many',principal_ref:'person:p',limits:{max_steps:100}});
+  let scans=0;
+  const observed={...source,listTopic(t){scans++;return source.listTopic(t)}};
+  const ledger=createEventSourcedExecutionBudgetLedger({store:observed,budget_id:'many',limits:{max_steps:100},require_authority_grant:true});
+  assert.equal(ledger.snapshot().version,1);
+  for(let i=0;i<30;i++){
+   const result=ledger.reserve({idempotency_key:`batch-${i}`,expected_version:ledger.snapshot().version,demand:{max_steps:1}});
+   assert.equal(result.ok,true);
+   const settled=ledger.settle({reservation_id:result.reservation.reservation_id,expected_version:ledger.snapshot().version,usage:{max_steps:1}});
+   assert.equal(settled.ok,true);
+  }
+  assert.equal(ledger.snapshot().settled.max_steps,30);
+  assert.equal(scans,1);
+ }finally{source.close();}
+});
