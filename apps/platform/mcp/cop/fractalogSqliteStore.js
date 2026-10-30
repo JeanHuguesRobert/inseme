@@ -233,6 +233,27 @@ export function createFractalogSqliteStore(database) {
     }
   }
 
+  // Explicit on-demand synchronization uses the same durable outbox as
+  // automatic forwarding. No new source ledger or Supabase write path.
+  async function synchronize(ingress, { limit = 100, recoverInterrupted = false } = {}) {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000) {
+      throw new RangeError("limit must be between 1 and 1000");
+    }
+    if (recoverInterrupted) {
+      // An interrupted process can leave forwarding rows stranded. Their
+      // receipt is unknown; retransmit safely using ingress idempotency.
+      database.prepare("UPDATE fractalog_outbox SET state = 'pending', updated_at = ? WHERE state = 'forwarding'").run(now());
+    }
+    const batch = pending(limit);
+    const results = [];
+    for (const item of batch) {
+      results.push({ record_id: item.record.record_id,
+        ...await forward(item.record.record_id, ingress) });
+    }
+    return { attempted: results.length, accepted: results.filter(r => r.ok).length,
+      results };
+  }
+
   return {
     kind: "fractalog.sqlite.v1",
     append,
@@ -240,6 +261,7 @@ export function createFractalogSqliteStore(database) {
     pending,
     outbox: outboxRow,
     forward,
+    synchronize,
     update() {
       throw new Error("FractaLog documents are append-only. UPDATE forbidden.");
     },

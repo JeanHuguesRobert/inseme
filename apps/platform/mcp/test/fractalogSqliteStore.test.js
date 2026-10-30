@@ -160,3 +160,25 @@ test("Batch 0 reality test: records navigation observation & external observatio
     database.close();
   }
 });
+
+test('on-demand synchronization retries offline and replays a stranded forwarding row', async () => {
+  const db = new DatabaseSync(':memory:');
+  try {
+    const local = createFractalogSqliteStore(db);
+    local.append(record({ record_id:'flr:sync:1', idempotency_key:'sync:1' }));
+    local.append(record({ record_id:'flr:sync:2', idempotency_key:'sync:2' }));
+    const offline = await local.synchronize(async () => { throw new Error('disconnected'); });
+    assert.equal(offline.attempted,2);
+    assert.equal(offline.accepted,0);
+    db.prepare("UPDATE fractalog_outbox SET state='forwarding' WHERE record_id='flr:sync:1'").run();
+    const seen = new Set();
+    const delivered = await local.synchronize(async doc => {
+      seen.add(doc.record_id);
+      return { accepted:true, record_id:doc.record_id, document_hash:doc.integrity.document_hash };
+    },{recoverInterrupted:true});
+    assert.equal(delivered.accepted,2);
+    assert.equal(seen.size,2);
+    assert.equal(local.pending().length,0);
+    assert.equal((await local.synchronize(async ()=>{throw new Error('must not resend accepted');})).attempted,0);
+  } finally {db.close();}
+});
