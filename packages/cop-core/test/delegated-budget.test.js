@@ -91,3 +91,34 @@ describe('crash recovery before child grant', () => {
     expect(parent().snapshot().available.max_steps).toBe(8);
   });
 });
+
+describe('FractaLog local source separation', () => {
+  it('keeps child microtransactions local and commits only a verifiable summary to parent', () => {
+    const rootStore = atomicStore();
+    const childStore = atomicStore();
+    const limits = { max_steps: 10 };
+    recordExecutionBudgetGrant(rootStore, { budget_id: 'root-local', mandate_ref: 'mandate:root@v1', principal_ref: 'person:p', limits });
+    const parent = createEventSourcedExecutionBudgetLedger({ store: rootStore, budget_id: 'root-local', limits, require_authority_grant: true });
+    const delegation = reserveEventSourcedDelegatedBudget({
+      store: rootStore, child_store: childStore, child_source_ref: 'cop://child-node/budget/child-local',
+      parent_ledger: parent, child_budget_id: 'child-local', child_mandate_ref: 'mandate:child@v1',
+      principal_ref: 'person:p', allocation: { max_steps: 7 }, idempotency_key: 'local-1',
+    });
+    expect(delegation.ok).toBe(true);
+    const child = delegation.child_ledger;
+    const one = child.reserve({ idempotency_key: 'micro-1', expected_version: child.snapshot().version, demand: { max_steps: 2 } });
+    expect(child.settle({ reservation_id: one.reservation.reservation_id, expected_version: child.snapshot().version, usage: { max_steps: 2 } }).ok).toBe(true);
+    const two = child.reserve({ idempotency_key: 'micro-2', expected_version: child.snapshot().version, demand: { max_steps: 2 } });
+    expect(child.settle({ reservation_id: two.reservation.reservation_id, expected_version: child.snapshot().version, usage: { max_steps: 1 } }).ok).toBe(true);
+    expect(rootStore.listTopic('execution-budget:child-local')).toHaveLength(0);
+    const receipt = delegation.close();
+    expect(receipt.ok).toBe(true);
+    expect(parent.snapshot().settled.max_steps).toBe(3);
+    const parentEvents = rootStore.listTopic('execution-budget:root-local');
+    const committed = parentEvents.find(e => e.event_type === 'ExecutionBudgetSettlement');
+    expect(committed.payload.evidence).toEqual(receipt.evidence);
+    expect(receipt.evidence.source_ref).toBe('cop://child-node/budget/child-local');
+    expect(receipt.evidence.source_hash).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(childStore.listTopic('execution-budget:child-local')).toHaveLength(5);
+  });
+});

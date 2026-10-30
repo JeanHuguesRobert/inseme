@@ -563,7 +563,7 @@ export function createEventSourcedExecutionBudgetLedger({
       };
     },
 
-    settle({ reservation_id, expected_version, usage, idempotency_key } = {}) {
+    settle({ reservation_id, expected_version, usage, idempotency_key, evidence = null } = {}) {
       requireText(reservation_id, "reservation_id");
       const key = idempotency_key || `settle:${reservation_id}`;
       const appendKey = `execution-budget:settle:${budget_id}:${key}`;
@@ -612,6 +612,7 @@ export function createEventSourcedExecutionBudgetLedger({
       const result = append("ExecutionBudgetSettlement", expected_version, appendKey, {
         reservation_id,
         usage: observed,
+        ...(evidence ? { evidence: structuredClone(evidence) } : {}),
       });
       if (!result.ok) return conflict(current().snapshot);
       const after = current();

@@ -1,4 +1,5 @@
 import { createMemoryExecutionBudgetLedger, createEventSourcedExecutionBudgetLedger, recordExecutionBudgetGrant, activeHardDimensions } from './execution-budget.js';
+import { createHash } from 'node:crypto';
 
 /** Reference adapter: parent capacity is reserved before any child grant. */
 export function reserveDelegatedBudget({ parent_ledger, child_budget_id, allocation, idempotency_key }) {
@@ -38,10 +39,11 @@ export function reserveDelegatedBudget({ parent_ledger, child_budget_id, allocat
  * Caller MUST supply a store with durable atomic compare-and-append per topic.
  */
 export function reserveEventSourcedDelegatedBudget({
-  store, parent_ledger, child_budget_id, child_mandate_ref,
+  store, child_store = store, child_source_ref = null, parent_ledger, child_budget_id, child_mandate_ref,
   principal_ref, allocation, idempotency_key,
 }) {
-  if (!store?.append) throw new TypeError('store.append required');
+  if (!store?.append || !child_store?.append) throw new TypeError('store and child_store append required');
+  if (child_store !== store && (typeof child_source_ref !== 'string' || !child_source_ref)) throw new TypeError('child_source_ref required for distinct local store');
   for (const [name, value] of Object.entries({ child_budget_id, child_mandate_ref, principal_ref, idempotency_key })) {
     if (typeof value !== 'string' || !value) throw new TypeError(`${name} required`);
   }
@@ -67,7 +69,7 @@ export function reserveEventSourcedDelegatedBudget({
     return { ok: false, error: 'delegation_retry_mismatch', reservation: reserved.reservation };
   }
   const child = createEventSourcedExecutionBudgetLedger({
-    store, budget_id: child_budget_id, limits: allocation, require_authority_grant: true,
+    store: child_store, budget_id: child_budget_id, limits: allocation, require_authority_grant: true,
   });
   const current = child.snapshot();
   if (current.has_grant) {
@@ -76,7 +78,7 @@ export function reserveEventSourcedDelegatedBudget({
       return { ok: false, error: 'child_grant_mismatch', reservation: reserved.reservation };
     }
   } else {
-    recordExecutionBudgetGrant(store, {
+    recordExecutionBudgetGrant(child_store, {
       budget_id: child_budget_id, mandate_ref: child_mandate_ref,
       principal_ref, limits: allocation,
     });
@@ -89,9 +91,19 @@ export function reserveEventSourcedDelegatedBudget({
       if (active.some(d => status.reserved[d] !== 0)) {
         return { ok: false, error: 'child_reservations_outstanding' };
       }
-      return parent_ledger.settle({ reservation_id: reserved.reservation.reservation_id,
+      const localEvents = child_store.listTopic(`execution-budget:${child_budget_id}`);
+      const evidence = {
+        kind: 'fractalog.local-budget-summary/v1',
+        source_ref: child_source_ref || `cop:local:${child_budget_id}`,
+        source_hash: `sha256:${createHash('sha256').update(JSON.stringify(localEvents)).digest('hex')}`,
+        child_budget_id,
+        child_mandate_ref,
+        topic_seq: status.version,
+      };
+      const result = parent_ledger.settle({ reservation_id: reserved.reservation.reservation_id,
         expected_version: parent_ledger.snapshot().version, usage: status.settled,
-        idempotency_key: `delegate:close:${key}` });
+        idempotency_key: `delegate:close:${key}`, evidence });
+      return { ...result, evidence: result.ok ? evidence : null };
     },
   };
 }
