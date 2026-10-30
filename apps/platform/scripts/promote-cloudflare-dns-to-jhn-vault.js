@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * Promote only Cloudflare DNS credentials from the trusted workstation's
+ * Promote all CLOUDFLARE_* configuration entries from the trusted workstation's
  * inseme/.env to Agent JHN's Supabase public.instance_config vault.
  *
- * Default is read-only. Explicit --apply writes selected keys only.
+ * Includes DNS API credentials and R2 keys/endpoint/account metadata.
+ * Default is read-only. Explicit --apply writes only CLOUDFLARE_* keys.
  * No credential is printed or recorded in logs. Never run this in CI.
  */
 import fs from 'node:fs'
@@ -34,18 +35,20 @@ if (!supabaseUrl || !serviceRole || new URL(supabaseUrl).hostname !== expectedHo
   process.exit(2)
 }
 
-// Historical CLOUDFLARE_API_KEY is a Bearer credential unless accompanied by
-// CLOUDFLARE_EMAIL (global key). Newer name CLOUDFLARE_API_TOKEN is preferred.
-const entries = [
-  ['CLOUDFLARE_API_TOKEN', 'cloudflare_api_token'],
-  ['CLOUDFLARE_API_KEY', 'cloudflare_api_key'],
-  ['CLOUDFLARE_EMAIL', 'cloudflare_email'],
-].filter(([source]) => Boolean(env[source]?.trim()))
+// Canonical mapping is deterministic: CLOUDFLARE_X -> cloudflare_x.
+// Never copy unrelated provider secrets; keep the set open for future
+// Cloudflare capabilities (DNS, R2, tunnels, Workers, account metadata).
+const entries = Object.keys(env)
+  .filter(key => /^CLOUDFLARE_[A-Z0-9_]+$/.test(key))
+  .filter(key => typeof env[key] === 'string' && env[key].trim().length > 0)
+  .sort()
+  .map(key => [key, key.toLowerCase()])
 
-if (!entries.some(([source]) => source !== 'CLOUDFLARE_EMAIL')) {
-  console.error('BLOCKED: no Cloudflare DNS token/key in inseme/.env')
+if (entries.length === 0) {
+  console.error('BLOCKED: no non-empty CLOUDFLARE_* values in inseme/.env')
   process.exit(2)
 }
+console.log(`SOURCE: ${entries.length} Cloudflare configuration entries selected`)
 const supabase = createClient(supabaseUrl, serviceRole, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
@@ -68,7 +71,7 @@ try {
     if (!apply) console.log(`DRY-RUN: ${key}: ${old?.value === value ? 'already synchronized' : 'would create'}`)
   }
   // All rows were checked for conflicts before any mutation.
-  if (!apply) console.log('No mutation. Repeat with --apply to promote only the listed Cloudflare credentials.')
+  if (!apply) console.log('No mutation. Repeat with --apply to promote these CLOUDFLARE_* entries only.')
   for (const item of apply ? planned : []) {
     if (item.unchanged) { console.log(`UNCHANGED: ${item.key}`); continue }
     const { error: writeError } = await supabase.from('instance_config').upsert({
@@ -77,6 +80,14 @@ try {
     }, { onConflict: 'instance_id,key' })
     if (writeError) throw new Error(`Vault promotion failed for ${item.key}: ${writeError.code || 'unknown'}`)
     console.log(`PROMOTED: ${item.key} (value hidden)`)
+    const { data: verified, error: verifyError } = await supabase.from('instance_config')
+      .select('value,is_secret,is_public')
+      .eq('instance_id', rootId).eq('key', item.key).single()
+    if (verifyError || verified?.value !== item.value ||
+        verified.is_secret !== true || verified.is_public !== false) {
+      throw new Error(`Vault verification failed for ${item.key}`)
+    }
+    console.log(`VERIFIED: ${item.key} (value hidden)`)
   }
 } catch (error) {
   console.error('BLOCKED:', error.message)
