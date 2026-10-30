@@ -52,6 +52,7 @@ const supabase = createClient(supabaseUrl, serviceRole, {
 const rootId = '00000000-0000-0000-0000-000000000001'
 
 try {
+  const planned = []
   for (const [source, key] of entries) {
     const { data, error } = await supabase.from('instance_config')
       .select('id,value,is_secret,is_public')
@@ -63,24 +64,20 @@ try {
     if (old?.value && old.value !== value) {
       throw new Error(`CONFLICT: existing JHN ${key} differs; refusing overwrite`)
     }
-    if (!apply) {
-      console.log(`DRY-RUN: ${key}: ${old?.value === value ? 'already synchronized' : 'would create'}`)
-      continue
-    }
-    if (old && old.value === value && old.is_secret === true && old.is_public === false) {
-      console.log(`UNCHANGED: ${key}`)
-      continue
-    }
-    const payload = {
-      instance_id: rootId, key, value, category: 'secrets',
-      is_secret: true, is_public: false,
-    }
-    const { error: writeError } = await supabase.from('instance_config')
-      .upsert(payload, { onConflict: 'instance_id,key' })
-    if (writeError) throw new Error(`Vault promotion failed for ${key}: ${writeError.code || 'unknown'}`)
-    console.log(`PROMOTED: ${key} (value hidden)`)
+    planned.push({ key, value, unchanged: old?.value === value && old.is_secret === true && old.is_public === false })
+    if (!apply) console.log(`DRY-RUN: ${key}: ${old?.value === value ? 'already synchronized' : 'would create'}`)
   }
+  // All rows were checked for conflicts before any mutation.
   if (!apply) console.log('No mutation. Repeat with --apply to promote only the listed Cloudflare credentials.')
+  for (const item of apply ? planned : []) {
+    if (item.unchanged) { console.log(`UNCHANGED: ${item.key}`); continue }
+    const { error: writeError } = await supabase.from('instance_config').upsert({
+      instance_id: rootId, key: item.key, value: item.value,
+      category: 'secrets', is_secret: true, is_public: false,
+    }, { onConflict: 'instance_id,key' })
+    if (writeError) throw new Error(`Vault promotion failed for ${item.key}: ${writeError.code || 'unknown'}`)
+    console.log(`PROMOTED: ${item.key} (value hidden)`)
+  }
 } catch (error) {
   console.error('BLOCKED:', error.message)
   process.exitCode = 1
