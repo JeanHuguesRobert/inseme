@@ -198,15 +198,15 @@ export function createFractalogSqliteStore(database) {
     if (!record || !state) return { ok: false, error: "record_not_found" };
     if (state.state === "accepted")
       return { ok: true, duplicate: true, record, receipt: state.receipt };
+    if (state.state !== "pending") return { ok: false, error: "delivery_not_pending" };
     const attemptedAt = now();
-    database
-      .prepare(
-        "UPDATE fractalog_outbox SET state = 'forwarding', attempt_count = attempt_count + 1, last_attempt_at = ?, updated_at = ? WHERE record_id = ?"
-      )
-      .run(attemptedAt, attemptedAt, recordId);
+    const claimed = database.prepare(
+      "UPDATE fractalog_outbox SET state = 'forwarding', attempt_count = attempt_count + 1, last_attempt_at = ?, updated_at = ? WHERE record_id = ? AND state = 'pending'"
+    ).run(attemptedAt, attemptedAt, recordId);
+    if (claimed.changes !== 1) return { ok: false, error: "delivery_already_claimed" };
     try {
       const receipt = await ingress(structuredClone(record));
-      if (!receipt || receipt.accepted !== true) {
+      if (!receipt || receipt.accepted !== true || receipt.record_id !== record.record_id || receipt.document_hash !== record.integrity?.document_hash) {
         const rejectedAt = now();
         database
           .prepare(
@@ -235,14 +235,15 @@ export function createFractalogSqliteStore(database) {
 
   // Explicit on-demand synchronization uses the same durable outbox as
   // automatic forwarding. No new source ledger or Supabase write path.
-  async function synchronize(ingress, { limit = 100, recoverInterrupted = false } = {}) {
+  async function synchronize(ingress, { limit = 100, recoverInterrupted = false, staleAfterMs = 60000 } = {}) {
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000) {
       throw new RangeError("limit must be between 1 and 1000");
     }
     if (recoverInterrupted) {
-      // An interrupted process can leave forwarding rows stranded. Their
-      // receipt is unknown; retransmit safely using ingress idempotency.
-      database.prepare("UPDATE fractalog_outbox SET state = 'pending', updated_at = ? WHERE state = 'forwarding'").run(now());
+      if (!Number.isSafeInteger(staleAfterMs) || staleAfterMs < 0) throw new RangeError("invalid staleAfterMs");
+      // Do not preempt a live delivery; only recover an expired lease.
+      const cutoff = new Date(Date.now() - staleAfterMs).toISOString();
+      database.prepare("UPDATE fractalog_outbox SET state = 'pending', updated_at = ? WHERE state = 'forwarding' AND last_attempt_at <= ?").run(now(), cutoff);
     }
     const batch = pending(limit);
     const results = [];

@@ -32,6 +32,7 @@ test("FractaLog SQLite keeps immutable documents and a separate durable outbox",
       accepted: true,
       record_id: document.record_id,
       receipt_id: "receipt:central:1",
+      document_hash: document.integrity.document_hash,
     }));
     assert.equal(forwarded.ok, true);
     assert.equal(store.outbox(first.record_id).state, "accepted");
@@ -175,10 +176,35 @@ test('on-demand synchronization retries offline and replays a stranded forwardin
     const delivered = await local.synchronize(async doc => {
       seen.add(doc.record_id);
       return { accepted:true, record_id:doc.record_id, document_hash:doc.integrity.document_hash };
-    },{recoverInterrupted:true});
+    },{recoverInterrupted:true,staleAfterMs:0});
     assert.equal(delivered.accepted,2);
     assert.equal(seen.size,2);
     assert.equal(local.pending().length,0);
     assert.equal((await local.synchronize(async ()=>{throw new Error('must not resend accepted');})).attempted,0);
+  } finally {db.close();}
+});
+
+test('rejects mismatched receipts without accepting an incorrect hash', async () => {
+  const db = new DatabaseSync(':memory:');
+  try {
+    const local = createFractalogSqliteStore(db);
+    const item = record({record_id:'flr:bad-receipt',idempotency_key:'bad-receipt'});
+    local.append(item);
+    const response = await local.forward(item.record_id, async doc => ({accepted:true,record_id:doc.record_id,document_hash:'sha256:incorrect'}));
+    assert.equal(response.ok,false);
+    assert.equal(local.outbox(item.record_id).state,'rejected');
+  } finally {db.close();}
+});
+
+test('does not reclaim an actively forwarding delivery on sync request', async () => {
+  const db = new DatabaseSync(':memory:');
+  try {
+    const local = createFractalogSqliteStore(db);
+    const item=record({record_id:'flr:live',idempotency_key:'live'});
+    local.append(item);
+    db.prepare("UPDATE fractalog_outbox SET state='forwarding',last_attempt_at=? WHERE record_id=?").run(new Date().toISOString(),item.record_id);
+    const res=await local.synchronize(async ()=>({accepted:true}),{recoverInterrupted:true,staleAfterMs:60000});
+    assert.equal(res.attempted,0);
+    assert.equal(local.outbox(item.record_id).state,'forwarding');
   } finally {db.close();}
 });
