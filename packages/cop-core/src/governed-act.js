@@ -501,8 +501,34 @@ export async function invokeGovernedCapability(options) {
   });
 
   if (!preCallGrant.granted) {
+    // A revoked mandate must never reach the provider. If releasing its
+    // reservation fails, preserve that accounting residue in the receipt:
+    // denying execution does not imply the budget has been restored.
+    let release = null;
     if (ledger && reservation) {
-      releaseReservation(ledger, reservation, `${keyBase}:toctou-release`);
+      try {
+        release = releaseReservation(ledger, reservation, `${keyBase}:toctou-release`);
+      } catch (err) {
+        release = {
+          ok: false,
+          error: "execution_budget_release_threw",
+          reason: String(err?.message || err),
+        };
+      }
+      if (!release?.ok) {
+        return {
+          ok: false,
+          error: "execution_budget_release_unresolved",
+          reason: preCallGrant.reason || "mandate no longer authorized before provider call",
+          authority_error: preCallGrant.error || "authority_refused",
+          called_provider: false,
+          reservation,
+          release,
+          snapshot: ledger.snapshot(),
+          act_id: null,
+          receipt: null,
+        };
+      }
     }
     const toctouError =
       preCallGrant.error === "mandate_version_stale"
