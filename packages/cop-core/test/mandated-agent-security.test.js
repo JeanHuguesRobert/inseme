@@ -443,6 +443,66 @@ describe("Mandated Agent Authority & Security Enforcement (Issue #55)", () => {
     expect(snap.reserved.max_steps).toBe(0);
   });
 
+  it("AC7b: failed release after revocation is reported without invoking provider", async () => {
+    const store = createMemoryCopStore();
+    const handler = createMockHandler();
+    recordMandateDeclaration(store, {
+      mandate_id: `${MANDATE_ID}@v1`,
+      version: "v1",
+      principal_ref: PRINCIPAL_ALICE,
+      logical_agent_ref: AGENT_BOB,
+      scope: { allowed_actions: ["tool:search"] },
+    });
+    const limits = { max_steps: 3 };
+    recordExecutionBudgetGrant(store, {
+      budget_id: "bgt-ac7b",
+      mandate_ref: `${MANDATE_ID}@v1`,
+      principal_ref: PRINCIPAL_ALICE,
+      limits,
+    });
+    const base = createEventSourcedExecutionBudgetLedger({
+      store,
+      budget_id: "bgt-ac7b",
+      limits,
+    });
+    const ledger = {
+      ...base,
+      reserve(params) {
+        const result = base.reserve(params);
+        recordMandateControl(store, {
+          principal_ref: PRINCIPAL_ALICE,
+          mandate_ref: `${MANDATE_ID}@v1`,
+          action: "revoke",
+          reason: "Revoked at execution boundary",
+        });
+        return result;
+      },
+      release() {
+        return { ok: false, error: "simulated_storage_failure" };
+      },
+    };
+    const result = await invokeGovernedCapability({
+      store,
+      ledger,
+      handler,
+      identity: {
+        principal_ref: PRINCIPAL_ALICE,
+        mandate_ref: `${MANDATE_ID}@v1`,
+        logical_agent_ref: AGENT_BOB,
+      },
+      capability: "tool:search",
+      demand: { max_steps: 1 },
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("execution_budget_release_unresolved");
+    expect(result.authority_error).toBeTruthy();
+    expect(result.called_provider).toBe(false);
+    expect(result.release.error).toBe("simulated_storage_failure");
+    expect(result.reservation.status).toBe("reserved");
+    expect(handler.callCount).toBe(0);
+    expect(base.snapshot().reserved.max_steps).toBe(1);
+  });
+
   // Acceptance Criterion 8
   it("AC8: mandate v1 replaced by v2 -> v1 authority grant is stale and refused (mandate_version_stale)", async () => {
     const store = createMemoryCopStore();
