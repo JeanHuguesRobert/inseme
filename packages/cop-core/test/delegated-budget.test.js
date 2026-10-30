@@ -125,3 +125,39 @@ describe('FractaLog local source separation', () => {
     expect(restarted.child_ledger.reserve({ idempotency_key: 'late-2', expected_version: restarted.child_ledger.snapshot().version, demand: { max_steps: 1 } }).error).toBe('child_budget_sealed');
   });
 });
+
+describe('reconciliation after interrupted parent settlement', () => {
+  it('keeps child sealed and retries parent settlement exactly once', () => {
+    const rootStore = atomicStore();
+    const childStore = atomicStore();
+    const limits = { max_steps: 9 };
+    recordExecutionBudgetGrant(rootStore, { budget_id: 'root-retry', mandate_ref: 'mandate:root@v1', principal_ref: 'person:p', limits });
+    const realParent = () => createEventSourcedExecutionBudgetLedger({ store: rootStore, budget_id: 'root-retry', limits, require_authority_grant: true });
+    let failOnce = true;
+    const unreliableParent = {
+      ...realParent(),
+      settle(args) {
+        if (failOnce) { failOnce = false; return { ok: false, error: 'simulated_transport_interruption' }; }
+        return realParent().settle(args);
+      },
+    };
+    const args = { store: rootStore, child_store: childStore, child_source_ref: 'cop://child/retry',
+      child_budget_id: 'child-retry', child_mandate_ref: 'mandate:child@v1',
+      principal_ref: 'person:p', allocation: { max_steps: 6 }, idempotency_key: 'retry' };
+    const first = reserveEventSourcedDelegatedBudget({ ...args, parent_ledger: unreliableParent });
+    const child = first.child_ledger;
+    const task = child.reserve({ idempotency_key: 'task', expected_version: child.snapshot().version, demand: { max_steps: 4 } });
+    expect(child.settle({ reservation_id: task.reservation.reservation_id, expected_version: child.snapshot().version, usage: { max_steps: 3 } }).ok).toBe(true);
+    expect(first.close().error).toBe('simulated_transport_interruption');
+    expect(child.reserve({ idempotency_key: 'too-late', expected_version: child.snapshot().version, demand: { max_steps: 1 } }).error).toBe('child_budget_sealed');
+    expect(realParent().snapshot().reserved.max_steps).toBe(6);
+    const restarted = reserveEventSourcedDelegatedBudget({ ...args, parent_ledger: realParent() });
+    expect(restarted.ok).toBe(true);
+    const recovered = restarted.close();
+    expect(recovered.ok).toBe(true);
+    expect(realParent().snapshot().settled.max_steps).toBe(3);
+    expect(realParent().snapshot().available.max_steps).toBe(6);
+    expect(restarted.close().duplicate).toBe(true);
+    expect(realParent().snapshot().settled.max_steps).toBe(3);
+  });
+});

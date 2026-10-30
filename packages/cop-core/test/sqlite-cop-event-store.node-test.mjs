@@ -67,3 +67,21 @@ describe('SQLite-backed delegated budget recovery', () => {
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 });
+
+describe('seal enforced by SQLite store across independent connections', () => {
+  it('refuses direct bypass writes after the local budget seal', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cop-seal-'));
+    const file = join(dir, 'events.sqlite');
+    try {
+      const store = createSqliteCopEventStore(file);
+      const sealed = store.append({ event_type: 'ExecutionBudgetSeal', topic_id: 'execution-budget:child', idempotency_key: 'seal-child', epistemic_status: 'observed', visibility: 'restricted', payload: { kind: 'ExecutionBudgetSeal' } });
+      assert.equal(sealed.ok, true);
+      store.close();
+      const other = createSqliteCopEventStore(file);
+      const bypass = other.append({ event_type: 'ExecutionBudgetReservation', topic_id: 'execution-budget:child', idempotency_key: 'late-reserve', epistemic_status: 'observed', visibility: 'restricted', payload: { budget_id: 'child' } });
+      assert.equal(bypass.ok, false);
+      assert.equal(bypass.error, 'budget_topic_sealed');
+      other.close();
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+});

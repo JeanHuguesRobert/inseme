@@ -17,6 +17,7 @@ export function createSqliteCopEventStore(filename) {
   const nextSeq = db.prepare('SELECT COALESCE(MAX(seq),0)+1 AS n FROM cop_events WHERE topic=?');
   const insert = db.prepare('INSERT INTO cop_events(event_id,topic,seq,idem,envelope) VALUES (?,?,?,?,?)');
   const topicRows = db.prepare('SELECT envelope FROM cop_events WHERE topic=? ORDER BY seq');
+  const sealLookup = db.prepare("SELECT 1 FROM cop_events WHERE topic=? AND json_extract(envelope, '$.event_type')='ExecutionBudgetSeal' LIMIT 1");
   return {
     kind: 'sqlite',
     append(partial) {
@@ -29,6 +30,10 @@ export function createSqliteCopEventStore(filename) {
             db.exec('COMMIT');
             return { ok: true, duplicate: true, event: JSON.parse(previous.envelope) };
           }
+        }
+        if (event.topic.id.startsWith('execution-budget:') && sealLookup.get(event.topic.id)) {
+          db.exec('ROLLBACK');
+          return { ok: false, error: 'budget_topic_sealed' };
         }
         const seq = nextSeq.get(event.topic.id).n;
         if (event.topic.seq > 0 && event.topic.seq !== seq) {
