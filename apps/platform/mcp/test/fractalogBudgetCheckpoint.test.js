@@ -74,3 +74,23 @@ test('SQLite commitment exposes constant-sized head without listTopic checkpoint
   assert.equal(outbox.pending()[0].record.trace.commitment_scheme,'sha256:chain-v1');
  }finally{store.close();db.close();}
 });
+
+test('budget snapshot reuses projection until transactional topic version changes',()=>{
+ const source=createSqliteCopEventStore(':memory:');
+ try {
+  recordExecutionBudgetGrant(source,{budget_id:'cache',mandate_ref:'mandate:cache',principal_ref:'person:p',limits:{max_steps:7}});
+  let reads=0;
+  const counted={...source,listTopic(topic){reads++;return source.listTopic(topic)}};
+  const ledger=createEventSourcedExecutionBudgetLedger({store:counted,budget_id:'cache',limits:{max_steps:7},require_authority_grant:true});
+  assert.equal(ledger.snapshot().version,1);
+  assert.equal(ledger.snapshot().version,1);
+  assert.equal(reads,1);
+  const saved=ledger.snapshot();saved.available.max_steps=999;
+  assert.equal(ledger.snapshot().available.max_steps,7);
+  const reservation=ledger.reserve({idempotency_key:'cache-work',expected_version:1,demand:{max_steps:2}});
+  assert.equal(reservation.ok,true);
+  const after=reads;
+  assert.equal(ledger.snapshot().version,2);
+  assert.equal(reads,after);
+ } finally {source.close();}
+});

@@ -478,13 +478,24 @@ export function createEventSourcedExecutionBudgetLedger({
   }
   const topic = executionBudgetTopic(budget_id);
 
+  // Fast path for repeated reads/checkpoints on a stable SQLite topic.
+  // The store's transactional topic commitment is the invalidation token.
+  let cached = null;
+  let cachedVersion = -1;
   function current() {
-    return projectEventLedger({
+    const version = store.topicCommitment?.(topic)?.seq ?? 0;
+    if (cached && version === cachedVersion) return cached;
+    const state = projectEventLedger({
       budget_id,
       limits: fallbackLimits,
       events: listTopicEvents(store, topic),
       require_authority_grant,
     });
+    if (typeof store.topicCommitment === "function") {
+      cached = state;
+      cachedVersion = state.snapshot.version;
+    }
+    return state;
   }
 
   function append(event_type, expected_version, idempotency_key, payload) {
@@ -666,7 +677,7 @@ export function createEventSourcedExecutionBudgetLedger({
     },
 
     snapshot() {
-      return current().snapshot;
+      return structuredClone(current().snapshot);
     },
   };
 }
