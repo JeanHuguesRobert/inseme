@@ -39,3 +39,23 @@ test('checkpoint offline, retry, idempotence, source evidence',async()=>{
   assert.equal(enqueueBudgetCheckpoint({...args,mandate_ref:'mandate:other'}).error,'checkpoint_mandate_mismatch');
  }finally{source.close();db.close();}
 });
+
+test('checkpoint outbox to projection receiver: offline replay without settlement',async()=>{
+ const {createBudgetCheckpointReceiver}=await import('../cop/fractalogCheckpointReceiver.js');
+ const source=createSqliteCopEventStore(':memory:');
+ const outDb=new DatabaseSync(':memory:'),recvDb=new DatabaseSync(':memory:');
+ try {
+  const outbox=createFractalogSqliteStore(outDb),receiver=createBudgetCheckpointReceiver(recvDb);
+  recordExecutionBudgetGrant(source,{budget_id:'remote',mandate_ref:'mandate:remote@v1',principal_ref:'person:p',limits:{max_steps:12}});
+  const ledger=createEventSourcedExecutionBudgetLedger({store:source,budget_id:'remote',limits:{max_steps:12},require_authority_grant:true});
+  const args={ledger,sourceStore:source,outbox,mandate_ref:'mandate:remote@v1',owner_instance_ref:'instance:handler',source_ref:'cop://handler/remote'};
+  assert.equal(enqueueBudgetCheckpoint(args).ok,true);
+  assert.equal((await outbox.synchronize(async()=>{throw Error('offline')})).accepted,0);
+  assert.equal((await outbox.synchronize(doc=>receiver.receive(doc))).accepted,1);
+  const first=outbox.get('budget:remote:checkpoint:1');
+  assert.equal(receiver.receive(first).duplicate,true);
+  assert.equal(receiver.latest('cop://handler/remote','remote'),1);
+  assert.equal(ledger.snapshot().settled.max_steps,0);
+  assert.equal(recvDb.prepare('SELECT COUNT(*) AS count FROM budget_checkpoint_receipts').get().count,1);
+ } finally {source.close();outDb.close();recvDb.close();}
+});
