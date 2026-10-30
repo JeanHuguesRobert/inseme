@@ -17,6 +17,7 @@ export function createSqliteCopEventStore(filename) {
   const nextSeq = db.prepare('SELECT COALESCE(MAX(seq),0)+1 AS n FROM cop_events WHERE topic=?');
   const insert = db.prepare('INSERT INTO cop_events(event_id,topic,seq,idem,envelope) VALUES (?,?,?,?,?)');
   const topicRows = db.prepare('SELECT envelope FROM cop_events WHERE topic=? ORDER BY seq');
+  const allRows = db.prepare('SELECT envelope FROM cop_events ORDER BY topic,seq');
   const sealLookup = db.prepare("SELECT 1 FROM cop_events WHERE topic=? AND json_extract(envelope, '$.event_type')='ExecutionBudgetSeal' LIMIT 1");
   return {
     kind: 'sqlite',
@@ -55,6 +56,7 @@ export function createSqliteCopEventStore(filename) {
       }
     },
     listTopic(id) { return topicRows.all(id).map(r => JSON.parse(r.envelope)); },
+    replay() { return allRows.all().map(r => JSON.parse(r.envelope)); },
     close() { db.close(); },
   };
 }
