@@ -485,6 +485,12 @@ export function createEventSourcedExecutionBudgetLedger({
   function current() {
     const version = store.topicCommitment?.(topic)?.seq ?? 0;
     if (cached && version === cachedVersion) return cached;
+    const projection = store.budgetProjection?.(topic);
+    if (projection && projection.snapshot.version === version) {
+      cached=projection;
+      cachedVersion=version;
+      return projection;
+    }
     const state = projectEventLedger({
       budget_id,
       limits: fallbackLimits,
@@ -492,7 +498,8 @@ export function createEventSourcedExecutionBudgetLedger({
       require_authority_grant,
     });
     if (typeof store.topicCommitment === "function") {
-      cached = state;
+      if (state.snapshot.has_grant) store.seedBudgetProjection?.(topic,state);
+      cached = store.budgetProjection?.(topic) || state;
       cachedVersion = state.snapshot.version;
     }
     return state;
@@ -530,7 +537,12 @@ export function createEventSourcedExecutionBudgetLedger({
       visibility: "restricted",
       payload: { budget_id, ...payload },
     });
-    if (result.ok && !result.duplicate && result.event) applyLocal(result.event);
+    if (result.ok && !result.duplicate && result.event) {
+      const persisted=store.budgetProjection?.(topic);
+      if (persisted && persisted.snapshot.version===result.event.topic.seq) {
+        cached=persisted;cachedVersion=persisted.snapshot.version;
+      } else applyLocal(result.event);
+    }
     return result;
   }
 
