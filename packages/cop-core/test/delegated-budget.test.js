@@ -119,6 +119,9 @@ describe('FractaLog local source separation', () => {
     expect(committed.payload.evidence).toEqual(receipt.evidence);
     expect(receipt.evidence.source_ref).toBe('cop://child-node/budget/child-local');
     expect(receipt.evidence.source_hash).toMatch(/^sha256:[0-9a-f]{64}$/);
-    expect(childStore.listTopic('execution-budget:child-local')).toHaveLength(5);
+    expect(childStore.listTopic('execution-budget:child-local')).toHaveLength(6);
+    expect(child.reserve({ idempotency_key: 'late', expected_version: child.snapshot().version, demand: { max_steps: 1 } }).error).toBe('child_budget_sealed');
+    const restarted = reserveEventSourcedDelegatedBudget({ store: rootStore, child_store: childStore, child_source_ref: 'cop://child-node/budget/child-local', parent_ledger: parent, child_budget_id: 'child-local', child_mandate_ref: 'mandate:child@v1', principal_ref: 'person:p', allocation: { max_steps: 7 }, idempotency_key: 'local-1' });
+    expect(restarted.child_ledger.reserve({ idempotency_key: 'late-2', expected_version: restarted.child_ledger.snapshot().version, demand: { max_steps: 1 } }).error).toBe('child_budget_sealed');
   });
 });

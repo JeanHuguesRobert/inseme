@@ -83,15 +83,39 @@ export function reserveEventSourcedDelegatedBudget({
       principal_ref, limits: allocation,
     });
   }
+  const childTopic = `execution-budget:${child_budget_id}`;
+  const sealKey = `delegate:seal:${key}`;
+  const sealedEvent = () => child_store.listTopic(childTopic).find(e => e.event_type === 'ExecutionBudgetSeal');
+  const childGuard = {
+    snapshot: () => child.snapshot(),
+    reserve: args => sealedEvent() ? { ok: false, error: 'child_budget_sealed' } : child.reserve(args),
+    settle: args => sealedEvent() ? { ok: false, error: 'child_budget_sealed' } : child.settle(args),
+    release: args => sealedEvent() ? { ok: false, error: 'child_budget_sealed' } : child.release(args),
+  };
   return {
     ok: true, duplicate: Boolean(reserved.duplicate), reservation: reserved.reservation,
-    child_ledger: child,
+    child_ledger: childGuard,
     close() {
       const status = child.snapshot();
       if (active.some(d => status.reserved[d] !== 0)) {
         return { ok: false, error: 'child_reservations_outstanding' };
       }
-      const localEvents = child_store.listTopic(`execution-budget:${child_budget_id}`);
+      // The seal shares the local budget topic CAS. A competing microtransaction
+      // either precedes the seal (and forces retry) or is refused by the guard.
+      if (!sealedEvent()) {
+        const result = child_store.append({
+          event_type: 'ExecutionBudgetSeal', topic: { id: childTopic, seq: status.version + 1 },
+          idempotency_key: sealKey, visibility: 'restricted', epistemic_status: 'observed',
+          payload: { budget_id: child_budget_id, mandate_ref: child_mandate_ref,
+            settled: status.settled, kind: 'ExecutionBudgetSeal' },
+        });
+        if (!result.ok) return { ok: false, error: 'child_budget_seal_conflict' };
+      }
+      const localEvents = child_store.listTopic(childTopic);
+      const seal = sealedEvent();
+      if (!seal || active.some(d => seal.payload.settled[d] !== status.settled[d])) {
+        return { ok: false, error: 'child_budget_seal_mismatch' };
+      }
       const evidence = {
         kind: 'fractalog.local-budget-summary/v1',
         source_ref: child_source_ref || `cop:local:${child_budget_id}`,
