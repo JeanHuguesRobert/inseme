@@ -53,8 +53,14 @@ export function reserveEventSourcedDelegatedBudget({
     return { ok: false, error: 'delegation_dimension_mismatch' };
   }
   const key = `delegate:${child_budget_id}:${idempotency_key}`;
-  const reserved = parent_ledger.reserve({ idempotency_key: key,
+  let reserved = parent_ledger.reserve({ idempotency_key: key,
     expected_version: parent.version, demand: allocation });
+  // Another delegate can win the same parent topic between snapshot and
+  // append. Re-evaluate once with fresh capacity, never force an append.
+  if (!reserved.ok && reserved.error === 'budget_version_conflict') {
+    reserved = parent_ledger.reserve({ idempotency_key: key,
+      expected_version: parent_ledger.snapshot().version, demand: allocation });
+  }
   if (!reserved.ok) return reserved;
   // An idempotent retry must not silently rebind its budget to another grant.
   if (active.some(d => reserved.reservation.demand[d] !== allocation[d])) {
