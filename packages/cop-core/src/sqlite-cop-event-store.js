@@ -56,49 +56,59 @@ export function createSqliteCopEventStore(filename) {
   const allRows = db.prepare('SELECT envelope FROM cop_events ORDER BY topic,seq');
   const sealLookup=db.prepare('SELECT 1 FROM cop_sealed_budget_topics WHERE topic=?');
   const markSealed=db.prepare('INSERT OR IGNORE INTO cop_sealed_budget_topics(topic) VALUES(?)');
-  return {
-    kind: 'sqlite',
-    append(partial) {
-      const event = createCopEventEnvelope(partial);
-      db.exec('BEGIN IMMEDIATE');
-      try {
-        if (event.idempotency_key) {
-          const previous = byIdem.get(event.idempotency_key);
-          if (previous) {
-            db.exec('COMMIT');
-            return { ok: true, duplicate: true, event: JSON.parse(previous.envelope) };
-          }
-        }
-        if (event.topic.id.startsWith('execution-budget:') && sealLookup.get(event.topic.id)) {
+  // Transactional kernel shared by single writes and atomic batches.
+  // It never opens or commits a transaction itself.
+  function appendWithinTransaction(partial) {
+    const event=createCopEventEnvelope(partial);
+    if (event.idempotency_key) {
+      const previous=byIdem.get(event.idempotency_key);
+      if (previous) return {ok:true,duplicate:true,event:JSON.parse(previous.envelope)};
+    }
+    if (event.topic.id.startsWith('execution-budget:') && sealLookup.get(event.topic.id))
+      return {ok:false,error:'budget_topic_sealed'};
+    const seq=nextSeq.get(event.topic.id).n;
+    if (event.topic.seq>0 && event.topic.seq!==seq)
+      return {ok:false,error:'topic_seq_conflict'};
+    event.topic.seq=seq;
+    const verdict=validateCopEventEnvelope(event,{requirePositiveSeq:true});
+    if (!verdict.ok) return {ok:false,error:'invalid_envelope',errors:verdict.errors};
+    const envelope=JSON.stringify(event);
+    insert.run(event.event_id,event.topic.id,seq,event.idempotency_key||null,envelope);
+    const previousHead=readHead.get(event.topic.id);
+    if ((previousHead?.seq||0)!==seq-1) throw Error('topic_commitment_sequence_mismatch');
+    const head=createHash('sha256').update(previousHead?.head||'').update(envelope).digest('hex');
+    upsertHead.run(event.topic.id,seq,`sha256:${head}`,event.time?.recorded_at||event.time?.occurred_at||'');
+    budgetProjection.apply(event);
+    if (event.event_type==='ExecutionBudgetSeal' && event.topic.id.startsWith('execution-budget:'))
+      markSealed.run(event.topic.id);
+    return {ok:true,duplicate:false,event};
+  }
+  function appendBatch(partials,{maxBatchSize=100}={}) {
+    if (!Array.isArray(partials) || partials.length<1 ||
+        !Number.isSafeInteger(maxBatchSize) || maxBatchSize<1 || maxBatchSize>1000 ||
+        partials.length>maxBatchSize) throw new RangeError('invalid atomic batch size');
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const results=[];
+      for (let index=0;index<partials.length;index++) {
+        const result=appendWithinTransaction(partials[index]);
+        if (!result.ok) {
           db.exec('ROLLBACK');
-          return { ok: false, error: 'budget_topic_sealed' };
+          return {ok:false,error:result.error,index,results:[]};
         }
-        const seq = nextSeq.get(event.topic.id).n;
-        if (event.topic.seq > 0 && event.topic.seq !== seq) {
-          db.exec('ROLLBACK');
-          return { ok: false, error: 'topic_seq_conflict' };
-        }
-        event.topic.seq = seq;
-        const verdict = validateCopEventEnvelope(event, { requirePositiveSeq: true });
-        if (!verdict.ok) {
-          db.exec('ROLLBACK');
-          return { ok: false, error: 'invalid_envelope', errors: verdict.errors };
-        }
-        insert.run(event.event_id, event.topic.id, seq, event.idempotency_key || null, JSON.stringify(event));
-        const previousHead = readHead.get(event.topic.id);
-        if ((previousHead?.seq || 0) === seq-1) {
-          const head = createHash('sha256').update(previousHead?.head || '').update(JSON.stringify(event)).digest('hex');
-          upsertHead.run(event.topic.id, seq, `sha256:${head}`, event.time?.recorded_at || event.time?.occurred_at || '');
-        }
-        budgetProjection.apply(event);
-        if (event.event_type==='ExecutionBudgetSeal' && event.topic.id.startsWith('execution-budget:')) markSealed.run(event.topic.id);
-        db.exec('COMMIT');
-        return { ok: true, duplicate: false, event };
-      } catch (error) {
-        db.exec('ROLLBACK');
-        throw error;
+        results.push(result);
       }
+      db.exec('COMMIT');
+      return {ok:true,results};
+    } catch(error) {db.exec('ROLLBACK');throw error;}
+  }
+  return {
+    kind:'sqlite',
+    append(partial) {
+      const batch=appendBatch([partial],{maxBatchSize:1});
+      return batch.ok?batch.results[0]:{ok:false,error:batch.error};
     },
+    appendBatch,
     topicCommitment(id) { return readHead.get(id) || null; },
     budgetProjection(topic) { return budgetProjection.get(topic); },
     seedBudgetProjection(topic,state) { return budgetProjection.seed(topic,state); },
