@@ -208,3 +208,36 @@ test('does not reclaim an actively forwarding delivery on sync request', async (
     assert.equal(local.outbox(item.record_id).state,'forwarding');
   } finally {db.close();}
 });
+
+test('batch forwarding uses one call per chunk and independent ACKs',async()=>{
+ const db=new DatabaseSync(':memory:');
+ try{
+  const local=createFractalogSqliteStore(db);
+  for(let i=0;i<5;i++)local.append(record({record_id:`flr:batch:${i}`,idempotency_key:`batch:${i}`}));
+  let calls=0;
+  const result=await local.synchronizeBatch(async docs=>{
+    calls++;
+    return docs.filter(d=>d.record_id!=='flr:batch:1').map(d=>({accepted:true,record_id:d.record_id,document_hash:d.integrity.document_hash}));
+  },{batchSize:2});
+  assert.deepEqual(result,{attempted:5,accepted:4,pending:1,rejected:0,batches:3});
+  assert.equal(calls,3);
+  assert.equal(local.outbox('flr:batch:1').state,'pending');
+  const retry=await local.synchronizeBatch(async docs=>docs.map(d=>({accepted:true,record_id:d.record_id,document_hash:d.integrity.document_hash})));
+  assert.equal(retry.accepted,1);
+  assert.equal(local.pending().length,0);
+ }finally{db.close();}
+});
+
+test('batch failure retries independently and conflicting ACK is quarantined',async()=>{
+ const db=new DatabaseSync(':memory:');
+ try{
+  const local=createFractalogSqliteStore(db);
+  local.append(record({record_id:'flr:batch:offline',idempotency_key:'batch:offline'}));
+  local.append(record({record_id:'flr:batch:conflict',idempotency_key:'batch:conflict'}));
+  assert.equal((await local.synchronizeBatch(async()=>{throw Error('offline')})).pending,2);
+  const results=await local.synchronizeBatch(async docs=>docs.map(d=>({accepted:true,record_id:d.record_id,document_hash:d.record_id.endsWith('conflict')?'fake':d.integrity.document_hash})));
+  assert.equal(results.accepted,1);
+  assert.equal(results.rejected,1);
+  assert.equal(local.outbox('flr:batch:conflict').state,'rejected');
+ }finally{db.close();}
+});

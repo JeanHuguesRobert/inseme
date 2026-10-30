@@ -255,6 +255,61 @@ export function createFractalogSqliteStore(database) {
       results };
   }
 
+  // Transport batching: one ingress call per chunk, distinct durable receipts.
+  // Each record is claimed independently; missing ACKs return to pending.
+  async function synchronizeBatch(batchIngress, {limit=100,batchSize=25,
+    recoverInterrupted=false,staleAfterMs=60000}={}) {
+    if (typeof batchIngress !== 'function') throw new TypeError('batchIngress required');
+    if (!Number.isSafeInteger(limit)||limit<1||limit>1000 ||
+        !Number.isSafeInteger(batchSize)||batchSize<1||batchSize>1000)
+      throw new RangeError('invalid batch limits');
+    if (recoverInterrupted) {
+      if (!Number.isSafeInteger(staleAfterMs)||staleAfterMs<0) throw new RangeError('invalid staleAfterMs');
+      const cutoff=new Date(Date.now()-staleAfterMs).toISOString();
+      database.prepare("UPDATE fractalog_outbox SET state='pending',updated_at=? WHERE state='forwarding' AND last_attempt_at<=?").run(now(),cutoff);
+    }
+    const candidates=pending(limit).map(row=>row.record);
+    const claim=database.prepare("UPDATE fractalog_outbox SET state='forwarding',attempt_count=attempt_count+1,last_attempt_at=?,updated_at=? WHERE record_id=? AND state='pending'");
+    const finish=database.prepare("UPDATE fractalog_outbox SET state=?,accepted_at=?,receipt=?,last_error=?,updated_at=? WHERE record_id=? AND state='forwarding'");
+    const outcome={attempted:0,accepted:0,pending:0,rejected:0,batches:0};
+    for(let offset=0;offset<candidates.length;offset+=batchSize) {
+      const chunk=[];
+      for(const doc of candidates.slice(offset,offset+batchSize)) {
+        const stamp=now();
+        if(claim.run(stamp,stamp,doc.record_id).changes===1) chunk.push(doc);
+      }
+      if (!chunk.length) continue;
+      outcome.attempted+=chunk.length;outcome.batches++;
+      let receipts;
+      try {
+        receipts=await batchIngress(structuredClone(chunk));
+        if(!Array.isArray(receipts)) throw new TypeError('invalid batch response');
+      }catch(error) {
+        for(const doc of chunk) finish.run('pending',null,null,String(error?.message||error),now(),doc.record_id);
+        outcome.pending+=chunk.length;continue;
+      }
+      const grouped=new Map();
+      for(const receipt of receipts) {
+        if(!receipt || typeof receipt.record_id!=='string') continue;
+        const bucket=grouped.get(receipt.record_id)||[];
+        bucket.push(receipt);grouped.set(receipt.record_id,bucket);
+      }
+      for(const doc of chunk) {
+        const matched=grouped.get(doc.record_id)||[];
+        let state='pending',receipt=null,error='ack_missing';
+        if(matched.length>0) {
+          receipt=matched[0];
+          if (matched.length===1 && receipt.accepted===true && receipt.document_hash===doc.integrity.document_hash) {
+            state='accepted';error=null;
+          } else {state='rejected';error='ack_invalid_or_conflicting';}
+        }
+        finish.run(state,state==='accepted'?now():null,JSON.stringify(receipt),error,now(),doc.record_id);
+        outcome[state]++;
+      }
+    }
+    return outcome;
+  }
+
   return {
     kind: "fractalog.sqlite.v1",
     append,
@@ -263,6 +318,7 @@ export function createFractalogSqliteStore(database) {
     outbox: outboxRow,
     forward,
     synchronize,
+    synchronizeBatch,
     update() {
       throw new Error("FractaLog documents are append-only. UPDATE forbidden.");
     },
