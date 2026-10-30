@@ -59,3 +59,18 @@ test('checkpoint outbox to projection receiver: offline replay without settlemen
   assert.equal(recvDb.prepare('SELECT COUNT(*) AS count FROM budget_checkpoint_receipts').get().count,1);
  } finally {source.close();outDb.close();recvDb.close();}
 });
+
+test('SQLite commitment exposes constant-sized head without listTopic checkpoint scan',()=>{
+ const store=createSqliteCopEventStore(':memory:');
+ const db=new DatabaseSync(':memory:');
+ try{
+  recordExecutionBudgetGrant(store,{budget_id:'fast',mandate_ref:'mandate:fast',principal_ref:'person:p',limits:{max_steps:9}});
+  const ledger=createEventSourcedExecutionBudgetLedger({store,budget_id:'fast',limits:{max_steps:9},require_authority_grant:true});
+  const head=store.topicCommitment('execution-budget:fast');
+  assert.equal(head.seq,1);
+  const noScan={topicCommitment:id=>store.topicCommitment(id),listTopic:()=>{throw Error('full scan forbidden')}};
+  const outbox=createFractalogSqliteStore(db);
+  assert.equal(enqueueBudgetCheckpoint({ledger,sourceStore:noScan,outbox,mandate_ref:'mandate:fast',owner_instance_ref:'handler:fast',source_ref:'cop://fast'}).ok,true);
+  assert.equal(outbox.pending()[0].record.trace.commitment_scheme,'sha256:chain-v1');
+ }finally{store.close();db.close();}
+});
