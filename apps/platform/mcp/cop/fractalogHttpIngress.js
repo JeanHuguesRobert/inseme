@@ -49,3 +49,23 @@ export function createFractalogHttpIngress({ url, capability, fetchImpl = global
     return body;
   };
 }
+
+/** Batch transport, with a receipt for every document. HTTP success alone is not ACK. */
+export function createFractalogHttpBatchIngress({url,capability,fetchImpl=globalThis.fetch}={}) {
+  requireText(url,'url');requireText(capability,'capability');
+  if(typeof fetchImpl!=='function') throw new TypeError('fetchImpl required');
+  return async function batchIngress(records) {
+    if(!Array.isArray(records)||records.length===0||records.length>1000)
+      throw new RangeError('batch must contain 1..1000 records');
+    const response=await fetchImpl(url,{
+      method:'POST',
+      headers:{authorization:`Bearer ${capability}`,'content-type':'application/json'},
+      body:JSON.stringify({schema:'fractalog.batch/v1',records}),
+    });
+    if(!response.ok) throw new Error(`fractalog_batch_http_${response.status}`);
+    const body=await response.json();
+    if(body?.schema!=='fractalog.batch-receipts/v1'||!Array.isArray(body.receipts))
+      throw new TypeError('invalid fractalog batch receipts');
+    return body.receipts;
+  };
+}
