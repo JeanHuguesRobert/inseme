@@ -6,6 +6,7 @@ import {
 } from "../src/execution-budget.js";
 import {
   invokeGovernedCapability,
+  recordMandateDeclaration,
   recordMandateControl,
   isMandateActive,
 } from "../src/governed-act.js";
@@ -95,6 +96,18 @@ describe("Consequential Rossignol Reality Test Suite (Issue #68)", () => {
     topic_id: "topic:jhn-governed-session",
   };
 
+  // An execution budget is not a mandate. All governed tests need an
+  // explicit, independently recorded authority declaration first.
+  function declareFixtureMandate(store) {
+    recordMandateDeclaration(store, {
+      mandate_id: IDENTITY.mandate_ref,
+      version: "v1",
+      principal_ref: IDENTITY.principal_ref,
+      logical_agent_ref: IDENTITY.logical_agent_ref,
+      scope: { allowed_actions: ["reasoning.code"] },
+    });
+  }
+
   const BASE_LIMITS = {
     max_steps: 10,
     max_tool_calls: 5,
@@ -115,6 +128,7 @@ describe("Consequential Rossignol Reality Test Suite (Issue #68)", () => {
 
   it("R1 — Exceeded capacity: requests exceeding limits are refused and budget is untouched", async () => {
     const store = createMemoryCopStore();
+    declareFixtureMandate(store);
     const budgetId = "bgt-r1-test";
 
     recordExecutionBudgetGrant(store, {
@@ -163,6 +177,7 @@ describe("Consequential Rossignol Reality Test Suite (Issue #68)", () => {
 
   it("R2 — Packet restart/fork: consumed capacity survives across packets and restarts", async () => {
     const store = createMemoryCopStore();
+    declareFixtureMandate(store);
     const budgetId = "bgt-r2-test";
 
     recordExecutionBudgetGrant(store, {
@@ -249,6 +264,7 @@ describe("Consequential Rossignol Reality Test Suite (Issue #68)", () => {
 
   it("R3 — New local ledger: local construction cannot forge capacity; store grant binds or fails closed", async () => {
     const store = createMemoryCopStore();
+    declareFixtureMandate(store);
     const budgetId = "bgt-r3-test";
 
     // Store has authoritative grant of 10 steps
@@ -320,6 +336,7 @@ describe("Consequential Rossignol Reality Test Suite (Issue #68)", () => {
 
   it("R4 — Provider rebinding: changing execution machinery does not reset consequence", async () => {
     const store = createMemoryCopStore();
+    declareFixtureMandate(store);
     const budgetId = "bgt-r4-test";
 
     recordExecutionBudgetGrant(store, {
@@ -396,6 +413,7 @@ describe("Consequential Rossignol Reality Test Suite (Issue #68)", () => {
 
   it("R5 — Revocation race (TOCTOU): revocation before effect prevents provider call and releases reservation", async () => {
     const store = createMemoryCopStore();
+    declareFixtureMandate(store);
     const budgetId = "bgt-r5-test";
 
     recordExecutionBudgetGrant(store, {
@@ -449,6 +467,7 @@ describe("Consequential Rossignol Reality Test Suite (Issue #68)", () => {
 
   it("R6 — Explicit new authority: new grant is distinguishable and preserves past attributable consumption", async () => {
     const store = createMemoryCopStore();
+    declareFixtureMandate(store);
     const budgetId = "bgt-r6-test";
 
     // 1. Initial Grant v1 with 10 steps
@@ -528,6 +547,7 @@ describe("Consequential Rossignol Reality Test Suite (Issue #68)", () => {
 
   it("produces full attributable governed act receipts and events", async () => {
     const store = createMemoryCopStore();
+    declareFixtureMandate(store);
     const budgetId = "bgt-receipt-test";
 
     recordExecutionBudgetGrant(store, {

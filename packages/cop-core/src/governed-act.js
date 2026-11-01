@@ -879,26 +879,9 @@ export function resolveMandate(store, mandateRef) {
     }
   }
 
-  // 3. Check for ExecutionBudgetGrant
-  for (let i = events.length - 1; i >= 0; i--) {
-    const e = events[i];
-    if (e.event_type === "ExecutionBudgetGrant" || e.payload?.kind === "ExecutionBudgetGrant") {
-      const mid = e.payload?.mandate_ref || e.mandate_ref;
-      if (mid === mandateRef || mid === baseRef) {
-        const agent =
-          e.payload?.logical_agent_ref ||
-          (e.subject_ref && !e.subject_ref.startsWith("mandate:") ? e.subject_ref : null);
-        return {
-          mandate_id: mid,
-          version: version || "v1",
-          principal_ref: e.payload?.principal_ref || e.actor_ref,
-          logical_agent_ref: agent,
-          status: "active",
-          scope: {},
-        };
-      }
-    }
-  }
+  // A budget allocation does not create a mandate. Its existence and limits
+  // are enforced separately by the execution-budget ledger. If no explicit
+  // authority declaration/grant exists, resolveMandate must fail closed.
 
   return null;
 }

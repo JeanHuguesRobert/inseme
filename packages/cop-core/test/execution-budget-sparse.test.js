@@ -4,7 +4,7 @@ import {
   createMemoryExecutionBudgetLedger,
   recordExecutionBudgetGrant,
 } from "../src/execution-budget.js";
-import { invokeGovernedCapability, recordMandateControl } from "../src/governed-act.js";
+import { invokeGovernedCapability, recordMandateDeclaration, recordMandateControl } from "../src/governed-act.js";
 import { createCopEventEnvelope } from "../src/cop-event-envelope.js";
 
 const FULL = {
@@ -50,6 +50,14 @@ function identity() {
 
 function grant(store, budgetId, limits) {
   const who = identity();
+  // Budget grants fund a declared mandate; they are never authority sources.
+  if (!store.replay().some(e => e.payload?.kind === "MandateDeclaration" && e.payload?.mandate_id === who.mandate_ref)) {
+    recordMandateDeclaration(store, {
+      mandate_id: who.mandate_ref, version: "v1",
+      principal_ref: who.principal_ref, logical_agent_ref: who.logical_agent_ref,
+      scope: { allowed_actions: ["reasoning.code"] },
+    });
+  }
   recordExecutionBudgetGrant(store, {
     budget_id: budgetId,
     mandate_ref: who.mandate_ref,

@@ -100,6 +100,33 @@ describe("Mandated Agent Authority & Security Enforcement (Issue #55)", () => {
     expect(result.error).toBe("parent_mandate_mismatch");
   });
 
+  it("never treats an execution budget grant as an authority mandate", () => {
+    const store = createMemoryCopStore();
+    recordExecutionBudgetGrant(store, {
+      budget_id: "budget:fixture", mandate_ref: "mandate:never-declared",
+      principal_ref: PRINCIPAL_ALICE, limits: { max_steps: 2 },
+    });
+    expect(resolveMandate(store, "mandate:never-declared")).toBeNull();
+    const result = evaluateMandate(store, {
+      mandate_ref: "mandate:never-declared",
+      expected_principal_ref: PRINCIPAL_ALICE,
+      capability: "browser.navigation.instances",
+    });
+    expect(result.granted).toBe(false);
+    expect(result.error).toBe("mandate_not_found");
+    recordMandateDeclaration(store, {
+      mandate_id: "mandate:never-declared", version: "v1",
+      principal_ref: PRINCIPAL_ALICE, logical_agent_ref: AGENT_BOB,
+      scope: { allowed_actions: ["browser.navigation.instances"] },
+    });
+    const valid = evaluateMandate(store, {
+      mandate_ref: "mandate:never-declared",
+      expected_principal_ref: PRINCIPAL_ALICE,
+      capability: "browser.navigation.instances",
+    });
+    expect(valid.granted).toBe(true);
+  });
+
   // Acceptance Criterion 1
   it("AC1: nonexistent mandate -> refuse (mandate_not_found)", async () => {
     const store = createMemoryCopStore();
