@@ -554,3 +554,15 @@ changes._
 - [Inseme](../README.md)
 - [Research Index — Inseme](index.md)
 <!-- END_AUTO: backlinks -->
+
+## 2026-11-01 — Cyrnea comme prothèse cognitive collective : rapprochement avec Cogentia
+
+**Clarification du Principal :** Cyrnea n'est pas seulement une IA conversationnelle de bar. Son horizon est une **prothèse cognitive collective** : plusieurs capteurs sonores, plusieurs interlocuteurs, une médiation située destinée à accroître la convivialité, d'abord dans un bar. Elle partage avec la prothèse personnelle Agent JHN / Calculette de l'Esprit les principes d'assistance à la perception, à l'attention, à la mémoire et à l'action, mais non le même périmètre de mandat : ici plusieurs personnes et un espace social, sans autorité individuelle unique sur les propos de tous.
+
+**État du code inspecté, à ne pas surestimer :** `packages/room/lib/media/SmartAudio.js` fournit `HostAudioIO`, VAD/silence, `MediaManager`, adaptateur et `AudioQueue` ; `HostAudioIO.startCapture()` ouvre un microphone local (`getUserMedia({audio:true})`), sans orchestration multi-capteurs synchronisés démontrée. `packages/room/lib/media/SemanticCaptor.js` produit intensité, pseudonymes acoustiques et types d'interaction à partir d'heuristiques (ZCR et approximation du centroïde), pas d'une diarisation robuste ou d'une identification fiable des personnes. Cyrnea inclut Ophélia, les zones du bar et les rôles indoor/outdoor ; le test `apps/cyrnea/tests/integration/smart_mic.spec.js` contient des hypothèses/skips, et ne prouve pas un pilote collectif réel.
+
+**Point de vigilance FBF :** `packages/brique-cyrnea/src/pages/VocalConversation.jsx` contient un chemin « Always upload raw audio to storage (PV / Archive) ». Avant tout essai impliquant plusieurs participants, auditer ce chemin, sa base légale et ses conditions de consentement, les droits des personnes présentes, la visibilité de la captation, la durée de conservation et la révocation. Distinguer capture locale temporaire, signaux agrégés, transcription, pseudonymisation, archivage et restitution : ces effets n'ont pas les mêmes risques. Favoriser un pilote synthétique ou volontaire, avec traitement minimal et sans conservation brute par défaut.
+
+**Prochaine recette bornée :** sur des flux synthétiques provenant de deux microphones et au moins trois interlocuteurs simulés, tester l'identité des sources, la synchronisation/latence, le chevauchement des voix, l'incertitude des attributions, la détection d'occasions de médiation, le silence volontaire, l'isolation des participants et l'absence d'archivage non autorisé. Mesurer la convivialité avec des indicateurs choisis par les participants, et notamment vérifier que la médiation n'étouffe pas les conversations naturelles. Réutiliser COP, les mécanismes de routage et la Calculette sans confondre mandats personnels et mandats collectifs.
+
+**Point de rattachement conceptuel :** https://github.com/JeanHuguesRobert/cogentia/issues/233 . **Statut : intention confirmée par le Principal, comparaison architecturale et audit de code seulement ; aucune capacité multi-microphones déployée ni efficacité sociale démontrée.**
