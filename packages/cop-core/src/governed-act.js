@@ -1337,6 +1337,39 @@ export function evaluateMandate(store, options) {
   const parent =
     parent_mandate ||
     (mandate.parent_mandate_ref ? resolveMandate(store, mandate.parent_mandate_ref) : null);
+  // An unresolved declared parent is never a root grant. A child cannot gain
+  // authority by omitting or losing the ancestor whose limits it inherits.
+  if (mandate.parent_mandate_ref && parent) {
+    const parentId = parent.mandate_id || parent.mandate_ref;
+    if (!parentId || parentId !== mandate.parent_mandate_ref) {
+      return {
+        granted: false,
+        decision: "refused",
+        error: "parent_mandate_mismatch",
+        reason: "supplied parent mandate does not match the child parent reference",
+        mandate_ref: mandateRef,
+        mandate_version: mandateVersion,
+        principal_ref: principalRef,
+        logical_agent_ref: logicalAgentRef,
+        capability,
+        evaluated_at: nowTime.toISOString(),
+      };
+    }
+  }
+  if (mandate.parent_mandate_ref && !parent) {
+    return {
+      granted: false,
+      decision: "refused",
+      error: "parent_mandate_not_found",
+      reason: `parent mandate '${mandate.parent_mandate_ref}' could not be resolved`,
+      mandate_ref: mandateRef,
+      mandate_version: mandateVersion,
+      principal_ref: principalRef,
+      logical_agent_ref: logicalAgentRef,
+      capability,
+      evaluated_at: nowTime.toISOString(),
+    };
+  }
   if (parent) {
     const parentScope = parent.scope || {};
     const parentAllowed =

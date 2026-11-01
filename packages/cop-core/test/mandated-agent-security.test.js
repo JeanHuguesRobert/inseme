@@ -68,6 +68,38 @@ describe("Mandated Agent Authority & Security Enforcement (Issue #55)", () => {
   const AGENT_BOB = "agent:bob";
   const MANDATE_ID = "mandate:mnd-alice-bob";
 
+  it("rejects a child with an unresolved parent rather than treating it as a root", () => {
+    const store = createMemoryCopStore();
+    const child = {
+      mandate_id: "mandate:test-child", version: "v1",
+      principal_ref: PRINCIPAL_ALICE, logical_agent_ref: AGENT_BOB,
+      parent_mandate_ref: "mandate:missing-parent",
+      scope: { allowed_actions: ["browser.navigation.instances"] },
+    };
+    const result = evaluateMandate(store, {
+      mandate: child, capability: "browser.navigation.instances",
+      expected_principal_ref: PRINCIPAL_ALICE,
+    });
+    expect(result.granted).toBe(false);
+    expect(result.error).toBe("parent_mandate_not_found");
+  });
+
+  it("rejects a supplied parent with a different identity", () => {
+    const child = {
+      mandate_id: "mandate:test-child", version: "v1",
+      principal_ref: PRINCIPAL_ALICE, logical_agent_ref: AGENT_BOB,
+      parent_mandate_ref: "mandate:restricted-parent",
+      scope: { allowed_actions: ["browser.navigation.instances"] },
+    };
+    const result = evaluateMandate(null, {
+      mandate: child,
+      parent_mandate: { mandate_id: "mandate:other-parent", scope: { allowed_actions: ["*"] } },
+      capability: "browser.navigation.instances",
+    });
+    expect(result.granted).toBe(false);
+    expect(result.error).toBe("parent_mandate_mismatch");
+  });
+
   // Acceptance Criterion 1
   it("AC1: nonexistent mandate -> refuse (mandate_not_found)", async () => {
     const store = createMemoryCopStore();
