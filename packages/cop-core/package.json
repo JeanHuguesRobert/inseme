@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "test": "vitest run",
+    "test": "vitest run && node --test test/mandate-amendment.node-test.mjs",
     "trace:verify": "node bin/verify-trace-lifecycle.js",
     "spool": "node bin/fractalog-spool.js"
   },

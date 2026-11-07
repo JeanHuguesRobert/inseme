@@ -84,6 +84,17 @@ the actor being artificial.
 
 A mandate authorises exercise. It does not transfer ownership of the source of authority.
 
+### Amendment of an existing mandate (2026-11-07)
+
+A Principal may extend or narrow an existing Mandate **under the same stable `mandate_id`**, by issuing a new, append-only declaration with a higher version and an attributable approval reference. This is not a new independent mandate and not a mutation of an old declaration. `amendMandate` in `src/governed-act.js` requires:
+
+- Exact current version (`expected_version`) and issuer-provided approval verification bound to the *entire proposed change*; transport identity or a conversational instruction alone does not make such a proof.
+- Immutable original declaration and `previous_event_id` lineage; the new declaration records reason, verifying scheme and evidence reference, **not** a copied old signature.
+- Re-evaluation of version pins before acts. Budget reservations, effect-specific grants, privileged issuer trust and revocation remain independent controls: changing a Mandate cannot generate those grants.
+- For concurrent writers, the underlying COP Store must provide atomic expected-version admission; the memory-store helper currently guarantees only sequential use. Do not treat it as cross-process compare-and-swap.
+
+This is an issuance primitive, not a user-facing mechanism to sign/verify approvals and not an automatic authorization of administrative (`sudo`) actions. A root-owned broker may require separate issuer provenance for exceptional acts.
+
 ## 3. Mandatory authority chain
 
 Every consequential delegated act MUST make the following chain reconstructible:

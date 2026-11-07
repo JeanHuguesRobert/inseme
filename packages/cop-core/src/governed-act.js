@@ -829,6 +829,76 @@ export function recordMandateDeclaration(store, mandate) {
 }
 
 /**
+ * Revise an existing mandate in place by identity, never by overwriting history.
+ * This is an issuance operation: verifyPrincipalApproval MUST be supplied by
+ * an independently trusted issuer (signature/authentication + exact proposal).
+ * Transport credentials, an AI utterance, a grant to execute an effect, or
+ * possession of the mandate reference do NOT constitute issuer approval.
+ *
+ * The active declaration is versioned on the same COP topic; the evaluator's
+ * stale-version check already refuses old pins. Consumers must revalidate
+ * versions, budgets and effect grants at the point of use.
+ */
+export function amendMandate(store, input, { verifyPrincipalApproval } = {}) {
+  const refuse = (error) => ({ ok: false, error });
+  if (!store || typeof store.append !== "function" || typeof store.replay !== "function") return refuse("append_only_store_required");
+  const mandateId = String(input?.mandate_ref || "").trim();
+  if (!mandateId || mandateId.includes("@")) return refuse("base_mandate_ref_required");
+  const events = store.replay().filter((e) =>
+    e.payload?.kind === "MandateDeclaration" && e.payload?.mandate_id === mandateId
+  );
+  if (!events.length) return refuse("mandate_not_found");
+  const previousEvent = events[events.length - 1];
+  const previous = previousEvent.payload;
+  if (previous.status !== "active") return refuse("mandate_inactive");
+  if (!input?.expected_version || input.expected_version !== previous.version) return refuse("mandate_version_conflict");
+  if (!/^v[1-9]\d*$/.test(previous.version)) return refuse("unsupported_version_scheme");
+  const newVersion = `v${Number(previous.version.slice(1)) + 1}`;
+  if (!Number.isSafeInteger(Number(previous.version.slice(1)) + 1)) return refuse("version_overflow");
+  if (input?.principal_ref !== previous.principal_ref) return refuse("unauthorized_principal_amendment");
+  if (!input?.scope || typeof input.scope !== "object" || Array.isArray(input.scope)) return refuse("scope_required");
+  if (typeof input.reason !== "string" || !input.reason.trim()) return refuse("reason_required");
+  if (typeof verifyPrincipalApproval !== "function") return refuse("independent_principal_approval_required");
+  const proposal = {
+    kind: "cop.mandate-amendment.proposal/v1", mandate_ref: mandateId,
+    previous_version: previous.version, new_version: newVersion,
+    previous_event_id: previousEvent.event_id, principal_ref: previous.principal_ref,
+    logical_agent_ref: previous.logical_agent_ref,
+    scope: structuredClone(input.scope),
+    valid_from: input.valid_from ?? previous.valid_from,
+    valid_until: input.valid_until ?? previous.valid_until,
+    reason: input.reason.trim(),
+  };
+  let approval;
+  try { approval = verifyPrincipalApproval(proposal, input.approval); }
+  catch { return refuse("principal_approval_unverified"); }
+  if (approval?.verified !== true || approval.principal_ref !== previous.principal_ref ||
+      !approval.evidence_ref || typeof approval.evidence_ref !== "string") return refuse("principal_approval_unverified");
+  // No user-controlled metadata can overwrite the verification provenance.
+  const result = recordMandateDeclaration(store, {
+    mandate_id: mandateId, version: newVersion, principal_ref: previous.principal_ref,
+    logical_agent_ref: previous.logical_agent_ref, parent_mandate_ref: previous.parent_mandate_ref,
+    representative_kind: previous.representative_kind, valid_from: proposal.valid_from,
+    valid_until: proposal.valid_until, scope: proposal.scope,
+    metadata: {
+      amendment: {
+        previous_version: previous.version, previous_event_id: previousEvent.event_id,
+        reason: proposal.reason, approval_evidence_ref: approval.evidence_ref,
+        approval_scheme: approval.scheme || "independently_verified",
+      },
+    },
+  });
+  return {
+    ok: true, mandate_ref: mandateId, previous_version: previous.version,
+    version: newVersion, receipt: {
+      ...result.receipt, schema: "cop.mandate-amendment.receipt.v1",
+      previous_version: previous.version, previous_event_id: previousEvent.event_id,
+      approval_evidence_ref: approval.evidence_ref,
+    },
+  };
+}
+
+/**
  * Resolve a mandate object from the append-only store.
  *
  * @param {object} store
