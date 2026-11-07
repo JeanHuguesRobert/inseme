@@ -6,6 +6,7 @@ import {
   recordExecutionBudgetGrant,
   invokeGovernedCapability,
   recordMandateControl,
+  recordMandateDeclaration,
   createCopEventEnvelope,
 } from "@inseme/cop-core";
 
@@ -79,7 +80,18 @@ test("cop-kernel integration: Consequential Rossignol R1–R5 adversarial suite"
 
   const budgetId = "bgt-kernel-rossignol";
 
-  // 1. Authoritative Grant
+  // A budget grant is NOT an authorization to act. Since COP now requires
+  // independently recorded mandates, seed an explicit fixture declaration
+  // before issuing the distinct budget grant (cop-core #55 invariant).
+  recordMandateDeclaration(store, {
+    mandate_id: identity.mandate_ref,
+    version: "v1",
+    principal_ref: identity.principal_ref,
+    logical_agent_ref: identity.logical_agent_ref,
+    scope: { allowed_actions: ["reasoning.code"] },
+  });
+
+  // 1. Authoritative Budget Grant (separate from the mandate)
   recordExecutionBudgetGrant(store, {
     budget_id: budgetId,
     mandate_ref: identity.mandate_ref,

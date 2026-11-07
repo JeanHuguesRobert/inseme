@@ -46,8 +46,25 @@ jobs:
       - name: Strict Accounting Adversarial Suite (Issue #45)
         run: pnpm run test:accounting
 
-      - name: Run Test Suites (cop-core, cop-kernel, magistral)
-        run: pnpm run test
+      - name: Run Test Suites (cop-core, cop-kernel, magistral) — typed FBF result
+        shell: bash
+        run: |
+          mkdir -p ci-receipts
+          set +e
+          pnpm run test
+          result=$?
+          set -e
+          export FBF_TEST_RESULT="$result"
+          node -e 'const fs=require("fs"); const code=Number(process.env.FBF_TEST_RESULT); const receipt={schema:"inseme.ci-suite-result.v1",phase:"test-suite",status:code===0?"completed":"failed",errors:code===0?[]:[{code:"TEST_COMMAND_FAILED",command:"pnpm run test",exit_code:code}]}; fs.writeFileSync("ci-receipts/cop-test-suite.json",JSON.stringify(receipt,null,2)+"\n"); fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,`### FBF COP test suite: **${receipt.status.toUpperCase()}**\n\nReceipt: cop-test-suite.json. Task result is distinct from transport.\n`); if(code!==0) console.log("::warning title=FBF COP test result FAILED::See cop-test-suite.json artifact")'
+
+      - name: Upload FBF COP test result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inseme-fbf-cop-test-result
+          path: ci-receipts/cop-test-suite.json
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: SQLite PacketClaim locality and restart Reality Test
         run: node --test apps/platform/mcp/test/sqlitePacketClaimCoordinator.test.js
