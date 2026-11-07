@@ -101,3 +101,22 @@ Modification config : Utilisez `/admin/vault` sur l'instance concernée.
 
 ---
 _Document généré le 1er janvier 2026_
+
+## Enrôlement du Principal après provisionnement (7 novembre 2026)
+
+L'existence d'une instance `public.instances` et l'accès aux clés de service du projet **ne prouvent pas l'identité de son Principal**. L'instance fondatrice `jhn` peut être `status='autonomous'` tout en conservant `principal_id=NULL`. Ce champ référence `public.users.id`, lequel doit correspondre à un utilisateur authentifié dans **le même projet** Supabase (Auth `auth.users.id`).
+
+**Reality Test, projet JHN (7 novembre 2026, métadonnées et comptages seulement) :** 2 `auth.users` confirmés, tous deux avec une identité Auth et un profil `public.users` au même UUID ; aucun `public.instances.principal_id` renseigné. Ne pas créer automatiquement un troisième utilisateur avant d'avoir déterminé, par une session vérifiée et des preuves indépendantes, si un compte existant correspond au Principal.
+
+Deux stratégies sont possibles :
+
+1. **Migration depuis Survey (héritage).** Reconstituer une relation entre deux domaines Auth distincts nécessite une assertion d'identité fédérée vérifiable (OIDC/OAuth ou authentification nouvelle), un consentement contextualisé et un appariement univoque. Ne pas copier directement `auth.users`, les hachés de mot de passe, les refresh tokens ni les identifiants de session ; les JWT d'un projet ne valent pas authentification de l'autre.
+2. **Enrôlement autonome après provisioning (chemin préféré).** Dans le projet cible, utiliser d'abord le compte existant dont la session Supabase Auth est vérifiée (`auth.getUser(jwt)`). Sinon, passer par la création native Auth avec confirmation d'adresse / invitation administrateur et prise de contrôle du compte par la personne ; l'invitation émet un courrier et demeure donc une opération distincte à autoriser spécifiquement. Ensuite, exiger une **preuve indépendante de légitimité du revendiquant pour l'instance** (signature du Principal fondateur épinglée hors du domaine Supabase ou mécanisme d'approbation humain équivalent), portant sur l'UUID de compte et d'instance, une version et une durée de validité. Vérifier la présence de `public.users` au même UUID, puis effectuer une association conditionnelle `principal_id IS NULL`, sans écraser une attribution concurrente ; enregistrer un reçu de claim. Cette association n'émet **aucun mandat COP** et ne confère aucun droit de déchiffrement du coffre.
+
+L'interface serveur autonome de préparation et de liaison est implémentée dans [`scripts/principal-enrollment.js`](../scripts/principal-enrollment.js). Elle reçoit des adaptateurs `authClient`, `adminClient` et `verifyRootClaim` **injetés par un service de confiance**. Sans vérificateur indépendant, elle refuse. `prepare()` n'écrit rien ; `claim()` ne peut écrire qu'après une session Auth et un root claim vérifiés, avec verrou optimiste sur l'instance. Il n'existe pas encore de route HTTP publique, de vérificateur de signature root opérationnel, ni de workflow de session finalisée déployé : le module ne constitue donc **pas encore une procédure d'enrôlement utilisable en production**.
+
+**Prochaine intégration gouvernée :** choisir le compte cible à partir d'une session authentifiée présentée par le Principal, établir et épingler l'émetteur indépendant de la preuve de revendication, connecter le module à une route backend à protection CSRF, limite de débit et journal d'audit, vérifier l'absence de concurrence puis enregistrer l'attribution et son reçu. La confiance SSH/Tailscale ou la possession d'une `service_role` ne remplace jamais cette preuve. Ne créer aucun lien d'autorité entre un compte Survey et le compte JHN par simple égalité d'adresse e-mail.
+
+Test à données fictives : `node scripts/principal-enrollment.test.js`.
+
+Références : [Supabase Auth — Users](https://supabase.com/docs/guides/auth/users), [Admin inviteUserByEmail](https://supabase.com/docs/reference/javascript/auth-admin-inviteuserbyemail), [Admin createUser](https://supabase.com/docs/reference/javascript/auth-admin-createuser).
