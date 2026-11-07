@@ -6,57 +6,59 @@ describe("Storage Module", () => {
   it("should return an in-memory storage instance when type is 'memory'", async () => {
     const storage = await initStorage({ type: "memory" });
 
-    describe("Default Storage Instance Management", () => {
-      beforeEach(() => {
-        setStorage(null);
-      });
-      it("setStorage should correctly set the default storage instance", async () => {
-        const customStorage = await initStorage({ type: "memory" });
-        setStorage(customStorage);
-        const retrievedStorage = await getStorage();
-        assert.strictEqual(retrievedStorage, customStorage);
-      });
-
-      it("getStorage should return an in-memory instance if no default is set", async () => {
-        // Ensure defaultStorage is null before this test
-        setStorage(null);
-        const defaultMemoryStorage = await getStorage();
-        assert.ok(defaultMemoryStorage.options.type === "memory");
-        assert.ok(defaultMemoryStorage.logicalAgents);
-      });
-
-      it("getStorage should return the same in-memory instance on subsequent calls if no default is set", async () => {
-        setStorage(null); // Reset default storage
-        const storage1 = await getStorage();
-        const storage2 = await getStorage();
-        assert.strictEqual(storage1, storage2);
-      });
-
-      it("getStorage should return the instance set by setStorage even after multiple calls", async () => {
-        const customStorage = await initStorage({ type: "memory" });
-        setStorage(customStorage);
-        const retrievedStorage1 = await getStorage();
-        const retrievedStorage2 = await getStorage();
-        assert.strictEqual(retrievedStorage1, customStorage);
-        assert.strictEqual(retrievedStorage2, customStorage);
-      });
-
-      it("setting a new default storage should be reflected by getStorage", async () => {
-        const customStorage1 = await initStorage({ type: "memory", instanceId: "first" });
-        setStorage(customStorage1);
-        const retrievedStorage1 = await getStorage();
-        assert.strictEqual(retrievedStorage1, customStorage1);
-
-        const customStorage2 = await initStorage({ type: "memory", instanceId: "second" });
-        setStorage(customStorage2);
-        const retrievedStorage2 = await getStorage();
-        assert.strictEqual(retrievedStorage2, customStorage2);
-        assert.notStrictEqual(retrievedStorage1, retrievedStorage2);
-      });
-    });
     assert.strictEqual(storage.options.type, "memory");
     assert.ok(storage.logicalAgents); // Check for a basic property of the storage interface
   });
+
+  describe("Default Storage Instance Management", () => {
+    beforeEach(() => {
+      setStorage(null);
+    });
+    it("setStorage should correctly set the default storage instance", async () => {
+      const customStorage = await initStorage({ type: "memory" });
+      setStorage(customStorage);
+      const retrievedStorage = await getStorage();
+      assert.strictEqual(retrievedStorage, customStorage);
+    });
+
+    it("getStorage should return an in-memory instance if no default is set", async () => {
+      // Ensure defaultStorage is null before this test
+      setStorage(null);
+      const defaultMemoryStorage = await getStorage();
+      assert.ok(defaultMemoryStorage.options.type === "memory");
+      assert.ok(defaultMemoryStorage.logicalAgents);
+    });
+
+    it("getStorage should return the same in-memory instance on subsequent calls if no default is set", async () => {
+      setStorage(null); // Reset default storage
+      const storage1 = await getStorage();
+      const storage2 = await getStorage();
+      assert.strictEqual(storage1, storage2);
+    });
+
+    it("getStorage should return the instance set by setStorage even after multiple calls", async () => {
+      const customStorage = await initStorage({ type: "memory" });
+      setStorage(customStorage);
+      const retrievedStorage1 = await getStorage();
+      const retrievedStorage2 = await getStorage();
+      assert.strictEqual(retrievedStorage1, customStorage);
+      assert.strictEqual(retrievedStorage2, customStorage);
+    });
+
+    it("setting a new default storage should be reflected by getStorage", async () => {
+      const customStorage1 = await initStorage({ type: "memory", instanceId: "first" });
+      setStorage(customStorage1);
+      const retrievedStorage1 = await getStorage();
+      assert.strictEqual(retrievedStorage1, customStorage1);
+
+      const customStorage2 = await initStorage({ type: "memory", instanceId: "second" });
+      setStorage(customStorage2);
+      const retrievedStorage2 = await getStorage();
+      assert.strictEqual(retrievedStorage2, customStorage2);
+      assert.notStrictEqual(retrievedStorage1, retrievedStorage2);
+    });
+  });
+
   it("should be able to upsert and retrieve a LogicalAgent identity", async () => {
     const storage = await initStorage({ type: "memory" });
     const identity = { logical_agent_id: "agent1", logical_agent_name: "Test handler", status: "active" };
