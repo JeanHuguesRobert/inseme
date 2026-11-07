@@ -850,7 +850,8 @@ export function amendMandate(store, input, { verifyPrincipalApproval } = {}) {
   if (!events.length) return refuse("mandate_not_found");
   const previousEvent = events[events.length - 1];
   const previous = previousEvent.payload;
-  if (previous.status !== "active") return refuse("mandate_inactive");
+  if (previous.status !== "active" || !isMandateActive(store, mandateId)) return refuse("mandate_inactive");
+  if (previous.valid_until && Date.parse(previous.valid_until) <= Date.now()) return refuse("mandate_expired");
   if (!input?.expected_version || input.expected_version !== previous.version) return refuse("mandate_version_conflict");
   if (!/^v[1-9]\d*$/.test(previous.version)) return refuse("unsupported_version_scheme");
   const newVersion = `v${Number(previous.version.slice(1)) + 1}`;

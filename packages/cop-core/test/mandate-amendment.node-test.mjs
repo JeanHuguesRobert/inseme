@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMemoryCopEventStore } from '../src/cop-event-spool.js';
-import { recordMandateDeclaration, amendMandate, resolveMandate, evaluateMandate } from '../src/governed-act.js';
+import { recordMandateDeclaration, recordMandateControl, amendMandate, resolveMandate, evaluateMandate } from '../src/governed-act.js';
 const principal='principal:alice', ref='mandate:alice:agent';
 function setup(){
  const store=createMemoryCopEventStore();
@@ -35,4 +35,11 @@ test('extension cannot self-authorize or spoof the Principal',()=>{
   const store=setup();assert.equal(amendMandate(store,{...input,...patch},{verifyPrincipalApproval:verifier}).error,expected);
   assert.equal(store.replay().length,1);
  }
+});
+
+test('revocation is not bypassed by an amendment',()=>{
+ const store=setup();
+ recordMandateControl(store,{principal_ref:principal,mandate_ref:ref,action:'revoke',reason:'Principal revoked'});
+ assert.equal(amendMandate(store,input,{verifyPrincipalApproval:approver}).error,'mandate_inactive');
+ assert.equal(store.replay().filter(e=>e.payload?.kind==='MandateDeclaration').length,1);
 });
