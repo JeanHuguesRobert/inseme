@@ -89,3 +89,26 @@ test("policy registry reports required Vault configuration without exposing it",
     true
   );
 });
+
+
+test("Cloudflare DNS/R2 Vault slots are governed secrets even without local .env mappings", () => {
+  // The workstation promotion script creates these keys directly in Vault;
+  // absence from ENV_KEY_MAPPING must not turn them into undocumented slots.
+  const keys = ["cloudflare_account_id", "cloudflare_api_key", "cloudflare_s3_access_key_id", "cloudflare_s3_api_endpoint", "cloudflare_s3_secret_access_key"];
+  const registry = createJhnConfigPolicyRegistry({});
+  for (const key of keys) {
+    const policy = registry.entries.get(key);
+    assert.equal(policy?.classification, "instance_secret", key);
+    assert.deepEqual(policy.expected, { is_secret: true, is_public: false });
+    assert.equal(policy.required, false, "an optional Cloudflare provider must not break unrelated instances");
+  }
+  const report = auditConfigHygiene({
+    instance: "jhn",
+    vaultRows: keys.map(key => ({ key, value: `CONFIDENTIAL-${key}`, is_secret: true, is_public: false })),
+    cacheTargets: [], envKeyMapping: {}, policyRegistry: registry,
+  });
+  assert.equal(report.summary.registry_missing, 0);
+  assert.equal(report.summary.metadata_policy_mismatches, 0);
+  assert.equal(report.summary.required_vault_issues, 2); // preexisting required GitHub slots
+  assert.equal(JSON.stringify(report).includes("CONFIDENTIAL"), false);
+});
