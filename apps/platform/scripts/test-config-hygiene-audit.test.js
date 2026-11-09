@@ -112,3 +112,33 @@ test("Cloudflare DNS/R2 Vault slots are governed secrets even without local .env
   assert.equal(report.summary.required_vault_issues, 2); // preexisting required GitHub slots
   assert.equal(JSON.stringify(report).includes("CONFIDENTIAL"), false);
 });
+
+
+test("JHN session HMAC key and PostgreSQL URL are server-only secrets", () => {
+  const keys = ["oleole_session_secret", "postgres_url"];
+  const registry = createJhnConfigPolicyRegistry({
+    oleole_session_secret: ["OLEOLE_SESSION_SECRET"],
+    postgres_url: ["POSTGRES_URL"],
+  });
+  const report = auditConfigHygiene({
+    instance: "jhn", policyRegistry: registry, cacheTargets: [], envKeyMapping: {},
+    vaultRows: keys.map(key => ({ key, value: `PRIVATE_${key}`, is_secret: true, is_public: false })),
+  });
+  for (const key of keys) {
+    assert.equal(registry.entries.get(key)?.classification, "instance_secret");
+    assert.deepEqual(registry.entries.get(key)?.expected, { is_secret: true, is_public: false });
+  }
+  assert.equal(report.summary.metadata_policy_mismatches, 0);
+  assert.equal(JSON.stringify(report).includes("PRIVATE_"), false);
+});
+
+// This real query is intentionally root-scoped. In August 2026 it became
+// multi-tenant; auditing every tenant as if it were JHN produced seven false
+// registry alerts and could invite unsafe edits to another twin's config.
+test("live audit query cannot mix another twin's Vault rows into JHN", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { fileURLToPath } = await import("node:url");
+  const source = await readFile(fileURLToPath(new URL("./config-hygiene-audit.js", import.meta.url)), "utf8");
+  assert.match(source, /instance !== "jhn"/);
+  assert.match(source, /\.eq\("instance_id", JHN_ROOT_INSTANCE_ID\)/);
+});

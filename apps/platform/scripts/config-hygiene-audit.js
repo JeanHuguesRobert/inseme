@@ -12,6 +12,14 @@ const monorepoRoot = path.resolve(__dirname, "../../..");
 const args = new Set(process.argv.slice(2));
 const instanceIndex = process.argv.indexOf("--instance");
 const instance = instanceIndex >= 0 ? process.argv[instanceIndex + 1] : "jhn";
+// The registry and local caches below belong to the JHN root instance only.
+// A multi-tenant query would leak other tenants into this projection and
+// falsely report their legitimate identity keys as unregistered JHN keys.
+const JHN_ROOT_INSTANCE_ID = "00000000-0000-0000-0000-000000000001";
+if (instance !== "jhn") {
+  console.error("BLOCKED: this hygiene audit supports the JHN root instance only");
+  process.exit(2);
+}
 
 if (!args.has("--json")) {
   console.error("Usage: node scripts/config-hygiene-audit.js --instance jhn --json");
@@ -37,6 +45,7 @@ const supabase = createSupabaseClient();
 const { data: vaultRows, error } = await supabase
   .from("instance_config")
   .select("key,value,value_json,is_secret,is_public,version,updated_at")
+  .eq("instance_id", JHN_ROOT_INSTANCE_ID)
   .order("key");
 
 if (error) {

@@ -24,6 +24,10 @@ const EXPLICIT_SECRET_KEYS = new Set([
   "cloudflare_s3_secret_access_key",
   "cartesia_voice_id",
   "magistral_embedding_policy",
+  // Existing JHN HMAC session signing key and database connection string.
+  // Never reduce their Vault classification to public/internal on key-name heuristics.
+  "oleole_session_secret",
+  "postgres_url",
   "nasa_principal_subject",
   "supabase_anon_key",
   "supabase_url",
