@@ -9,7 +9,7 @@
       "kind": "cop-orchestration",
       "required_packages": ["@inseme/cop-kernel", "@inseme/cop-host"]
     },
-    "routes": ["/", "/john", "/nasa", "/interactions", "/oleole"],
+    "routes": ["/", "/john", "/nasa", "/interactions", "/cop/consent/:challengeId", "/oleole"],
     "edge_functions": [
       {
         "function": "nasa-control",
@@ -20,6 +20,11 @@
         "function": "interactions-desk",
         "path": "/api/interactions/desk",
         "source": "netlify/edge-functions/interactions-desk.js"
+      },
+      {
+        "function": "principal-consent-proxy",
+        "path": "/api/cop/principal-consent/*",
+        "source": "netlify/edge-functions/principal-consent-proxy.js"
       },
       {
         "function": "gen-ophelia-chat-stream",

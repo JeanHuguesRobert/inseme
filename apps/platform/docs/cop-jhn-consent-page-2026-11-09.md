@@ -33,3 +33,22 @@ Vérification de compilation effectuée localement depuis le dépôt Inseme :
 /tmp/inseme-jhn-consent-verify --emptyOutDir`. Compilation réussie.
 Les modifications auxiliaires aux fichiers de registres générés ont été
 restaurées ; elles n'appartiennent pas à cette livraison.
+
+## Staging réseau complémentaire (2026-11-09)
+
+Le profil JHN Netlify référence désormais l'Edge Function
+`principal-consent-proxy.js`, générée depuis le fichier source
+`apps/platform/netlify/edge-functions/principal-consent-proxy.js`. Le navigateur continue à requêter son origine
+canonique `https://jhn.baronsmariani.org`. L'Edge Function ne conserve
+aucune clé d'autorité et relaie uniquement GET/POST avec Bearer Supabase vers
+le service loopback de Fracta2, via le matcher Caddy limité à cette route.
+Aucun émetteur mandat ne vit dans Netlify. Tant que le service Fracta2 ou
+son routage n'est pas installé, les erreurs en amont sont renvoyées comme
+`503 canonical_consent_issuer_unavailable`, et jamais comme un succès.
+Les actions de consentement restent désactivées par défaut pendant le
+staging. Voir Cogentia `docs/cop-consent-production-staging-2026-11-09.md`.
+
+La compilation de production JHN a réussi avec la génération par
+`compile:briques:jhn`, et `netlify.toml` déclenche désormais explicitement
+cette génération avant la construction Vite. Les trois tests du relais
+sont verts, y compris son refus du HTML d'authentification Caddy.

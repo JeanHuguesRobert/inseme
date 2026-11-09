@@ -1,7 +1,7 @@
 # Netlify evaluates these paths from the monorepo root, even though this file
 # lives in apps/platform. Keep every build artifact path root-relative.
 [build]
-  command = "pnpm install --frozen-lockfile=false && pnpm --filter platform run build:jhn"
+  command = "pnpm install --frozen-lockfile=false && pnpm --filter platform run compile:briques:jhn && pnpm --filter platform run build:jhn"
   publish = "apps/platform/dist"
   functions = "apps/platform/netlify/profiles/jhn/functions"
   edge_functions = "apps/platform/netlify/profiles/jhn/edge-functions"
@@ -32,6 +32,10 @@
 [[edge_functions]]
   function = "interactions-desk"
   path = "/api/interactions/desk"
+
+[[edge_functions]]
+  function = "principal-consent-proxy"
+  path = "/api/cop/principal-consent/*"
 
 [[edge_functions]]
   function = "jhn-cop-events"
