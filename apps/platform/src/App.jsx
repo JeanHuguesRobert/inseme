@@ -78,6 +78,7 @@ import CafeSessionPage from "./pages/CafeSessionPage";
 import HomeRoute from "./pages/HomeRoute";
 import NasaPage from "./pages/NasaPage";
 import InteractionsDeskPage from "./pages/InteractionsDeskPage";
+import CopPrincipalConsentPage from "./pages/CopPrincipalConsentPage";
 import { isOleoleFacade } from "@inseme/brique-oleole/src/lib/facade-host.js";
 
 const OleoleHome = lazy(() => import("@inseme/brique-oleole/src/pages/OleoleHome.jsx"));
@@ -154,6 +155,7 @@ export function App() {
         />
         <Route path="/nasa" element={<NasaPage />} />
         <Route path="/interactions" element={<InteractionsDeskPage />} />
+        <Route path="/cop/consent/:challengeId" element={<CopPrincipalConsentPage />} />
         <Route path="/ophelia-land" element={<OpheliaLandingPage />} />
         <Route path="/cop-core" element={<CopCoreLandingPage />} />
         <Route path="/consultations" element={<ConsultationsHome />} />
