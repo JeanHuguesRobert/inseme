@@ -79,6 +79,7 @@ import HomeRoute from "./pages/HomeRoute";
 import NasaPage from "./pages/NasaPage";
 import InteractionsDeskPage from "./pages/InteractionsDeskPage";
 import CopPrincipalConsentPage from "./pages/CopPrincipalConsentPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import { isOleoleFacade } from "@inseme/brique-oleole/src/lib/facade-host.js";
 
 const OleoleHome = lazy(() => import("@inseme/brique-oleole/src/pages/OleoleHome.jsx"));
@@ -100,6 +101,7 @@ export function App() {
       {!oleoleFacade ? <GlobalStatusIndicator /> : null}
       <Routes>
         <Route path="/" element={<HomeRoute />} />
+        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/legal/legal"
           element={
