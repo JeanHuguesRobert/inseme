@@ -38,14 +38,19 @@ export default function CopPrincipalConsentPage(){
     try{
       const response=await fetch(endpoint,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({payload_hash:request.payload_hash,decision}),cache:'no-store'});
       const data=await response.json().catch(()=>({}));
-      if(!response.ok||data.ok!==true||data.decision!==decision||data.grants_mandate_authority!==false)throw Error(data.error||'consent_not_confirmed');
-      setReceipt(data);setRequest(r=>({...r,status:decision==='approve'?'approved':'refused'}));
+      const applied=data.mandate_amendment_applied===true&&data.grants_mandate_authority===true&&
+        decision==='approve'&&data.mandate_ref===request.proposal?.mandate_ref&&
+        data.mandate_version===request.proposal?.new_version;
+      const recordedOnly=data.grants_mandate_authority===false&&data.mandate_amendment_applied!==true;
+      if(!response.ok||data.ok!==true||data.decision!==decision||(!recordedOnly&&!applied))
+        throw Error(data.apply_error||data.error||'consent_not_confirmed');
+      setReceipt(data);setRequest(r=>({...r,status:applied?'consumed':decision==='approve'?'approved':'refused'}));
     }catch(e){setError(e.message||'consent_service_unavailable');}
     finally{setBusy(false);}
   }
   return <main style={{maxWidth:720,margin:'2rem auto',padding:'1rem'}}>
     <h1>Consentement COP — Principal JHN</h1>
-    <p>Cette interface recueille une décision dans votre session Supabase authentifiée. Une décision favorable n’exécute aucun effet et ne dispense pas des contrôles COP.</p>
+    <p>Cette interface recueille votre décision dans votre session Supabase authentifiée. Pour une extension de mandat explicitement activable, la décision favorable peut aussi appliquer cet amendement canonique après vérification. Elle n’envoie aucun courrier et ne dispense pas des contrôles COP lors des actions futures.</p>
     {!validId?<p role="alert">Référence de demande invalide.</p>:null}
     {!loading&&!token?<><p>Connectez-vous avec votre compte Supabase JHN pour consulter la proposition.</p><button type="button" onClick={()=>setShowAuth(true)}>Connexion</button></>:null}
     {showAuth?<AuthModal onClose={()=>setShowAuth(false)} onSuccess={()=>{setShowAuth(false);load();}}/>:null}
@@ -66,7 +71,9 @@ export default function CopPrincipalConsentPage(){
         <button disabled={busy} type="button" onClick={()=>decide('approve')}>{ratification?'Ratifier le mandat existant':'Confirmer cette proposition'}</button>
         <button disabled={busy} type="button" onClick={()=>decide('refuse')}>Refuser</button>
       </div>:null}
-      {receipt?<p role="status">Décision {receipt.decision==='approve'?'favorable':'défavorable'} enregistrée, reçu {receipt.confirmation_event_id}. Aucun mandat ni budget n’a été créé par ce geste.</p>:null}
+      {receipt?<p role="status">{receipt.mandate_amendment_applied===true
+        ?`Décision favorable authentifiée, amendement du mandat ${receipt.mandate_ref} appliqué en ${receipt.mandate_version}. Aucun courrier envoyé par cette approbation.`
+        :`Décision ${receipt.decision==='approve'?'favorable':'défavorable'} enregistrée, reçu ${receipt.confirmation_event_id}. Aucun amendement de mandat appliqué par cette décision.`}</p>:null}
     </section>:null}
   </main>;
 }
