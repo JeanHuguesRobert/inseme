@@ -52,3 +52,13 @@ La compilation de production JHN a réussi avec la génération par
 `compile:briques:jhn`, et `netlify.toml` déclenche désormais explicitement
 cette génération avant la construction Vite. Les trois tests du relais
 sont verts, y compris son refus du HTML d'authentification Caddy.
+
+## 2026-11-10 — Ratification réelle sans extension
+
+La page détecte `cop.mandate-ratification.proposal/v1` et affiche la version
+courante, le périmètre du mandat déjà existant et l'avertissement qu'il
+n'est ni modifié ni élargi. Le bouton est « Ratifier le mandat existant ».
+Le backend Cogentia interdit `apply()` sur ce type, même après une décision
+favorable authentifiée ; seule une trace de validation peut être enregistrée.
+La première demande est limitée à `mandate:jhn:john-root` et se déclenche
+uniquement depuis une session SSH du propriétaire sur Fracta2.

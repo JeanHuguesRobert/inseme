@@ -18,6 +18,7 @@ export default function CopPrincipalConsentPage(){
   const [busy,setBusy]=useState(false);
   const [receipt,setReceipt]=useState(null);
   const token=session?.access_token;
+  const ratification=request?.proposal?.kind==='cop.mandate-ratification.proposal/v1';
   const validId=UUID.test(challengeId||'');
   const endpoint=`/api/cop/principal-consent/${encodeURIComponent(challengeId||'')}`;
   const load=useCallback(async()=>{
@@ -50,18 +51,19 @@ export default function CopPrincipalConsentPage(){
     {showAuth?<AuthModal onClose={()=>setShowAuth(false)} onSuccess={()=>{setShowAuth(false);load();}}/>:null}
     {error?<p role="alert">Service de consentement indisponible ou demande refusée : {error}</p>:null}
     {request?<section aria-label="Proposition COP" style={{border:'1px solid #888',borderRadius:8,padding:'1rem',marginTop:'1rem'}}>
+      {ratification?<p style={{fontWeight:600}}>Ratification d'un mandat existant : aucun nouveau pouvoir, aucune modification de version et aucun budget supplémentaire.</p>:null}
       <dl>
         <dt>Mandat</dt><dd>{request.proposal?.mandate_ref}</dd>
-        <dt>Version</dt><dd>{request.proposal?.previous_version} → {request.proposal?.new_version}</dd>
+        <dt>Version</dt><dd>{ratification?request.proposal?.version:`${request.proposal?.previous_version} → ${request.proposal?.new_version}`}</dd>
         <dt>Motif</dt><dd>{request.proposal?.reason}</dd>
-        <dt>Actions autorisées proposées</dt><dd>{(request.proposal?.scope?.allowed_actions||[]).join(', ')||'Aucune'}</dd>
+        <dt>{ratification?'Actions actuellement autorisées':'Actions autorisées proposées'}</dt><dd>{(request.proposal?.scope?.allowed_actions||[]).join(', ')||'Aucune'}</dd>
         <dt>Actions interdites</dt><dd>{(request.proposal?.scope?.forbidden_actions||[]).join(', ')||'Non précisées'}</dd>
         <dt>Expiration</dt><dd>{request.expires_at}</dd>
         <dt>Empreinte</dt><dd style={{overflowWrap:'anywhere'}}><code>{request.payload_hash}</code></dd>
         <dt>État</dt><dd>{request.status}</dd>
       </dl>
       {request.status==='pending'?<div style={{display:'flex',gap:12,marginTop:16}}>
-        <button disabled={busy} type="button" onClick={()=>decide('approve')}>Confirmer cette proposition</button>
+        <button disabled={busy} type="button" onClick={()=>decide('approve')}>{ratification?'Ratifier le mandat existant':'Confirmer cette proposition'}</button>
         <button disabled={busy} type="button" onClick={()=>decide('refuse')}>Refuser</button>
       </div>:null}
       {receipt?<p role="status">Décision {receipt.decision==='approve'?'favorable':'défavorable'} enregistrée, reçu {receipt.confirmation_event_id}. Aucun mandat ni budget n’a été créé par ce geste.</p>:null}
