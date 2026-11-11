@@ -3,6 +3,7 @@
 import { spawn } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { parseEnv } from "node:util";
 import { fileURLToPath } from "node:url";
 
 const viteCli = fileURLToPath(new URL("../node_modules/vite/bin/vite.js", import.meta.url));
@@ -49,9 +50,34 @@ export async function specializeJhnIndexHtml(
   }
   await writeFile(indexPath, specialized, "utf8");
 }
+/**
+ * JHN's deploy source is the Inseme root .env, while Vite runs in
+ * apps/platform. Only the public Supabase URL and anon/publishable key may
+ * cross this build boundary; never put service_role or Vault secrets in Vite.
+ */
+export async function publicJhnBuildEnv({rootEnvFile=path.resolve(scriptDir,"../../..",".env"),env=process.env}={}) {
+  let config={};
+  try { config=parseEnv(await readFile(rootEnvFile,"utf8")); }
+  catch(error) { if(error?.code!=="ENOENT")throw error; }
+  const supabaseUrl=env.VITE_SUPABASE_URL || config.VITE_SUPABASE_URL || config.SUPABASE_URL;
+  const supabaseAnonKey=env.VITE_SUPABASE_ANON_KEY || config.VITE_SUPABASE_ANON_KEY || config.SUPABASE_ANON_KEY;
+  let origin;
+  try { origin=new URL(supabaseUrl); } catch {}
+  if(!origin||origin.protocol!=="https:"||!origin.hostname||!supabaseAnonKey)
+    throw new Error("JHN public Supabase build config missing or invalid (VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY)");
+  if(!/^(?:sb_publishable_|eyJ)/.test(supabaseAnonKey))
+    throw new Error("JHN build requires a public anon/publishable key, not an admin secret");
+  if(supabaseAnonKey.startsWith("eyJ")){
+    let jwt;
+    try { jwt=JSON.parse(Buffer.from(supabaseAnonKey.split(".")[1]||"","base64url").toString("utf8")); } catch {}
+    if(jwt?.role!=="anon")throw new Error("JHN public build key must carry anon role");
+  }
+  return {VITE_SUPABASE_URL:supabaseUrl,VITE_SUPABASE_ANON_KEY:supabaseAnonKey};
+}
 async function main() {
+  const publicConfig=await publicJhnBuildEnv();
   const child = spawn(process.execPath, [viteCli, "build"], {
-    env: { ...process.env, INSEME_DEPLOYMENT_PROFILE: "jhn" },
+    env: { ...process.env, ...publicConfig, INSEME_DEPLOYMENT_PROFILE: "jhn" },
     stdio: "inherit",
   });
   const code = await new Promise((resolve, reject) => {
