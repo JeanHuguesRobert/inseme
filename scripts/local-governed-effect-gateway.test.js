@@ -7,3 +7,30 @@ test("valid holder commits, retry idempotent, conflicting replay rejected",()=>{
 test("revocation rejects current-version holder",()=>{const g=setup();g.revoke("p");const version=g.inspect("p").version;assert.equal(g.commit({packetRef:"p",holder:"B",epoch:2,mandateRevision:7,expectedVersion:version,idempotencyKey:"revoked",value:"bad"}).code,"AUTHORITY_REJECTED")});
 test("takeover rejects A even with fresh version",()=>{const g=setup();g.transfer("p",{holder:"C",epoch:3,mandateRevision:8,expiresAt:250});const version=g.inspect("p").version;assert.equal(g.commit({packetRef:"p",holder:"B",epoch:2,mandateRevision:7,expectedVersion:version,idempotencyKey:"stale",value:"bad"}).code,"AUTHORITY_REJECTED");assert.equal(g.commit({packetRef:"p",holder:"C",epoch:3,mandateRevision:8,expectedVersion:version,idempotencyKey:"new",value:"ok"}).code,"COMMITTED")});
 test("expired lease rejected",()=>{const g=new LocalGovernedEffectGateway({now:()=>201});g.seed("p",{holder:"B",epoch:2,mandateRevision:7,expiresAt:200,value:"initial"});assert.equal(g.commit({packetRef:"p",holder:"B",epoch:2,mandateRevision:7,expectedVersion:1,idempotencyKey:"late",value:"bad"}).code,"AUTHORITY_REJECTED")});
+
+test("delayed handler A loses authority to epoch 3 before provider commit",async()=>{
+  let release;
+  const paused=new Promise(resolve=>{release=resolve});
+  const started=new Promise(resolve=>{queueMicrotask(resolve)});
+  const g=new LocalGovernedEffectGateway({now:()=>100});
+  g.seed("issue-120",{holder:"A",epoch:2,mandateRevision:7,expiresAt:200,value:"unchanged"});
+  const staleVersion=g.inspect("issue-120").version;
+  // A prepares an effect, but crosses the provider commit boundary only later.
+  const handlerA=(async()=>{
+    await started;
+    await paused;
+    return g.commit({packetRef:"issue-120",holder:"A",epoch:2,mandateRevision:7,
+      expectedVersion:staleVersion,idempotencyKey:"handler-A-effect",value:"forbidden"});
+  })();
+  await started;
+  const takeover=g.transfer("issue-120",{holder:"B",epoch:3,mandateRevision:8,expiresAt:250});
+  release();
+  const rejected=await handlerA;
+  assert.equal(rejected.ok,false);
+  assert.equal(rejected.code,"AUTHORITY_REJECTED");
+  assert.equal(g.inspect("issue-120").value,"unchanged");
+  const committed=g.commit({packetRef:"issue-120",holder:"B",epoch:3,mandateRevision:8,
+    expectedVersion:takeover.version,idempotencyKey:"handler-B-effect",value:"authorized"});
+  assert.equal(committed.code,"COMMITTED");
+  assert.equal(g.inspect("issue-120").value,"authorized");
+});

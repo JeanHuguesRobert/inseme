@@ -103,6 +103,13 @@ jobs:
       - name: C5 duplicate effect fencing Reality Test
         run: node --test apps/platform/mcp/test/cop-c5-duplicate-effect.test.js
 
+      - name: COP #121 stale epoch fenced at local provider commit
+        run: >-
+          node --test
+          scripts/governed-effect-boundary.test.js
+          scripts/local-governed-effect-gateway.test.js
+          scripts/sqlite-governed-effect-gateway.test.js
+
       - name: C6 crash-after-claim uncertainty Reality Test
         run: node --test apps/platform/mcp/test/cop-c6-claim-crash.test.js
 
