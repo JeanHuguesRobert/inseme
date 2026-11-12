@@ -2,6 +2,7 @@
 title: Inseme
 author: unknown
 date: '2026-06-22'
+last_modified_at: '2026-11-13'
 document_role: source
 document_kind: documentation
 visibility: public
@@ -41,6 +42,9 @@ remain politically neutral: it provides infrastructure for citizens, collectives
 rather than supporting a party, candidate, or electoral campaign.
 
 ## Start Here
+
+**Public web entry points (13 November 2026):** [John / Agent JHN](https://jhn.baronsmariani.org/) presents a reachable public landing page; authenticated functions must be tested separately. The planned [Olé Olé presence service](docs/oleole-mvp-spec.md) is tracked by [issue #47](https://github.com/JeanHuguesRobert/inseme/issues/47): `oleole.acorsica.org` responds, but currently presents a page titled “John”, so the Olé Olé deployment is **not verified as such**.
+
 
 | Need                                 | Entry point                                                                                                                                 |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
