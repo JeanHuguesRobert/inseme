@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 
 const viteCli = fileURLToPath(new URL("../node_modules/vite/bin/vite.js", import.meta.url));
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+// Dedicated output: other platform tenants rebuild dist/ concurrently.
+const JHN_DIST = path.resolve(scriptDir, "..", "dist-jhn");
 const JHN_STATIC_META = {
   title: "John — Personal conversational agent",
   description:
@@ -16,7 +18,7 @@ const JHN_STATIC_META = {
 };
 
 export async function specializeJhnIndexHtml(
-  indexPath = path.join(scriptDir, "..", "dist", "index.html")
+  indexPath = path.join(JHN_DIST, "index.html")
 ) {
   const index = await readFile(indexPath, "utf8");
   const replacements = [
@@ -76,7 +78,7 @@ export async function publicJhnBuildEnv({rootEnvFile=path.resolve(scriptDir,"../
 }
 async function main() {
   const publicConfig=await publicJhnBuildEnv();
-  const child = spawn(process.execPath, [viteCli, "build"], {
+  const child = spawn(process.execPath, [viteCli, "build", "--outDir", JHN_DIST], {
     env: { ...process.env, ...publicConfig, INSEME_DEPLOYMENT_PROFILE: "jhn" },
     stdio: "inherit",
   });
