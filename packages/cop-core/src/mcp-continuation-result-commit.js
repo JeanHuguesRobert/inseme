@@ -59,6 +59,7 @@ export async function commitMcpContinuationResult(submission, host) {
     authenticated_actor: control.authenticated_actor,
     result_digest: prepared.result_digest,
     receipt_ref: "cop:event:" + event.event_id,
+    claim: control.claim || null,
   };
   // appendUnique MUST reject a changed claim/version inside its atomic
   // transaction. In-memory admission alone is susceptible to a TOCTOU race.
