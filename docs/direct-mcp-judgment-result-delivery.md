@@ -38,7 +38,10 @@ Minimal submission JSON:
   "idempotency_key": "attempt_example:result:0",
   "result_digest": "sha256:<canonical-payload-hash>",
   "step_result": {
-    "status": "success",
+    "protocol": "cogentia.step_result/v1",
+    "continuation_id": "ctn_example",
+    "challenge": "original-correlation-challenge",
+    "status": "answered",
     "result": {"answer": "The selected classification"}
   },
   "evidence_refs": [],
@@ -123,3 +126,9 @@ Source inspected: `packages/cop-kernel/src/continuation.js` contains continuatio
 Implement first the smallest provider-neutral **normalized result ingestion** adapter against the existing COP event store and recognizer, with unit tests; only add an MCP callable tool after its mandate and accounting hooks are known. Avoid a second database, scheduler, inbox, ontology, or browser-side response scraper.
 
 **Current status (2026-11-13): specification drafted; no implementation/live Reality Test is claimed here.**
+
+## 8. Initial source implementation (13 November 2026)
+
+A pure MCP normalization/admission prototype now exists at `packages/cop-core/src/mcp-continuation-result.js` with `packages/cop-core/test/mcp-continuation-result.test.js`. It reuses `observeContinuationResult` in `continuation-result.js` and `hashPayload` in `cop-event-envelope.js`, performs fail-closed preflight checks, and emits a single normalized candidate observation. It **does not** implement a connected MCP endpoint, storage commit, durable receipt issuance, policy-source verification, accounting posting, or live browser automation. Its admission object MUST come from the independently authenticated COP host, never from the model submission. A host needs atomic uniqueness/CAS, persisted receipt lookup, explicit receipt read authority and crash-safe accounting before returning a durable ACK.
+
+Test suite is committed but execution has not been verified in this conversational environment. A commit-workflow query returned no PR-triggered runs; that is not equivalent to a test failure or success.
