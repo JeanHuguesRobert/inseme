@@ -8,6 +8,7 @@ export default function AuthModal({
   onSignInWithProvider,
   onSignInWithPassword,
   onSignUp,
+  onForgotPassword,
   onSpectator,
   loading,
   error,
@@ -43,6 +44,7 @@ export default function AuthModal({
               onSignInWithProvider={onSignInWithProvider}
               onSignInWithPassword={onSignInWithPassword}
               onSignUp={onSignUp}
+              onForgotPassword={onForgotPassword}
               onSpectator={onSpectator}
               loading={loading}
               error={error}
