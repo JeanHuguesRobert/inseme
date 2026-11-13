@@ -93,6 +93,14 @@ export default function JhnLandingPage() {
               to="/nasa"
               cta="Open La Nasa"
             />
+            {signedIn ? (
+              <Card
+                title="Mandat de John"
+                body="Demander et confirmer l'habilitation continuation.resolve depuis votre session Supabase, sous contrôle COP."
+                to="/cop/consent/continuation"
+                cta="Gérer le consentement"
+              />
+            ) : null}
             <Card
               title="Interactions Desk"
               body="Read-only operational view of Interaction Packets (SQL projection). Principal or delegate only; no anonymous case data."
