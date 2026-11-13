@@ -49,6 +49,7 @@ export default function AuthModal({
               onSpectator={onSpectator}
               loading={loading}
               error={error}
+              notice={notice}
               roomName={roomName}
               isUpgrading={isUpgrading}
               initialMode={initialMode}
