@@ -17,6 +17,7 @@ export default function Login({
   onSpectator,
   loading,
   error,
+  notice,
   roomName,
   isUpgrading = false,
   initialMode = null,
