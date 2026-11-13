@@ -37,10 +37,37 @@ export function prepareMcpContinuationResult(submission, control = {}) {
   if (control.channel_permitted !== true) return fail("channel_not_permitted");
   if (control.mandate_valid !== true) return fail("mandate_not_valid");
   if (control.budget_admitted !== true) return fail("budget_not_admitted");
-  if (control.claim_valid !== true) return fail("claim_not_valid");
   for (const key of ["continuation_id", "attempt_id", "execution_binding_ref",
     "continuation_version", "idempotency_key"])
     if (!nonempty(submission[key])) return fail("missing_" + key);
+
+  // A previously persisted receipt is replayable even if the claim has since
+  // expired or the continuation has become terminal. Authenticate the caller
+  // and verify the exact actor/scope/digest before consulting active admission.
+  // The store MUST look up the receipt atomically by a scoped key.
+  const result = submission.step_result;
+  if (!result || typeof result !== "object" || Array.isArray(result))
+    return fail("invalid_step_result");
+  if (!STEP_SCHEMAS.has(result.protocol)) return fail("invalid_step_protocol");
+  if (!STATUSES.has(result.status)) return fail("invalid_step_status");
+  if (result.status === "answered" && !nonempty(result.result?.answer))
+    return fail("missing_answer");
+  const digest = hashPayload(result);
+  if (submission.result_digest != null && submission.result_digest !== digest)
+    return fail("digest_mismatch");
+  const previous = control.previous;
+  if (previous) {
+    if (previous.idempotency_key !== submission.idempotency_key ||
+        previous.continuation_id !== submission.continuation_id ||
+        previous.attempt_id !== submission.attempt_id ||
+        previous.authenticated_actor !== control.authenticated_actor)
+      return fail("previous_receipt_scope_mismatch");
+    if (previous.result_digest !== digest) return fail("idempotency_conflict");
+    if (!nonempty(previous.receipt_ref)) return fail("previous_receipt_unconfirmed");
+    return { ok: true, duplicate: true, result_digest: digest,
+      receipt_ref: previous.receipt_ref, event: null };
+  }
+  if (control.claim_valid !== true) return fail("claim_not_valid");
 
   const continuation = control.continuation;
   if (!continuation || continuation.continuation_id !== submission.continuation_id)
@@ -54,29 +81,6 @@ export function prepareMcpContinuationResult(submission, control = {}) {
   if (["returned", "resolved", "assimilated", "cancelled", "aborted"].includes(
     continuation.lifecycle ?? continuation.status))
     return fail("terminal_continuation");
-
-  const result = submission.step_result;
-  if (!result || typeof result !== "object" || Array.isArray(result))
-    return fail("invalid_step_result");
-  if (!STEP_SCHEMAS.has(result.protocol)) return fail("invalid_step_protocol");
-  if (!STATUSES.has(result.status)) return fail("invalid_step_status");
-  if (result.status === "answered" &&
-      (!nonempty(result.result?.answer))) return fail("missing_answer");
-
-  // Digest is computed from the COMPLETE submitted cognitive result.
-  const digest = hashPayload(result);
-  if (submission.result_digest != null && submission.result_digest !== digest)
-    return fail("digest_mismatch");
-  const previous = control.previous;
-  if (previous) {
-    if (previous.idempotency_key !== submission.idempotency_key ||
-        previous.continuation_id !== submission.continuation_id ||
-        previous.attempt_id !== submission.attempt_id)
-      return fail("previous_receipt_scope_mismatch");
-    if (previous.result_digest !== digest) return fail("idempotency_conflict");
-    return { ok: true, duplicate: true, result_digest: digest,
-      receipt_ref: previous.receipt_ref, event: null };
-  }
 
   // Challenge is correlation evidence, not an authorization credential.
   // The client must provide it: never synthesize a successful proof of return.
