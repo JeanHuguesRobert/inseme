@@ -69,8 +69,10 @@ export async function commitMcpContinuationResult(submission, host) {
   } catch (cause) {
     // Distinguish a real idempotency conflict from uncertain storage errors.
     // A caller may retry a transient failure using the SAME key and digest.
-    return error(cause?.message === "idempotency_conflict"
-      ? "idempotency_conflict" : "storage_outcome_uncertain");
+    const known = new Set(["idempotency_conflict", "claim_fence_required",
+      "claim_packet_mismatch", "stale_packet_generation", "stale_claim"]);
+    return error(known.has(cause?.message)
+      ? cause.message : "storage_outcome_uncertain");
   }
   if (!committed || (committed.inserted !== true && committed.inserted !== false))
     return error("append_unconfirmed");
