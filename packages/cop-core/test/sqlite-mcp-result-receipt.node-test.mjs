@@ -8,6 +8,7 @@ import { createSqliteMcpResultReceiptStore } from "../src/sqlite-mcp-result-rece
 import { commitMcpContinuationResult } from "../src/mcp-continuation-result-commit.js";
 import { MCP_RESULT_SUBMISSION_PROTOCOL } from "../src/mcp-continuation-result.js";
 import { hashPayload } from "../src/cop-event-envelope.js";
+import { EventStorePacketClaimCoordinator } from "../../cop-kernel/src/packetCoordination.js";
 
 function sample(answer = "One") {
   const step_result = {
@@ -19,10 +20,19 @@ function sample(answer = "One") {
     continuation_version: "4", idempotency_key: "attempt_1:result:0",
     result_digest: hashPayload(step_result), step_result };
 }
-function control() {
+async function claimedControl(sqlite) {
+  const coordinator = new EventStorePacketClaimCoordinator({ store: sqlite });
+  const grant = await coordinator.tryClaim({
+    packetRef: "ctn_sqlite", handlerRef: "mcp:verified-worker", ttlMs: 60000,
+  });
+  assert.equal(grant.ok, true);
   return { authenticated_actor: "mcp:verified-worker", receipt_read_authorized: true,
     mandate_valid: true, budget_admitted: true, claim_valid: true,
-    channel_permitted: true, continuation: {
+    channel_permitted: true, claim: {
+      packet_ref: grant.claim.packet_ref, claim_id: grant.claim.claim_id,
+      handler_ref: grant.claim.handler_ref, epoch: grant.claim.epoch,
+      expected_generation: coordinator.inspect("ctn_sqlite").generation,
+    }, continuation: {
       continuation_id: "ctn_sqlite", attempt_id: "attempt_1",
       execution_binding_ref: "binding_1", version: 4, lifecycle: "suspended" },
   };
@@ -30,10 +40,11 @@ function control() {
 test("SQLite COP store persists a result receipt after close/reopen", async () => {
   const dir = mkdtempSync(join(tmpdir(), "cop-mcp-result-"));
   const dbFile = join(dir, "cop.sqlite");
-  const admitted = control();
+  let admitted;
   let sqlite;
   try {
     sqlite = createSqliteCopEventStore(dbFile);
+    admitted = await claimedControl(sqlite);
     const host = { admit: async () => admitted,
       store: createSqliteMcpResultReceiptStore(sqlite) };
     const first = await commitMcpContinuationResult(sample(), host);
@@ -50,10 +61,10 @@ test("SQLite COP store persists a result receipt after close/reopen", async () =
     assert.equal(retry.ok, true);
     assert.equal(retry.duplicate, true);
     assert.equal(retry.receipt_ref, first.receipt_ref);
-    assert.equal(sqlite.replay().length, 1);
+    assert.equal(sqlite.listTopic("continuation:ctn_sqlite").length, 1);
     const conflict = await commitMcpContinuationResult(sample("Changed"), host);
     assert.equal(conflict.reason, "idempotency_conflict");
-    assert.equal(sqlite.replay().length, 1);
+    assert.equal(sqlite.listTopic("continuation:ctn_sqlite").length, 1);
   } finally {
     sqlite?.close();
     rmSync(dir, { recursive: true, force: true });
@@ -64,7 +75,8 @@ test("SQLite duplicate atomic append returns one stored event", async () => {
   let sqlite;
   try {
     sqlite = createSqliteCopEventStore(join(dir, "cop.sqlite"));
-    const host = { admit: async () => control(),
+    const admitted = await claimedControl(sqlite);
+    const host = { admit: async () => admitted,
       store: createSqliteMcpResultReceiptStore(sqlite) };
     const [a, b] = await Promise.all([
       commitMcpContinuationResult(sample(), host),
@@ -74,7 +86,7 @@ test("SQLite duplicate atomic append returns one stored event", async () => {
     assert.equal(b.ok, true);
     assert.deepEqual([a.duplicate, b.duplicate].sort(), [false, true]);
     assert.equal(a.receipt_ref, b.receipt_ref);
-    assert.equal(sqlite.replay().length, 1);
+    assert.equal(sqlite.listTopic("continuation:ctn_sqlite").length, 1);
   } finally {
     sqlite?.close();
     rmSync(dir, { recursive: true, force: true });
