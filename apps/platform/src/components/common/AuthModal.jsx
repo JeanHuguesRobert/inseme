@@ -4,6 +4,7 @@ import { ANONYMOUS_EMAIL } from "@inseme/cop-host";
 import { useCurrentUser } from "@inseme/cop-host";
 import { loadInstanceConfig } from "../../common/config/instanceConfig.client.js";
 import { AuthModal as SharedAuthModal } from "@inseme/ui";
+import { recoveryRequestErrorMessage } from "../../lib/authRecoveryError.js";
 
 export default function AuthModal({ onClose, onSuccess }) {
   const [error, setError] = useState("");
@@ -53,8 +54,8 @@ export default function AuthModal({ onClose, onSuccess }) {
       });
       if (resetError) throw resetError;
       setRecoveryNotice("Si ce compte existe, un courriel de récupération a été envoyé. Consultez votre boîte de réception.");
-    } catch {
-      setError("Impossible de demander la récupération actuellement. Réessayez.");
+    } catch (recoveryError) {
+      setError(recoveryRequestErrorMessage(recoveryError));
     } finally {
       setLoading(false);
     }
