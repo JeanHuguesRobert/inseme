@@ -2,10 +2,16 @@
  * Public entry for John, the personal agent at jhn.baronsmariani.org.
  * It is deliberately separate from civic/collective consultation surfaces.
  */
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import AuthModal from "../components/common/AuthModal";
+import { useSupabase } from "../contexts/SupabaseContext";
 import { getConfig } from "../common/config/instanceConfig.client.js";
 
 export default function JhnLandingPage() {
+  const { session, loading } = useSupabase();
+  const [showAuth, setShowAuth] = useState(false);
+  const signedIn = Boolean(session?.user?.id);
   const name =
     getConfig("contact_name") || getConfig("community_name") || "Jean Hugues Noël Robert";
   const canonical = getConfig("canonical_url") || "https://jhn.baronsmariani.org";
@@ -13,6 +19,25 @@ export default function JhnLandingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       <div className="mx-auto max-w-3xl px-4 py-16">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/70 px-4 py-3 text-sm">
+          <span className="text-slate-300" role="status">
+            {loading
+              ? "Vérification de la session…"
+              : signedIn
+                ? "Session ouverte : " + (session.user.email || "compte authentifié")
+                : "Vous n’êtes pas connecté."}
+          </span>
+          {!loading && !signedIn ? (
+            <button
+              type="button"
+              onClick={() => setShowAuth(true)}
+              className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+            >
+              Se connecter
+            </button>
+          ) : null}
+        </div>
+        {showAuth ? <AuthModal onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} /> : null}
         <header className="space-y-6 border-b border-slate-800 pb-12">
           <div className="inline-flex items-center rounded-full border border-emerald-800/60 bg-emerald-950/40 px-3 py-1 text-xs font-medium text-emerald-300">
             <span className="mr-2 inline-block h-2 w-2 rounded-full bg-emerald-400" />
