@@ -4,11 +4,11 @@ import { useSupabase } from "../contexts/SupabaseContext";
 import { eraseRecoveryUrl, recoveryLanding } from "../lib/recoveryLanding.js";
 
 // This route uses the already initialized instance client, never a second Auth client.
-// A plain signed-in session visiting this route does not grant recovery intent.
-const landing = typeof window !== "undefined"
-  ? recoveryLanding(window.location) : { expected: false, error: false };
-
+// Determine recovery intent on mount, AFTER bootstrap has rerouted the legacy
+// root callback, and BEFORE Supabase strips tokens from the URL.
 export default function ResetPasswordPage() {
+  const [landing] = useState(() => typeof window !== "undefined"
+    ? recoveryLanding(window.location) : { expected: false, error: false });
   const { supabase, session, loading } = useSupabase();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
