@@ -160,7 +160,8 @@ export default function AuthModal({ onClose, onSuccess }) {
       onSignUp={handleSignUp}
       onForgotPassword={handleForgotPassword}
       loading={loading}
-      error={error || recoveryNotice}
+      error={error}
+      notice={recoveryNotice}
     />
   );
 }
