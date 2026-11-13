@@ -59,8 +59,9 @@ export async function handlePertitelluRequest(request: Request): Promise<Respons
       community_name: "Le Petit Parti — Corte",
       deployment_kind: "civic",
       application_profile: "civic-platform",
-      canonical_url: "https://lepp.fr",
-      preview_url: "https://fracta.fractavolta.com/pertitellu/",
+      canonical_url: "https://lepp.baronsmariani.org",
+      // Do not advertise an unconfigured preview gateway.
+      preview_url: Deno.env.get("PERTITELLU_PREVIEW_URL") || null,
     });
   }
 

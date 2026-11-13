@@ -28,7 +28,7 @@ BEGIN
     'civic',
     'collective',
     false,
-    '{"role": "civic_hub", "city": "Corte", "region": "Corse", "canonical_url": "https://lepp.fr"}'::jsonb
+    '{"role": "civic_hub", "city": "Corte", "region": "Corse", "canonical_url": "https://lepp.baronsmariani.org"}'::jsonb
   )
   ON CONFLICT (id) DO UPDATE SET
     host_instance_id = EXCLUDED.host_instance_id,
@@ -43,7 +43,7 @@ BEGIN
   VALUES
     ('pertitellu-corte', v_pertitellu_id, true, 'canonical_slug', 'Primary slug for Pertitellu Corte', now()),
     ('lepp', v_pertitellu_id, false, 'short_name', 'Short name for Le Petit Parti', now()),
-    ('lepp.fr', v_pertitellu_id, false, 'legacy', 'Legacy domain alias for LePP', now()),
+    ('lepp.baronsmariani.org', v_pertitellu_id, false, 'subdomain', 'Current web hostname for LePP / U Pertitellu', now()),
     ('pertitellu', v_pertitellu_id, false, 'short_name', 'General collective name', now()),
     ('corte', v_pertitellu_id, false, 'name_variant', 'City name variant', now())
   ON CONFLICT (alias) DO UPDATE SET
@@ -61,11 +61,11 @@ BEGIN
     (v_pertitellu_id, 'region_code', 'COR', 'identity', 'Code région', true, false),
     (v_pertitellu_id, 'region_name', 'Corse', 'identity', 'Nom de la région', true, false),
     (v_pertitellu_id, 'bot_name', 'Ophélia', 'branding', 'Nom de l''assistant / persona', true, false),
-    (v_pertitellu_id, 'app_url', 'https://lepp.fr', 'identity', 'URL canonique de production', true, false),
-    (v_pertitellu_id, 'host_domain', 'lepp.fr', 'identity', 'Domaine hôte', true, false),
+    (v_pertitellu_id, 'app_url', 'https://lepp.baronsmariani.org', 'identity', 'URL canonique de production', true, false),
+    (v_pertitellu_id, 'host_domain', 'lepp.baronsmariani.org', 'identity', 'Domaine hôte', true, false),
     (v_pertitellu_id, 'deployment_kind', 'civic', 'identity', 'Type de déploiement', true, false),
     (v_pertitellu_id, 'application_profile', 'civic-platform', 'identity', 'Profil applicatif', true, false),
-    (v_pertitellu_id, 'contact_email', 'contact@lepp.fr', 'identity', 'Email de contact', true, false),
+    (v_pertitellu_id, 'contact_email', 'contact@baronsmariani.org', 'identity', 'Email de contact', true, false),
     (v_pertitellu_id, 'map_default_center', '42.3084,9.1505', 'map', 'Centre par défaut de la carte', true, false)
   ON CONFLICT (instance_id, key) DO UPDATE SET
     value = EXCLUDED.value,

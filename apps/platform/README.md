@@ -105,7 +105,7 @@ Ce projet est sous licence **MIT**.
 **Auteur : Jean Hugues Noël Robert**
 
 - Projet porté par l'association **C.O.R.S.I.C.A.**
-- Communauté [LePP.fr](https://lepp.fr).
+- Communauté LePP / U Pertitellu : `lepp.baronsmariani.org` (nouvelle URL canonique prévue, **non encore mise en ligne** ; historique : `lepp.fr`, abandonné).
 
 ---
 

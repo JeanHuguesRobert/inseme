@@ -5,15 +5,18 @@
   "city_name": "Corte",
   "region_code": "COR",
   "region_name": "Corse",
-  "contact_email": "contact@lepp.fr",
+  "contact_email": "contact@baronsmariani.org",
   "contact_name": "Pertitellu Corte",
-  "map_center": [42.3084, 9.1505],
+  "map_center": [
+    42.3084,
+    9.1505
+  ],
   "supabase_url": "https://REPLACE_WITH_PERTITELLU.supabase.co",
   "supabase_anon_key": "eyJ_REPLACE_WITH_ANON_KEY",
   "hub_url": null,
   "deployment_kind": "civic",
   "application_profile": "civic-platform",
-  "host_domain": "lepp.fr",
-  "canonical_url": "https://lepp.fr",
+  "host_domain": "lepp.baronsmariani.org",
+  "canonical_url": "https://lepp.baronsmariani.org",
   "bot_name": "Ophélia"
 }

@@ -14,7 +14,7 @@ const PERTITELLU_STATIC_META = {
   title: "Pertitellu — Plateforme Citoyenne de Corte",
   description:
     "Plateforme civique et démocratique de Corte — Consultations, Wiki collaboratif, Kudocracy et transparence.",
-  canonicalUrl: "https://lepp.fr/",
+  canonicalUrl: "https://lepp.baronsmariani.org/",
 };
 
 export async function specializePertitelluIndexHtml(

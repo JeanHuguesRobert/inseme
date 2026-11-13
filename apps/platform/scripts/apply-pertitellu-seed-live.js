@@ -42,7 +42,7 @@ async function applySeed() {
           role: "civic_hub",
           city: "Corte",
           region: "Corse",
-          canonical_url: "https://lepp.fr",
+          canonical_url: "https://lepp.baronsmariani.org",
         },
       },
       { onConflict: "id" }
@@ -73,11 +73,11 @@ async function applySeed() {
       description: "Short name for Le Petit Parti",
     },
     {
-      alias: "lepp.fr",
+      alias: "lepp.baronsmariani.org",
       instance_id: pertitelluId,
       is_primary: false,
-      alias_kind: "legacy",
-      description: "Legacy domain alias for LePP",
+      alias_kind: "subdomain",
+      description: "Current web host for LePP / U Pertitellu (once DNS is activated)",
     },
     {
       alias: "pertitellu",
@@ -176,7 +176,7 @@ async function applySeed() {
     {
       instance_id: pertitelluId,
       key: "app_url",
-      value: "https://lepp.fr",
+      value: "https://lepp.baronsmariani.org",
       category: "identity",
       description: "URL canonique de production",
       is_public: true,
@@ -185,7 +185,7 @@ async function applySeed() {
     {
       instance_id: pertitelluId,
       key: "host_domain",
-      value: "lepp.fr",
+      value: "lepp.baronsmariani.org",
       category: "identity",
       description: "Domaine hôte",
       is_public: true,
@@ -212,7 +212,7 @@ async function applySeed() {
     {
       instance_id: pertitelluId,
       key: "contact_email",
-      value: "contact@lepp.fr",
+      value: "contact@baronsmariani.org",
       category: "identity",
       description: "Email de contact",
       is_public: true,

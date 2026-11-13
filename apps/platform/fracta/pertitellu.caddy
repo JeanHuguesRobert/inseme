@@ -1,0 +1,32 @@
+# Inseme #59 / Operium #37 — PREPARED, NOT DEPLOYED.
+# Copy to the live Fracta2 Caddy import directory only after verifying a stable
+# public ingress (Operium #77), an existing release at /srv/www/pertitellu/current,
+# and the exact authorized Cloudflare DNS record lepp.baronsmariani.org.
+# This serves a static SPA preview. Civic mutations/auth/chat are NOT certified.
+https://lepp.baronsmariani.org {
+	root * /srv/www/pertitellu/current
+	encode zstd gzip
+	header X-Robots-Tag "noindex, nofollow"
+
+	@health path /health
+	handle @health {
+		header Content-Type application/json
+		respond `{"ok":true,"service":"pertitellu-corte","mode":"static-preview","backend_ready":false}` 200
+	}
+
+	@api path /api/*
+	handle @api {
+		respond "Pertitellu API not deployed on this preview" 503
+	}
+
+	# Missing immutable assets must fail as 404, not silently return index.html.
+	@assets path /assets/* /images/* /favicon* /robots.txt
+	handle @assets {
+		file_server
+	}
+
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+}

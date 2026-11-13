@@ -24,11 +24,27 @@ test("Pertitellu build specializes static metadata for LePP / Corte", async () =
     await specializePertitelluIndexHtml(indexPath);
     const specialized = await readFile(indexPath, "utf8");
     assert.match(specialized, /Pertitellu — Plateforme Citoyenne de Corte/);
-    assert.match(specialized, /https:\/\/lepp\.fr\//);
+    assert.match(specialized, /https:\/\/lepp\.baronsmariani\.org\//);
     assert.doesNotMatch(specialized, /Consultation Citoyenne/);
     assert.doesNotMatch(specialized, /\{\{ APP_URL \}\}/);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("Pertitellu public hostname is updated without resurrecting abandoned lepp.fr alias", async () => {
+  const instance = JSON.parse(await readFile(path.resolve(import.meta.dirname, "../instances/pertitellu-corte.json"), "utf8"));
+  const example = JSON.parse(await readFile(path.resolve(import.meta.dirname, "../instances/pertitellu-corte.example.json"), "utf8"));
+  for (const value of [instance, example]) {
+    assert.equal(value.host_domain, "lepp.baronsmariani.org");
+    assert.equal(value.canonical_url, "https://lepp.baronsmariani.org");
+    assert.equal(value.contact_email, "contact@baronsmariani.org");
+  }
+  const seedJs = await readFile(path.resolve(import.meta.dirname, "apply-pertitellu-seed-live.js"), "utf8");
+  const seedSql = await readFile(path.resolve(import.meta.dirname, "../instances/sql/pertitellu-hosted-seed.sql"), "utf8");
+  for (const seed of [seedJs, seedSql]) {
+    assert.match(seed, /lepp\.baronsmariani\.org/);
+    assert.doesNotMatch(seed, /["']lepp\.fr["']/);
   }
 });
 
