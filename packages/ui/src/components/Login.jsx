@@ -13,6 +13,7 @@ export default function Login({
   onSignInWithProvider,
   onSignInWithPassword,
   onSignUp,
+  onForgotPassword,
   onSpectator,
   loading,
   error,
@@ -173,6 +174,17 @@ export default function Login({
           )}
         </button>
       </form>
+
+      {mode === "signin" && onForgotPassword ? (
+        <button
+          type="button"
+          onClick={() => onForgotPassword(email)}
+          disabled={loading}
+          className="mt-4 text-sm font-semibold text-indigo-600 hover:underline disabled:opacity-50"
+        >
+          Mot de passe oublié ?
+        </button>
+      ) : null}
 
       <div className="w-full mt-8 space-y-6">
         {showProviders && (mode === "signin" || mode === "signup") && (
