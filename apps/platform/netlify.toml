@@ -2,7 +2,7 @@
 # lives in apps/platform. Keep every build artifact path root-relative.
 [build]
   command = "pnpm install --frozen-lockfile=false && pnpm --filter platform run compile:briques:jhn && pnpm --filter platform run build:jhn"
-  publish = "apps/platform/dist"
+  publish = "apps/platform/dist-jhn"
   functions = "apps/platform/netlify/profiles/jhn/functions"
   edge_functions = "apps/platform/netlify/profiles/jhn/edge-functions"
 
@@ -15,7 +15,7 @@
   command = "node scripts/check-tunnel.js && pnpm --filter platform exec vite"
   port = 8888
   targetPort = 5173
-  publish = "apps/platform/dist"
+  publish = "apps/platform/dist-jhn"
   functions = "apps/platform/netlify/functions"
 
 [functions]

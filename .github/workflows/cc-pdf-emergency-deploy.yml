@@ -43,7 +43,7 @@ jobs:
         run: |
           pnpm exec netlify deploy \
             --prod \
-            --dir apps/platform/dist \
+            --dir apps/platform/dist-jhn \
             --site "$NETLIFY_SITE_ID" \
             --config apps/platform/netlify.toml \
             --message "Emergency CC petition PDF route"
