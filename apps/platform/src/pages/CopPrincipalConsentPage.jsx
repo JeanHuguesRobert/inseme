@@ -91,6 +91,10 @@ export default function CopPrincipalConsentPage(){
         <dt>Motif</dt><dd>{request.proposal?.reason}</dd>
         <dt>{ratification?'Actions actuellement autorisées':'Actions autorisées proposées'}</dt><dd>{(request.proposal?.scope?.allowed_actions||[]).join(', ')||'Aucune'}</dd>
         <dt>Actions interdites</dt><dd>{(request.proposal?.scope?.forbidden_actions||[]).join(', ')||'Non précisées'}</dd>
+        {request.proposal?.scope?.repository_policy?<>
+          <dt>Périmètre des dépôts</dt>
+          <dd>{request.proposal.scope.repository_policy.account} — {request.proposal.scope.repository_policy.selection} ; dépôts futurs : {request.proposal.scope.repository_policy.include_future?'inclus':'exclus'} ; vérification du dépôt cible : {request.proposal.scope.repository_policy.require_verified_target?'obligatoire':'non indiquée'}</dd>
+        </>:null}
         <dt>Expiration</dt><dd>{request.expires_at}</dd>
         <dt>Empreinte</dt><dd style={{overflowWrap:'anywhere'}}><code>{request.payload_hash}</code></dd>
         <dt>État</dt><dd>{request.status}</dd>
