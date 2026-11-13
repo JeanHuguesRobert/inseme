@@ -90,6 +90,8 @@ export default function Login({
         </div>
       )}
 
+      {notice ? <p role="status" className="w-full p-3 mb-4 rounded-xl bg-emerald-50 text-emerald-900 text-sm">{notice}</p> : null}
+
       <form onSubmit={handleSubmit} className="w-full space-y-4">
         {(mode === "signup" || mode === "anonymous") && (
           <div className="space-y-1">
