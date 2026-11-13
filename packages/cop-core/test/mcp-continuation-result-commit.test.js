@@ -102,6 +102,13 @@ describe("MCP result durable-ack port — simulation, not deployed persistence",
     control.claim_valid = false;
     expect((await commitMcpContinuationResult(specimen(), host)).ok).toBe(false);
   });
+  it("does not acknowledge an uncertain storage failure", async () => {
+    const host = fakeHost();
+    host.store.appendUnique = async () => { throw new Error("disk_unavailable"); };
+    const r = await commitMcpContinuationResult(specimen(), host);
+    expect(r).toMatchObject({ ok: false, reason: "storage_outcome_uncertain" });
+    expect(r.receipt_ref).toBeUndefined();
+  });
   it("requires a durable storage interface", async () => {
     expect((await commitMcpContinuationResult(specimen(), {
       admit: async () => admitted(), store: {},
