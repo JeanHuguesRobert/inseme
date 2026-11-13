@@ -132,3 +132,17 @@ Implement first the smallest provider-neutral **normalized result ingestion** ad
 A pure MCP normalization/admission prototype now exists at `packages/cop-core/src/mcp-continuation-result.js` with `packages/cop-core/test/mcp-continuation-result.test.js`. It reuses `observeContinuationResult` in `continuation-result.js` and `hashPayload` in `cop-event-envelope.js`, performs fail-closed preflight checks, and emits a single normalized candidate observation. It **does not** implement a connected MCP endpoint, storage commit, durable receipt issuance, policy-source verification, accounting posting, or live browser automation. Its admission object MUST come from the independently authenticated COP host, never from the model submission. A host needs atomic uniqueness/CAS, persisted receipt lookup, explicit receipt read authority and crash-safe accounting before returning a durable ACK.
 
 Test suite is committed but execution has not been verified in this conversational environment. A commit-workflow query returned no PR-triggered runs; that is not equivalent to a test failure or success.
+
+## 9. SQLite Reality Test checkpoint — 2026-11-13
+
+Source on `main` now includes:
+- `packages/cop-core/src/mcp-continuation-result-commit.js` — admit via trusted host; append candidate observation through an injected transactional store; return ACK only after durable receipt readback; typed uncertainty on write failure;
+- `packages/cop-core/src/sqlite-mcp-result-receipt-store.js` — **reuses** `createSqliteCopEventStore()` and its WAL, `synchronous=FULL`, transactional append, and unique idempotency key; receipt is a view of the stored COP event, not a second table;
+- `packages/cop-core/test/sqlite-mcp-result-receipt.node-test.mjs` — real temporary SQLite database, reopen/replay, conflict and concurrent duplicate submissions;
+- existing Vitest coverage of normalized receipt results, lost ACK, read authorization, expired claims, malformed result and typed storage uncertainty.
+
+**Verification on Fracta2:** Node v22.23.4; full Vitest `cop-core` suite **171 passed / 22 files**, plus **2/2** real SQLite receipt tests using `node --test`, on commit `d67dcda`. This is a local source Reality Test, **not a production MCP endpoint**. The temporary test databases were cleaned up; source checkout is clean.
+
+**Unresolved FBF blocker:** the current `createSqliteCopEventStore.append()` transaction ensures event uniqueness but does not atomically validate the **continuation claim/version** in the same transaction. The admission result is a prior snapshot: an intervening claim change could make a just-written observation stale. The result is only an **observed candidate**, never an automatic resolution, so this does not itself grant act authority. Before permitting automated continuation advancement, integrate #121's claim/CAS with the event commit, and connect canonical COP Accounting #161–164 with a durable reservation/settlement. Do not misrepresent append-only uniqueness as exactly-once execution.
+
+No connected MCP tool, browser automation, external provider account or sustained autonomous worker was activated.
