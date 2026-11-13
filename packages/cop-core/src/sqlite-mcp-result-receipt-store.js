@@ -3,10 +3,11 @@
  * Reuses the existing transactional COP event store (no second DB/table).
  *
  * This adapter provides atomic uniqueness + durable readback of the observed
- * event. It does NOT yet implement continuation claim/version CAS in the same
- * transaction, so only use for isolated Reality Tests until #121 is wired.
+ * event. New observations require current claim/epoch/generation fencing in
+ * the SAME SQLite BEGIN IMMEDIATE transaction as the COP event append.
  */
 import { createCopEventEnvelope } from "./cop-event-envelope.js";
+import { projectPacketCoordination, validateCurrentPacketClaim } from "./packet-coordination.js";
 
 const receiptOf = (event) => {
   if (!event) return null;
@@ -26,7 +27,8 @@ const receiptOf = (event) => {
 export function createSqliteMcpResultReceiptStore(copStore) {
   if (!copStore || copStore.kind !== "sqlite" ||
       typeof copStore.append !== "function" ||
-      typeof copStore.eventByIdempotency !== "function")
+      typeof copStore.eventByIdempotency !== "function" ||
+      typeof copStore.transaction !== "function")
     throw new TypeError("requires existing sqlite COP event store");
   const read = (key) => receiptOf(copStore.eventByIdempotency(key));
   return {
@@ -45,8 +47,40 @@ export function createSqliteMcpResultReceiptStore(copStore) {
           submission_idempotency_key: proposedReceipt.idempotency_key,
         },
       });
-      const outcome = copStore.append(decorated);
-      if (!outcome?.ok) throw new Error(outcome?.error || "cop_append_failed");
+      const witness = proposedReceipt.claim;
+      if (!witness || typeof witness.packet_ref !== "string" ||
+          !witness.packet_ref || typeof witness.claim_id !== "string" ||
+          !witness.claim_id || typeof witness.handler_ref !== "string" ||
+          !witness.handler_ref || !Number.isInteger(witness.epoch) ||
+          !Number.isInteger(witness.expected_generation))
+        throw new Error("claim_fence_required");
+      // Prevent unrelated continuation writes under a claim on another packet.
+      if (witness.packet_ref !== proposedReceipt.continuation_id)
+        throw new Error("claim_packet_mismatch");
+      // All coordination writers and result writers must use this same store.
+      const committed = copStore.transaction((tx) => {
+        const existing = tx.eventByIdempotency(key);
+        // Existing receipts are checked even after takeover; duplicates cannot
+        // cause a new append and conflicting digests remain a hard error.
+        if (existing) return { ok: true, duplicate: true, event: existing };
+        const projection = projectPacketCoordination(
+          tx.listTopic(`packet-coordination:${witness.packet_ref}`)
+            .map(e => e.payload?.packet_coordination_event)
+            .filter(Boolean),
+        );
+        if (projection.generation !== witness.expected_generation)
+          throw new Error("stale_packet_generation");
+        const valid = validateCurrentPacketClaim(projection, {
+          claimId: witness.claim_id, handlerRef: witness.handler_ref,
+          epoch: witness.epoch, now: new Date(),
+        });
+        if (!valid.ok) throw new Error("stale_claim");
+        const appended = tx.append(decorated);
+        if (!appended?.ok) throw new Error(appended?.error || "cop_append_failed");
+        return appended;
+      });
+      if (!committed.ok) throw new Error(committed.error);
+      const outcome = committed.value;
       const persisted = receiptOf(outcome.event);
       if (!persisted || persisted.authenticated_actor !== proposedReceipt.authenticated_actor ||
           persisted.continuation_id !== proposedReceipt.continuation_id ||
