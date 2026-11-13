@@ -40,7 +40,7 @@ export default function AuthModal({ onClose, onSuccess }) {
     setError("");
     setRecoveryNotice("");
     const address = String(email || "").trim();
-    if (!address || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(address)) {
+    if (!address || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
       setError("Indiquez votre adresse email avant de demander un lien de récupération.");
       return;
     }
