@@ -83,6 +83,30 @@ export function createSqliteCopEventStore(filename) {
       markSealed.run(event.topic.id);
     return {ok:true,duplicate:false,event};
   }
+  // Shared serialized read/verify/append boundary for packet claim fencing.
+  // The callback must be synchronous: awaiting would escape BEGIN IMMEDIATE.
+  function transaction(fn) {
+    if (typeof fn !== 'function') throw new TypeError('transaction callback required');
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const tx = {
+        listTopic(id) { return topicRows.all(id).map(r => JSON.parse(r.envelope)); },
+        eventByIdempotency(key) {
+          const row = byIdem.get(key);
+          return row ? JSON.parse(row.envelope) : null;
+        },
+        append: appendWithinTransaction,
+      };
+      const value = fn(tx);
+      if (value && typeof value.then === 'function')
+        throw new TypeError('async_transaction_callback_forbidden');
+      db.exec('COMMIT');
+      return { ok: true, value };
+    } catch (error) {
+      db.exec('ROLLBACK');
+      return { ok: false, error: error?.message || 'transaction_failed' };
+    }
+  }
   function appendBatch(partials,{maxBatchSize=100}={}) {
     if (!Array.isArray(partials) || partials.length<1 ||
         !Number.isSafeInteger(maxBatchSize) || maxBatchSize<1 || maxBatchSize>1000 ||
@@ -109,6 +133,7 @@ export function createSqliteCopEventStore(filename) {
       return batch.ok?batch.results[0]:{ok:false,error:batch.error};
     },
     appendBatch,
+    transaction,
     topicCommitment(id) { return readHead.get(id) || null; },
     budgetProjection(topic) { return budgetProjection.get(topic); },
     seedBudgetProjection(topic,state) { return budgetProjection.seed(topic,state); },
