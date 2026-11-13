@@ -34,9 +34,6 @@ export function prepareMcpContinuationResult(submission, control = {}) {
   if (submission.protocol !== MCP_RESULT_SUBMISSION_PROTOCOL)
     return fail("unsupported_submission_protocol");
   if (!nonempty(control.authenticated_actor)) return fail("unauthenticated_actor");
-  if (control.channel_permitted !== true) return fail("channel_not_permitted");
-  if (control.mandate_valid !== true) return fail("mandate_not_valid");
-  if (control.budget_admitted !== true) return fail("budget_not_admitted");
   for (const key of ["continuation_id", "attempt_id", "execution_binding_ref",
     "continuation_version", "idempotency_key"])
     if (!nonempty(submission[key])) return fail("missing_" + key);
@@ -57,6 +54,7 @@ export function prepareMcpContinuationResult(submission, control = {}) {
     return fail("digest_mismatch");
   const previous = control.previous;
   if (previous) {
+    if (control.receipt_read_authorized !== true) return fail("receipt_read_not_authorized");
     if (previous.idempotency_key !== submission.idempotency_key ||
         previous.continuation_id !== submission.continuation_id ||
         previous.attempt_id !== submission.attempt_id ||
@@ -67,6 +65,9 @@ export function prepareMcpContinuationResult(submission, control = {}) {
     return { ok: true, duplicate: true, result_digest: digest,
       receipt_ref: previous.receipt_ref, event: null };
   }
+  if (control.channel_permitted !== true) return fail("channel_not_permitted");
+  if (control.mandate_valid !== true) return fail("mandate_not_valid");
+  if (control.budget_admitted !== true) return fail("budget_not_admitted");
   if (control.claim_valid !== true) return fail("claim_not_valid");
 
   const continuation = control.continuation;
