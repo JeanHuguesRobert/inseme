@@ -62,7 +62,15 @@ export async function commitMcpContinuationResult(submission, host) {
   };
   // appendUnique MUST reject a changed claim/version inside its atomic
   // transaction. In-memory admission alone is susceptible to a TOCTOU race.
-  const committed = await host.store.appendUnique(key, event, receipt);
+  let committed;
+  try {
+    committed = await host.store.appendUnique(key, event, receipt);
+  } catch (cause) {
+    // Distinguish a real idempotency conflict from uncertain storage errors.
+    // A caller may retry a transient failure using the SAME key and digest.
+    return error(cause?.message === "idempotency_conflict"
+      ? "idempotency_conflict" : "storage_outcome_uncertain");
+  }
   if (!committed || (committed.inserted !== true && committed.inserted !== false))
     return error("append_unconfirmed");
   const verified = await host.store.readConfirmedReceipt(key);
