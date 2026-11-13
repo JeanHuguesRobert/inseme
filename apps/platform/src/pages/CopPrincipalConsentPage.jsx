@@ -4,13 +4,15 @@
  * fake issuer, fallback approval, or effect execution on browser errors.
  */
 import {useCallback,useEffect,useState} from 'react';
-import {useParams} from 'react-router-dom';
+import {useNavigate,useParams} from 'react-router-dom';
 import AuthModal from '../components/common/AuthModal';
 import {useSupabase} from '../contexts/SupabaseContext';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const SHA=/^sha256:[a-f0-9]{64}$/;
 export default function CopPrincipalConsentPage(){
   const {challengeId}=useParams();
+  const navigate=useNavigate();
+  const creating=challengeId==='continuation';
   const {session,loading}=useSupabase();
   const [showAuth,setShowAuth]=useState(false);
   const [request,setRequest]=useState(null);
@@ -32,6 +34,22 @@ export default function CopPrincipalConsentPage(){
     }catch(e){setError(e.message||'consent_service_unavailable');setRequest(null);}
   },[token,validId,endpoint]);
   useEffect(()=>{load();},[load]);
+  async function createContinuationRequest(){
+    if(!creating||!token||busy)return;
+    setBusy(true);setError('');
+    try{
+      const response=await fetch('/api/cop/principal-consent/continuation-request',{
+        method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json',
+          Accept:'application/json'},body:'{}',cache:'no-store'
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok||data.ok!==true)throw Error(data.error||`HTTP ${response.status}`);
+      if(data.already_authorized_in_scope===true){setReceipt({already_authorized:true});return;}
+      if(!UUID.test(data.challenge_id||''))throw Error('invalid_consent_response');
+      navigate('/cop/consent/'+data.challenge_id,{replace:true});
+    }catch(e){setError(e.message||'consent_service_unavailable');}
+    finally{setBusy(false);}
+  }
   async function decide(decision){
     if(!request||request.status!=='pending'||!token||busy||!validId)return;
     setBusy(true);setError('');
@@ -51,8 +69,18 @@ export default function CopPrincipalConsentPage(){
   return <main style={{maxWidth:720,margin:'2rem auto',padding:'1rem'}}>
     <h1>Consentement COP — Principal JHN</h1>
     <p>Cette interface recueille votre décision dans votre session Supabase authentifiée. Pour une extension de mandat explicitement activable, la décision favorable peut aussi appliquer cet amendement canonique après vérification. Elle n’envoie aucun courrier et ne dispense pas des contrôles COP lors des actions futures.</p>
-    {!validId?<p role="alert">Référence de demande invalide.</p>:null}
-    {!loading&&!token?<><p>Connectez-vous avec votre compte Supabase JHN pour consulter la proposition.</p><button type="button" onClick={()=>setShowAuth(true)}>Connexion</button></>:null}
+    {creating?<section>
+      <p>Ajouter uniquement la capacité <code>continuation.resolve</code> au mandat de John,
+        sans modifier les interdictions ni le budget. La demande et la décision sont
+        vérifiées avec votre session Supabase JHN.</p>
+      {!loading&&!token?<button type="button" onClick={()=>setShowAuth(true)}>Connexion</button>:null}
+      {!!token?<button type="button" disabled={busy} onClick={createContinuationRequest}>
+        {busy?'Création…':'Créer la demande de consentement'}
+      </button>:null}
+      {receipt?.already_authorized?<p role="status">Cette capacité figure déjà dans le mandat.</p>:null}
+    </section>:null}
+    {!creating&&!validId?<p role="alert">Référence de demande invalide.</p>:null}
+    {!creating&&!loading&&!token?<><p>Connectez-vous avec votre compte Supabase JHN pour consulter la proposition.</p><button type="button" onClick={()=>setShowAuth(true)}>Connexion</button></>:null}
     {showAuth?<AuthModal onClose={()=>setShowAuth(false)} onSuccess={()=>{setShowAuth(false);load();}}/>:null}
     {error?<p role="alert">Service de consentement indisponible ou demande refusée : {error}</p>:null}
     {request?<section aria-label="Proposition COP" style={{border:'1px solid #888',borderRadius:8,padding:'1rem',marginTop:'1rem'}}>
