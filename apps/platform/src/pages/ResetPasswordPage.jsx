@@ -8,7 +8,8 @@ import { eraseRecoveryUrl, recoveryLanding } from "../lib/recoveryLanding.js";
 // root callback, and BEFORE Supabase strips tokens from the URL.
 export default function ResetPasswordPage() {
   const [landing] = useState(() => typeof window !== "undefined"
-    ? recoveryLanding(window.location) : { expected: false, error: false });
+    ? (window.__JHN_RECOVERY_LANDING__ || recoveryLanding(window.location))
+    : { expected: false, error: false });
   const { supabase, session, loading } = useSupabase();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
