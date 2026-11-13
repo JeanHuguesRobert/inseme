@@ -14,7 +14,7 @@ const submission = () => ({
   step_result: structuredClone(result),
 });
 const control = () => ({
-  authenticated_actor: "mcp:worker:1", channel_permitted: true,
+  authenticated_actor: "mcp:worker:1", receipt_read_authorized: true, channel_permitted: true,
   mandate_valid: true, budget_admitted: true, claim_valid: true,
   continuation: { continuation_id: "ctn_1", version: 7,
     execution_binding_ref: "binding_1", attempt_id: "attempt_1",
@@ -57,7 +57,7 @@ describe("direct MCP continuation result adapter", () => {
     const c = control();
     c.previous = { idempotency_key: s.idempotency_key,
       continuation_id: s.continuation_id, attempt_id: s.attempt_id,
-      result_digest: s.result_digest, receipt_ref: "receipt:1" };
+      result_digest: s.result_digest, receipt_ref: "receipt:1", authenticated_actor: "mcp:worker:1" };
     const duplicate = prepareMcpContinuationResult(s, c);
     expect(duplicate.duplicate).toBe(true);
     expect(duplicate.receipt_ref).toBe("receipt:1");
@@ -65,6 +65,18 @@ describe("direct MCP continuation result adapter", () => {
     changed.step_result.result.answer = "B";
     changed.result_digest = hashPayload(changed.step_result);
     expect(prepareMcpContinuationResult(changed, c).reason).toBe("idempotency_conflict");
+  });
+  it("permits exact receipt replay after claim, budget and continuation expiry", () => {
+    const s = submission(); const c = control();
+    c.claim_valid = false; c.budget_admitted = false; c.mandate_valid = false;
+    c.continuation.lifecycle = "resolved";
+    c.previous = { idempotency_key: s.idempotency_key,
+      continuation_id: s.continuation_id, attempt_id: s.attempt_id,
+      result_digest: s.result_digest, receipt_ref: "receipt:1",
+      authenticated_actor: c.authenticated_actor };
+    expect(prepareMcpContinuationResult(s, c).duplicate).toBe(true);
+    c.receipt_read_authorized = false;
+    expect(prepareMcpContinuationResult(s, c).reason).toBe("receipt_read_not_authorized");
   });
   it("rejects mismatched digests and malformed results", () => {
     const s = submission(); s.result_digest = "sha256:wrong";
