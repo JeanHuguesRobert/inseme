@@ -12,7 +12,8 @@ const SHA=/^sha256:[a-f0-9]{64}$/;
 export default function CopPrincipalConsentPage(){
   const {challengeId}=useParams();
   const navigate=useNavigate();
-  const creating=challengeId==='continuation';
+  const repositoryCreating=challengeId==='repository';
+  const creating=challengeId==='continuation'||repositoryCreating;
   const {session,loading}=useSupabase();
   const [showAuth,setShowAuth]=useState(false);
   const [request,setRequest]=useState(null);
@@ -38,7 +39,7 @@ export default function CopPrincipalConsentPage(){
     if(!creating||!token||busy)return;
     setBusy(true);setError('');
     try{
-      const response=await fetch('/api/cop/principal-consent/continuation-request',{
+      const response=await fetch('/api/cop/principal-consent/'+(repositoryCreating?'repository-request':'continuation-request'),{
         method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json',
           Accept:'application/json'},body:'{}',cache:'no-store'
       });
@@ -70,9 +71,7 @@ export default function CopPrincipalConsentPage(){
     <h1>Consentement COP — Principal JHN</h1>
     <p>Cette interface recueille votre décision dans votre session Supabase authentifiée. Pour une extension de mandat explicitement activable, la décision favorable peut aussi appliquer cet amendement canonique après vérification. Elle n’envoie aucun courrier et ne dispense pas des contrôles COP lors des actions futures.</p>
     {creating?<section>
-      <p>Ajouter uniquement la capacité <code>continuation.resolve</code> au mandat de John,
-        sans modifier les interdictions ni le budget. La demande et la décision sont
-        vérifiées avec votre session Supabase JHN.</p>
+      {repositoryCreating?<p>Étendre le mandat permanent de John aux opérations Git et GitHub, pour les dépôts accessibles avec les identifiants délégués. GitHub contrôle les permissions. Les interdictions et le budget COP existants sont conservés.</p>:<p>Ajouter uniquement la capacité <code>continuation.resolve</code> au mandat de John, sans modifier les interdictions ni le budget. La demande et la décision sont vérifiées avec votre session Supabase JHN.</p>}
       {!loading&&!token?<button type="button" onClick={()=>setShowAuth(true)}>Connexion</button>:null}
       {!!token?<button type="button" disabled={busy} onClick={createContinuationRequest}>
         {busy?'Création…':'Créer la demande de consentement'}

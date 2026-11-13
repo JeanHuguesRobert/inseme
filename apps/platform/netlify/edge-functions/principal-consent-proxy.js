@@ -11,9 +11,10 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const json=(status,error)=>new Response(JSON.stringify({ok:false,error,grants_mandate_authority:false}),{status,headers:{'content-type':'application/json','cache-control':'no-store','x-content-type-options':'nosniff'}});
 export default async function principalConsentProxy(request){
  const url=new URL(request.url);
- const match=/^\/api\/cop\/principal-consent\/([a-f0-9-]{36})$/.exec(url.pathname);
- if(url.origin!==FRONT||!match||!UUID.test(match[1])||url.search)return json(404,'consent_route_not_found');
+ const match=/^\/api\/cop\/principal-consent\/([a-f0-9-]{36}|continuation-request|repository-request)$/.exec(url.pathname);
+ if(url.origin!==FRONT||!match||!(UUID.test(match[1])||['continuation-request','repository-request'].includes(match[1]))||url.search)return json(404,'consent_route_not_found');
  if(!['GET','POST'].includes(request.method))return json(405,'method_not_allowed');
+ if(['continuation-request','repository-request'].includes(match[1])&&request.method!=='POST')return json(405,'method_not_allowed');
  const bearer=request.headers.get('authorization');
  if(!bearer||!/^Bearer\s+[^\s]{10,8192}$/i.test(bearer))return json(401,'supabase_session_required');
  if(request.method==='POST'&&request.headers.get('origin')!==FRONT)return json(403,'foreign_origin_denied');

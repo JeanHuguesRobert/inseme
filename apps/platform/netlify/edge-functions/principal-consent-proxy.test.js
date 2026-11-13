@@ -25,3 +25,22 @@ test('forwards only bearer and bounded destination, preserves JSON receipt witho
  assert.equal('cookie' in observed.options.headers,false);}
  finally{globalThis.fetch=previous;}
 });
+test('repository request is owner-authenticated POST only and forwarded without scope parameters',async()=>{
+ const url='https://jhn.baronsmariani.org/api/cop/principal-consent/repository-request';
+ assert.equal((await handler(new Request(url))).status,405);
+ assert.equal((await handler(new Request(url,{method:'POST',headers:{origin:'https://jhn.baronsmariani.org'},body:'{}'}))).status,401);
+ assert.equal((await handler(new Request(url,{method:'POST',headers:{origin:'https://evil.invalid',authorization:'Bearer some-valid-looking-session'},body:'{}'}))).status,403);
+ const original=globalThis.fetch;let seen;
+ globalThis.fetch=async(destination,options)=>{
+   seen={destination,options};
+   return new Response(JSON.stringify({ok:true,challenge_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',grants_mandate_authority:false}),{status:201,headers:{'content-type':'application/json'}});
+ };
+ try{
+   const response=await handler(new Request(url,{method:'POST',headers:{origin:'https://jhn.baronsmariani.org',authorization:'Bearer some-valid-looking-session','content-type':'application/json'},body:'{}'}));
+   assert.equal(response.status,201);
+   assert.equal(seen.destination,'https://browser.fractavolta.com/api/cop/principal-consent/repository-request');
+   assert.equal(seen.options.body,'{}');
+   assert.equal(seen.options.headers.origin,'https://jhn.baronsmariani.org');
+   assert.equal((await response.json()).grants_mandate_authority,false);
+ }finally{globalThis.fetch=original;}
+});
