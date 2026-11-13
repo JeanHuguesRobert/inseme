@@ -12,6 +12,7 @@ export default function AuthModal({
   onSpectator,
   loading,
   error,
+  notice,
   roomName,
   isUpgrading = false,
   initialMode = null,
