@@ -24,6 +24,11 @@ import {
 } from "./common/config/instanceConfig.client.js";
 import { updatePageMeta } from "./lib/meta.js";
 import { wrap, unwrap } from "./constants.js";
+import { routeRootRecoveryCallback } from "./lib/recoveryLanding.js";
+
+// Preserve the recovery callback for Supabase Auth, but render its dedicated form.
+// The legacy email template redirects to the JHN origin root.
+routeRootRecoveryCallback(window.location, window.history);
 
 // Export global pour utilisation partout sans import
 window.wrap = wrap;
