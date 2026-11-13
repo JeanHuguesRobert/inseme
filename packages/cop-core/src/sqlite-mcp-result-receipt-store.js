@@ -55,7 +55,8 @@ export function createSqliteMcpResultReceiptStore(copStore) {
           !Number.isInteger(witness.expected_generation))
         throw new Error("claim_fence_required");
       // Prevent unrelated continuation writes under a claim on another packet.
-      if (witness.packet_ref !== proposedReceipt.continuation_id)
+      if (!proposedReceipt.packet_ref ||
+          witness.packet_ref !== proposedReceipt.packet_ref)
         throw new Error("claim_packet_mismatch");
       // All coordination writers and result writers must use this same store.
       const committed = copStore.transaction((tx) => {
