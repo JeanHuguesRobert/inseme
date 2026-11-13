@@ -15,7 +15,7 @@
   command = "node scripts/check-tunnel.js && pnpm --filter platform exec vite"
   port = 8888
   targetPort = 5173
-  publish = "apps/platform/dist-jhn"
+  publish = "apps/platform/dist"
   functions = "apps/platform/netlify/functions"
 
 [functions]
