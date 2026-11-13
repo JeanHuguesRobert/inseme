@@ -2,7 +2,8 @@
 # Copy to the live Fracta2 Caddy import directory only after verifying a stable
 # public ingress (Operium #77), an existing release at /srv/www/pertitellu/current,
 # and the exact authorized Cloudflare DNS record lepp.baronsmariani.org.
-# This serves a static SPA preview. Civic mutations/auth/chat are NOT certified.
+# Public vhost intentionally serves ONLY en-preparation.html.
+# The SPA build stays private until backend tenancy and COP constraints pass.
 https://lepp.baronsmariani.org {
 	root * /srv/www/pertitellu/current
 	encode zstd gzip
@@ -19,14 +20,14 @@ https://lepp.baronsmariani.org {
 		respond "Pertitellu API not deployed on this preview" 503
 	}
 
-	# Missing immutable assets must fail as 404, not silently return index.html.
+	# Compiled SPA assets must not be public during the uncertified backend phase.
 	@assets path /assets/* /images/* /favicon* /robots.txt
 	handle @assets {
-		file_server
+		respond "Not published" 404
 	}
 
 	handle {
-		try_files {path} /index.html
+		rewrite * /en-preparation.html
 		file_server
 	}
 }

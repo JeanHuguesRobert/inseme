@@ -48,6 +48,19 @@ test("Pertitellu public hostname is updated without resurrecting abandoned lepp.
   }
 });
 
+test("public LePP landing is inert and cannot expose bundled SPA", async () => {
+  const root = path.resolve(import.meta.dirname, "../fracta");
+  const landing = await readFile(path.join(root, "en-preparation.html"), "utf8");
+  const caddy = await readFile(path.join(root, "pertitellu.caddy"), "utf8");
+  assert.match(landing, /Le Petit Parti/);
+  assert.match(landing, /En préparation/);
+  assert.match(landing, /https:\/\/lepp\.baronsmariani\.org\//);
+  assert.doesNotMatch(landing, /<script/i);
+  assert.match(caddy, /rewrite \* \/en-preparation\.html/);
+  assert.match(caddy, /respond "Not published" 404/);
+  assert.match(caddy, /backend_ready/);
+});
+
 test("pertitellu-corte profile is valid and includes all required civic briques", () => {
   const profilePath = path.resolve(import.meta.dirname, "../brique-profiles/pertitellu-corte.json");
   const profile = loadBriqueProfile(profilePath);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { cpSync } from "node:fs";
+import { cpSync, copyFileSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -111,6 +111,12 @@ async function main() {
     recursive: true,
     force: true,
   });
+  // Public facade: no JS / no direct tenant data API. The SPA bundle is private
+  // until multi-instance COP verification is independently complete.
+  copyFileSync(
+    path.join(appDirectory, "fracta", "en-preparation.html"),
+    path.join(appDirectory, "dist-fracta-preview", "en-preparation.html")
+  );
   console.log("✅ Pertitellu Corte fracta preview build complete!");
 }
 

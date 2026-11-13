@@ -18,11 +18,15 @@ by the local instance configuration.
   not a claim that consultation, Wiki, elections, chat, authentication or COP
   writes function end-to-end.
 - `pertitellu.caddy` is **versioned preparation**, not an installed vhost.
+  It serves *only* the inert, self-contained `en-preparation.html` publicly;
+  no JS bundle, no client calls to Supabase, and no direct civic actions.
+  The full SPA stays available for private acceptance testing.
   It expects a separately managed immutable release symlink
   `/srv/www/pertitellu/current`.
 - `GET /health` is strictly a **static-preview health** response. API endpoints
-  return 503 rather than impersonate a functioning backend. SPA routes return
-  `index.html`, missing immutable assets return 404. The preview is `noindex`.
+  return 503 rather than impersonate a functioning backend. Public routes
+  return `en-preparation.html`, compiled assets return 404. The public page
+  is `noindex` and the full SPA is *not* exposed by this vhost.
 - The Deno `pertitellu-server.ts` adapter is source-only here; it is not an
   installed service. Its `preview_url` is null until explicitly configured.
 - Existing database state must be reviewed before promotion: `lepp.fr` remains
