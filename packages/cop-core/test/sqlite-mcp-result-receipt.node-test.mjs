@@ -20,10 +20,11 @@ function sample(answer = "One") {
     continuation_version: "4", idempotency_key: "attempt_1:result:0",
     result_digest: hashPayload(step_result), step_result };
 }
+const PACKET_REF = "packet:judgment:ctn_sqlite";
 async function claimedControl(sqlite) {
   const coordinator = new EventStorePacketClaimCoordinator({ store: sqlite });
   const grant = await coordinator.tryClaim({
-    packetRef: "ctn_sqlite", handlerRef: "mcp:verified-worker", ttlMs: 60000,
+    packetRef: PACKET_REF, handlerRef: "mcp:verified-worker", ttlMs: 60000,
   });
   assert.equal(grant.ok, true);
   return { authenticated_actor: "mcp:verified-worker", receipt_read_authorized: true,
@@ -31,9 +32,10 @@ async function claimedControl(sqlite) {
     channel_permitted: true, claim: {
       packet_ref: grant.claim.packet_ref, claim_id: grant.claim.claim_id,
       handler_ref: grant.claim.handler_ref, epoch: grant.claim.epoch,
-      expected_generation: coordinator.inspect("ctn_sqlite").generation,
+      expected_generation: coordinator.inspect(PACKET_REF).generation,
     }, continuation: {
-      continuation_id: "ctn_sqlite", attempt_id: "attempt_1",
+      continuation_id: "ctn_sqlite", packet_ref: PACKET_REF,
+      attempt_id: "attempt_1",
       execution_binding_ref: "binding_1", version: 4, lifecycle: "suspended" },
   };
 }
@@ -108,7 +110,7 @@ test("stale handler fenced after claim release and takeover", async () => {
     });
     assert.equal(released.ok, true);
     const takeover = await coordinator.tryClaim({
-      packetRef: "ctn_sqlite", handlerRef: "mcp:replacement-worker", ttlMs: 60000,
+      packetRef: PACKET_REF, handlerRef: "mcp:replacement-worker", ttlMs: 60000,
     });
     assert.equal(takeover.ok, true);
     assert.equal(takeover.claim.epoch, stale.claim.epoch + 1);
@@ -119,9 +121,9 @@ test("stale handler fenced after claim release and takeover", async () => {
     assert.equal(denied.reason, "stale_claim");
     assert.equal(sqlite.listTopic("continuation:ctn_sqlite").length, 0);
     stale.authenticated_actor = takeover.claim.handler_ref;
-    stale.claim = { packet_ref: "ctn_sqlite", claim_id: takeover.claim.claim_id,
+    stale.claim = { packet_ref: PACKET_REF, claim_id: takeover.claim.claim_id,
       handler_ref: takeover.claim.handler_ref, epoch: takeover.claim.epoch,
-      expected_generation: coordinator.inspect("ctn_sqlite").generation };
+      expected_generation: coordinator.inspect(PACKET_REF).generation };
     const accepted = await commitMcpContinuationResult(sample(), host);
     assert.equal(accepted.ok, true);
     assert.equal(sqlite.listTopic("continuation:ctn_sqlite").length, 1);
