@@ -146,3 +146,18 @@ Source on `main` now includes:
 **Unresolved FBF blocker:** the current `createSqliteCopEventStore.append()` transaction ensures event uniqueness but does not atomically validate the **continuation claim/version** in the same transaction. The admission result is a prior snapshot: an intervening claim change could make a just-written observation stale. The result is only an **observed candidate**, never an automatic resolution, so this does not itself grant act authority. Before permitting automated continuation advancement, integrate #121's claim/CAS with the event commit, and connect canonical COP Accounting #161–164 with a durable reservation/settlement. Do not misrepresent append-only uniqueness as exactly-once execution.
 
 No connected MCP tool, browser automation, external provider account or sustained autonomous worker was activated.
+
+## 10. FBF — atomic SQLite claim/version/event commit (2026-11-13)
+
+**Implemented and source-tested.** This supersedes the unresolved *isolated SQLite pilot* limitation stated in §9 for this SQLite profile only.
+
+- `createSqliteCopEventStore.transaction(fn)` exposes a **synchronous** `BEGIN IMMEDIATE` transaction with `tx.listTopic`, `tx.eventByIdempotency` and `tx.append`. It rejects async callbacks and rolls back on failure. The existing COP Event Store remains the single storage substrate; no extra mutex, table, scheduler, or database.
+- The existing `EventStorePacketClaimCoordinator` (Inseme #121) now works with this store, projecting claims from `packet-coordination:<packet_ref>`.
+- The MCP receipt adapter requires a **trusted, explicitly provided** `control.claim` witness: `packet_ref`, `claim_id`, `handler_ref`, fencing `epoch`, and `expected_generation`. The trusted continuation supplies its own canonical `packet_ref`, which may differ from `continuation_id`. No claim metadata is trusted from the model.
+- Inside that single transaction, check for an existing idempotent receipt; otherwise re-project current claim Events, compare the expected packet generation, verify active claimant, epoch and lease expiration, then append the COP event. A stale generation, old epoch, expired claim, different packet, or missing claim is rejected **before** the result observation is committed.
+- An already persisted result receipt remains independently replayable with receipt-read authorization after the claim is released/expired; no new effect or Accounting settlement may be inferred from replay. `observed` remains distinct from `accepted` and `resolved`.
+- The commit adapter returns explicit errors `stale_claim`, `stale_packet_generation`, `claim_fence_required` or `claim_packet_mismatch`; uncertain IO outcome never receives a fabricated durable ACK.
+
+**Real tests:** Fracta2, isolated worktree, source SHA `d507a285` (or successor). Full cop-core Vitest **171/171**, SQLite receipt Node tests **5/5**, and relevant COP SQLite batch/delegated budget + kernel coordination tests **15/15** at intermediate SHA `12184bf`; full Vitest + receipt tests rerun green at `d507a285`. Tests cover actual SQLite reopen, duplicate concurrent submission, lost ACK replay, takeover fencing, stale generation, missing claim and asynchronous transaction misuse.
+
+**Boundaries not tested:** multi-node production DB/CAS, provider-side execution authorization/quotas, full transactional financial settlement, an MCP tool surfaced to conversational providers, and autonomous CPS redispatch. The SQLite profile is still a pilot; do not automatically apply its tested claim-append guarantee to PostgreSQL/Supabase or to external effects.
