@@ -93,7 +93,7 @@ export default function CopPrincipalConsentPage(){
         <dt>Actions interdites</dt><dd>{(request.proposal?.scope?.forbidden_actions||[]).join(', ')||'Non précisées'}</dd>
         {request.proposal?.scope?.repository_policy?<>
           <dt>Périmètre des dépôts</dt>
-          <dd>{request.proposal.scope.repository_policy.account} — {request.proposal.scope.repository_policy.selection} ; dépôts futurs : {request.proposal.scope.repository_policy.include_future?'inclus':'exclus'} ; vérification du dépôt cible : {request.proposal.scope.repository_policy.require_verified_target?'obligatoire':'non indiquée'}</dd>
+          <dd>{request.proposal.scope.repository_policy.provider==='github'?'GitHub — dépôts accessibles avec les identifiants délégués':`${request.proposal.scope.repository_policy.account||'Périmètre'} — ${request.proposal.scope.repository_policy.selection}`} ; dépôts futurs : {request.proposal.scope.repository_policy.include_future?'inclus':'exclus'} ; cible de l'opération : {request.proposal.scope.repository_policy.require_verified_target?'vérifiée':'non précisée'} ; permissions : {request.proposal.scope.repository_policy.ownership_check==='provider_enforced'?'contrôlées par GitHub':'selon politique du mandat'}</dd>
         </>:null}
         <dt>Expiration</dt><dd>{request.expires_at}</dd>
         <dt>Empreinte</dt><dd style={{overflowWrap:'anywhere'}}><code>{request.payload_hash}</code></dd>
