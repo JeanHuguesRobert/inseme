@@ -9,7 +9,22 @@ import { useSupabase } from "../contexts/SupabaseContext";
 import { getConfig } from "../common/config/instanceConfig.client.js";
 
 export default function JhnLandingPage() {
-  const { session, loading } = useSupabase();
+  const { session, loading, supabase } = useSupabase();
+  const [signingOut, setSigningOut] = useState(false);
+  const [authError, setAuthError] = useState("");
+  async function handleSignOut() {
+    if (signingOut || !supabase) return;
+    setSigningOut(true);
+    setAuthError("");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch {
+      setAuthError("Déconnexion impossible. Réessayez.");
+    } finally {
+      setSigningOut(false);
+    }
+  }
   const [showAuth, setShowAuth] = useState(false);
   const signedIn = Boolean(session?.user?.id);
   const name =
@@ -36,7 +51,18 @@ export default function JhnLandingPage() {
               Se connecter
             </button>
           ) : null}
+          {!loading && signedIn ? (
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="rounded-lg border border-slate-600 px-4 py-2 font-medium text-slate-100 hover:bg-slate-800 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+            >
+              {signingOut ? "Déconnexion…" : "Se déconnecter"}
+            </button>
+          ) : null}
         </div>
+        {authError ? <p role="alert" className="mb-4 text-sm text-red-300">{authError}</p> : null}
         {showAuth ? <AuthModal onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} /> : null}
         <header className="space-y-6 border-b border-slate-800 pb-12">
           <div className="inline-flex items-center rounded-full border border-emerald-800/60 bg-emerald-950/40 px-3 py-1 text-xs font-medium text-emerald-300">
