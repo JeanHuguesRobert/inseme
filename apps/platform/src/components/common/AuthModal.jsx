@@ -8,6 +8,7 @@ import { AuthModal as SharedAuthModal } from "@inseme/ui";
 export default function AuthModal({ onClose, onSuccess }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recoveryNotice, setRecoveryNotice] = useState("");
   const { refreshUser } = useCurrentUser();
 
   const handleSignInWithPassword = async (email, password) => {
@@ -30,6 +31,30 @@ export default function AuthModal({ onClose, onSuccess }) {
       onClose();
     } catch (err) {
       setError(err.message || "Erreur de connexion");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (email) => {
+    setError("");
+    setRecoveryNotice("");
+    const address = String(email || "").trim();
+    if (!address || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(address)) {
+      setError("Indiquez votre adresse email avant de demander un lien de récupération.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: resetError } = await getSupabase().auth.resetPasswordForEmail(address, {
+        // Keep the already configured/allowlisted redirect root. JHN's
+        // bootstrap routes the 'recovery' callback to /auth/reset-password.
+        redirectTo: window.location.origin,
+      });
+      if (resetError) throw resetError;
+      setRecoveryNotice("Si ce compte existe, un courriel de récupération a été envoyé. Consultez votre boîte de réception.");
+    } catch {
+      setError("Impossible de demander la récupération actuellement. Réessayez.");
     } finally {
       setLoading(false);
     }
@@ -133,8 +158,9 @@ export default function AuthModal({ onClose, onSuccess }) {
       onSignInWithProvider={handleSignInWithProvider}
       onSignInWithPassword={handleSignInWithPassword}
       onSignUp={handleSignUp}
+      onForgotPassword={handleForgotPassword}
       loading={loading}
-      error={error}
+      error={error || recoveryNotice}
     />
   );
 }
