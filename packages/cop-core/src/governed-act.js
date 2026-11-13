@@ -875,6 +875,15 @@ export function amendMandate(store, input, { verifyPrincipalApproval } = {}) {
   catch { return refuse("principal_approval_unverified"); }
   if (approval?.verified !== true || approval.principal_ref !== previous.principal_ref ||
       !approval.evidence_ref || typeof approval.evidence_ref !== "string") return refuse("principal_approval_unverified");
+  // Optional self-contained issuer evidence. Only a proven verifier can
+  // supply it; raw caller fields are never copied to a normative declaration.
+  // Legacy opaque evidence refs remain supported for non-portable policies.
+  const portableProof = approval.proof === undefined ? null : approval.proof;
+  if (portableProof !== null && (
+      !portableProof || typeof portableProof !== "object" ||
+      Array.isArray(portableProof) ||
+      JSON.stringify(portableProof).length > 16000))
+    return refuse("invalid_portable_approval_proof");
   // No user-controlled metadata can overwrite the verification provenance.
   const result = recordMandateDeclaration(store, {
     mandate_id: mandateId, version: newVersion, principal_ref: previous.principal_ref,
@@ -886,6 +895,7 @@ export function amendMandate(store, input, { verifyPrincipalApproval } = {}) {
         previous_version: previous.version, previous_event_id: previousEvent.event_id,
         reason: proposal.reason, approval_evidence_ref: approval.evidence_ref,
         approval_scheme: approval.scheme || "independently_verified",
+        ...(portableProof ? { approval_proof: structuredClone(portableProof) } : {}),
       },
     },
   });

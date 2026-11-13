@@ -43,3 +43,26 @@ test('revocation is not bypassed by an amendment',()=>{
  assert.equal(amendMandate(store,input,{verifyPrincipalApproval:approver}).error,'mandate_inactive');
  assert.equal(store.replay().filter(e=>e.payload?.kind==='MandateDeclaration').length,1);
 });
+
+
+test('verified portable proof is retained, but caller-supplied proof is ignored',()=>{
+ const store=setup();
+ const proof={kind:'fixture.portable-proof/v1',signature:'signed-test-only'};
+ const verifier=(proposal,approval)=>approval==='independent-signed-fixture'
+  ? {verified:true,principal_ref:principal,evidence_ref:'test:proof',
+      scheme:'fixture'}:{verified:false};
+ const attempt=amendMandate(store,{...input,approval_proof:{kind:'untrusted'}},
+   {verifyPrincipalApproval:verifier});
+ assert.equal(attempt.ok,true,JSON.stringify(attempt));
+ const retained=resolveMandate(store,ref).metadata.amendment;
+ assert.deepEqual(retained.approval_proof,undefined);
+ const fresh=setup();
+ const approved=amendMandate(fresh,input,{
+   verifyPrincipalApproval:(proposal,approval)=>({
+     verified:true,principal_ref:principal,evidence_ref:'test:proof',
+     scheme:'fixture',proof
+   })
+ });
+ assert.equal(approved.ok,true);
+ assert.deepEqual(resolveMandate(fresh,ref).metadata.amendment.approval_proof,proof);
+});
