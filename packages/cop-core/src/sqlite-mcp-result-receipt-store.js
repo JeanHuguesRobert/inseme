@@ -35,7 +35,10 @@ export function createSqliteMcpResultReceiptStore(copStore) {
     async appendUnique(key, event, proposedReceipt) {
       if (event?.payload?.surface !== "mcp")
         throw new Error("mcp_candidate_required");
-      // Rehash after decorating the payload; never inherit the prior hash.\n      const { payload_hash: _oldPayloadHash, ...unhashedEvent } = event;\n      const decorated = createCopEventEnvelope({\n        ...unhashedEvent,
+      // Rehash after decorating the payload; never inherit the prior hash.
+      const { payload_hash: _oldPayloadHash, ...unhashedEvent } = event;
+      const decorated = createCopEventEnvelope({
+        ...unhashedEvent,
         idempotency_key: key,
         payload: {
           ...event.payload,
