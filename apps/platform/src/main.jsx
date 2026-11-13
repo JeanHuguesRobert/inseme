@@ -29,6 +29,10 @@ import { routeRootRecoveryCallback, recoveryLanding } from "./lib/recoveryLandin
 // Preserve the recovery callback for Supabase Auth, but render its dedicated form.
 // The legacy email template redirects to the JHN origin root.
 routeRootRecoveryCallback(window.location, window.history);
+// Keep only non-secret intent flags in memory. Supabase may strip its tokens
+// asynchronously before React mounts the reset route.
+window.__JHN_RECOVERY_LANDING__ = window.location.pathname === "/auth/reset-password"
+  ? recoveryLanding(window.location) : null;
 
 // Export global pour utilisation partout sans import
 window.wrap = wrap;
