@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSupabase } from "../contexts/SupabaseContext";
 import { eraseRecoveryUrl, recoveryLanding } from "../lib/recoveryLanding.js";
+import { passwordUpdateErrorMessage } from "../lib/passwordUpdateError.js";
 
 // This route uses the already initialized instance client, never a second Auth client.
 // Determine recovery intent on mount, AFTER bootstrap has rerouted the legacy
@@ -44,8 +45,8 @@ export default function ResetPasswordPage() {
       if (updateError) throw updateError;
       setComplete(true);
       setPassword(""); setConfirm("");
-    } catch {
-      setError("La modification a échoué. Vérifiez la validité du lien ou recommencez la récupération.");
+    } catch (updateError) {
+      setError(passwordUpdateErrorMessage(updateError));
     } finally { setBusy(false); }
   }
 
