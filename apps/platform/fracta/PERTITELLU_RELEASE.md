@@ -44,9 +44,14 @@ by the local instance configuration.
    the vhost is live merely because a file exists in Git. Smoke-test using the
    desired Host locally, verify health, assets, 404 and API=503.
 5. Confirm that the actual Oracle ingress serves Fracta2 HTTPS, and that the
-   Cloudflare CNAME/A payload points to **that** working endpoint. As of the
-   2026-11-13 check, Fracta2's Oracle NIC has no directly assigned public IPv4;
-   do not assume current public `fracta.fractavolta.com` reaches the new vhost.
+   Cloudflare CNAME/A payload points to **that** working endpoint. Operium #77
+   verified on 2026-11-10 that the reserved public IPv4 `82.70.234.207` was
+   reassigned to Fracta2; public HTTPS probes on 2026-11-13 confirmed the
+   Fracta2 Caddy response at `fracta.fractavolta.com`. The Oracle instance
+   metadata still reports `publicIp: null` for its NIC, so use OCI's
+   authoritative PublicIp association and public HTTPS reality tests; do not
+   infer reachability from that metadata field alone. This does **not** prove
+   the new LePP hostname is configured, has a certificate, or resolves.
 6. Independently authorize, perform and re-read DNS and edge effects. Verify
    public NS, A/CNAME, trusted TLS, exact site identity, basic navigation and
    non-regression of neighboring vhosts. No email send or MX change.
