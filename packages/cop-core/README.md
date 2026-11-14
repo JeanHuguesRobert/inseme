@@ -309,3 +309,35 @@ possibilism values discovery. The protocol provides:
 
 For the full philosophical and practice framework, see
 [Applied Possibilism](https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/applied_possibilism.md).
+
+
+### FractaLog / COP hash-chain audit (2026-11-14)
+
+The canonical SQLite COP event store already commits a **per-topic SHA-256
+hash chain** in the same transaction as each event, with a durable
+`cop_topic_commitments` head (`seq`, `head`). FractaLog documents additionally
+carry `integrity.document_hash` and are encapsulated as COP events. This
+is **not yet a single global FractaLog chain** and it does not require
+proof-of-work, a cryptocurrency, or a separate blockchain database.
+
+`store.auditTopicCommitment(topic)` recalculates one complete chain, checks
+that event topic/sequence and payload hashes remain valid, and checks the
+FractaLog document hash when applicable. `store.auditCommitments()` checks
+every topic currently present and reports only failed topics. Both are
+read-only **methods**; opening the ordinary writable SQLite store can run
+normal schema migrations, so independently auditing an operational database
+should eventually use a dedicated read-only connection and a consistent
+snapshot. Neither method is wired to the production service yet.
+
+Tampering with or deleting an event while preserving the old commitments is
+detectable. **An attacker with write access to both the events and the stored
+head can forge an entirely new chain, delete its suffix, or delete an entire
+topic.** A complete rewrite of all event rows and all commitment rows may be
+internally consistent and is *not* detectable from this same database alone.
+
+To enforce the doctrine *the Principal cannot rewrite history*, the next
+indispensable security boundary is a **periodic externally witnessed and
+signed checkpoint** of the journal (global sequence/root or Merkle root,
+checkpoint monotonicity, independent retention and verification). Offline
+spool arrivals and concurrency also require an explicit choice of the
+canonical order. Never claim absolute inalterability from local hash chaining.

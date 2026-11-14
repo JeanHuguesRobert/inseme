@@ -6,6 +6,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { createSqliteBudgetProjection } from './sqlite-budget-projection.js';
 import { createCopEventEnvelope, validateCopEventEnvelope } from './cop-event-envelope.js';
+import { validateFractalogActRecord, FRACTALOG_ACT_RECORD_SCHEMA } from './fractalog.js';
 
 export function createSqliteCopEventStore(filename) {
   const db = new DatabaseSync(filename, { timeout: 5000 });
@@ -54,6 +55,39 @@ export function createSqliteCopEventStore(filename) {
   const insert = db.prepare('INSERT INTO cop_events(event_id,topic,seq,idem,envelope) VALUES (?,?,?,?,?)');
   const topicRows = db.prepare('SELECT envelope FROM cop_events WHERE topic=? ORDER BY seq');
   const allRows = db.prepare('SELECT envelope FROM cop_events ORDER BY topic,seq');
+  const auditTopics = db.prepare('SELECT topic FROM cop_topic_commitments UNION SELECT DISTINCT topic FROM cop_events ORDER BY topic');
+  const auditTopicRows = db.prepare('SELECT seq,envelope FROM cop_events WHERE topic=? ORDER BY seq');
+  function auditTopic(id) {
+    const head = readHead.get(id);
+    const errors = [];
+    let seq = 0, hash = '';
+    for (const row of auditTopicRows.all(id)) {
+      seq++;
+      if (row.seq !== seq) errors.push('sequence_gap_or_reordering_at:' + seq);
+      let event;
+      try { event = JSON.parse(row.envelope); }
+      catch { errors.push('malformed_envelope_at:' + seq); continue; }
+      if (event.topic?.id !== id || event.topic?.seq !== row.seq)
+        errors.push('topic_binding_mismatch_at:' + seq);
+      const validation = validateCopEventEnvelope(event, {requirePositiveSeq:true});
+      if (!validation.ok) errors.push('invalid_envelope_at:' + seq);
+      if (event.payload?.schema === FRACTALOG_ACT_RECORD_SCHEMA &&
+          !validateFractalogActRecord(event.payload).ok)
+        errors.push('fractalog_document_hash_mismatch_at:' + seq);
+      hash = `sha256:${createHash('sha256').update(hash).update(row.envelope).digest('hex')}`;
+    }
+    if (!head) errors.push('commitment_missing');
+    else if (head.seq !== seq || head.head !== hash)
+      errors.push('commitment_mismatch');
+    return {topic:id,ok:errors.length===0,events:seq,head:hash||null,
+      committed_head:head?.head||null,errors};
+  }
+  function auditCommitments() {
+    const topics = auditTopics.all().map(row=>auditTopic(row.topic));
+    return {ok:topics.every(t=>t.ok),topics_checked:topics.length,
+      events_checked:topics.reduce((n,t)=>n+t.events,0),
+      failures:topics.filter(t=>!t.ok)};
+  }
   const sealLookup=db.prepare('SELECT 1 FROM cop_sealed_budget_topics WHERE topic=?');
   const markSealed=db.prepare('INSERT OR IGNORE INTO cop_sealed_budget_topics(topic) VALUES(?)');
   // Transactional kernel shared by single writes and atomic batches.
@@ -135,6 +169,8 @@ export function createSqliteCopEventStore(filename) {
     appendBatch,
     transaction,
     topicCommitment(id) { return readHead.get(id) || null; },
+    auditTopicCommitment(id) { return auditTopic(id); },
+    auditCommitments,
     budgetProjection(topic) { return budgetProjection.get(topic); },
     seedBudgetProjection(topic,state) { return budgetProjection.seed(topic,state); },
     eventByIdempotency(key) { const row=byIdem.get(key); return row ? JSON.parse(row.envelope) : null; },
