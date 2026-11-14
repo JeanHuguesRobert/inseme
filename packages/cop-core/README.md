@@ -311,6 +311,8 @@ For the full philosophical and practice framework, see
 [Applied Possibilism](https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/applied_possibilism.md).
 
 
+**Doctrine:** [Mandats et continuité historique proportionnée](../../docs/mandates-fractalog-historical-continuity.md).
+
 ### FractaLog / COP hash-chain audit (2026-11-14)
 
 The canonical SQLite COP event store already commits a **per-topic SHA-256

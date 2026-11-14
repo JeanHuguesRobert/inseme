@@ -60,6 +60,8 @@ provenance:
 
 # COP FractaLog Profile
 
+**Decision of 2026-11-14:** [Mandats et continuité historique proportionnée](../docs/mandates-fractalog-historical-continuity.md). Preserve packet-local facts and federated projections without adding a global log or mandatory time authority.
+
 ## 1. Purpose
 
 This document defines the source-level COP profile for FractaLog.

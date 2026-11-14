@@ -52,6 +52,8 @@ This is the initial, versioned catalogue for recording acts through COP and Frac
 scope explicit before individual subsystems are instrumented. It is a profile over COP; it does not
 replace the generic COP model or make the JHN instance part of `cop-core`.
 
+**Continuity and mandate doctrine (2026-11-14):** [COP / FractaLog — Mandats et continuité historique proportionnée](mandates-fractalog-historical-continuity.md). It defines timestamped local hash chains, signed current mandates, append-only corrections and knowingly accepted residual risks.
+
 ## 1. Rule of scope
 
 Every **semantic Act** performed by a Twin, a hosted Twin, a LogicalAgent, or a handler on their
