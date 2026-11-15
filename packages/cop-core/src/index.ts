@@ -29,3 +29,4 @@ export * from "./compute-preemption.js";
 export * from "./git-safe-writeback.js";
 
 export * from "./packet-coordination.js";
+export * from "./packet-parent-continuations.js";

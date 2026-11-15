@@ -508,3 +508,52 @@ via redundant paths). The bac-à-sable scenarios (federation-demo, raix-obsolesc
 job-scheduler-stress-test) serve as executable validation of that routing model.
 
 _Generated / updated during COP stabilization and packet-switching alignment work, 2026-05-31 / 2026-06._
+
+### Distributed Promise child → parent notification (2026-11-15; #186/#187)
+
+Existing COP composition combinators (`copAll`, `copRace`, `copSequence`,
+`copAny`, `copAllSettled`, etc.) express *local* Promise-like policies. Durable
+parent visibility is now provided by
+`packages/cop-core/src/packet-parent-continuations.js`, reusing COP Events,
+Ithaca/lineage references, the canonical SQLite event store, and the existing
+COPScheduler. It introduces **no new core entity or additional scheduler**.
+
+- `linkPacketChild` records a parent→child relation by reference; older
+  `cop.continuation-next-step/v1` `child_dispatched` events already count as
+  links (no migration).
+- `reportChildStateToParent` projects each accepted, correlated child
+  transition under the parent's existing topic, with both child-result and
+  causal link receipts. Duplicate observations are harmless.
+- `reconcilePacketParentContinuations` replays on the current resident COP
+  reconciliation tick; it recovers missed notifications across restarts. It
+  optionally invokes an **existing** designated COPScheduler handler when a
+  declared `all`/`allSettled` join becomes ready. A child transition is not
+  a permission grant, a model answer, or a mandate closure.
+- `registerParentJoin`, `projectParentJoin`, `resumeParentJoin` keep the join
+  policy and resumption attempt durable. After an ambiguous handler effect,
+  the intent stays fenced for reconciliation instead of blindly executing
+  twice. A fresh process reconstructs everything from the Store.
+
+The first tests use two independent Node processes writing child completion
+receipts while the parent process is stopped, then a fresh parent process
+reconciles and calls the *real* COPScheduler, exactly once. This is a genuine
+process-level distributed-state test on one shared SQLite journal; it does
+**not** yet prove physically distinct host communication or a generic
+production parent handler resolver. Those follow-up reality tests remain part
+of #187. The existing 60-second ONA cycle in Cogentia now calls the same
+reconciliation function for the real browser/MCP parent-child journal.
+
+The second/third packets #188/#189 will apply additional Promise combinators
+and distributed cancellation *over this common notification interface*, not
+rewrite the earlier #54/#56 implementations. The `Promise.race` first-terminal
+behavior and `Promise.any` first-success behavior remain distinct.
+
+A subsequent *cross-machine* reality run used a Fracta2 child and a **ThinkPad
+Windows process** invoking its own configured SSH return to the canonical
+Fracta2 store. The parent process was offline during both child effects;
+a fresh COPScheduler resumed the parent once after journal replay, and a
+second fresh process found no further work. COP Store commitment audit was
+valid. This verifies two-machine coordination through one authoritative
+store, **not** replicated multi-primary COP storage. The recorded evidence is
+in the progress comments of
+[Inseme #187](https://github.com/JeanHuguesRobert/inseme/issues/187).
