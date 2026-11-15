@@ -7,6 +7,7 @@ import {useCallback,useEffect,useState} from 'react';
 import {useNavigate,useParams} from 'react-router-dom';
 import AuthModal from '../components/common/AuthModal';
 import {useSupabase} from '../contexts/SupabaseContext';
+import './CopPrincipalConsentPage.css';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const SHA=/^sha256:[a-f0-9]{64}$/;
 export default function CopPrincipalConsentPage(){
@@ -22,6 +23,8 @@ export default function CopPrincipalConsentPage(){
   const [receipt,setReceipt]=useState(null);
   const token=session?.access_token;
   const ratification=request?.proposal?.kind==='cop.mandate-ratification.proposal/v1';
+  const consentComplete=request?.status==='consumed';
+  const statusLabel={pending:'En attente de votre décision',approved:'Approbation enregistrée',consumed:'Traitée — consentement consommé',refused:'Refusée',expired:'Expirée'}[request?.status]||request?.status;
   const validId=UUID.test(challengeId||'');
   const endpoint=`/api/cop/principal-consent/${encodeURIComponent(challengeId||'')}`;
   const load=useCallback(async()=>{
@@ -96,12 +99,27 @@ export default function CopPrincipalConsentPage(){
         </>:null}
         <dt>Expiration</dt><dd>{request.expires_at}</dd>
         <dt>Empreinte</dt><dd style={{overflowWrap:'anywhere'}}><code>{request.payload_hash}</code></dd>
-        <dt>État</dt><dd>{request.status}</dd>
+        <dt>État</dt><dd>{statusLabel} <small>(COP : {request.status})</small></dd>
       </dl>
-      {request.status==='pending'?<div style={{display:'flex',gap:12,marginTop:16}}>
-        <button disabled={busy} type="button" onClick={()=>decide('approve')}>{ratification?'Ratifier le mandat existant':'Confirmer cette proposition'}</button>
-        <button disabled={busy} type="button" onClick={()=>decide('refuse')}>Refuser</button>
-      </div>:null}
+      {request.status==='pending'?<section className="cop-consent-decision" aria-label="Décision sur le mandat">
+        <h2>Votre décision</h2>
+        <p>Choisissez explicitement l’une des deux actions ci-dessous. Cette décision porte sur la proposition présentée ci-dessus.</p>
+        <div className="cop-consent-decision-actions">
+          <button className="cop-consent-action cop-consent-action-approve" disabled={busy} type="button" onClick={()=>decide('approve')}>
+            {busy?'Traitement en cours…':ratification?'Ratifier le mandat existant':'Approuver le mandat'}
+          </button>
+          <button className="cop-consent-action cop-consent-action-refuse" disabled={busy} type="button" onClick={()=>decide('refuse')}>
+            Refuser le mandat
+          </button>
+        </div>
+      </section>:null}
+      {consentComplete?<section className="cop-consent-resolved" role="status" aria-label="Consentement déjà traité">
+        <h2>Consentement déjà traité</h2>
+        <p>Cette demande a déjà été approuvée et consommée. Elle n’appelle aucune nouvelle décision. Pour modifier les autorisations, il faut une nouvelle proposition de mandat.</p>
+      </section>:null}
+      {request.status==='approved'?<p className="cop-consent-resolved" role="status">Approbation enregistrée. L’application éventuelle de l’amendement doit être confirmée séparément ; aucune nouvelle décision n’est attendue sur cette demande.</p>:null}
+      {request.status==='refused'?<p className="cop-consent-resolved" role="status">Demande refusée : aucune décision supplémentaire n’est attendue.</p>:null}
+      {request.status==='expired'?<p className="cop-consent-resolved" role="status">Demande expirée : aucune décision n’est possible sur cette proposition.</p>:null}
       {receipt?<p role="status">{receipt.mandate_amendment_applied===true
         ?`Décision favorable authentifiée, amendement du mandat ${receipt.mandate_ref} appliqué en ${receipt.mandate_version}. Aucun courrier envoyé par cette approbation.`
         :`Décision ${receipt.decision==='approve'?'favorable':'défavorable'} enregistrée, reçu ${receipt.confirmation_event_id}. Aucun amendement de mandat appliqué par cette décision.`}</p>:null}

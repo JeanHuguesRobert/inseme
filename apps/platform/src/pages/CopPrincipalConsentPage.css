@@ -1,0 +1,100 @@
+/*
+ * COP decisions are consequences, not ordinary paragraphs.
+ * Use a distinct action zone and two large, contrasting buttons in
+ * both light/dark global themes, including mobile and keyboard focus.
+ */
+.cop-consent-decision {
+  margin-top: 1.75rem;
+  padding: 1.4rem;
+  border: 2px solid #64748b;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.cop-consent-decision h2,
+.cop-consent-resolved h2 {
+  margin: 0 0 0.55rem;
+  font-size: 1.2rem;
+  font-weight: 750;
+  color: inherit;
+}
+
+.cop-consent-decision p {
+  margin: 0 0 1.2rem;
+  color: #334155;
+}
+
+.cop-consent-decision-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.cop-consent-action {
+  box-sizing: border-box;
+  min-height: 58px;
+  width: 100%;
+  padding: 0.85rem 1.2rem;
+  border: 2px solid transparent;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 750;
+  line-height: 1.3;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.cop-consent-action-approve {
+  background: #14532d;
+  color: #fff;
+  border-color: #14532d;
+}
+
+.cop-consent-action-approve:hover:not(:disabled) {
+  background: #166534;
+}
+
+.cop-consent-action-refuse {
+  background: #fff;
+  color: #991b1b;
+  border-color: #b91c1c;
+}
+
+.cop-consent-action-refuse:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.cop-consent-action:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 4px;
+}
+
+.cop-consent-action:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.cop-consent-resolved {
+  margin-top: 1.5rem;
+  padding: 1.1rem 1.3rem;
+  border: 2px solid #64748b;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.cop-consent-resolved p {
+  margin: 0;
+}
+
+@media (max-width: 540px) {
+  .cop-consent-decision-actions {
+    grid-template-columns: 1fr;
+  }
+  .cop-consent-decision {
+    padding: 1rem;
+  }
+}
