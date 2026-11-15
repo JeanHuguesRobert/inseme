@@ -102,26 +102,38 @@ export default function CopPrincipalConsentPage(){
     finally{setBusy(false);}
   }
   return <main style={{maxWidth:720,margin:'2rem auto',padding:'1rem'}}>
-    <h1>Consentement COP — Principal JHN</h1>
-    <p>Cette interface recueille votre décision dans votre session Supabase authentifiée. Pour une extension de mandat explicitement activable, la décision favorable peut aussi appliquer cet amendement canonique après vérification. Elle n’envoie aucun courrier et ne dispense pas des contrôles COP lors des actions futures.</p>
+    <h1>{standingDirect?'Mandat permanent JHN':'Consentement COP — Principal JHN'}</h1>
+    {!standingDirect?<p>Cette interface recueille votre décision dans votre session Supabase authentifiée. Pour une extension de mandat explicitement activable, la décision favorable peut aussi appliquer cet amendement canonique après vérification. Elle n’envoie aucun courrier et ne dispense pas des contrôles COP lors des actions futures.</p>:null}
     {standingDirect?<section>
       <p>Administration générale de Fracta2 et du ThinkPad avec le mandat
       permanent JHN, dans ses limites COP existantes. Votre session Supabase
       identifie le Principal. Aucun challenge, lien d'expiration ou deuxième
       approbation n'est nécessaire.</p>
-      {!loading&&!token?<button type="button" onClick={()=>setShowAuth(true)}>
-        Connexion Supabase
-      </button>:null}
+      {!loading&&!token?<div role="status">
+        <p><strong>Supabase : non connecté. Aucun mandat n'a été validé.</strong></p>
+        <button type="button" onClick={()=>setShowAuth(true)}>Se connecter</button>
+      </div>:null}
       {!!token&&!receipt&&!error?<p role="status">
         {busy?'Activation du mandat en cours…':'Vérification de votre session Supabase…'}
       </p>:null}
-      {!!token&&error?<button type="button" disabled={busy}
-        onClick={activateStanding}>Réessayer l’activation</button>:null}
-      {receipt?.already_authorized_in_scope?
-        <p role="status">Le mandat général est déjà actif : {receipt.mandate_version}.</p>:null}
-      {receipt?.mandate_amendment_applied?
-        <p role="status">Mandat général {receipt.mandate_version} activé et
-        inscrit dans COP.</p>:null}
+      {!!token&&error?<p role="alert">
+        Session Supabase non reconnue ou opération indisponible :
+        le mandat n'a pas été validé.
+        <button type="button" disabled={busy}
+          onClick={activateStanding}>Réessayer</button>
+      </p>:null}
+      {receipt?.already_authorized_in_scope||receipt?.mandate_amendment_applied?
+        <div role="status">
+          <p><strong>Supabase : connexion vérifiée. Mandat validé.</strong></p>
+          <dl>
+            <dt>Mandat</dt><dd>{receipt.mandate_ref}</dd>
+            <dt>Version active</dt><dd>{receipt.mandate_version}</dd>
+            <dt>Exécution autorisée</dt>
+            <dd>Mode normal sur Fracta2 et le ThinkPad, selon le mandat COP.</dd>
+            <dt>Traçabilité</dt>
+            <dd>{receipt.approval_evidence_ref||'Déjà enregistré dans COP'}</dd>
+          </dl>
+        </div>:null}
     </section>:null}
     {creating?<section>
       {repositoryCreating?<p>Étendre le mandat permanent de John aux opérations Git et GitHub, pour les dépôts accessibles avec les identifiants délégués. GitHub contrôle les permissions. Les interdictions et le budget COP existants sont conservés.</p>:<p>Ajouter uniquement la capacité <code>continuation.resolve</code> au mandat de John, sans modifier les interdictions ni le budget. La demande et la décision sont vérifiées avec votre session Supabase JHN.</p>}
