@@ -44,3 +44,29 @@ test('repository request is owner-authenticated POST only and forwarded without 
    assert.equal((await response.json()).grants_mandate_authority,false);
  }finally{globalThis.fetch=original;}
 });
+
+test('direct standing activation requires only same-origin Supabase-authenticated POST, no challenge',async()=>{
+ const u='https://jhn.baronsmariani.org/api/cop/principal-consent/standing-apply';
+ assert.equal((await handler(new Request(u))).status,405);
+ assert.equal((await handler(new Request(u,{method:'POST',headers:{origin:'https://jhn.baronsmariani.org'},body:'{}'}))).status,401);
+ assert.equal((await handler(new Request(u,{method:'POST',headers:{origin:'https://bad.invalid',authorization:'Bearer valid-session-placeholder'},body:'{}'}))).status,403);
+ const previous=globalThis.fetch;
+ let observed;
+ globalThis.fetch=async(dest,opts)=>{
+   observed={dest,opts};
+   return new Response(JSON.stringify({ok:true,mandate_amendment_applied:true,mandate_version:'v5'}),{
+     status:200,headers:{'content-type':'application/json'}});
+ };
+ try{
+   const response=await handler(new Request(u,{method:'POST',headers:{
+     origin:'https://jhn.baronsmariani.org',
+     authorization:'Bearer valid-session-placeholder'
+   },body:'{}'}));
+   assert.equal(response.status,200);
+   assert.equal((await response.json()).mandate_version,'v5');
+   assert.equal(observed.dest,'https://browser.fractavolta.com/api/cop/principal-consent/standing-apply');
+   assert.equal(observed.opts.body,'{}');
+   assert.equal(observed.opts.headers.authorization,'Bearer valid-session-placeholder');
+   assert.equal('cookie' in observed.opts.headers,false);
+ }finally{globalThis.fetch=previous;}
+});

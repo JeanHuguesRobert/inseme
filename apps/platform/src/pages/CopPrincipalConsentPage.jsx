@@ -3,7 +3,7 @@
  * Requires trusted same-origin canonical consent backend. No local override,
  * fake issuer, fallback approval, or effect execution on browser errors.
  */
-import {useCallback,useEffect,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import {useNavigate,useParams} from 'react-router-dom';
 import AuthModal from '../components/common/AuthModal';
 import {useSupabase} from '../contexts/SupabaseContext';
@@ -15,12 +15,16 @@ export default function CopPrincipalConsentPage(){
   const navigate=useNavigate();
   const repositoryCreating=challengeId==='repository';
   const creating=challengeId==='continuation'||repositoryCreating;
+  // Owner-authenticated direct activation: no expiring challenge or
+  // second confirmation. A deliberate POST is the Principal's one act.
+  const standingDirect=challengeId==='standing';
   const {session,loading}=useSupabase();
   const [showAuth,setShowAuth]=useState(false);
   const [request,setRequest]=useState(null);
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
   const [receipt,setReceipt]=useState(null);
+  const directAttempted=useRef(false);
   const token=session?.access_token;
   const ratification=request?.proposal?.kind==='cop.mandate-ratification.proposal/v1';
   const consentComplete=request?.status==='consumed';
@@ -54,6 +58,33 @@ export default function CopPrincipalConsentPage(){
     }catch(e){setError(e.message||'consent_service_unavailable');}
     finally{setBusy(false);}
   }
+  async function activateStanding(){
+    if(!standingDirect||!token||busy)return;
+    setBusy(true);setError('');
+    try{
+      const response=await fetch('/api/cop/principal-consent/standing-apply',{
+        method:'POST',headers:{Authorization:`Bearer ${token}`,
+          'Content-Type':'application/json',Accept:'application/json'},
+        body:'{}',cache:'no-store'
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok||data.ok!==true||
+         !(data.already_authorized_in_scope===true||
+           data.mandate_amendment_applied===true))
+        throw Error(data.error||`HTTP ${response.status}`);
+      setReceipt(data);
+    }catch(e){setError(e.message||'standing_activation_unavailable');}
+    finally{setBusy(false);}
+  }
+  // The Principal already requested this exact mandate. Opening the stable
+  // route is the one intentional act: after current Supabase authentication
+  // the server applies the deterministic mandate and returns its receipt.
+  // There is no approval button, temporary challenge or confirmation step.
+  useEffect(()=>{
+    if(!standingDirect||loading||!token||directAttempted.current)return;
+    directAttempted.current=true;
+    void activateStanding();
+  },[standingDirect,loading,token]);
   async function decide(decision){
     if(!request||request.status!=='pending'||!token||busy||!validId)return;
     setBusy(true);setError('');
@@ -73,6 +104,25 @@ export default function CopPrincipalConsentPage(){
   return <main style={{maxWidth:720,margin:'2rem auto',padding:'1rem'}}>
     <h1>Consentement COP — Principal JHN</h1>
     <p>Cette interface recueille votre décision dans votre session Supabase authentifiée. Pour une extension de mandat explicitement activable, la décision favorable peut aussi appliquer cet amendement canonique après vérification. Elle n’envoie aucun courrier et ne dispense pas des contrôles COP lors des actions futures.</p>
+    {standingDirect?<section>
+      <p>Administration générale de Fracta2 et du ThinkPad avec le mandat
+      permanent JHN, dans ses limites COP existantes. Votre session Supabase
+      identifie le Principal. Aucun challenge, lien d'expiration ou deuxième
+      approbation n'est nécessaire.</p>
+      {!loading&&!token?<button type="button" onClick={()=>setShowAuth(true)}>
+        Connexion Supabase
+      </button>:null}
+      {!!token&&!receipt&&!error?<p role="status">
+        {busy?'Activation du mandat en cours…':'Vérification de votre session Supabase…'}
+      </p>:null}
+      {!!token&&error?<button type="button" disabled={busy}
+        onClick={activateStanding}>Réessayer l’activation</button>:null}
+      {receipt?.already_authorized_in_scope?
+        <p role="status">Le mandat général est déjà actif : {receipt.mandate_version}.</p>:null}
+      {receipt?.mandate_amendment_applied?
+        <p role="status">Mandat général {receipt.mandate_version} activé et
+        inscrit dans COP.</p>:null}
+    </section>:null}
     {creating?<section>
       {repositoryCreating?<p>Étendre le mandat permanent de John aux opérations Git et GitHub, pour les dépôts accessibles avec les identifiants délégués. GitHub contrôle les permissions. Les interdictions et le budget COP existants sont conservés.</p>:<p>Ajouter uniquement la capacité <code>continuation.resolve</code> au mandat de John, sans modifier les interdictions ni le budget. La demande et la décision sont vérifiées avec votre session Supabase JHN.</p>}
       {!loading&&!token?<button type="button" onClick={()=>setShowAuth(true)}>Connexion</button>:null}
@@ -81,8 +131,8 @@ export default function CopPrincipalConsentPage(){
       </button>:null}
       {receipt?.already_authorized?<p role="status">Cette capacité figure déjà dans le mandat.</p>:null}
     </section>:null}
-    {!creating&&!validId?<p role="alert">Référence de demande invalide.</p>:null}
-    {!creating&&!loading&&!token?<><p>Connectez-vous avec votre compte Supabase JHN pour consulter la proposition.</p><button type="button" onClick={()=>setShowAuth(true)}>Connexion</button></>:null}
+    {!creating&&!standingDirect&&!validId?<p role="alert">Référence de demande invalide.</p>:null}
+    {!creating&&!standingDirect&&!loading&&!token?<><p>Connectez-vous avec votre compte Supabase JHN pour consulter la proposition.</p><button type="button" onClick={()=>setShowAuth(true)}>Connexion</button></>:null}
     {showAuth?<AuthModal onClose={()=>setShowAuth(false)} onSuccess={()=>{setShowAuth(false);load();}}/>:null}
     {error?<p role="alert">Service de consentement indisponible ou demande refusée : {error}</p>:null}
     {request?<section aria-label="Proposition COP" style={{border:'1px solid #888',borderRadius:8,padding:'1rem',marginTop:'1rem'}}>
