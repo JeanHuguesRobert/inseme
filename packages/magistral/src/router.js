@@ -362,10 +362,13 @@ export function createRouter({
           typeof clientId === "string" && /^[a-zA-Z0-9_.:-]{1,128}$/.test(clientId)) {
         headers["X-Client-Request-Id"] = clientId;
       }
-      const callChain = payload._cogentia_call_chain;
+      const callChain = payload._continuation_call_chain || payload._cogentia_call_chain;
       if (node.no_fallback_on_error === true &&
           typeof callChain === "string" && /^[a-zA-Z0-9_,.:/-]{1,256}$/.test(callChain)) {
-        headers["X-Cogentia-Call-Chain"] = callChain;
+        headers["X-Continuation-Call-Chain"] = callChain;
+        // Preserve the pre-existing Cogentia integration during adoption.
+        if (payload._cogentia_call_chain === callChain)
+          headers["X-Cogentia-Call-Chain"] = callChain;
       }
 
       const nodePayload = { ...payload, model: node.model };
