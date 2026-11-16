@@ -175,3 +175,54 @@ test("routes a declared local adapter without requiring an HTTP URL", async () =
   const body = await response.json();
   assert.equal(body.choices[0].message.content, "ACP synthesis");
 });
+
+
+test("does not fall back after a CPS browser result times out", async () => {
+  let fallbackCalls = 0;
+  const router = createRouter({
+    map: [
+      {id: "browser", model: "chatgpt-browser", tier: "chatgpt-browser",
+        no_fallback_on_error: true},
+      {id: "fallback", model: "fallback-model", tier: "fallback"},
+    ],
+    log: () => {},
+    invokeNode: async ({node}) => {
+      if (node.id === "browser") {
+        return new Response(JSON.stringify({error: {code: "cps_result_pending"}}), {
+          status: 504, headers: {"Content-Type": "application/json"},
+        });
+      }
+      fallbackCalls++;
+      return new Response(JSON.stringify({choices: [{message: {content: "fallback"}}]}), {
+        status: 200,
+      });
+    },
+  });
+  const response = await router.route({model: "chatgpt-browser",
+    messages: [{role: "user", content: "long task"}]}, "chatgpt-browser");
+  assert.equal(response.status, 504);
+  assert.equal((await response.json()).error.code, "cps_result_pending");
+  assert.equal(fallbackCalls, 0);
+});
+
+test("does not fall back on an unknown browser provider transport outcome", async () => {
+  let fallbackCalls = 0;
+  const router = createRouter({
+    map: [
+      {id: "browser", model: "chatgpt-browser", tier: "chatgpt-browser",
+        no_fallback_on_error: true},
+      {id: "fallback", model: "fallback-model", tier: "fallback"},
+    ],
+    log: () => {},
+    invokeNode: async ({node}) => {
+      if (node.id === "browser") throw new Error("connection closed after dispatch");
+      fallbackCalls++;
+      return new Response("fallback");
+    },
+  });
+  const response = await router.route({model: "chatgpt-browser",
+    messages: [{role: "user", content: "long task"}]}, "chatgpt-browser");
+  assert.equal(response.status, 502);
+  assert.equal((await response.json()).error.code, "provider_outcome_unknown");
+  assert.equal(fallbackCalls, 0);
+});
