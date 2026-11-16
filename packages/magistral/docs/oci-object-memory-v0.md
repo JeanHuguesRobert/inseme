@@ -48,9 +48,11 @@ A read-only Tenant Manager Subscription API query on 2026-11-16 returned
 one active OCI subscription with payment_model=PAYG. **The account is billed
 as Pay As You Go**, even though Oracle includes a no-charge Object Storage
 allowance for some usage. This is NOT a free-only account and excess usage
-may be billed. The empty, private Standard bucket named magistral-objects
+may be billed. The initially empty, private Standard bucket magistral-objects
 was created in the dedicated MagistralMemory compartment on 2026-11-16.
-No object was uploaded during the provisioning phase.
+One 77-byte synthetic immutable object was uploaded after the quota,
+IAM and persistent request budget were verified. The upload and subsequent
+retrieval passed exact SHA-256 and byte-for-byte verification.
 
 For this reason:
 - createOciObjectProvider() defaults to billing="unknown" and rejects both
@@ -111,8 +113,46 @@ Read-only reality probe (from the Inseme monorepo root on Fracta2):
       console.log(await provider.probe(), provider.billing);
     '
 
-The remote adapter's live namespace probe was exercised and returned success,
-while reporting billing="unknown"; it performed no bucket or object mutation.
+The remote adapter's read-only namespace probe succeeded while initially
+billing="unknown". After compartment quota, exact-instance IAM, and durable
+monthly request limits were configured, a separate explicitly attested
+production invocation put and retrieved one 77-byte synthetic object.
+This does not confer a general right to charge the PAYG account.
+
+## Opt-in zero-extra-charge object CLI
+
+An ordinary CLI can use a remote profile instead of a local directory, or
+require BOTH local and Oracle copies. The profile is local to the Fracta2
+operator (not a credential file and never automatically published):
+
+    {
+      "schema": "magistral.oci-object-profile/v1",
+      "bucket": "magistral-objects",
+      "region": "eu-marseille-1",
+      "auth": "instance_principal",
+      "python": "/home/ubuntu/.local/share/magistral/oci-cli-venv/bin/python",
+      "freeTierVerified": true,
+      "monthlyRequestCap": 500,
+      "requestBudgetDb": "/home/ubuntu/.local/state/magistral/oci-object-storage-requests.sqlite",
+      "maxObjectBytes": 67108864
+    }
+
+In this PAYG tenancy, freeTierVerified means the operator has
+**explicitly verified the bounded use of an applicable free allowance**,
+not that the entire account is Always Free-only. Do not copy this
+attestation to a different tenancy, region or budget without verification.
+
+From the Inseme repository root, with the private profile file on Fracta2:
+
+    node packages/magistral/bin/magistral-objects.js put ./document.pdf --oci-config /home/ubuntu/.config/magistral/oci-memory.json
+
+    node packages/magistral/bin/magistral-objects.js get sha256:<digest> ./recovered.pdf --oci-config /home/ubuntu/.config/magistral/oci-memory.json
+
+To demand TWO independently located copies in a single PUT, add
+--store /absolute/local-directory to the same command. If the remote
+provider cannot satisfy the enforced cost policy, the command refuses
+success rather than silently reducing the required replica count.
+
 
 ## Future activation checklist
 
@@ -124,9 +164,14 @@ while reporting billing="unknown"; it performed no bucket or object mutation.
    objects in that bucket only, never overwrite or delete.
 5. DONE: SQLite monthly upper-bound reservation mechanism; cap 500 for
    initial Fracta2 runtime; offline concurrent tests pass.
-6. PENDING: prove bounded real PUT, idempotent PUT and GET using the
-   configured ledger, and verify instance IAM propagation.
-7. PENDING: independent second provider, cost-usage monitoring, and
+6. DONE: bounded real 77-byte PUT and repeated GET succeeded through
+   the Magistral adapter; SHA-256 and byte-for-byte verification passed.
+   The shared November 2026 request ledger recorded 9 conservative
+   reservations out of 500 after this proof. The dynamic group IAM
+   permissions were sufficient for the operation.
+7. PENDING: test idempotent PUT on an already existing object and a
+   representative public Corpus PDF without modifying its Git source.
+8. PENDING: independent second provider, cost-usage monitoring, and
    future retention. Do not rewrite Git history as part of activation.
 
 PAYG warning: even with the local 500-call ledger and hard 8GB storage

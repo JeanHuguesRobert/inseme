@@ -75,10 +75,12 @@ requires no external account, and does not rewrite Git or remove originals.
 ## Deferred deliberately
 
 - Native S3 GET/PUT/HEAD/LIST, Google Drive and Dropbox.
-- Oracle Object Storage is now an OPTIONAL experimental adapter with a
-  successful read-only namespace probe. It remains billing-unknown and
-  cannot perform GET/PUT until externally attested. See
-  [OCI provider v0](oci-object-memory-v0.md).
+- Oracle Object Storage is now an OPTIONAL experimental adapter. Its
+  normal configuration remains billing-unknown until the operator
+  explicitly attests bounded use of the free PAYG allowance, a strict
+  storage quota, and a durable request-budget ledger. A 77-byte
+  real-object PUT/GET has been verified under those constraints.
+  See [OCI provider v0](oci-object-memory-v0.md).
 - Total-directory budget, reserved free disk, streaming, content encryption,
   geographic failure-domain assertions, persistent health and object locking.
 - Materialization from recipes, CPS scheduling or semantic memory.

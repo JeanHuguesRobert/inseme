@@ -37,8 +37,11 @@ cognitive memory, retention and CPS decisions. This is not an S3 server.
 See [Object Memory v0](docs/object-memory-v0.md) for the local provider,
 verified replicas, strict zero monetary budget, examples and limitations.
 A separate [Oracle Object Storage adapter](docs/oci-object-memory-v0.md)
-is available for read-only namespace probing. Real object operations are
-blocked by default until the account's free-tier status is verified.
+is available for read-only namespace probing and, when explicitly
+configured with hard storage quota and persistent request budget, object
+PUT/GET. Real object operations remain blocked by default. The standalone
+magistral-objects CLI accepts --oci-config <absolute-path> only when
+the operator explicitly opts into this bounded PAYG allowance.
 
 
 **MAGISTRAL** is an open technological initiative designed to restore user sovereignty by breaking

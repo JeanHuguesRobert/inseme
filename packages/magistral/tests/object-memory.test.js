@@ -169,3 +169,40 @@ test("CLI puts and retrieves the exact original bytes without overwriting target
     cwd: path.resolve("."),
   }));
 });
+
+test("CLI refuses unverified remote custody before writing even to local replicas", async (t) => {
+  const root = await temp(t);
+  const source = path.join(root, "source");
+  const store = path.join(root, "local");
+  const config = path.join(root, "oci-profile.json");
+  await writeFile(source, sample);
+  await writeFile(config, JSON.stringify({
+    schema: "magistral.oci-object-profile/v1",
+    bucket: "magistral-objects",
+    region: "eu-marseille-1",
+    auth: "instance_principal",
+    python: "/nonexistent/python",
+    freeTierVerified: false,
+  }));
+  const cli = path.resolve("bin/magistral-objects.js");
+  await assert.rejects(
+    execute(process.execPath, [cli, "put", source, "--store", store, "--oci-config", config]),
+  );
+  const { access } = await import("node:fs/promises");
+  await assert.rejects(access(store));
+});
+
+test("CLI rejects malformed and relative OCI configurations without network access", async (t) => {
+  const root = await temp(t);
+  const source = path.join(root, "source");
+  const profile = path.join(root, "bad-profile.json");
+  await writeFile(source, sample);
+  await writeFile(profile, JSON.stringify({ schema: "unknown-profile" }));
+  const cli = path.resolve("bin/magistral-objects.js");
+  await assert.rejects(
+    execute(process.execPath, [cli, "put", source, "--oci-config", profile]),
+  );
+  await assert.rejects(
+    execute(process.execPath, [cli, "put", source, "--oci-config", "relative-file.json"]),
+  );
+});
