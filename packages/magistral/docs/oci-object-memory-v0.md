@@ -169,10 +169,29 @@ success rather than silently reducing the required replica count.
    The shared November 2026 request ledger recorded 9 conservative
    reservations out of 500 after this proof. The dynamic group IAM
    permissions were sufficient for the operation.
-7. PENDING: test idempotent PUT on an already existing object and a
-   representative public Corpus PDF without modifying its Git source.
-8. PENDING: independent second provider, cost-usage monitoring, and
+7. DONE: a repeated PUT of the same 77-byte object returned a verified
+   custody receipt without overwriting its SHA-256 key. A 32,504,501-byte
+   public municipal deliberations PDF was uploaded, recovered through the
+   deployed CLI, and confirmed byte-for-byte identical to the original
+   file in Survey. The original Git file was preserved.
+8. DONE: standalone lightweight CLI installed on Fracta2:
+   /home/ubuntu/.local/bin/magistral-objects (approximately 48 KiB
+   independent JavaScript/Python source bundle); operator profile is
+   local at /home/ubuntu/.config/magistral/oci-memory.json (0600).
+9. PENDING: an independent second provider, cost-usage monitoring, and
    future retention. Do not rewrite Git history as part of activation.
+
+The November 2026 shared SQLite ledger shows 21 *reserved* operations
+against the configured limit of 500 after the final idempotent PUT.
+Reservations are intentionally conservative upper bounds, not Oracle's
+own metering totals. This budget does not control unrelated OCI callers.
+
+Public Corpus proof object:
+- identity sha256:eed30795fb39dcf08968e828c7088d2948646963ca631fa65441ec8a6e0f73b9
+- exact size 32,504,501 bytes
+- source: survey/public/docs/officiel/mairie-corte_deliberations_2025-07-01_downloads-1919.pdf
+- OCI copy verified through private bucket; Git original untouched.
+
 
 PAYG warning: even with the local 500-call ledger and hard 8GB storage
 quota, no complete zero-billing guarantee exists for unrelated cloud
