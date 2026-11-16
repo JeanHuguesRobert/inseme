@@ -456,6 +456,11 @@ async function boot() {
         payload = {...payload,messages:[{role:"user",content:payload.prompt}],stream:false};
         delete payload.prompt;
       }
+      const clientRequestId = req.headers.get("x-client-request-id");
+      if (typeof clientRequestId === "string" &&
+          /^[a-zA-Z0-9_.:-]{1,128}$/.test(clientRequestId)) {
+        payload._client_request_id = clientRequestId;
+      }
       const tier = payload.model || "fast";
 
       try {
