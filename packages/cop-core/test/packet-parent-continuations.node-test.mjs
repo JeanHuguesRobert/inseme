@@ -5,6 +5,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createSqliteCopEventStore} from '../src/sqlite-cop-event-store.js';
+import {changePacketTemperature} from '../src/packet-temperature.js';
 import {COPScheduler} from '../../cop-kernel/src/scheduler.js';
 import {COPBus} from '../../cop-kernel/src/bus.js';
 import {PACKET_PARENT_PROFILE,linkPacketChild,reportChildStateToParent,
@@ -513,5 +514,54 @@ test('distributed all/allSettled retain declared INPUT order, not alphabetic or 
     assert.equal(p.ready,true);
     assert.deepEqual(p.children.map(c=>c.child_ref),[B,A]);
   }
+ }finally{s.close()}
+});
+
+
+test('parked parent receives child result events but never resumes until explicitly warmed',async()=>{
+ const s=createSqliteCopEventStore(':memory:');try{
+  setup(s);
+  assert.equal(changePacketTemperature(s,{packet_ref:P,
+    temperature:'parked',transition_id:'park-before-results'}).ok,true);
+  event(s,A,'child-a-finished-while-parent-parked','completed','completed');
+  event(s,B,'child-b-finished-while-parent-parked','completed','completed');
+  let calls=0;
+  const execute=async()=>{calls++;return {ok:true,receipt_ref:'handler:should-run-once'}};
+  const parked=await reconcilePacketParentContinuations(s,{execute});
+  assert.equal(parked.notified,2);
+  assert.equal(parked.resumed,0);
+  assert.equal(parked.parents_deferred,1);
+  assert.equal(projectParentJoin(s,{parent_ref:P,join_id:'join-01'}).ready,true);
+  assert.equal((await resumeParentJoin(s,{parent_ref:P,
+    join_id:'join-01',execute})).status,'temperature_deferred');
+  assert.equal(calls,0);
+  assert.equal(s.listTopic(P).filter(e=>e.payload?.phase==='resume_intent').length,0);
+  assert.equal(changePacketTemperature(s,{packet_ref:P,
+    temperature:'active',transition_id:'resume-only-parent'}).ok,true);
+  const resumed=await reconcilePacketParentContinuations(s,{execute});
+  assert.equal(resumed.notified,0);
+  assert.equal(resumed.resumed,1);
+  assert.equal(calls,1);
+  assert.equal((await reconcilePacketParentContinuations(s,{execute})).resumed,0);
+  assert.equal(s.auditCommitments().ok,true);
+ }finally{s.close()}
+});
+
+test('parked parent does not dispatch fallback child or reserve a dispatch intent',async()=>{
+ const s=createSqliteCopEventStore(':memory:');try{
+  setup(s);
+  assert.equal(registerParentJoin(s,{parent_ref:P,join_id:'fallback-parked',
+    mode:'fallback'}).ok,true);
+  assert.equal(changePacketTemperature(s,{packet_ref:P,temperature:'suspended',
+    transition_id:'suspend-before-next-child'}).ok,true);
+  let calls=0;
+  const dispatch=async()=>{calls++;return {ok:true,receipt_ref:'handler:next'}};
+  const result=await reconcilePacketParentContinuations(s,{dispatchNext:dispatch});
+  assert.equal(result.next_dispatches,0);
+  assert.equal(result.parents_deferred,1);
+  assert.equal((await dispatchNextParentChild(s,{parent_ref:P,
+    join_id:'fallback-parked',dispatch})).status,'temperature_deferred');
+  assert.equal(calls,0);
+  assert.equal(s.listTopic(P).filter(e=>e.payload?.phase==='next_child_dispatch_intent').length,0);
  }finally{s.close()}
 });

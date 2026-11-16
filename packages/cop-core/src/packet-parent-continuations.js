@@ -9,6 +9,7 @@
  * projects the same notifications after process restart or missed wake.
  */
 import {createHash} from 'node:crypto';
+import {projectPacketTemperature} from './packet-temperature.js';
 
 export const PACKET_PARENT_PROFILE='cop.packet-parent-continuation/v1';
 const LINK='child_linked',CHANGED='child_state_changed',WAIT='join_wait',
@@ -392,6 +393,10 @@ export async function dispatchNextParentChild(store,{parent_ref,join_id,dispatch
   const claim=store.transaction(tx=>{
     if(tx.eventByIdempotency(receiptKey))return {status:'already_dispatched'};
     if(tx.eventByIdempotency(intentKey))return {status:'needs_reconciliation'};
+    // Cooling and fork/join state share the same BEGIN IMMEDIATE boundary.
+    // Do not reserve a new external dispatch while the parent is parked.
+    if(!projectPacketTemperature(tx,{packet_ref:parent_ref}).runnable)
+      return {status:'temperature_deferred'};
     const current=projectParentJoin(tx,{parent_ref,join_id});
     if(current.ready||current.next_child_ref!==child_ref)
       return {status:'next_changed'};
@@ -403,7 +408,8 @@ export async function dispatchNextParentChild(store,{parent_ref,join_id,dispatch
     return {status:'reserved',view:current};
   });
   if(!claim.ok)return failure('next_child_intent_failed');
-  if(claim.value.status!=='reserved')return {ok:claim.value.status==='already_dispatched',
+  if(claim.value.status!=='reserved')return {
+    ok:['already_dispatched','temperature_deferred'].includes(claim.value.status),
     status:claim.value.status};
   let outcome;
   try{outcome=await dispatch({parent_ref,join_id,child_ref,
@@ -433,6 +439,10 @@ export async function resumeParentJoin(store,{parent_ref,join_id,execute}={}){
   const claim=store.transaction(tx=>{
     if(tx.eventByIdempotency(receiptKey))return {status:'already_resumed'};
     if(tx.eventByIdempotency(intentKey))return {status:'needs_reconciliation'};
+    // A returned child is observable during suspension, but no parent
+    // continuation may be dispatched until its own barrier is lifted.
+    if(!projectPacketTemperature(tx,{packet_ref:parent_ref}).runnable)
+      return {status:'temperature_deferred'};
     const current=projectParentJoin(tx,{parent_ref,join_id});
     if(!current.ready)return {status:'waiting'};
     const record=tx.append(fact({topic:parent_ref,phase:INTENT,id:intentKey,
@@ -442,7 +452,9 @@ export async function resumeParentJoin(store,{parent_ref,join_id,execute}={}){
     return {status:'reserved',projection:current};
   });
   if(!claim.ok)return failure('resume_intent_failed');
-  if(claim.value.status!=='reserved')return {ok:claim.value.status==='already_resumed',status:claim.value.status};
+  if(claim.value.status!=='reserved')return {
+    ok:['already_resumed','temperature_deferred'].includes(claim.value.status),
+    status:claim.value.status};
   let outcome;
   try{outcome=await execute(claim.value.projection)}
   catch{return failure('needs_reconciliation')}
@@ -489,13 +501,19 @@ export async function reconcilePacketParentContinuations(store,{execute=null,
     return failure('invalid_parent_reconciliation');
   const allParents=listLinkedPacketParents(store,{limit:1000});
   let notified=0,resumed=0,waiting=0,needs_reconciliation=0,
-    cancellation_requests=0,next_dispatches=0;
+    cancellation_requests=0,next_dispatches=0,parents_deferred=0;
   for(const parent_ref of allParents.slice(0,max_parents)){
     const check=reconcileParentChildStates(store,{parent_ref,max_events:max_child_events});
     if(!check.ok)return {...check,notified,resumed};
     notified+=check.notifications;
     const joins=store.listTopic(parent_ref).filter(e=>
       e.payload?.profile===PACKET_PARENT_PROFILE&&e.payload.phase===WAIT);
+    if(joins.length&&!projectPacketTemperature(store,{packet_ref:parent_ref}).runnable){
+      // The child notifications above are still durable and inspectable.
+      // Suppress ALL scheduling effects while the parent is cold, including
+      // advancing fallback/sequence and speculative race cancellation.
+      parents_deferred++;waiting+=joins.length;continue;
+    }
     for(const join of joins){
       const state=projectParentJoin(store,{parent_ref,join_id:join.payload.join_id});
       if(!state.ready){
@@ -524,7 +542,7 @@ export async function reconcilePacketParentContinuations(store,{execute=null,
     }
   }
   return {ok:needs_reconciliation===0,notified,resumed,waiting,cancellation_requests,
-    next_dispatches,needs_reconciliation,
+    next_dispatches,needs_reconciliation,parents_deferred,
     parents:allParents.length,parents_scanned:Math.min(allParents.length,max_parents),
     parent_overflow:allParents.length>max_parents};
 }

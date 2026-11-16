@@ -745,3 +745,30 @@ claim and the other receives `PACKET_BUSY`. A deterministic interleaving
 pauses a packet after a grant but before handler execution and verifies
 *zero* resume events, *zero* handler effects and release of the stale claim.
 A separate test refuses heartbeat renewal after cooling and accepts release.
+
+### FBF: a child result cannot wake a parked parent (#190/#194, 2026-11-16)
+
+When COP runs its existing `reconcilePacketParentContinuations` tick, incoming
+child results remain observable on the parent topic **even if the parent is
+suspended, parked or archived**. But no `join_wait` may trigger parent
+resumption, sequential/fallback child dispatch, or race loser cancellation
+while the parent's effective temperature is not active. This gate is part of
+the common COP reconciliation logic, not just the optional Cogentia pull
+adapter, so historical consumers inherit the same behavior.
+
+Direct `resumeParentJoin` and `dispatchNextParentChild` independently validate
+the parent's temperature under the **same BEGIN IMMEDIATE** transaction that
+would record a resume/dispatch intent. They return `temperature_deferred`
+without creating an intent when blocked. After an explicit `Resume(parent)`,
+replay finds previously returned children, applies its existing join policy,
+and invokes the designated continuation **once**; the children remain cold
+until separately resumed. Parent and child temperature is never conflated
+with completion of the Principal's mandate.
+
+Regression tests verify: two children finish while their parent is parked;
+two notifications are retained, **zero** parent handler invocations and
+**zero** speculative resume intents occur; `Resume(parent)` later triggers
+one join. A parked fallback parent cannot send the next child or commit a
+dispatch intent. This is also necessary for the Distributed Work Frontier
+(Cogentia `scripts/lib/continuation-pull.js`), which uses this canonical
+parent reconciler after child execution.
