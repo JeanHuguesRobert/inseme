@@ -649,3 +649,62 @@ success, and check that late workers still observe `aborted=false` by default
 while an explicit cancellation policy changes the signal. These tests guard
 against accidentally restoring legacy race/any/all coupling or silently
 changing the public Promise semantics of a CPS Task.
+
+### Packet temperature, hierarchy and retention (#190/#191/#192/#193; 2026-11-16)
+
+COP work has **three independent dimensions**: the packet's business lifecycle
+(`draft`, `dispatched`, `solved`, `returned`, ...), its **processing temperature**
+(`active`, `suspended`, `parked`, `archived`), and its **retention** level
+(`full`, `compacted`, `tombstone`, eventually purgeable *only if never admitted*).
+A `deleted` event is an operational tombstone, **not erasure of prior events**.
+
+Implementation: `packages/cop-core/src/packet-temperature.js` reuses the
+existing COP SQLite Event Store; no new database, scheduler or queue. It derives
+parent/child links from existing `cop.packet-parent-continuation/v1 child_linked`
+and `cop.continuation-next-step/v1 child_dispatched` facts. Transitions and
+inherited cooling markers are **atomic**, reading the current lineage under
+the same `BEGIN IMMEDIATE` transaction used for the append-only events.
+
+- `changePacketTemperature(P,suspended|parked|archived)` cools P and every
+  descendant, preserving any descendant that was already *colder*.
+- `changePacketTemperature(P,active)` resumes **P only**. Descendants remain
+  suspended/parked/archived until separately resumed. Children born while P
+  was parked are also frozen before P warms; this avoids accidental unpark.
+- `projectPacketTemperature(P)` computes effective temperature through *all*
+  ancestors, including shared-parent graphs. An independent colder ancestor
+  always blocks an otherwise-active child.
+- `projectTemperatureReadyCandidates(refs)` is a **temperature-only** queue
+  projection. It cannot grant capabilities, mandate permission or PacketClaim;
+  the existing scheduler still owns dispatch and claim validation.
+- COPScheduler accepts an **optional generic `admissionResolver`**, checked
+  before publishing a continuation resume or invoking its handler. A deferred
+  continuation remains pending instead of disappearing on its triggering
+  event. This hook must be wired by the actual production host; the default
+  COPScheduler remains unchanged where no gate is configured. For irreversible
+  effects, revalidate under the **real dispatch claim/epoch boundary**:
+  a read-only early gate alone cannot defeat a concurrent cold transition.
+- `deletePacketLogically` appends a `tombstone`, requires explicit disposal
+  of live descendants, and keeps all prior receipts, provenance and result
+  refs intact. It deliberately does NOT call `PacketStore.deletePacket`.
+- `purgeUnpublishedDraft` may physically delete only an **exclusive local
+  staging draft** under the `draft:` namespace for which no canonical topic,
+  parent/child relation, subject, or event exists. This is not a generally
+  safe distributed GC; concurrent staging writes require separate fencing.
+- Physical `archivePacket()` now verifies the cold copy's identity, lineage,
+  payload and yield before deleting the active object. If copying, reading or
+  verification fails, the active source remains intact. Restore likewise
+  checks its copied payload and preserves the archival source.
+
+The first tests include: hierarchical suspend+selective resume, nested and
+multiple-parent barriers, children linked during parking, stable command
+idempotency, SQLite process restart, persisted results after archive, rejected
+canonical-draft purge, deletion with partial work traces preserved, broken
+archive writes, corrupted archive copies, and the **real COPScheduler** with
+an opt-in admission callback. No production packet was suspended, archived or
+deleted during this development. Production FractaScheduler admission and
+cross-node claim fencing remain the specific next integration step, **not**
+additional packet types or another work queue service.
+
+`handler.park` in Cogentia's Cognitive Packet Switching paper suspends one
+handler's participation only; `packet.park` is a temperature transition on
+work itself. The two are intentionally distinct.

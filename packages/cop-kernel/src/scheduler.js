@@ -27,6 +27,9 @@ export class COPScheduler {
     this.packetClaimCoordinator = options.packetClaimCoordinator || null;
     this.packetClaimCoordinatorResolver = options.packetClaimCoordinatorResolver || null;
     this.coordinationResolver = options.coordinationResolver || null;
+    // Host-supplied generic readiness gate: can project COP temperature,
+    // dependencies, authority etc. Does NOT create a second queue.
+    this.admissionResolver = options.admissionResolver || null;
     this.pending = new Map(); // continuationId -> { continuation, registeredAt, timeoutId? }
     this.topicBuses = new Map(); // topicId -> SubBus (per-topic isolation for Fractanet)
     this.unsubscribe = null;
@@ -117,12 +120,16 @@ export class COPScheduler {
     packetClaimCoordinator = null,
     packetClaimCoordinatorResolver = null,
     coordinationResolver = null,
+    // Updating a handler must not accidentally disable a preconfigured
+    // readiness/suspension gate.
+    admissionResolver = this.admissionResolver,
   } = {}) {
     this.handlerResolver = handlerResolver;
     this.readOnlyStore = readOnlyStore;
     this.packetClaimCoordinator = packetClaimCoordinator;
     this.packetClaimCoordinatorResolver = packetClaimCoordinatorResolver;
     this.coordinationResolver = coordinationResolver;
+    this.admissionResolver = admissionResolver;
     return this;
   }
 
@@ -202,8 +209,8 @@ export class COPScheduler {
             }
           : {};
         // Matching event arrived → resume
-        await this._performResumption(cont, event, reason, payload);
-        this.pending.delete(id);
+        const dispatch=await this._performResumption(cont,event,reason,payload);
+        if(!dispatch.deferred)this.pending.delete(id);
       }
     }
   }
@@ -225,11 +232,10 @@ export class COPScheduler {
       }
 
       if (reason) {
-        await this._performResumption(cont, null, reason);
-
+        const dispatch=await this._performResumption(cont,null,reason);
+        if(dispatch.deferred)continue;
         const entry = this.pending.get(id);
         if (entry?.timeoutId) clearTimeout(entry.timeoutId);
-
         this.pending.delete(id);
       }
     }
@@ -268,6 +274,20 @@ export class COPScheduler {
       } else {
         finalContinuation = markMaxRetriesReached(continuation);
         resumeReason = "max-retries-exhausted";
+      }
+    }
+
+    // Before ANY resume publication or handler invocation, check the host's
+    // current eligibility projection. A cold packet must not wake because
+    // some external event arrived. The host may use existing COP temperature
+    // and mandate projections; execution still needs its normal claims and
+    // effect-bound checks at the actual dispatch boundary.
+    if(this.admissionResolver){
+      const admission=await this.admissionResolver(finalContinuation,{
+        triggeringEvent,reason:resumeReason,payload});
+      if(admission!==true&&admission?.admitted!==true){
+        return {continuation:finalContinuation,deferred:true,
+          status:'deferred',reason:admission?.reason||'work_not_admitted'};
       }
     }
 

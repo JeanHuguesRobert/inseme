@@ -1,4 +1,5 @@
 import type { CognitivePacket, PacketPlacement } from "./packet.js";
+import { hashPayload } from "./cop-event-envelope.js";
 
 /**
  * Common interface for storage backends capable of holding Cognitive Packets.
@@ -536,21 +537,31 @@ export async function archivePacket(
   activeStore: PacketStore,
   archiveStore: PacketStore
 ): Promise<{ archivedPacket: CognitivePacket; archivePlacement: PacketPlacement }> {
+  if(activeStore.store_id===archiveStore.store_id)
+    throw new Error('archive_target_must_differ_from_active_store');
   const packet = await activeStore.getPacket(packet_id);
   if (!packet) {
     throw new Error(`Packet ${packet_id} not found in active store ${activeStore.store_id}`);
   }
-
-  const archivePlacement = await archiveStore.savePacket(packet);
-  const archivedPacket = (await archiveStore.getPacket(packet_id))!;
-
-  // Remove hot copy
-  await activeStore.deletePacket(packet_id);
-
-  return {
-    archivedPacket,
-    archivePlacement,
+  // No loss of results or history: placement metadata may change between
+  // stores, but the actual packet identity, lineage, yields and payload MUST
+  // round-trip before the operational copy can be removed.
+  const content = (value: CognitivePacket) => {
+    const {placements: _placements,...payload}=value;
+    return payload;
   };
+  // An archived object must not keep a dangling active primary placement.
+  const archivePlacement = await archiveStore.savePacket({
+    ...packet,placements:(packet.placements||[]).map(p=>({...p,is_primary:false})),
+  });
+  const archivedPacket = await archiveStore.getPacket(packet_id);
+  if (!archivedPacket || archivedPacket.packet_id !== packet_id ||
+      hashPayload(content(archivedPacket)) !== hashPayload(content(packet))) {
+    throw new Error('archive_copy_not_verified_source_preserved');
+  }
+  const removed = await activeStore.deletePacket(packet_id);
+  if (!removed) throw new Error('archive_source_cleanup_not_confirmed');
+  return { archivedPacket, archivePlacement };
 }
 
 /**
@@ -566,9 +577,27 @@ export async function restorePacket(
     throw new Error(`Packet ${packet_id} not found in archive store ${archiveStore.store_id}`);
   }
 
-  const activePlacement = await targetActiveStore.savePacket(packet);
-  const restoredPacket = (await targetActiveStore.getPacket(packet_id))!;
-
+  // Restore is an active placement: promote this target to primary, rather
+  // than propagating the (intentionally non-primary) cold archive placement.
+  const activePlacement = await targetActiveStore.savePacket({
+    ...packet,
+    placements:[
+      ...(packet.placements||[]).filter(p=>p.store_id!==targetActiveStore.store_id)
+        .map(p=>({...p,is_primary:false})),
+      {store_id:targetActiveStore.store_id,store_kind:targetActiveStore.store_kind,
+        locator:`${targetActiveStore.store_id}#${packet_id}`,
+        synchronized_at:new Date().toISOString(),is_primary:true},
+    ],
+  });
+  const restoredPacket = await targetActiveStore.getPacket(packet_id);
+  const comparable=(value:CognitivePacket)=>{
+    const {placements: _placements,...content}=value;
+    return content;
+  };
+  if(!restoredPacket || restoredPacket.packet_id!==packet_id ||
+     hashPayload(comparable(restoredPacket))!==hashPayload(comparable(packet))) {
+    throw new Error('restored_copy_not_verified_archive_preserved');
+  }
   return {
     restoredPacket,
     activePlacement,

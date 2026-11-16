@@ -124,6 +124,9 @@ export function createSqliteCopEventStore(filename) {
     db.exec('BEGIN IMMEDIATE');
     try {
       const tx = {
+        // Existing canonical events under the same BEGIN IMMEDIATE lock:
+        // needed for atomic hierarchical barriers versus concurrent forks.
+        replay() { return allRows.all().map(r => JSON.parse(r.envelope)); },
         listTopic(id) { return topicRows.all(id).map(r => JSON.parse(r.envelope)); },
         eventByIdempotency(key) {
           const row = byIdem.get(key);
