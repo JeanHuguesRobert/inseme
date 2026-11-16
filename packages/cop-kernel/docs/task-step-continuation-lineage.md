@@ -557,3 +557,64 @@ valid. This verifies two-machine coordination through one authoritative
 store, **not** replicated multi-primary COP storage. The recorded evidence is
 in the progress comments of
 [Inseme #187](https://github.com/JeanHuguesRobert/inseme/issues/187).
+
+### Distributed Promise branch operators and cooperative cancellation (#188/#189, 2026-11-16)
+
+The same `packet-parent-continuations.js` event projector now supports
+`then`, `catch`, `finally`, `all`, `allSettled`, `race`, `any`, `quorum`,
+`fallback`, and `sequence` without changing or replacing the existing local
+combinators in `composition.ts` / `copComposition.js`:
+
+- `race` chooses **first terminal event observed in the canonical COP
+  journal** (success *or* failure), never first lexical child ID or first
+  success. For multiple results buffered while the parent is offline, the
+  reconciler orders them by the canonical store `recorded_at` timestamp before
+  projecting them into the parent's topic. Equal-time events have a stable
+  event ID tie-break. This is the observable control-plane order, not a claim
+  about simultaneous arrival times on different remote clocks.
+- `any` chooses first successful terminal result; it fails only after every
+  child is terminal and none succeeded. `quorum` resolves when enough successes
+  arrive or rejects when the remaining branches cannot reach its threshold.
+- `then` invokes its next handler only after success; `catch` only after
+  failure; `finally` on either. The join projection exposes `handler_phase` so
+  the existing COPScheduler/handler determines whether to execute or propagate
+  the original result. The eventual handler execution still requires a
+  designated COP continuation and applicable authority.
+- `fallback` and `sequence` retain the **declared branch order** (unlike a
+  parallel join) and expose `next_child_ref`. The existing resident tick may
+  invoke `dispatchNextParentChild` with an approved handler; dispatch is fenced
+  by a durable intent and receipt. After an unknown external outcome, it does
+  **not** repeat the dispatch without reconciliation.
+- `cancel_remaining` is **explicitly opt-in**. Standard `Promise.race` and
+  `Promise.any` do NOT cancel pending losers by default. The parent posts an
+  idempotent `cancel_requested` event on a child topic when its configured
+  policy has settled; that is a **request**, not evidence of a stopped worker.
+  The child handler can discover it with
+  `listPendingChildCancellationRequests` and publish an actual cooperative
+  acknowledgment via `acknowledgeChildCancellation`. A completed child cannot
+  be rewritten as cancelled. Late results remain in the append-only journal.
+
+FBF: actual kernel `handler_completed` states `failed` and `cancelled` must be
+terminal, not misclassified as progress; acknowledgment replay must be
+idempotent; a now-completed worker must not be sent an obsolete STOP command.
+Tests include independently restarted Node workers, exact-once fallback and
+sequence child dispatch, races buffered during parent downtime, request/ack
+across restarts, a late winner and a failed cancellation acknowledgment.
+
+**Reality Test on two machines** (central journal, no replicated stores):
+Fracta2 recorded the first successful race branch; a fresh parent selected it,
+called the real COPScheduler once and wrote the cancel request to the other
+child's journal. The ThinkPad Windows host received the pending request over
+its existing SSH return channel and issued the cooperative acknowledgment.
+A restarted parent then observed `completed` + `cancelled`, with no second
+resume or cancellation request and a valid journal commitment audit. That
+proves intermachine coordination and acknowledgment, not forced termination
+of an arbitrary third-party provider process.
+
+**Remaining integration:** a general production child worker must poll or
+subscribe to its own cancel topic and actually stop work when possible; a
+parent with `join_wait` needs a configured runnable continuation handler for
+`then`/`catch`/`finally` and `dispatchNext`. Those callbacks are generic
+existing COPScheduler/handler integrations, not invented permissions, and
+should be added only with a real executor contract/reality test. B/C do not
+imply multi-primary Store replication or unlimited cancellation powers.

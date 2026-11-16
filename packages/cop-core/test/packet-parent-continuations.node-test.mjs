@@ -9,7 +9,9 @@ import {COPScheduler} from '../../cop-kernel/src/scheduler.js';
 import {COPBus} from '../../cop-kernel/src/bus.js';
 import {PACKET_PARENT_PROFILE,linkPacketChild,reportChildStateToParent,
   reconcileParentChildStates,registerParentJoin,projectParentJoin,resumeParentJoin,
-  listLinkedPacketParents,reconcilePacketParentContinuations}
+  listLinkedPacketParents,reconcilePacketParentContinuations,
+  dispatchNextParentChild,requestChildCancellation,acknowledgeChildCancellation,
+  listPendingChildCancellationRequests}
   from '../src/packet-parent-continuations.js';
 const P='continuation:ctn_parent_001';
 const A='continuation:ctn_child_a_001';
@@ -238,5 +240,262 @@ test('one reconciliation pass finds existing parent/child links and resumes only
   assert.equal(calls,1);
   assert.deepEqual(listLinkedPacketParents(s),[P]);
   assert.equal(s.auditCommitments().ok,true);
+ }finally{s.close()}
+});
+
+
+test('then / catch / finally use one persistent Promise branch and propagate nonmatching outcomes',()=>{
+ for(const mode of ['then','catch','finally']){
+  for(const outcome of ['completed','failed']){
+   const s=createSqliteCopEventStore(':memory:');try{
+    assert.equal(linkPacketChild(s,{parent_ref:P,child_ref:A}).ok,true);
+    assert.equal(registerParentJoin(s,{parent_ref:P,join_id:mode,mode}).ok,true);
+    event(s,A,mode+':'+outcome,'completed',outcome);
+    reconcileParentChildStates(s,{parent_ref:P});
+    const j=projectParentJoin(s,{parent_ref:P,join_id:mode});
+    assert.equal(j.ready,true);
+    assert.equal(j.status,outcome==='completed'?'completed':'failed');
+    assert.equal(j.handler_phase,mode==='finally'?'finally':
+      mode==='then'&&outcome==='completed'?'then':
+      mode==='catch'&&outcome==='failed'?'catch':'propagate');
+    assert.equal(j.winner_child_ref,null);
+   }finally{s.close()}
+  }
+ }
+});
+
+test('race settles on first COP-observed terminal failure; any waits for first success',()=>{
+ const s=createSqliteCopEventStore(':memory:');try{
+  setup(s);
+  assert.equal(registerParentJoin(s,{parent_ref:P,join_id:'race1',mode:'race'}).ok,true);
+  assert.equal(registerParentJoin(s,{parent_ref:P,join_id:'any1',mode:'any'}).ok,true);
+  // Create B first despite alphabetical topic order A before B.
+  event(s,B,'b-failed-first','completed','failed');
+  reconcileParentChildStates(s,{parent_ref:P});
+  let race=projectParentJoin(s,{parent_ref:P,join_id:'race1'});
+  assert.equal(race.ready,true);assert.equal(race.status,'failed');
+  assert.equal(race.winner_child_ref,B);
+  assert.equal(projectParentJoin(s,{parent_ref:P,join_id:'any1'}).ready,false);
+  event(s,A,'a-success-after','completed','completed');
+  reconcileParentChildStates(s,{parent_ref:P});
+  race=projectParentJoin(s,{parent_ref:P,join_id:'race1'});
+  assert.equal(race.winner_child_ref,B);
+  const any=projectParentJoin(s,{parent_ref:P,join_id:'any1'});
+  assert.equal(any.ready,true);assert.equal(any.status,'completed');
+  assert.equal(any.winner_child_ref,A);
+  assert.equal(s.listTopic(A).some(e=>e.payload?.phase==='cancel_requested'),false);
+ }finally{s.close()}
+});
+
+test('any rejects after all failures and quorum succeeds early or detects impossibility',()=>{
+ for(const kind of ['quorum_success','quorum_impossible','any_failed']){
+  const s=createSqliteCopEventStore(':memory:');try{
+   const C='continuation:ctn_child_c_001';
+   for(const child_ref of [A,B,C])assert.equal(linkPacketChild(s,{parent_ref:P,child_ref}).ok,true);
+   const type=kind==='any_failed'?'any':'quorum';
+   assert.equal(registerParentJoin(s,{parent_ref:P,join_id:kind,mode:type,
+     quorum:type==='quorum'?2:null}).ok,true);
+   const states=kind==='quorum_success'?[['a','completed'],['b','completed']]:
+     kind==='quorum_impossible'?[['a','failed'],['b','blocked']]:
+     [['a','failed'],['b','blocked'],['c','cancelled']];
+   for(const [which,state] of states){
+    event(s,{a:A,b:B,c:C}[which],kind+which,'completed',state);
+   }
+   reconcileParentChildStates(s,{parent_ref:P});
+   const j=projectParentJoin(s,{parent_ref:P,join_id:kind});
+   assert.equal(j.ready,true);
+   assert.equal(j.status,kind==='quorum_success'?'completed':'failed');
+   assert.equal(j.expected,3);
+   assert.equal(j.successes,kind==='quorum_success'?2:0);
+  }finally{s.close()}
+ }
+});
+
+test('fallback and sequence retain declared child order, never choose a later step prematurely',()=>{
+ for(const mode of ['fallback','sequence']){
+  const s=createSqliteCopEventStore(':memory:');try{
+   setup(s);
+   assert.equal(registerParentJoin(s,{parent_ref:P,join_id:mode,mode,child_refs:[B,A]}).ok,true);
+   assert.equal(projectParentJoin(s,{parent_ref:P,join_id:mode}).next_child_ref,B);
+   // A may have returned early, but it is second in the declared program.
+   event(s,A,mode+'-a-early','completed','completed');
+   reconcileParentChildStates(s,{parent_ref:P});
+   assert.equal(projectParentJoin(s,{parent_ref:P,join_id:mode}).ready,false);
+   assert.equal(projectParentJoin(s,{parent_ref:P,join_id:mode}).next_child_ref,B);
+   event(s,B,mode+'-b-later','completed',mode==='fallback'?'failed':'completed');
+   reconcileParentChildStates(s,{parent_ref:P});
+   const r=projectParentJoin(s,{parent_ref:P,join_id:mode});
+   assert.equal(r.ready,true);assert.equal(r.status,'completed');
+   if(mode==='fallback')assert.equal(r.winner_child_ref,A);
+   assert.equal(r.next_child_ref,null);
+  }finally{s.close()}
+ }
+});
+
+test('cooperative cancel is requested only when explicit, remains pending until handler acknowledges',async()=>{
+ const s=createSqliteCopEventStore(':memory:');try{
+  setup(s);
+  assert.equal(registerParentJoin(s,{parent_ref:P,join_id:'race-cancel',mode:'race',
+    cancel_remaining:true}).ok,true);
+  const blocked=requestChildCancellation(s,{parent_ref:P,join_id:'race-cancel',child_ref:B});
+  assert.equal(blocked.status,'cancellation_not_admitted_by_join');
+  event(s,A,'a-race-winner','completed','completed');
+  let observed=await reconcilePacketParentContinuations(s);
+  assert.equal(observed.cancellation_requests,1);
+  assert.equal(observed.notified,1);
+  assert.equal(listPendingChildCancellationRequests(s,{child_ref:B}).length,1);
+  assert.equal(projectParentJoin(s,{parent_ref:P,join_id:'race-cancel'}).winner_child_ref,A);
+  assert.equal(projectParentJoin(s,{parent_ref:P,join_id:'race-cancel'}).children[1].state,'pending');
+  observed=await reconcilePacketParentContinuations(s);
+  assert.equal(observed.cancellation_requests,0);
+  const ack=acknowledgeChildCancellation(s,{parent_ref:P,join_id:'race-cancel',
+    child_ref:B,handler_receipt_ref:'handler:b:stopped'});
+  assert.equal(ack.status,'cancel_acknowledged');
+  assert.equal(acknowledgeChildCancellation(s,{parent_ref:P,join_id:'race-cancel',
+    child_ref:B,handler_receipt_ref:'handler:b:stopped'}).duplicate,true);
+  assert.equal(listPendingChildCancellationRequests(s,{child_ref:B}).length,0);
+  observed=await reconcilePacketParentContinuations(s);
+  assert.equal(observed.notified,1);
+  const parent=projectParentJoin(s,{parent_ref:P,join_id:'race-cancel'});
+  assert.equal(parent.winner_child_ref,A);
+  assert.equal(parent.children[1].state,'cancelled');
+  assert.equal(s.auditCommitments().ok,true);
+ }finally{s.close()}
+});
+
+test('late completion remains visible but cannot be renamed a successful cancellation',async()=>{
+ const s=createSqliteCopEventStore(':memory:');try{
+  setup(s);
+  assert.equal(registerParentJoin(s,{parent_ref:P,join_id:'race-late',mode:'race',
+    cancel_remaining:true}).ok,true);
+  event(s,A,'a-late-winner','completed','completed');
+  await reconcilePacketParentContinuations(s);
+  event(s,B,'b-late-finished','completed','completed');
+  assert.equal(acknowledgeChildCancellation(s,{parent_ref:P,join_id:'race-late',
+    child_ref:B,handler_receipt_ref:'handler:b:stop-attempt'}).status,'child_already_terminal');
+  await reconcilePacketParentContinuations(s);
+  const p=projectParentJoin(s,{parent_ref:P,join_id:'race-late'});
+  assert.equal(p.winner_child_ref,A);assert.equal(p.children[1].state,'completed');
+  assert.equal(p.ready,true);
+  assert.equal(s.listTopic(B).filter(e=>e.payload?.phase==='cancel_requested').length,1);
+  assert.equal(listPendingChildCancellationRequests(s,{child_ref:B}).length,0);
+  assert.equal(s.auditCommitments().ok,true);
+ }finally{s.close()}
+});
+
+test('cancellation across a process restart keeps one request and one handler acknowledgment',async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'cop-distributed-cancel-'));
+ const db=join(dir,'journal.sqlite');
+ try{
+  let s=createSqliteCopEventStore(db);setup(s);
+  assert.equal(registerParentJoin(s,{parent_ref:P,join_id:'cancel-restart',mode:'race',
+    cancel_remaining:true}).ok,true);
+  event(s,A,'winner:crash','completed','completed');
+  assert.equal((await reconcilePacketParentContinuations(s)).cancellation_requests,1);
+  s.close();
+  const code=`import {createSqliteCopEventStore} from ${JSON.stringify(new URL('../src/sqlite-cop-event-store.js',import.meta.url).href)};import {acknowledgeChildCancellation} from ${JSON.stringify(new URL('../src/packet-parent-continuations.js',import.meta.url).href)}; const s=createSqliteCopEventStore(process.argv[1]);try{const r=acknowledgeChildCancellation(s,{parent_ref:process.argv[2],join_id:'cancel-restart',child_ref:process.argv[3],handler_receipt_ref:'remote:stop:confirmed'});if(!r.ok)throw Error(r.status);}finally{s.close()}`;
+  const r=spawnSync(process.execPath,['--input-type=module','-e',code,db,P,B],
+    {encoding:'utf8',timeout:10000});assert.equal(r.status,0,r.stderr);
+  s=createSqliteCopEventStore(db);
+  try{
+   assert.equal((await reconcilePacketParentContinuations(s)).notified,1);
+   assert.equal((await reconcilePacketParentContinuations(s)).cancellation_requests,0);
+   assert.equal(projectParentJoin(s,{parent_ref:P,join_id:'cancel-restart'}).children[1].state,'cancelled');
+  }finally{s.close()}
+ }finally{rmSync(dir,{recursive:true,force:true})}
+});
+
+
+test('fallback dispatches one next child after failure, then resumes parent exactly once',async()=>{
+ const d=mkdtempSync(join(tmpdir(),'cop-fallback-durable-')),file=join(d,'cop.sqlite');
+ try{
+  let s=createSqliteCopEventStore(file);
+  for(const child_ref of [A,B])assert.equal(linkPacketChild(s,{parent_ref:P,child_ref}).ok,true);
+  assert.equal(registerParentJoin(s,{parent_ref:P,join_id:'fallback-flow',mode:'fallback',
+    child_refs:[B,A]}).ok,true);
+  let dispatches=0,resumptions=0;
+  const invoke=async({child_ref})=>{dispatches++;return {ok:true,receipt_ref:'handler:send:'+child_ref}};
+  let check=await reconcilePacketParentContinuations(s,{dispatchNext:invoke});
+  assert.equal(check.next_dispatches,1);assert.equal(dispatches,1);
+  check=await reconcilePacketParentContinuations(s,{dispatchNext:invoke});
+  assert.equal(check.next_dispatches,0);assert.equal(dispatches,1);
+  event(s,B,'fallback-first-fails','completed','failed');
+  check=await reconcilePacketParentContinuations(s,{dispatchNext:invoke});
+  assert.equal(check.next_dispatches,1);assert.equal(dispatches,2);
+  s.close();s=createSqliteCopEventStore(file);
+  event(s,A,'fallback-second-succeeds','completed','completed');
+  check=await reconcilePacketParentContinuations(s,{dispatchNext:invoke,
+    execute:async({view})=>{resumptions++;
+      assert.equal(view.winner_child_ref,A);
+      return {ok:true,receipt_ref:'scheduler:fallback-finished'};}});
+  assert.equal(check.resumed,1);
+  assert.equal(resumptions,1);
+  const rerun=await reconcilePacketParentContinuations(s,{dispatchNext:invoke,
+    execute:async()=>{resumptions++;throw Error('duplicate')}});
+  assert.equal(rerun.resumed,0);assert.equal(resumptions,1);
+  assert.equal(dispatches,2);
+  assert.equal(s.auditCommitments().ok,true);
+  s.close();
+ }finally{rmSync(d,{recursive:true,force:true})}
+});
+
+test('a crashed next-child transport never silently re-dispatches a duplicate',async()=>{
+ const s=createSqliteCopEventStore(':memory:');try{
+  setup(s);assert.equal(registerParentJoin(s,{parent_ref:P,join_id:'seq-ambiguous',
+    mode:'sequence',child_refs:[A,B]}).ok,true);
+  let calls=0;
+  const first=await dispatchNextParentChild(s,{parent_ref:P,join_id:'seq-ambiguous',
+    dispatch:async()=>{calls++;throw Error('unknown delivery')}});
+  assert.equal(first.status,'needs_reconciliation');
+  const again=await dispatchNextParentChild(s,{parent_ref:P,join_id:'seq-ambiguous',
+    dispatch:async()=>{calls++;return {ok:true,receipt_ref:'incorrect:retry'}}});
+  assert.equal(again.status,'needs_reconciliation');assert.equal(calls,1);
+  assert.equal(s.auditCommitments().ok,true);
+ }finally{s.close()}
+});
+
+test('sequence waits for each ordered step, executes only next and fails on an intermediate rejection',async()=>{
+ const s=createSqliteCopEventStore(':memory:');try{
+  for(const child_ref of [A,B])assert.equal(linkPacketChild(s,{parent_ref:P,child_ref}).ok,true);
+  assert.equal(registerParentJoin(s,{parent_ref:P,join_id:'sequence-flow',
+    mode:'sequence',child_refs:[B,A]}).ok,true);
+  const dispatched=[];
+  const opts={dispatchNext:async({child_ref})=>{
+    dispatched.push(child_ref);return {ok:true,receipt_ref:'John:'+child_ref};}};
+  assert.equal((await reconcilePacketParentContinuations(s,opts)).next_dispatches,1);
+  assert.deepEqual(dispatched,[B]);
+  event(s,B,'sequence-b-completed','completed','completed');
+  assert.equal((await reconcilePacketParentContinuations(s,opts)).next_dispatches,1);
+  assert.deepEqual(dispatched,[B,A]);
+  event(s,A,'sequence-a-failed','completed','failed');
+  const state=await reconcilePacketParentContinuations(s,{...opts,
+    execute:async({view})=>{assert.equal(view.status,'failed');
+      return {ok:true,receipt_ref:'parent:failed-propagation'};}});
+  assert.equal(state.resumed,1);
+  assert.equal(state.next_dispatches,0);
+  assert.equal(dispatched.length,2);
+ }finally{s.close()}
+});
+
+test('Promise.race durable outcome follows authoritative COP recording order rather than child name',()=>{
+ const s=createSqliteCopEventStore(':memory:');try{
+  setup(s);
+  assert.equal(registerParentJoin(s,{parent_ref:P,join_id:'race-reordering',mode:'race'}).ok,true);
+  const eventAt=(ref,key,status,at)=>{
+   const r=s.append({topic_id:ref,event_type:'cop.event/v1',actor_id:'agent:remote',
+    subject_ref:ref,visibility:'restricted',epistemic_status:'decided',
+    idempotency_key:key,recorded_at:at,
+    payload:{profile:'cop.continuation-dispatch/v1',phase:'handler_completed',
+      parent_packet_status:status}});
+   assert.equal(r.ok,true);
+  };
+  // The SQLite replay groups by topic A then B. B was canonically recorded
+  // earlier, so B MUST win after the parent starts and reconciles both.
+  eventAt(A,'a-recorded-later','completed','2026-11-15T22:01:02.000Z');
+  eventAt(B,'b-recorded-earlier','failed','2026-11-15T22:01:01.000Z');
+  assert.equal(reconcileParentChildStates(s,{parent_ref:P}).notifications,2);
+  const result=projectParentJoin(s,{parent_ref:P,join_id:'race-reordering'});
+  assert.equal(result.winner_child_ref,B);
+  assert.equal(result.status,'failed');
  }finally{s.close()}
 });
