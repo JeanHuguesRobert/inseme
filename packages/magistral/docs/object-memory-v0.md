@@ -74,7 +74,11 @@ requires no external account, and does not rewrite Git or remove originals.
 
 ## Deferred deliberately
 
-- Native S3 GET/PUT/HEAD/LIST, remote storage adapters, Google Drive and Dropbox.
+- Native S3 GET/PUT/HEAD/LIST, Google Drive and Dropbox.
+- Oracle Object Storage is now an OPTIONAL experimental adapter with a
+  successful read-only namespace probe. It remains billing-unknown and
+  cannot perform GET/PUT until externally attested. See
+  [OCI provider v0](oci-object-memory-v0.md).
 - Total-directory budget, reserved free disk, streaming, content encryption,
   geographic failure-domain assertions, persistent health and object locking.
 - Materialization from recipes, CPS scheduling or semantic memory.
