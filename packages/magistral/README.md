@@ -28,6 +28,16 @@ status: working-paper
 
 > **Agnostic Arbitration Layer for Large Language Models.**
 
+## Object Memory (experimental, local and zero-billing)
+
+Alongside inference, Magistral can now supply provider-neutral byte custody
+using the SHA-256 object identity already used by COP. Cogentia still owns
+cognitive memory, retention and CPS decisions. This is not an S3 server.
+
+See [Object Memory v0](docs/object-memory-v0.md) for the local provider,
+verified replicas, strict zero monetary budget, examples and limitations.
+
+
 **MAGISTRAL** is an open technological initiative designed to restore user sovereignty by breaking
 provider silos. It defines a strict standard for separating model capabilities, network access, and
 decision logic.
