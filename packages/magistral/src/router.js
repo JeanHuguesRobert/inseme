@@ -335,7 +335,13 @@ export function createRouter({
    * @returns {Promise<Response>}
    */
   async function route(payload, tier = "fast") {
-    const sequence = buildRoutingSequence(map, tier, registry);
+    // A designated non-fallback provider is a pinned execution target.
+    // Even when disabled/exhausted, never silently replace its possibly
+    // in-flight continuation with another model.
+    const pinned = (Array.isArray(map) ? map : []).filter(n =>
+      n.no_fallback_on_error === true && (n.tier === tier || n.model === payload.model));
+    const planned = buildRoutingSequence(map, tier, registry);
+    const sequence = pinned.length ? planned.filter(n => pinned.includes(n)) : planned;
     const reqId = `req_${Date.now().toString(36)}`;
 
     if (sequence.length === 0) {
