@@ -269,3 +269,30 @@ test("forwards a stable retry key only to the pinned browser provider", async ()
   "chatgpt-browser");
   assert.equal(response.status,200);
 });
+
+test("forwards generic continuation lineage without an MCP Cogentia dependency",async()=>{
+  let observed={};
+  await withMockServer((req,res)=>{
+    observed.chain=req.headers["x-continuation-call-chain"];
+    observed.legacy=req.headers["x-cogentia-call-chain"];
+    let data="";
+    req.on("data",chunk=>{data+=chunk});
+    req.on("end",()=>{
+      observed.body=JSON.parse(data);
+      res.writeHead(200,{"Content-Type":"application/json"});
+      res.end(JSON.stringify({choices:[{message:{content:"ok"}}]}));
+    });
+  },async url=>{
+    const router=createRouter({map:[{id:"browser",url,model:"claude-browser",
+      tier:"fast",no_fallback_on_error:true}],log:()=>{}});
+    const response=await router.route({
+      model:"fast",messages:[{role:"user",content:"Q"}],
+      _continuation_call_chain:"caller,claude-browser",
+      _client_request_id:"req-generic"});
+    assert.equal(response.status,200);
+    assert.equal(observed.chain,"caller,claude-browser");
+    assert.equal(observed.legacy,undefined);
+    assert.equal(observed.body._continuation_call_chain,undefined);
+    assert.equal(observed.body._client_request_id,undefined);
+  });
+});
