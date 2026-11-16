@@ -226,3 +226,28 @@ test("does not fall back on an unknown browser provider transport outcome", asyn
   assert.equal((await response.json()).error.code, "provider_outcome_unknown");
   assert.equal(fallbackCalls, 0);
 });
+
+
+test("keeps explicitly pinned browser provider from falling back after exhaustion", async () => {
+  let fallbackCalls = 0;
+  const router = createRouter({
+    map: [
+      {id: "browser", model: "chatgpt-browser", tier: "chatgpt-browser",
+        no_fallback_on_error: true},
+      {id: "fallback", model: "other", tier: "fallback"},
+    ],
+    log: () => {},
+    invokeNode: async () => {
+      fallbackCalls++;
+      return new Response(JSON.stringify({choices:[{message:{content:"wrong model"}}]}),
+        {status:200});
+    },
+  });
+  router.registry.markExhausted("browser", "provider temporarily unavailable");
+  await assert.rejects(
+    router.route({model:"chatgpt-browser",messages:[{role:"user",content:"hello"}]},
+      "chatgpt-browser"),
+    /All magistral nodes exhausted or unavailable/
+  );
+  assert.equal(fallbackCalls, 0);
+});
