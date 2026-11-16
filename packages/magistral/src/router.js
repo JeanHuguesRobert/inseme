@@ -397,6 +397,7 @@ export function createRouter({
           logEntry.latencyMs = Date.now() - startTime;
           logEntry.status = res.status;
           trafficLog.append(logEntry);
+          if (node.no_fallback_on_error === true) return res;
           log(`[Magistral] Node ${node.id} exhausted (${res.status}), trying next…`);
           continue;
         }
@@ -407,6 +408,7 @@ export function createRouter({
           logEntry.latencyMs = Date.now() - startTime;
           logEntry.status = res.status;
           trafficLog.append(logEntry);
+          if (node.no_fallback_on_error === true) return res;
           log(`[Magistral] Node ${node.id} error (${res.status}), trying next…`);
           continue;
         }
@@ -635,6 +637,14 @@ export function createRouter({
         } else {
           registry.recordError(node.id, classification.reason);
           log(`[Magistral] Node ${node.id} network error: ${classification.reason}, trying next…`);
+        }
+        // A browser-backed CPS request may already have been submitted. Its
+        // transport outcome is not proof of failure: never silently send the
+        // same work to another provider.
+        if (node.no_fallback_on_error === true) {
+          return new Response(JSON.stringify({error:{type:"server_error",
+            code:"provider_outcome_unknown",message:"Provider outcome unknown; reconcile before retry"}}),
+            {status:502,headers:{"Content-Type":"application/json"}});
         }
       }
     }
