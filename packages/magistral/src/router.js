@@ -372,6 +372,11 @@ export function createRouter({
       }
 
       const nodePayload = { ...payload, model: node.model };
+      // Routing lineage is transport metadata, not part of the target
+      // model's message schema. The adapter receives it in HTTP headers.
+      delete nodePayload._continuation_call_chain;
+      delete nodePayload._cogentia_call_chain;
+      delete nodePayload._client_request_id;
       if (node.url?.includes("googleapis.com") || node.url?.includes("google.com")) {
         delete nodePayload.max_tokens;
       }
