@@ -5,6 +5,7 @@ import {
   asCognitivePacket,
   markPacketSolved,
   markPacketReturned,
+  markPacketFailed,
   markPacketAssimilated,
   markPacketCancelled,
 } from "../src/Cop-kerneltasks.js";
@@ -67,7 +68,26 @@ test("copComposition: copAll fork-join combinator waits for children and combine
   assert.equal(result.combinedYield.combined, "R1+R2");
 });
 
-test("copComposition: copRace returns first solver and auto-cancels competitors", async () => {
+test('copComposition: all rejects first failure by default and can wait for all terminal children',async()=>{
+ const bus=new COPBus({name:'kernel-all-fail-fast'});
+ const first=asCognitivePacket({kind:'t',envelope:{id:'kernel-fail-first'},bus});
+ const second=asCognitivePacket({kind:'t',envelope:{id:'kernel-success-later'},bus});
+ setTimeout(()=>markPacketFailed(first,{error:'first failed',bus}),6);
+ const failFast=await copAll([first,second],{bus});
+ assert.equal(failFast.ok,false);assert.match(failFast.error,/first failed/);
+ assert.notEqual(second.envelope.status,'cancelled');
+ const bus2=new COPBus({name:'kernel-all-wait-all'});
+ const a=asCognitivePacket({kind:'t',envelope:{id:'kernel-fail-next'},bus:bus2});
+ const b=asCognitivePacket({kind:'t',envelope:{id:'kernel-success-last'},bus:bus2});
+ setTimeout(()=>markPacketFailed(a,{error:'later failed',bus:bus2}),5);
+ setTimeout(()=>markPacketSolved(b,{yieldData:{semantic_yield:{value:'later'}},bus:bus2}),20);
+ const all=await copAll([a,b],{bus:bus2,failFast:false,timeoutMs:200});
+ assert.equal(all.ok,false);assert.equal(all.status,'failed');
+ assert.match(all.error,/later failed/);
+ assert.equal(all.yields.length,1);
+});
+
+test("copComposition: copRace can explicitly cancel competitors when requested", async () => {
   const bus = new COPBus({ name: "cop-race-test-bus" });
 
   const fast = asCognitivePacket({ kind: "t", envelope: { id: "p-fast", intent: "Fast" }, bus });
@@ -80,13 +100,35 @@ test("copComposition: copRace returns first solver and auto-cancels competitors"
     });
   }, 10);
 
-  const raceResult = await copRace([fast, slow], { bus });
+  const raceResult = await copRace([fast, slow], { bus, autoCancelLosers: true });
 
   assert.equal(raceResult.ok, true);
   assert.equal(raceResult.winnerPacketId, "p-fast");
   assert.equal(raceResult.winningYield.semantic_yield.answer, "fast-win");
   assert.equal(slow.envelope.status, "cancelled");
   assert.equal(slow.cancellation.reason, "competitor_won_race");
+});
+
+test("copComposition: Promise.race defaults to no cancellation of surviving branches",async()=>{
+ const bus=new COPBus({name:'race-default-no-cancel'});
+ const first=asCognitivePacket({kind:'t',envelope:{id:'p-first-win'},bus});
+ const second=asCognitivePacket({kind:'t',envelope:{id:'p-second-still-active'},bus});
+ setTimeout(()=>markPacketSolved(first,{yieldData:{semantic_yield:{value:'first'}},bus}),8);
+ const out=await copRace([first,second],{bus});
+ assert.equal(out.ok,true);assert.equal(out.winnerPacketId,first.envelope.id);
+ assert.notEqual(second.envelope.status,'cancelled');
+});
+
+test("copComposition: Promise.race first failure wins even before later success",async()=>{
+ const bus=new COPBus({name:'race-first-terminal-failure'});
+ const failed=asCognitivePacket({kind:'t',envelope:{id:'p-first-failed'},bus});
+ const later=asCognitivePacket({kind:'t',envelope:{id:'p-later-success'},bus});
+ setTimeout(()=>markPacketFailed(failed,{error:'remote handler failed',bus}),8);
+ const out=await copRace([failed,later],{bus});
+ assert.equal(out.ok,false);assert.equal(out.status,'failed');
+ assert.equal(out.winnerPacketId,failed.envelope.id);
+ assert.match(out.error,/remote handler failed/);
+ assert.notEqual(later.envelope.status,'cancelled');
 });
 
 test("copComposition: copSequence pipelines Yields across steps", async () => {

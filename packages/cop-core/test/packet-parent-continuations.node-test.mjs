@@ -499,3 +499,19 @@ test('Promise.race durable outcome follows authoritative COP recording order rat
   assert.equal(result.status,'failed');
  }finally{s.close()}
 });
+
+test('distributed all/allSettled retain declared INPUT order, not alphabetic or resolution order',()=>{
+ const s=createSqliteCopEventStore(':memory:');try{
+  for(const child_ref of [A,B])assert.equal(linkPacketChild(s,{parent_ref:P,child_ref}).ok,true);
+  for(const mode of ['all','allSettled'])assert.equal(registerParentJoin(s,{parent_ref:P,
+    join_id:mode+'-ordered',mode,child_refs:[B,A]}).ok,true);
+  event(s,A,'a-early-order','completed','completed');
+  event(s,B,'b-later-order','completed','completed');
+  reconcileParentChildStates(s,{parent_ref:P});
+  for(const mode of ['all','allSettled']){
+    const p=projectParentJoin(s,{parent_ref:P,join_id:mode+'-ordered'});
+    assert.equal(p.ready,true);
+    assert.deepEqual(p.children.map(c=>c.child_ref),[B,A]);
+  }
+ }finally{s.close()}
+});

@@ -104,18 +104,20 @@ export function forkChildPackets(
 export async function copAll(
   parentPacket: CognitivePacket,
   children: CognitivePacket[],
-  executor: PacketExecutionHandler
+  executor: PacketExecutionHandler,
+  options: { cancelRemaining?: boolean } = {}
 ): Promise<CopCompositionResult<PacketYield[]>> {
   const startTime = Date.now();
   const spendingList: ProvisionalSpending[] = [];
-  const yields: PacketYield[] = [];
+  const yieldsByIndex: Array<PacketYield | undefined> = new Array(children.length);
+  const partial: PacketYield[] = [];
   let cancelled = false;
 
   try {
-    const promises = children.map(async (child) => {
+    const promises = children.map(async (child, index) => {
       const res = await executor(child, {
         get aborted() {
-          return cancelled;
+          return options.cancelRemaining === true && cancelled;
         },
       });
       if (res.spending) spendingList.push(...res.spending);
@@ -124,11 +126,15 @@ export async function copAll(
         cancelled = true;
         throw new Error(res.error || `Child ${child.packet_id} ended with status ${res.status}`);
       }
-      if (res.yield) yields.push(res.yield);
+      if (res.yield) {
+        yieldsByIndex[index] = res.yield;
+        partial.push(res.yield);
+      }
       return res;
     });
 
     await Promise.all(promises);
+    const yields = yieldsByIndex.filter((y): y is PacketYield => y !== undefined);
 
     return {
       ok: true,
@@ -142,7 +148,7 @@ export async function copAll(
     return {
       ok: false,
       status: "failed",
-      yields,
+      yields: partial,
       error: err.message,
       totalSpending: spendingList,
       elapsedMs: Date.now() - startTime,
@@ -160,11 +166,11 @@ export async function copAllSettled(
 ): Promise<CopCompositionResult<CopSettledItem[]>> {
   const startTime = Date.now();
   const spendingList: ProvisionalSpending[] = [];
-  const settledItems: CopSettledItem[] = [];
-  const residue: Array<Record<string, unknown>> = [];
-  const yields: PacketYield[] = [];
+  const settledItems: CopSettledItem[] = new Array(children.length);
+  const residueByIndex: Array<Record<string, unknown> | undefined> = new Array(children.length);
+  const yieldsByIndex: Array<PacketYield | undefined> = new Array(children.length);
 
-  const promises = children.map(async (child) => {
+  const promises = children.map(async (child, index) => {
     const itemStart = Date.now();
     try {
       const res = await executor(child);
@@ -178,24 +184,26 @@ export async function copAllSettled(
         spending: res.spending,
         elapsedMs: Date.now() - itemStart,
       };
-      settledItems.push(item);
+      settledItems[index] = item;
       if (res.status === "solved" && res.yield) {
-        yields.push(res.yield);
+        yieldsByIndex[index] = res.yield;
       } else {
-        residue.push({ packetId: child.packet_id, error: res.error, status: res.status });
+        residueByIndex[index] = { packetId: child.packet_id, error: res.error, status: res.status };
       }
     } catch (err: any) {
-      settledItems.push({
+      settledItems[index] = {
         packetId: child.packet_id,
         status: "failed",
         error: err.message,
         elapsedMs: Date.now() - itemStart,
-      });
-      residue.push({ packetId: child.packet_id, error: err.message, status: "failed" });
+      };
+      residueByIndex[index] = { packetId: child.packet_id, error: err.message, status: "failed" };
     }
   });
 
   await Promise.all(promises);
+  const yields = yieldsByIndex.filter((y): y is PacketYield => y !== undefined);
+  const residue = residueByIndex.filter((r): r is Record<string, unknown> => r !== undefined);
 
   return {
     ok: true,
@@ -210,12 +218,14 @@ export async function copAllSettled(
 }
 
 /**
- * Race composition: first terminal result wins (succeed or fail), remaining cancelled.
+ * Race composition: first terminal result wins (succeed or fail). Loser
+ * cancellation is opt-in, like an extension to native Promise.race.
  */
 export async function copRace(
   parentPacket: CognitivePacket,
   children: CognitivePacket[],
-  executor: PacketExecutionHandler
+  executor: PacketExecutionHandler,
+  options: { cancelRemaining?: boolean } = {}
 ): Promise<CopCompositionResult> {
   const startTime = Date.now();
   const spendingList: ProvisionalSpending[] = [];
@@ -228,7 +238,7 @@ export async function copRace(
     for (const child of children) {
       executor(child, {
         get aborted() {
-          return winnerFound;
+          return options.cancelRemaining === true && winnerFound;
         },
       })
         .then((res) => {
@@ -276,7 +286,8 @@ export async function copRace(
 export async function copAny(
   parentPacket: CognitivePacket,
   children: CognitivePacket[],
-  executor: PacketExecutionHandler
+  executor: PacketExecutionHandler,
+  options: { cancelRemaining?: boolean } = {}
 ): Promise<CopCompositionResult> {
   const startTime = Date.now();
   const spendingList: ProvisionalSpending[] = [];
@@ -300,7 +311,7 @@ export async function copAny(
     for (const child of children) {
       executor(child, {
         get aborted() {
-          return winnerFound;
+          return options.cancelRemaining === true && winnerFound;
         },
       })
         .then((res) => {

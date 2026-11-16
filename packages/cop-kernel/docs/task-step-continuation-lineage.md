@@ -618,3 +618,34 @@ parent with `join_wait` needs a configured runnable continuation handler for
 existing COPScheduler/handler integrations, not invented permissions, and
 should be added only with a real executor contract/reality test. B/C do not
 imply multi-primary Store replication or unlimited cancellation powers.
+
+### FBF: strict compatibility with JavaScript Promise ordering and cancellation
+
+The earlier local combinators had four divergences from JavaScript, fixed
+alongside the distributed projector (Inseme #188/#189):
+
+1. `Promise.all()` / `allSettled()` preserve the **caller-supplied input
+   order**, not child completion order or alphabetic child identifier order.
+   Both the local Core combinators and the distributed `registerParentJoin`
+   / `projectParentJoin` now retain this ordering.
+2. `Promise.all()` rejects promptly when any child rejects but **does not
+   cancel the others** by default. The local COP/Core executor exposes
+   optional `cancelRemaining: true` for explicitly cooperative cancellation.
+   COP/Kernel `copAll` also defaults to fail-fast; `failFast:false` now waits
+   for all terminal children and returns the aggregate failure rather than
+   hanging after any child failed.
+3. `Promise.race()` resolves on the **first terminal settlement**, success or
+   failure. The local Kernel implementation now handles `failed` and
+   `cancelled` as settlements, not only `solved`/`returned`. It does not
+   mutate losing packets unless `autoCancelLosers:true` is explicitly set.
+4. `Promise.any()` chooses first successful completion and similarly does not
+   stop losing workers by default. Cooperative stop remains a policy choice,
+   tracked with durable `cancel_requested` and `cancel_acknowledged` evidence
+   in the distributed layer.
+
+The compatibility tests intentionally make the second child finish *before*
+the first in a `Promise.all`/`allSettled`, make a race fail before a competing
+success, and check that late workers still observe `aborted=false` by default
+while an explicit cancellation policy changes the signal. These tests guard
+against accidentally restoring legacy race/any/all coupling or silently
+changing the public Promise semantics of a CPS Task.

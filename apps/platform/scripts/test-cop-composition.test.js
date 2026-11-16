@@ -209,3 +209,68 @@ test("COP Composition 7: copSequence (Pipe) threads previous yield into next ste
   assert.equal(res.yields.length, 2);
   assert.match(res.combinedYield.semantic_yield, /Synthèse concise de: Document brut Paoli 1755/);
 });
+
+test('COP Composition: all/allSettled retain INPUT order after reverse completion order',async()=>{
+ const parent={packet_id:'pkt-order',hops:[],payload:{}};
+ const children=forkChildPackets(parent,[
+   {kind:'sub',intent:'slow-first',payload:{index:0}},
+   {kind:'sub',intent:'fast-second',payload:{index:1}},
+ ]);
+ const resolver=child=>new Promise(resolve=>setTimeout(()=>resolve({status:'solved',
+   yield:{semantic_yield:child.payload.index}}),child.payload.index===0?25:2));
+ const all=await copAll(parent,children,resolver);
+ assert.equal(all.ok,true);
+ assert.deepEqual(all.yields.map(y=>y.semantic_yield),[0,1]);
+ const settled=await copAllSettled(parent,children,resolver);
+ assert.equal(settled.ok,true);
+ assert.deepEqual(settled.settledItems.map(i=>i.yield.semantic_yield),[0,1]);
+ assert.deepEqual(settled.yields.map(y=>y.semantic_yield),[0,1]);
+});
+
+test('COP Composition: default race does not abort a late worker, opt-in can cancel',async()=>{
+ const parent={packet_id:'pkt-no-cancel',hops:[],payload:{}};
+ const children=forkChildPackets(parent,[
+   {kind:'sub',intent:'first',payload:{index:0}},
+   {kind:'sub',intent:'second',payload:{index:1}},
+ ]);
+ const observations=[];
+ const executor=(child,signal)=>new Promise(resolve=>{
+   const delay=child.payload.index===0?2:25;
+   setTimeout(()=>{
+     observations.push({index:child.payload.index,aborted:signal?.aborted});
+     resolve({status:'solved',yield:{semantic_yield:child.payload.index}});
+   },delay);
+ });
+ const result=await copRace(parent,children,executor);
+ assert.equal(result.ok,true);
+ await new Promise(resolve=>setTimeout(resolve,38));
+ assert.deepEqual(observations,[{index:0,aborted:false},{index:1,aborted:false}]);
+ observations.length=0;
+ const opt=await copRace(parent,children,executor,{cancelRemaining:true});
+ assert.equal(opt.ok,true);
+ await new Promise(resolve=>setTimeout(resolve,38));
+ assert.deepEqual(observations,[{index:0,aborted:false},{index:1,aborted:true}]);
+});
+
+test('COP Composition: Promise.all rejects early without cancelling other children by default',async()=>{
+ const parent={packet_id:'pkt-early-reject',hops:[],payload:{}};
+ const children=forkChildPackets(parent,[
+   {kind:'sub',intent:'fails-early',payload:{index:0}},
+   {kind:'sub',intent:'keeps-running',payload:{index:1}},
+ ]);
+ const signals=[];
+ const executor=(child,signal)=>new Promise(resolve=>setTimeout(()=>{
+   signals.push({index:child.payload.index,aborted:signal?.aborted});
+   resolve(child.payload.index===0?{status:'failed',error:'intentional'}:
+     {status:'solved',yield:{semantic_yield:'late'}});
+ },child.payload.index===0?2:27));
+ const rejected=await copAll(parent,children,executor);
+ assert.equal(rejected.ok,false);assert.match(rejected.error,/intentional/);
+ await new Promise(resolve=>setTimeout(resolve,38));
+ assert.deepEqual(signals,[{index:0,aborted:false},{index:1,aborted:false}]);
+ signals.length=0;
+ const opt=await copAll(parent,children,executor,{cancelRemaining:true});
+ assert.equal(opt.ok,false);
+ await new Promise(resolve=>setTimeout(resolve,38));
+ assert.deepEqual(signals,[{index:0,aborted:false},{index:1,aborted:true}]);
+});

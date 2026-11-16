@@ -163,8 +163,10 @@ export function registerParentJoin(store,{parent_ref,join_id,mode='all',child_re
        (mode==='quorum'&&(!Number.isSafeInteger(quorum)||quorum<1||quorum>selected.length))||
        (mode!=='quorum'&&quorum!==null))
       return {ok:false,status:'join_children_missing_or_policy_invalid'};
-    const ordered=['fallback','sequence'].includes(mode)
-      ?[...selected]:[...selected].sort();
+    // Promise.all / allSettled return results in INPUT order, independent
+    // of the time each branch settles. Preserve the caller's declared order
+    // for every combinator; race settlement order is handled separately.
+    const ordered=[...selected];
     const policy={parent_ref,join_id,mode,child_refs:ordered,
       quorum:mode==='quorum'?quorum:null,cancel_remaining};
     const prev=tx.eventByIdempotency(id);

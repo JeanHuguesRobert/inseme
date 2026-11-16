@@ -81,106 +81,74 @@ export function copFork(parentPacket, params, options = {}) {
 /**
  * Parallel Fork-Join (Promise.all equivalent): waits for all given packets to resolve.
  */
-export async function copAll(packets, options = {}) {
-  if (!Array.isArray(packets) || packets.length === 0) {
-    return { ok: true, status: "completed", yields: [], elapsedMs: 0 };
-  }
-
-  const startTime = Date.now();
-  const targetIds = new Set(packets.map((p) => p.envelope.id));
-  const yieldsMap = new Map();
-  const errors = [];
-
-  for (const p of packets) {
-    if (
-      p.envelope.status === "solved" ||
-      p.envelope.status === "returned" ||
-      p.envelope.status === "assimilated"
-    ) {
-      yieldsMap.set(p.envelope.id, p.yield);
+export async function copAll(packets,options={}) {
+  if(!Array.isArray(packets)||packets.length===0)
+    return {ok:true,status:"completed",yields:[],elapsedMs:0};
+  const started=Date.now(),targetIds=new Set(packets.map(p=>p.envelope.id));
+  if(targetIds.size!==packets.length)throw new Error('copAll duplicate packet ids');
+  const yieldsMap=new Map(),terminal=new Set(),errors=[];
+  const success=new Set(['solved','returned','assimilated']);
+  const rejection=new Set(['failed','cancelled']);
+  for(const p of packets){
+    if(success.has(p.envelope.status)){
+      terminal.add(p.envelope.id);yieldsMap.set(p.envelope.id,p.yield);
+    }else if(rejection.has(p.envelope.status)){
+      terminal.add(p.envelope.id);
+      errors.push({packetId:p.envelope.id,
+        error:p.failure?.error||p.cancellation?.reason||p.envelope.status});
     }
   }
-
-  if (yieldsMap.size === targetIds.size) {
-    const yields = packets.map((p) => yieldsMap.get(p.envelope.id));
-    const combinedYield =
-      typeof options.combiner === "function" ? options.combiner(yields) : yields;
-    return {
-      ok: true,
-      status: "completed",
-      yields,
-      combinedYield,
-      elapsedMs: Date.now() - startTime,
+  const partial=()=>packets.filter(p=>yieldsMap.has(p.envelope.id))
+    .map(p=>yieldsMap.get(p.envelope.id));
+  const settled=()=>{
+    const yields=partial();
+    return errors.length>0
+      ?{ok:false,status:'failed',yields,
+        error:errors.map(e=>e.error).join('; '),elapsedMs:Date.now()-started}
+      :{ok:true,status:'completed',yields,
+        combinedYield:typeof options.combiner==='function'?options.combiner(yields):yields,
+        elapsedMs:Date.now()-started};
+  };
+  if(errors.length&&options.failFast!==false)return settled();
+  if(terminal.size===targetIds.size)return settled();
+  const bus=options.bus;
+  if(!bus||typeof bus.subscribeAll!=='function')
+    throw new Error('copAll: valid COPBus required for unresolved children');
+  return new Promise(resolve=>{
+    let timer=null,unsub=null,done=false;
+    const cleanup=()=>{
+      if(timer)clearTimeout(timer);
+      if(typeof unsub==='function')unsub();
     };
-  }
-
-  const bus = options.bus;
-  if (!bus || typeof bus.subscribeAll !== "function") {
-    throw new Error("copAll: a valid COOBus instance is required when packets are unresolved");
-  }
-
-  return new Promise((resolve) => {
-    let timeoutTimer = null;
-    let unsub = null;
-
-    const cleanup = () => {
-      if (timeoutTimer) clearTimeout(timeoutTimer);
-      if (typeof unsub === "function") unsub();
-    };
-
-    if (options.timeoutMs && options.timeoutMs > 0) {
-      timeoutTimer = setTimeout(() => {
-        cleanup();
-        resolve({
-          ok: false,
-          status: "timeout",
-          yields: Array.from(yieldsMap.values()),
-          error: `copAll timed out after ${options.timeoutMs}ms`,
-          elapsedMs: Date.now() - startTime,
-        });
-      }, options.timeoutMs);
+    if(options.timeoutMs>0){
+      timer=setTimeout(()=>{
+        if(done)return;done=true;cleanup();
+        resolve({ok:false,status:'timeout',yields:partial(),
+          error:`copAll timed out after ${options.timeoutMs}ms`,elapsedMs:Date.now()-started});
+      },options.timeoutMs);
     }
-
-    unsub = bus.subscribeAll((event) => {
-      const packetId = event.data?.packetId || event.data?.packet?.envelope?.id;
-      if (!targetIds.has(packetId)) return;
-
-      if (event.type === "cop.packet.solved" || event.type === "cop.packet.returned") {
-        const yieldData = event.data?.yield || event.data?.packet?.yield;
-        yieldsMap.set(packetId, yieldData);
-
-        if (yieldsMap.size === targetIds.size) {
-          cleanup();
-          const yields = packets.map((p) => yieldsMap.get(p.envelope.id));
-          const combinedYield =
-            typeof options.combiner === "function" ? options.combiner(yields) : yields;
-          resolve({
-            ok: true,
-            status: "completed",
-            yields,
-            combinedYield,
-            elapsedMs: Date.now() - startTime,
-          });
-        }
-      } else if (event.type === "cop.packet.failed") {
-        errors.push({ packetId, error: event.data?.error });
-        if (options.failFast) {
-          cleanup();
-          resolve({
-            ok: false,
-            status: "failed",
-            yields: Array.from(yieldsMap.values()),
-            error: event.data?.error || "child packet failed",
-            elapsedMs: Date.now() - startTime,
-          });
-        }
+    unsub=bus.subscribeAll(event=>{
+      const id=event.data?.packetId||event.data?.packet?.envelope?.id;
+      if(!targetIds.has(id)||terminal.has(id)||done)return;
+      const isSuccess=['cop.packet.solved','cop.packet.returned','cop.packet.assimilated']
+        .includes(event.type);
+      const isFailed=['cop.packet.failed','cop.packet.cancelled'].includes(event.type);
+      if(!isSuccess&&!isFailed)return;
+      terminal.add(id);
+      if(isSuccess)yieldsMap.set(id,event.data?.yield||event.data?.packet?.yield);
+      else errors.push({packetId:id,error:event.data?.error||event.data?.reason||
+        event.data?.status||'child_failed'});
+      if((isFailed&&options.failFast!==false)||terminal.size===targetIds.size){
+        done=true;cleanup();resolve(settled());
       }
     });
   });
 }
 
 /**
- * Competitive Race (Promise.race equivalent): waits for first packet to resolve, cancels competitors.
+ * Competitive Race (Promise.race equivalent): settles on first terminal
+ * result, including failure. Cancelling competitors is an explicit COP
+ * extension, never the default behavior of JavaScript Promise.race.
  */
 export async function copRace(packets, options = {}) {
   if (!Array.isArray(packets) || packets.length === 0) {
@@ -189,27 +157,29 @@ export async function copRace(packets, options = {}) {
 
   const startTime = Date.now();
   const targetIds = new Set(packets.map((p) => p.envelope.id));
-  const autoCancelLosers = options.autoCancelLosers !== false;
+  const autoCancelLosers = options.autoCancelLosers === true;
 
+  // For packets already terminal before registration, use input order,
+  // just like JS Promise.race([alreadySettledA, alreadySettledB]).
   for (const p of packets) {
-    if (p.envelope.status === "solved" || p.envelope.status === "returned") {
+    const success=["solved","returned","assimilated"].includes(p.envelope.status);
+    const rejection=["failed","cancelled"].includes(p.envelope.status);
+    if (success||rejection) {
       if (autoCancelLosers) {
         for (const loser of packets) {
-          if (
-            loser.envelope.id !== p.envelope.id &&
-            (loser.envelope.status === "dispatched" || loser.envelope.status === "draft")
-          ) {
-            markPacketCancelled(loser, { reason: "competitor_won_race", bus: options.bus });
+          if (loser.envelope.id!==p.envelope.id &&
+              ["dispatched","draft"].includes(loser.envelope.status)) {
+            await markPacketCancelled(loser,{reason:"competitor_won_race",bus:options.bus});
           }
         }
       }
       return {
-        ok: true,
-        status: "completed",
-        winnerPacketId: p.envelope.id,
-        winningYield: p.yield,
-        yields: [p.yield],
-        elapsedMs: Date.now() - startTime,
+        ok:success,status:success?"completed":"failed",
+        winnerPacketId:p.envelope.id,
+        winningYield:success?p.yield:undefined,
+        yields:success&&p.yield?[p.yield]:[],
+        error:rejection?(p.failure?.error||p.cancellation?.reason||p.envelope.status):undefined,
+        elapsedMs:Date.now()-startTime,
       };
     }
   }
@@ -222,6 +192,7 @@ export async function copRace(packets, options = {}) {
   return new Promise((resolve) => {
     let timeoutTimer = null;
     let unsub = null;
+    let settled = false;
 
     const cleanup = () => {
       if (timeoutTimer) clearTimeout(timeoutTimer);
@@ -245,9 +216,13 @@ export async function copRace(packets, options = {}) {
       const packetId = event.data?.packetId || event.data?.packet?.envelope?.id;
       if (!targetIds.has(packetId)) return;
 
-      if (event.type === "cop.packet.solved" || event.type === "cop.packet.returned") {
+      const success=["cop.packet.solved","cop.packet.returned",
+        "cop.packet.assimilated"].includes(event.type);
+      const rejection=["cop.packet.failed","cop.packet.cancelled"].includes(event.type);
+      if ((success||rejection)&&!settled) {
+        settled=true;
         cleanup();
-        const winningYield = event.data?.yield || event.data?.packet?.yield;
+        const winningYield=success?(event.data?.yield||event.data?.packet?.yield):undefined;
 
         if (autoCancelLosers) {
           for (const loser of packets) {
@@ -261,11 +236,13 @@ export async function copRace(packets, options = {}) {
         }
 
         resolve({
-          ok: true,
-          status: "completed",
+          ok: success,
+          status: success ? "completed" : "failed",
           winnerPacketId: packetId,
           winningYield,
-          yields: [winningYield],
+          yields: success && winningYield ? [winningYield] : [],
+          error: rejection ? (event.data?.error || event.data?.reason ||
+            event.data?.status || "child_failed") : undefined,
           elapsedMs: Date.now() - startTime,
         });
       }
