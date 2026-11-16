@@ -51,6 +51,12 @@ test("peer transports exact immutable bytes through a mock adapter", async () =>
         })) };
       }
       if (operation === "get") return { data: stored };
+      if (operation === "verify") {
+        if (stored === null) return { missing: true };
+        return { data: Buffer.from(JSON.stringify({
+          ok: true, verified: true, ref: key, size_bytes: stored.length,
+        })) };
+      }
       return { data: Buffer.from(JSON.stringify({
         protocol: "magistral.ssh-cas/v0", ok: true, free_bytes: 10000000000,
         max_object_bytes: 67108864,
@@ -61,6 +67,28 @@ test("peer transports exact immutable bytes through a mock adapter", async () =>
   assert.equal((await provider.probe()).available, true);
   assert.equal((await memory.putObject(bytes)).ref, ref);
   assert.deepEqual((await memory.getObject(ref)).bytes, bytes);
+  assert.equal((await provider.verify(ref)).verified, true);
+});
+
+test("a forged or inconsistent remote verification cannot be counted", async () => {
+  const provider = createSshObjectProvider({
+    ...baseConfig, networkCostVerified: true,
+    invoke: async ({operation,ref:key,bytes:payload}) => {
+      if(operation==="verify"){
+        return {data:Buffer.from(JSON.stringify({
+          ok:true,verified:true,ref:key,size_bytes:99999,
+        }))};
+      }
+      return {data:Buffer.from(JSON.stringify({
+        ok:true,ref:key,size_bytes:payload.length,
+      }))};
+    },
+  });
+  const memory=createObjectMemory({providers:[provider]});
+  await assert.rejects(memory.putObject(bytes),(error)=>{
+    assert.equal(error.code,"insufficient_verified_copies");
+    return true;
+  });
 });
 
 test("missing or corrupted peer copies never appear to be verified", async () => {
@@ -133,6 +161,9 @@ test("peer content-addressed files are independent from their location", async (
   const get=await run("get");
   assert.equal(get.code,0);
   assert.deepEqual(get.bytes,bytes);
+  const verified=await run("verify");
+  assert.equal(verified.code,0);
+  assert.equal(JSON.parse(verified.bytes.toString()).verified,true);
   const wrongDigest = hashObject(Buffer.from("missing"));
   const missing=await new Promise((resolve,reject)=>{
     const proc=spawn("python3",[script,"get",wrongDigest]);

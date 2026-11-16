@@ -98,10 +98,33 @@ export function createSshObjectProvider({
     });
   }
 
+  async function verifyRemote(ref) {
+    const response = await remote("verify", ref, null);
+    if (response.missing) return null;
+    let receipt;
+    try {
+      receipt = JSON.parse(response.data?.toString("utf8") || "{}");
+    } catch {
+      throw new Error("ssh_remote_verification_invalid");
+    }
+    if (receipt.ok !== true || receipt.verified !== true ||
+        receipt.ref !== ref || !Number.isSafeInteger(receipt.size_bytes) ||
+        receipt.size_bytes < 0 || receipt.size_bytes > maxObjectBytes) {
+      throw new Error("ssh_remote_verification_invalid");
+    }
+    return receipt;
+  }
+
   return Object.freeze({
     id,
     billing,
     storage_location,
+
+    async verify(ref) {
+      if (billing !== "none") throw new Error("ssh_network_cost_unverified");
+      assertObjectRef(ref);
+      return verifyRemote(ref);
+    },
 
     async probe() {
       const response = await remote("probe", null, null);
@@ -122,6 +145,15 @@ export function createSshObjectProvider({
       if (!(bytes instanceof Uint8Array) || bytes.length > maxObjectBytes ||
           hashObject(bytes) !== ref) {
         throw new Error("ssh_object_invalid");
+      }
+      // A retry must not resend an existing 32 MiB object through a
+      // potentially slow relay: first verify its SHA256 at the remote disk.
+      const existing = await verifyRemote(ref);
+      if (existing) {
+        if (existing.size_bytes !== bytes.length) {
+          throw new Error("ssh_existing_size_mismatch");
+        }
+        return;
       }
       const response = await remote("put", ref, Buffer.from(bytes));
       const receipt = JSON.parse(response.data?.toString("utf8") || "{}");

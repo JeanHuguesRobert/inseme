@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Minimal immutable content-addressed object store for personal SSH peers.
 
-Invocation: python ssh-object-bridge.py probe | put <sha256:...> | get <sha256:...>
+Invocation: python ssh-object-bridge.py probe | put <sha256:...> | get <sha256:...> | verify <sha256:...>
 PUT: raw bytes on stdin, short JSON confirmation on stdout.
 GET: raw bytes on stdout, exit 4 if absent.
 This is NOT a general remote shell, object deletion API, or background agent.
@@ -56,7 +56,7 @@ def main():
             "max_object_bytes": MAX_BYTES,
         }), flush=True)
         return
-    if operation not in ("put", "get") or len(sys.argv) != 3:
+    if operation not in ("put", "get", "verify") or len(sys.argv) != 3:
         raise ValueError("unsupported_operation")
     ref = sys.argv[2]
     target = ref_path(ref)
@@ -68,6 +68,15 @@ def main():
             sys.exit(4)
         sys.stdout.buffer.write(data)
         sys.stdout.buffer.flush()
+        return
+    if operation == "verify":
+        data = read_checked(target, digest)
+        if data is None:
+            sys.exit(4)
+        print(json.dumps({
+            "ok": True, "verified": True, "ref": ref,
+            "size_bytes": len(data)
+        }), flush=True)
         return
 
     # On a freshly initialized store a small disk reserve must remain.

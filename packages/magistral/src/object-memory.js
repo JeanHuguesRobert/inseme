@@ -108,10 +108,20 @@ export function createObjectMemory({ providers = [] } = {}) {
       for (const provider of candidates) {
         try {
           await provider.put(ref, data);
-          // A positive put acknowledgement alone does not prove correct bytes.
-          const observed = await provider.get(ref);
-          if (!(observed instanceof Uint8Array) || hashObject(observed) !== ref) {
-            throw new Error("stored_object_integrity_mismatch");
+          // Remote SSH peers can verify bytes on their own authenticated disk,
+          // avoiding an expensive complete download purely for read-back.
+          // Ordinary providers still return full bytes for local verification.
+          if (typeof provider.verify === "function") {
+            const proof = await provider.verify(ref);
+            if (!proof || proof.verified !== true || proof.ref !== ref ||
+                proof.size_bytes !== data.length) {
+              throw new Error("stored_object_integrity_mismatch");
+            }
+          } else {
+            const observed = await provider.get(ref);
+            if (!(observed instanceof Uint8Array) || hashObject(observed) !== ref) {
+              throw new Error("stored_object_integrity_mismatch");
+            }
           }
           copies.push(provider.id);
         } catch (error) {
