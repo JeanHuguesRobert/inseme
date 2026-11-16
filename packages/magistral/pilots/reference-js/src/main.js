@@ -424,7 +424,7 @@ async function boot() {
     }
 
     // POST /v1/chat/completions
-    if (url.pathname === "/v1/chat/completions" && req.method === "POST") {
+    if ((url.pathname === "/v1/chat/completions" || url.pathname === "/v1/completions") && req.method === "POST") {
       const authHeader = req.headers.get("authorization") || "";
       if (authHeader !== `Bearer ${apiToken}`) {
         corsHeaders.set("Content-Type", "application/json");
@@ -445,6 +445,17 @@ async function boot() {
         });
       }
 
+      const legacy = url.pathname === "/v1/completions";
+      if (legacy) {
+        if (typeof payload?.prompt !== "string" || payload.stream === true) {
+          corsHeaders.set("Content-Type", "application/json");
+          return new Response(JSON.stringify({error:{type:"invalid_request_error",
+            code:"legacy_prompt_text_only_nonstream"}}),{status:422,headers:corsHeaders});
+        }
+        // The shared Magistral router remains the sole provider selection path.
+        payload = {...payload,messages:[{role:"user",content:payload.prompt}],stream:false};
+        delete payload.prompt;
+      }
       const tier = payload.model || "fast";
 
       try {
@@ -453,7 +464,16 @@ async function boot() {
         for (const [key, val] of upstreamRes.headers.entries()) {
           corsHeaders.set(key, val);
         }
-        return new Response(upstreamRes.body, { status: 200, headers: corsHeaders });
+        // Preserve upstream errors; a 504 from a browser-backed CPS provider
+        // is an unknown/pending outcome, never a successful completion.
+        if (legacy && upstreamRes.ok) {
+          const data = await upstreamRes.json();
+          return new Response(JSON.stringify({...data,object:"text_completion",
+            choices:(data.choices||[]).map(c=>({index:c.index,
+              text:c.message?.content||"",finish_reason:c.finish_reason||"stop"}))}),
+            {status:upstreamRes.status,headers:corsHeaders});
+        }
+        return new Response(upstreamRes.body, { status: upstreamRes.status, headers: corsHeaders });
       } catch (err) {
         corsHeaders.set("Content-Type", "application/json");
         return new Response(JSON.stringify({ error: err.message }), {
