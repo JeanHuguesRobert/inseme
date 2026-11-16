@@ -39,10 +39,11 @@ CPS and retention policy. Oracle is a replaceable backing provider.
 
 ## Explicit billing guard
 
-The OCI account's *billing account classification* has NOT been verified.
-Official Always Free documentation does NOT by itself prove that a given
-account cannot be billed. No OCI bucket has been created and no object
-has been uploaded.
+A read-only Tenant Manager Subscription API query on 2026-11-16 returned
+one active OCI subscription with payment_model=PAYG. **The account is billed
+as Pay As You Go**, even though Oracle includes a no-charge Object Storage
+allowance for some usage. This is NOT a free-only account and excess usage
+may be billed. No OCI bucket has been created and no object has been uploaded.
 
 For this reason:
 - createOciObjectProvider() defaults to billing="unknown" and rejects both
@@ -55,6 +56,12 @@ For this reason:
   monthly request counter or a cloud-side hard spending cap. Consequently
   the attestation alone cannot make a billed account mathematically impossible
   to charge. Do not activate it without independent confirmation and limits.
+- OCI has a hard regional/compartment Object Storage quota:
+  "Set object-storage quota storage-bytes to 8000000000 in compartment ...".
+  This limits storage consumption but does NOT bound chargeable API requests
+  or other services. No such quota has been applied in the owner's tenancy.
+  Official reference:
+  https://docs.oracle.com/en-us/iaas/Content/Quotas/Concepts/resourcequotas_topic-Object_Storage_Quotas.htm
 
 No provider creates a bucket, grants OCI policies, generates API keys or
 automatically selects a paid provider.
