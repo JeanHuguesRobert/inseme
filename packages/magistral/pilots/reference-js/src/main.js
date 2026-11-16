@@ -456,6 +456,13 @@ async function boot() {
         payload = {...payload,messages:[{role:"user",content:payload.prompt}],stream:false};
         delete payload.prompt;
       }
+      // Preserve origin lineage for recursion refusal in the local provider.
+      // If an MCP tool calls Magistral from a ChatGPT turn, the local bridge
+      // suspends the nested call instead of entering another browser turn.
+      const chain = req.headers.get("x-cogentia-call-chain");
+      if (typeof chain === "string" && /^[a-zA-Z0-9_,.:/-]{1,256}$/.test(chain)) {
+        payload._cogentia_call_chain = chain;
+      }
       const clientRequestId = req.headers.get("x-client-request-id");
       if (typeof clientRequestId === "string" &&
           /^[a-zA-Z0-9_.:-]{1,128}$/.test(clientRequestId)) {
