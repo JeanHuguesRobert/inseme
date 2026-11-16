@@ -349,6 +349,13 @@ export function createRouter({
       const apiKey = getApiKeyForNode(node, apiKeys);
       const headers = { "Content-Type": "application/json" };
       if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+      // Preserve client retry identity for durable CPS-backed providers.
+      // The provider enforces idempotent assignment using this reference.
+      const clientId = payload._client_request_id;
+      if (node.no_fallback_on_error === true &&
+          typeof clientId === "string" && /^[a-zA-Z0-9_.:-]{1,128}$/.test(clientId)) {
+        headers["X-Client-Request-Id"] = clientId;
+      }
 
       const nodePayload = { ...payload, model: node.model };
       if (node.url?.includes("googleapis.com") || node.url?.includes("google.com")) {
