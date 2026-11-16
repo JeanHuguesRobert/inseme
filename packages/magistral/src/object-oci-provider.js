@@ -32,6 +32,8 @@ export function createOciObjectProvider({
   python,
   bridge = DEFAULT_BRIDGE,
   freeTierVerified = false,
+  monthlyRequestCap = null,
+  requestBudgetDb = null,
   maxObjectBytes = MAX_OBJECT_BYTES,
   invoke = null,
 } = {}) {
@@ -60,6 +62,16 @@ export function createOciObjectProvider({
     throw new TypeError("invoke must be a function or null");
   }
 
+  // Explicit attestation alone is insufficient on a PAYG account.
+  // A bounded, durable, shared request ledger is also mandatory.
+  if (freeTierVerified === true) {
+    if (!Number.isSafeInteger(monthlyRequestCap) || monthlyRequestCap < 1 || monthlyRequestCap > 1000) {
+      throw new TypeError("monthlyRequestCap must be 1..1000 when enabling OCI custody");
+    }
+    if (typeof requestBudgetDb !== "string" || !path.isAbsolute(requestBudgetDb)) {
+      throw new TypeError("absolute requestBudgetDb is mandatory for OCI custody");
+    }
+  }
   const billing = freeTierVerified === true ? "none" : "unknown";
   const storage_location = ["oci", region, namespace || "auto", bucket].join(":");
   async function bridgeCommand(operation, ref, file) {
@@ -71,15 +83,33 @@ export function createOciObjectProvider({
       "--bucket", bucket,
       "--max-bytes", String(maxObjectBytes),
     ];
+    if (operation !== "probe") {
+      args.push("--monthly-request-cap", String(monthlyRequestCap));
+      args.push("--request-budget-db", requestBudgetDb);
+    }
     if (namespace !== null) args.push("--namespace", namespace);
     if (ref !== null) args.push("--ref", ref);
     if (file !== null) args.push("--file", file);
-    const { stdout } = await exec(python, args, {
-      timeout: 45000,
-      maxBuffer: 8192,
-      windowsHide: true,
-      env: { ...process.env, PYTHONDONTWRITEBYTECODE: "1" },
-    });
+    let stdout;
+    try {
+      ({ stdout } = await exec(python, args, {
+        timeout: 45000,
+        maxBuffer: 8192,
+        windowsHide: true,
+        env: { ...process.env, PYTHONDONTWRITEBYTECODE: "1" },
+      }));
+    } catch (error) {
+      let response;
+      try {
+        response = JSON.parse(error.stdout?.trim() || "{}");
+      } catch {
+        // Do not emit backend errors, paths, request identifiers or secrets.
+      }
+      if (response?.error === "RequestBudgetExceeded") {
+        throw new Error("oci_request_budget_exhausted");
+      }
+      throw new Error("oci_backend_operation_failed");
+    }
     try {
       return JSON.parse(stdout.trim());
     } catch {

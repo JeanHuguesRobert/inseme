@@ -1,7 +1,7 @@
 ---
 title: Magistral Oracle Object Storage provider v0
 date: 2026-11-16
-status: experimental-read-only-probed
+status: experimental-guarded-activation
 document_role: operational
 language: en
 ---
@@ -32,10 +32,15 @@ CPS and retention policy. Oracle is a replaceable backing provider.
   The SDK directly is verified and is the backend used by Magistral.
 - The tenancy's home region was observed to be eu-marseille-1, and no
   existing Object Storage buckets were found in root or child compartments
-  using the profile authorized for the owner's ThinkPad.
+  using the profile authorized for the owner's ThinkPad. A dedicated
+  compartment, quota, private bucket, dynamic group and narrowly-scoped
+  IAM policy have since been created, with no object upload at provisioning.
 - Fracta2 Instance Principal can read its Object Storage namespace, but a
   root-compartment ListBuckets attempt failed with HTTP 404 (no proof of
   list access). Namespace access is NOT authority to create or write buckets.
+  A dynamic group now grants this exact instance access only to CREATE and
+  READ objects at the sha256/ prefix in the private Magistral bucket;
+  overwrites, deletions, bucket administration and global listing are excluded.
 
 ## Explicit billing guard
 
@@ -43,23 +48,35 @@ A read-only Tenant Manager Subscription API query on 2026-11-16 returned
 one active OCI subscription with payment_model=PAYG. **The account is billed
 as Pay As You Go**, even though Oracle includes a no-charge Object Storage
 allowance for some usage. This is NOT a free-only account and excess usage
-may be billed. No OCI bucket has been created and no object has been uploaded.
+may be billed. The empty, private Standard bucket named magistral-objects
+was created in the dedicated MagistralMemory compartment on 2026-11-16.
+No object was uploaded during the provisioning phase.
 
 For this reason:
 - createOciObjectProvider() defaults to billing="unknown" and rejects both
   get() and put() even when called directly.
 - Magistral createObjectMemory(max_cost:0) does not select that provider.
-- freeTierVerified:true is an explicit OPERATOR attestation after verification
-  of the real account, existing bucket, effective cost rules, quotas and
-  permissions. It is not an assertion automatically inferred by this code.
-- This proof-of-concept does not implement a remote bucket-total quota meter,
-  monthly request counter or a cloud-side hard spending cap. Consequently
-  the attestation alone cannot make a billed account mathematically impossible
-  to charge. Do not activate it without independent confirmation and limits.
-- OCI has a hard regional/compartment Object Storage quota:
-  "Set object-storage quota storage-bytes to 8000000000 in compartment ...".
-  This limits storage consumption but does NOT bound chargeable API requests
-  or other services. No such quota has been applied in the owner's tenancy.
+- freeTierVerified:true requires a separate OPERATOR attestation, combined
+  with an explicit absolute requestBudgetDb and monthlyRequestCap of 1..1000.
+  It is not automatically inferred from an OCI PAYG account or cloud tenancy.
+- The Python bridge reserves in a persistent SQLite ledger the worst-case
+  Object Storage request count before every GET/PUT: 2 for GET and 3 for PUT,
+  including a namespace lookup and possible conditional-write conflict read.
+  Atomic BEGIN IMMEDIATE avoids oversubscription across concurrent processes.
+  Failed operations retain their budget reservation (conservative).
+  The region is a shared budget scope; callers must reuse ONE durable ledger
+  across all Magistral object providers on this host.
+- The intended Fracta2 monthly budget is 500 reserved calls (1% of the
+  50,000 Object Storage API requests Oracle lists as free each month).
+  This is a strict software limit for accesses exclusively through this
+  adapter, not an OCI-wide hard request quota. Calls made through other
+  clients or services are not counted. The budget cannot prevent unexpected
+  charges outside Magistral. SDK automatic retry is disabled.
+- An OCI compartment resource quota is ACTIVE:
+  "Set object-storage quota storage-bytes to 8000000000 in compartment MagistralMemory".
+  This is 8 GB (decimal), below the 10 GB Standard tier Always Free allowance
+  for PAYG accounts. It limits capacity, not request billing or other services.
+  The compartment and bucket have no other tenants/objects as of provisioning.
   Official reference:
   https://docs.oracle.com/en-us/iaas/Content/Quotas/Concepts/resourcequotas_topic-Object_Storage_Quotas.htm
 
@@ -99,14 +116,20 @@ while reporting billing="unknown"; it performed no bucket or object mutation.
 
 ## Future activation checklist
 
-1. Verify account is Always Free-only, or independently verify billing
-   protection and current free allowance in the Oracle console.
-2. Confirm the existing subscription's home region, available class of
-   Object Storage and billing/quota safeguards.
-3. Create ONE private standard bucket with explicit limited IAM scope; this
-   is a separate authorized account action.
-4. Grant Fracta2 Instance Principal only get/put rights for that bucket.
-5. Prove one bounded small PUT, repeated idempotent PUT and GET, SHA-256,
-   then deliberate fallback to an independent provider.
-6. Monitor actual usage and stop before free-tier request or capacity limits.
-   Do not rewrite Git history as part of OCI activation.
+1. DONE: real account identified as PAYG, home region eu-marseille-1.
+2. DONE: compartment MagistralMemory and active hard storage quota of 8 GB.
+3. DONE: private Standard bucket magistral-objects, versioning disabled,
+   no public access, and no automatic object events.
+4. DONE: dynamic group for only Fracta2; IAM allows CREATE/READ of sha256/*
+   objects in that bucket only, never overwrite or delete.
+5. DONE: SQLite monthly upper-bound reservation mechanism; cap 500 for
+   initial Fracta2 runtime; offline concurrent tests pass.
+6. PENDING: prove bounded real PUT, idempotent PUT and GET using the
+   configured ledger, and verify instance IAM propagation.
+7. PENDING: independent second provider, cost-usage monitoring, and
+   future retention. Do not rewrite Git history as part of activation.
+
+PAYG warning: even with the local 500-call ledger and hard 8GB storage
+quota, no complete zero-billing guarantee exists for unrelated cloud
+usage, other OCI clients, or Oracle's pricing changes. Do not call these
+controls an OCI account-wide hard spending limit.
