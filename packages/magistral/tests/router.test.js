@@ -251,3 +251,21 @@ test("keeps explicitly pinned browser provider from falling back after exhaustio
   );
   assert.equal(fallbackCalls, 0);
 });
+
+
+test("forwards a stable retry key only to the pinned browser provider", async () => {
+  const router = createRouter({
+    map: [{id:"browser",url:"http://127.0.0.1:8798/v1/chat/completions",
+      model:"chatgpt-browser",tier:"chatgpt-browser",no_fallback_on_error:true}],
+    log:()=>{},
+    invokeNode:async ({headers})=>{
+      assert.equal(headers["X-Client-Request-Id"],"client-123");
+      return new Response(JSON.stringify({choices:[{message:{content:"ok"}}]}),
+        {status:200,headers:{"Content-Type":"application/json"}});
+    },
+  });
+  const response=await router.route({model:"chatgpt-browser",
+    _client_request_id:"client-123",messages:[{role:"user",content:"test"}]},
+  "chatgpt-browser");
+  assert.equal(response.status,200);
+});
