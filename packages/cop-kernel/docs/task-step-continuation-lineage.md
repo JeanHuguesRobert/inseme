@@ -708,3 +708,40 @@ additional packet types or another work queue service.
 `handler.park` in Cogentia's Cognitive Packet Switching paper suspends one
 handler's participation only; `packet.park` is a temperature transition on
 work itself. The two are intentionally distinct.
+
+### Atomic cooling vs PacketClaim and scheduler dispatch (#190/#192, 2026-11-16)
+
+The **EventStorePacketClaimCoordinator** now projects the effective temperature
+from the SAME SQLite Event Store transaction (`BEGIN IMMEDIATE`) that grants
+an exclusive PacketClaim. Previously this admission was checked only by an
+optional read-only Scheduler callback, permitting a race when a second
+process suspended the selected Packet between discovery and claim. The
+claim now returns `PACKET_TEMPERATURE_BLOCKED`, without consuming an epoch or
+writing a grant, when the work or any ancestor is suspended/parked/archived
+or logically deleted. `heartbeat` also rejects lease renewal after cooling;
+the worker can still `release` its existing claim cooperatively.
+
+The existing COPScheduler rechecks its configured `admissionResolver` AFTER
+routing/claim acquisition and BEFORE emitting the `cop.continuation.resume`
+dispatch event or invoking a handler. If the Packet cooled in that window,
+it releases the claim and returns a `deferred` outcome; a deferred work item
+stays pending for an eligible later trigger. The resume event is published
+only once claim and pre-execution eligibility have passed (or for a purely
+bus-driven continuation that has no local handler).
+
+**Scope and residual hazard.** This fixes the atomic selection→claim race and
+closes a later pre-handler window. A long-running handler must still observe
+subsequent suspension at a safe point or before an externally consequential
+provider call; an initial claim cannot retroactively undo already executed
+external effects. Validate a current lease/epoch and COP authority at each
+actual effect boundary. Shared transactional COP Store is the authority for
+claims; FractaScheduler does not own a separate queue or lock database.
+
+Reality tests in `packetTemperatureClaimFence.test.js` start two independent
+Node worker OS processes competing on a shared durable SQLite journal.
+Both are denied when a parent cooled after their eligibility projection.
+After explicit parent-only and then child resume, one worker gets the unique
+claim and the other receives `PACKET_BUSY`. A deterministic interleaving
+pauses a packet after a grant but before handler execution and verifies
+*zero* resume events, *zero* handler effects and release of the stale claim.
+A separate test refuses heartbeat renewal after cooling and accepts release.

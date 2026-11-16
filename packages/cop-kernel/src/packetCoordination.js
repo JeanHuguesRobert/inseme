@@ -5,6 +5,7 @@ import {
   projectPacketCoordination,
   validateCurrentPacketClaim,
 } from "../../cop-core/src/packet-coordination.js";
+import {projectPacketTemperature} from "../../cop-core/src/packet-temperature.js";
 
 function iso(ms) {
   return new Date(ms).toISOString();
@@ -380,7 +381,7 @@ export class EventStorePacketClaimCoordinator {
           );
         }
       };
-      return transition(events, append);
+      return transition(events, append, tx);
     });
 
     if (!result?.ok) {
@@ -398,8 +399,17 @@ export class EventStorePacketClaimCoordinator {
   }
 
   async tryClaim({ packetRef, handlerRef, ttlMs = 60_000 }) {
-    return this.#transaction(packetRef, (events, append) =>
-      tryClaimTransition({
+    return this.#transaction(packetRef, (events, append, tx) => {
+      // FBF / TOCTOU: admission and PacketClaim creation use ONE SQLite
+      // BEGIN IMMEDIATE transaction, serialized with all temperature changes.
+      // A previously selected packet may have cooled before this claim.
+      const temperature=projectPacketTemperature(tx,{packet_ref:packetRef});
+      if(!temperature.ok||!temperature.runnable)return {
+        ok:false,code:'PACKET_TEMPERATURE_BLOCKED',packet_ref:packetRef,
+        temperature:temperature.effective_temperature||null,
+        blocked_by:temperature.blocked_by||[],
+      };
+      return tryClaimTransition({
         events,
         append,
         packetRef,
@@ -407,13 +417,21 @@ export class EventStorePacketClaimCoordinator {
         ttlMs,
         nowMs: this.#clock(),
         makeClaimId: ({ packetRef: ref, epoch }) => `${ref}:claim:${epoch}`,
-      })
-    );
+      });
+    });
   }
 
   async heartbeat({ packetRef, claimId, handlerRef, epoch, ttlMs = 60_000 }) {
-    return this.#transaction(packetRef, (events, append) =>
-      heartbeatTransition({
+    return this.#transaction(packetRef, (events, append, tx) => {
+      // Cooperative pause: once cooled, a previously granted worker may
+      // release or return a late outcome, but cannot renew execution custody.
+      // The worker must re-read state and stop at its next checkpoint.
+      const temperature=projectPacketTemperature(tx,{packet_ref:packetRef});
+      if(!temperature.ok||!temperature.runnable)return {
+        ok:false,code:'PACKET_TEMPERATURE_BLOCKED',packet_ref:packetRef,
+        temperature:temperature.effective_temperature||null,
+      };
+      return heartbeatTransition({
         events,
         append,
         packetRef,
@@ -422,8 +440,8 @@ export class EventStorePacketClaimCoordinator {
         epoch,
         ttlMs,
         nowMs: this.#clock(),
-      })
-    );
+      });
+    });
   }
 
   async release({ packetRef, claimId, handlerRef, epoch }) {

@@ -312,8 +312,9 @@ export class COPScheduler {
 
     const effectiveBus = topicId ? this.getBusForTopic(topicId) : this.bus;
 
-    await effectiveBus.publish(resumeMsg);
-
+    // Publication is a dispatch signal. Never emit it before a required
+    // PacketClaim or a final admission check has passed: subscribers may
+    // otherwise execute work even if the chosen packet has been parked.
     let execution = null;
     let packetClaim = null;
     let packetClaimCoordinator = null;
@@ -376,6 +377,27 @@ export class COPScheduler {
           }
         }
 
+        // Re-evaluate temperature and any host admission condition *after*
+        // potentially slow routing/claim acquisition. A concurrent Suspend
+        // may have committed since the first projection. In the durable COP
+        // EventStore coordinator even the claim is atomically temperature-
+        // gated. Provider-side effects still need their own claim/epoch check.
+        if(this.admissionResolver){
+          const admitted=await this.admissionResolver(finalContinuation,{
+            triggeringEvent,reason:resumeReason,payload,
+            phase:'pre_execution',packetClaim,packetClaimPlacement});
+          if(admitted!==true&&admitted?.admitted!==true){
+            if(packetClaim&&typeof packetClaimCoordinator?.release==='function'){
+              const released=await packetClaimCoordinator.release({
+                packetRef:packetClaim.packet_ref,claimId:packetClaim.claim_id,
+                handlerRef:packetClaim.handler_ref,epoch:packetClaim.epoch});
+              if(!released?.ok)throw Error('cold_claim_release_failed');
+            }
+            return {continuation:finalContinuation,deferred:true,
+              status:'deferred',reason:admitted?.reason||'work_not_admitted_after_claim'};
+          }
+        }
+        await effectiveBus.publish(resumeMsg);
         execution = await executeContinuation({
           continuation: finalContinuation,
           handlerResolver: this.handlerResolver,
@@ -429,6 +451,7 @@ export class COPScheduler {
       }
     }
 
+    if(!this.handlerResolver)await effectiveBus.publish(resumeMsg);
     console.log(`[COPScheduler] Resumed ${finalContinuation.continuationId} (${resumeReason})`);
     return { continuation: finalContinuation, resumeMessage: resumeMsg, execution };
   }
