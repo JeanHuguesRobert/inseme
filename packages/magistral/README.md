@@ -43,6 +43,11 @@ PUT/GET. Real object operations remain blocked by default. The standalone
 magistral-objects CLI accepts --oci-config <absolute-path> only when
 the operator explicitly opts into this bounded PAYG allowance.
 
+An optional [SSH object provider](docs/ssh-object-memory-v0.md) exposes
+ThinkPad and Android Termux disks over existing Fractanet SSH aliases.
+Peers may be offline; Cogentia owns later CPS reconciliation.
+
+
 
 **MAGISTRAL** is an open technological initiative designed to restore user sovereignty by breaking
 provider silos. It defines a strict standard for separating model capabilities, network access, and

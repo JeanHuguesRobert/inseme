@@ -206,3 +206,40 @@ test("CLI rejects malformed and relative OCI configurations without network acce
     execute(process.execPath, [cli, "put", source, "--oci-config", "relative-file.json"]),
   );
 });
+
+test("CLI SSH profile rejects unverified network cost before writing", async (t) => {
+  const root = await temp(t);
+  const source = path.join(root, "source");
+  const sshFile = path.join(root, "ssh-profile.json");
+  await writeFile(source, sample);
+  await writeFile(sshFile, JSON.stringify({
+    schema: "magistral.ssh-object-profile/v1",
+    id: "test-peer",
+    alias: "nonexistent",
+    python: "/bin/python3",
+    script: "/unavailable/bridge.py",
+    networkCostVerified: false,
+  }));
+  const cli=path.resolve("bin/magistral-objects.js");
+  await assert.rejects(execute(process.execPath,[
+    cli,"put",source,"--ssh-config",sshFile,
+  ]));
+});
+
+test("CLI rejects malformed remote profiles and illegal replica requests", async (t) => {
+  const root=await temp(t);
+  const source=path.join(root,"source");
+  const profile=path.join(root,"invalid.json");
+  await writeFile(source,sample);
+  await writeFile(profile,JSON.stringify({schema:"unexpected"}));
+  const cli=path.resolve("bin/magistral-objects.js");
+  await assert.rejects(execute(process.execPath,[
+    cli,"put",source,"--ssh-config",profile,
+  ]));
+  await assert.rejects(execute(process.execPath,[
+    cli,"put",source,"--ssh-config","relative.json",
+  ]));
+  await assert.rejects(execute(process.execPath,[
+    cli,"put",source,"--store",root,"--min-replicas","0",
+  ]));
+});
