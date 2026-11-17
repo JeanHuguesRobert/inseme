@@ -281,6 +281,14 @@ async function boot() {
     }
 
     if (url.pathname === "/v1/embeddings" && req.method === "POST") {
+      // Same access control as /v1/chat/completions. An embedding API request
+      // is a metered provider effect, not a public health/status endpoint.
+      const authorization = req.headers.get("authorization") || "";
+      if (authorization !== `Bearer ${apiToken}`) {
+        corsHeaders.set("Content-Type", "application/json");
+        return new Response(JSON.stringify({error:{code:"magistral_unauthorized"}}),
+          {status:401,headers:corsHeaders});
+      }
       let payload;
       try {
         payload = await req.json();

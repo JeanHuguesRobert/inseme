@@ -96,7 +96,7 @@ export async function handleEmbeddingRequest(payload, config, fetchImpl = fetch)
 
   const cloudflare = config.provider === "cloudflare";
   const target = cloudflare
-    ? `https://api.cloudflare.com/client/v4/accounts/${config.account_id}/ai/v1/embeddings`
+    ? `https://api.cloudflare.com/client/v4/accounts/${config.account_id}/ai/run/${config.model}`
     : config.openai_url;
   const preparedInputs = cloudflare && config.model === "@cf/google/embeddinggemma-2"
     ? inputs.map(text => role === "query"
@@ -112,7 +112,9 @@ export async function handleEmbeddingRequest(payload, config, fetchImpl = fetch)
         Authorization: `Bearer ${config.api_key}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model: config.model, input: preparedInputs, dimensions: config.dimensions }),
+      body: JSON.stringify(cloudflare
+        ? { input: preparedInputs }
+        : { model: config.model, input: preparedInputs, dimensions: config.dimensions }),
       signal: AbortSignal.timeout(config.timeout_ms),
     });
   } catch (error) {
@@ -131,7 +133,10 @@ export async function handleEmbeddingRequest(payload, config, fetchImpl = fetch)
       ...(retrySeconds != null ? { retry_after_seconds: retrySeconds } : {}),
     });
   }
-  const body = await response.json().catch(() => null);
+  const envelope = await response.json().catch(() => null);
+  const body = cloudflare
+    ? (envelope?.success === true ? envelope?.result : null)
+    : envelope;
   if (body?.model && body.model !== config.model) {
     return failure(502, "embedding_response_model_mismatch", config);
   }

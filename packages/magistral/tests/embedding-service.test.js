@@ -103,18 +103,19 @@ test("Cloudflare mocked REST adapter prefixes Gemma documents and queries and ne
   const fake=async (url,init)=>{
     const payload=JSON.parse(init.body);
     requests.push({url,payload});
-    return new Response(JSON.stringify({
+    return new Response(JSON.stringify({success:true,result:{
       model:cfg.model,
       data:payload.input.map((_,index)=>({index,embedding:Array(768).fill(index===0 ? 0.1 : 0.2)})),
       usage:{prompt_tokens:19},
-    }),{status:200});
+    }}),{status:200});
   };
   const doc=await handleEmbeddingRequest({input:["Bonjour","Hello"],embedding_role:"document"},cfg,fake);
   assert.equal(doc.status,200);
   assert.equal(doc.body.data.length,2);
   assert.equal(doc.body.usage.prompt_tokens,19);
-  assert.equal(requests[0].url,"https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1/embeddings");
+  assert.equal(requests[0].url,"https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/run/@cf/google/embeddinggemma-2");
   assert.equal(requests[0].payload.input[0],"title: none | text: Bonjour");
+  assert.equal(Object.hasOwn(requests[0].payload,"dimensions"),false);
   const query=await handleEmbeddingRequest({input:"Bonjour",embedding_role:"query"},cfg,fake);
   assert.equal(query.status,200);
   assert.equal(requests[1].payload.input[0],"task: search result | query: Bonjour");

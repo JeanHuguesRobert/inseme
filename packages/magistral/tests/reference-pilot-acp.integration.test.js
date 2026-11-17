@@ -77,6 +77,19 @@ test("Deno Magistral pilot routes an authenticated OpenAI request to an ACP stdi
       body: JSON.stringify({ model: "fast", messages: [{ role: "user", content: "hello" }] }),
     });
     assert.equal(unauthorized.status, 401);
+    const unauthorizedEmbedding = await fetch(`http://127.0.0.1:${port}/v1/embeddings`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"text-embedding-3-small",input:"test-no-credential"}),
+    });
+    assert.equal(unauthorizedEmbedding.status,401);
+    assert.equal((await unauthorizedEmbedding.json()).error.code,"magistral_unauthorized");
+    const authorizedEmbedding = await fetch(`http://127.0.0.1:${port}/v1/embeddings`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},
+      body:JSON.stringify({model:"text-embedding-3-small",input:"test-only"}),
+    });
+    assert.notEqual(authorizedEmbedding.status,401); // service may be disabled, never provider call without config
 
     const response = await fetch(`http://127.0.0.1:${port}/v1/chat/completions`, {
       method: "POST",
