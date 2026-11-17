@@ -248,6 +248,11 @@ const NON_INHERITABLE_KEYS = new Set([
   "contact_email",
   "owner_email",
   "owner_subject_ref",
+  // Per-instance authentication subjects are never inherited by hosted twins.
+  "nasa_principal_subject",
+  "nasa_operator_subjects",
+  "interactions_desk_principal_subject",
+  "interactions_desk_operator_subjects",
 ]);
 
 /**
