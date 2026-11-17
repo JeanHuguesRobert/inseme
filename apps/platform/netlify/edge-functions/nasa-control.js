@@ -1,3 +1,5 @@
+import { readLocalNasaObserver } from "./nasa-observer.js";
+
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "no-store",
@@ -70,10 +72,18 @@ export default async function nasaControl(request) {
     return response({ error: "action_bridge_not_configured" }, 501);
   }
 
+  // Private ONA observations are for the identified Principal, not generic delegates.
+  // Same-origin browser requests never receive ONA credentials or action capabilities.
+  let observer = { status: "principal_only", view: null };
+  if (accessClass === "principal") {
+    const origin = vaultValue(vault.config, "NASA_OBSERVER_URL");
+    observer = await readLocalNasaObserver(origin);
+  }
   return response({
     authenticated: true,
     authorized: true,
     access_class: accessClass,
     action_bridge: "not_configured",
+    observer,
   });
 }

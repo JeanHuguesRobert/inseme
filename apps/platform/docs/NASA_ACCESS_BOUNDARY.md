@@ -1,6 +1,6 @@
 ---
 title: La Nasa access boundary
-status: deployed authorization boundary; action bridge not configured
+status: deployed Principal read-only Fracta2 observer; action bridge not configured
 visibility: public
 license: CC BY-SA 4.0
 affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
@@ -25,8 +25,8 @@ La Nasa has two deliberately different surfaces:
 
 | Surface           | URL                                                                 | Audience                | Capability                                                 |
 | ----------------- | ------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------- |
-| Public projection | `https://cogentia.fractavolta.com/ops/console/?view=fix-bugs-first` | everyone                | read-only, expurgated operational and Fix Bugs First views |
-| John workspace    | `https://jhn.baronsmariani.org/nasa`                                | authenticated operators | future, server-mediated work actions                       |
+| Public projection | `https://cogentia.fractavolta.com/ops/dashboard` | everyone                | existing public Fractanet operational summary |
+| John workspace    | `https://jhn.baronsmariani.org/nasa`                                | Principal (and limited delegated access) | private, read-only Fracta2 observations; action bridge absent |
 
 The public surface contains no browser token, node identity, endpoint, private registry data, or
 action control. It must remain safe to share as a demonstration URL.
@@ -36,7 +36,8 @@ action control. It must remain safe to share as a demonstration URL.
 `/nasa` sends the current John Supabase access token only to its same-origin endpoint:
 
 ```text
-GET or POST /api/nasa/control
+GET /api/nasa/control (read)
+POST /api/nasa/control (not deployed)
 ```
 
 The Netlify Edge Function `nasa-control` validates the token with the JHN Supabase project using
@@ -72,6 +73,28 @@ The endpoint is fail-closed:
 The `501` response is intentional. It proves that authentication and authorization are in place
 without accidentally granting write access to Fracta.
 
+## Fracta2 read-only observer (2026-11-17)
+
+The production JHN FractaFunction Deno runtime receives a non-secret
+`NASA_OBSERVER_URL=http://127.0.0.1:8794` from its Operium bootstrap.
+The value is resolved by the existing instance-aware `getConfig(..., "jhn")`
+and is accepted **only** when it matches this exact loopback origin. The Deno
+network permissions allow the local ONA port and otherwise retain the existing
+host allowlist.
+
+After Supabase `auth.getUser` and UUID Principal validation, a GET reads only
+ONA `/node/status` and `/cgi-bin/fleet` over server-side loopback. The server
+returns a bounded, allowlisted projection (local health/probes/jobs/COP outbox
+and observed fleet status), not ONA raw JSON, auth headers, node endpoints,
+action definitions, credentials or remote administration rights. Delegates do
+not receive the Fracta2 observer projection. Unavailable/stale component
+responses remain explicit; unknown peer health is not interpreted as down.
+
+The public link now targets the functioning `/ops/dashboard`, not the
+`/ops/console/` deployment missing after the November 10 migration.
+No ONA action endpoint is proxied; GET-only is enforced by the FractaFunction
+Deno guard. The browser uses only its same-origin, bearer-protected API.
+
 ## Deployment checklist
 
 Before publishing the John increment:
@@ -90,6 +113,7 @@ Before publishing the John increment:
 
 ## Current limit
 
-No public or authenticated write operation has been deployed by this increment. The public dashboard
-is a projection; the John workspace is the authentication and authorization foundation for later
-bounded actions.
+No public or authenticated write operation has been deployed by this increment.
+The public dashboard remains a projection; the Principal's John workspace now also
+shows a bounded private Fracta2 observer. Authenticated write/action transport remains
+out of scope.
