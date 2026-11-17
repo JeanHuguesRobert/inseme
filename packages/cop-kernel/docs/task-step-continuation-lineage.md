@@ -772,3 +772,61 @@ one join. A parked fallback parent cannot send the next child or commit a
 dispatch intent. This is also necessary for the Distributed Work Frontier
 (Cogentia `scripts/lib/continuation-pull.js`), which uses this canonical
 parent reconciler after child execution.
+
+
+### Packet-local Task/Step cursor: simplest durable continuation (2026-11-17, #194 / Cogentia #336)
+
+The ordinary l8/JS next-Step operation only changes the in-memory task
+cursor. COP can preserve **the same semantic simplicity** without assuming
+a shared JavaScript heap: `cop-core/src/packet-task-step-cursor.js` now
+projects a finite local COPTask/COPStep sequence onto the **existing
+Cognitive Packet topic** in the canonical COP Event Store. This adds no
+separate queue, canonical Task entity, worker, handler capability, or database.
+
+```js
+import {declarePacketTaskSteps,projectPacketTaskSteps,
+  advancePacketTaskStep} from './packet-task-step-cursor.js';
+
+// Define a packet-local linear plan once; no step is executed here.
+declarePacketTaskSteps(copStore,{
+  packet_ref:'packet:example', task_ref:'task:example', plan_id:'example-v1',
+  step_refs:['step:prepare','step:compute','step:finish'],
+});
+
+// At a safe local commit point after step:prepare was actually handled:
+const cursor=projectPacketTaskSteps(copStore,{packet_ref:'packet:example'});
+advancePacketTaskStep(copStore,{
+  packet_ref:'packet:example',task_ref:'task:example',
+  expected_step_ref:cursor.next_step_ref,expected_version:cursor.version,
+  transition_id:'prepare-completed',
+});
+// The durable next cursor is now step:compute, version 1.
+```
+
+This is the equivalent of **setting the next Step**, not of spawning a
+new Cognitive Packet or a remote handler for every local instruction. The
+plan and every completed-step transition are append-only COP Events, each
+with an idempotency key and version. The `advance` operation checks the
+expected cursor and current Packet temperature and appends the successor
+**within the same SQLite `BEGIN IMMEDIATE` transaction**. Two competing
+Schedulers on a shared SQLite journal cannot both advance version N: one
+commits and the other receives `stale_step_cursor`. After process restart,
+replay reconstructs the same next Step and completed history. A terminal
+Step results in `next_step_ref:null` and cannot advance again.
+
+This module is deliberately **not a Step executor**: it does not run code,
+settle an external effect, install a handler, grant COP permissions or prove
+that an optional `source_ref` exists or represents a successful effect. An
+executor must separately do the required work and verify/authorize all
+consequential effects (using the existing PacketClaim and budget protocol)
+**before** recording completion. Pure local calculation may need no provider
+mandate. A detached task requiring independent allocation, placement, return
+contract or effects should use the already-existing packet/child-continuation
+protocol, not stretch a COPStep cursor into a competing work authority.
+
+This initial implementation is intentionally **linear**; branching, looping,
+step insertion and dynamic script execution are separate, later semantics.
+`createTaskStep` / `markTaskStepCompleted` remain the legacy storage helpers,
+not synchronized automatically by this new *opt-in* packet cursor. There is
+no silent migration of existing Task or Step rows. Tests cover concurrent
+advancement, idempotence, changed plans, persisted restart and Park/Resume.
