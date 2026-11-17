@@ -18,13 +18,12 @@ function subjects(value) {
 
 async function loadVaultConfig() {
   const config = await import("@inseme/cop-host/config/instanceConfig.edge.js");
-  const table = await config.loadInstanceConfig();
-  return { config, table };
+  await config.loadInstanceConfig();
+  return { config };
 }
 
-function vaultValue(table, name) {
-  const row = table[String(name).trim().toLowerCase()];
-  const value = row?.value_json ?? row?.value;
+function vaultValue(config, name) {
+  const value = config.getConfig(name, undefined, "jhn");
   return typeof value === "string" ? value.trim() : "";
 }
 
@@ -55,8 +54,8 @@ export default async function nasaControl(request) {
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) return response({ error: "invalid_session" }, 401);
 
-  const operators = subjects(vaultValue(vault.table, "NASA_OPERATOR_SUBJECTS"));
-  const principal = vaultValue(vault.table, "NASA_PRINCIPAL_SUBJECT");
+  const operators = subjects(vaultValue(vault.config, "NASA_OPERATOR_SUBJECTS"));
+  const principal = vaultValue(vault.config, "NASA_PRINCIPAL_SUBJECT");
   if (!principal) {
     return response({ error: "principal_subject_unconfigured" }, 503);
   }
