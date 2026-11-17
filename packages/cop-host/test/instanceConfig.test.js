@@ -265,3 +265,44 @@ test("7. getAllConfigKeys gathers inheritable keys across host chain", () => {
   assert.ok(keys.includes("bot_name"));
   assert.ok(keys.includes("parent_key"));
 });
+
+
+test("8. JHN Principal and delegate subjects are instance-local", () => {
+  const rootId = "00000000-0000-0000-0000-000000000001";
+  const childId = "22222222-2222-2222-2222-222222222222";
+  const keys = [
+    "nasa_principal_subject",
+    "nasa_operator_subjects",
+    "interactions_desk_principal_subject",
+    "interactions_desk_operator_subjects",
+  ];
+  const parentConfig = Object.fromEntries(keys.map((key) => [key, "root-subject"]));
+  setupMockConfigState({
+    instances: [
+      { id: rootId, canonical_slug: "jhn" },
+      { id: childId, canonical_slug: "child", host_instance_id: rootId },
+    ],
+    configs: { [rootId]: parentConfig },
+    flatConfig: parentConfig,
+  });
+
+  for (const key of keys) {
+    assert.equal(getConfig(key, undefined, "jhn"), "root-subject");
+    assert.equal(getConfig(key, undefined, "child"), undefined);
+    assert.ok(!getAllConfigKeys("child").includes(key));
+  }
+
+  setupMockConfigState({
+    instances: [
+      { id: rootId, canonical_slug: "jhn" },
+      { id: childId, canonical_slug: "child", host_instance_id: rootId },
+    ],
+    configs: {
+      [rootId]: parentConfig,
+      [childId]: { nasa_principal_subject: "child-subject" },
+    },
+    flatConfig: parentConfig,
+  });
+  assert.equal(getConfig("nasa_principal_subject", undefined, "child"), "child-subject");
+  assert.equal(getConfig("nasa_principal_subject", undefined, "jhn"), "root-subject");
+});
