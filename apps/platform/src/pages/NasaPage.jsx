@@ -183,6 +183,67 @@ export default function NasaPage() {
           </section>
         ) : null}
 
+        {accessClass === "principal" && control?.cockpit ? (
+          <section className="mt-8 space-y-4" aria-label="Cogentia work overview">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-2xl font-semibold">Cogentia — Work and continuations</h2>
+              <span className="text-sm text-slate-400">Daemon: {control.cockpit.status}</span>
+            </div>
+            {control.cockpit.view ? (
+              <article className="rounded-xl border border-slate-700 bg-slate-900/60 p-5">
+                <p className="text-sm text-slate-400">
+                  Live corpus projection · {control.cockpit.view.generated_at || "unknown time"} ·
+                  source: Cogentia daemon on Fracta2
+                </p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-4">
+                  <Metric label="Alive continuations" value={control.cockpit.view.continuations.alive_count} />
+                  <Metric label="Open issues" value={control.cockpit.view.issues.open_count} />
+                  <Metric label="Load estimate" value={control.cockpit.view.load.level || "unknown"} />
+                  <Metric label="Retrieval embedding coverage" value={
+                    control.cockpit.view.load.embedding_coverage_pct == null
+                      ? null : `${control.cockpit.view.load.embedding_coverage_pct}%`
+                  } />
+                </div>
+                <p className="mt-4 text-xs text-slate-400">
+                  Load is an advisory scheduling indicator, not a node outage.
+                  The external Views Store is not probed by this panel.
+                </p>
+                <h3 className="mt-6 font-semibold">
+                  Active continuations — sample of {control.cockpit.view.continuations.displayed_count}
+                </h3>
+                <div className="mt-2 divide-y divide-slate-800">
+                  {control.cockpit.view.continuations.recent.map((entry, i) => (
+                    <div className="py-3" key={entry.id || i}>
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <span className="font-medium">{entry.title || entry.id}</span>
+                        <span className="text-xs text-slate-400">
+                          {entry.priority || "unranked"} · {entry.status || "unknown"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {entry.repo || "Corpus"} · {entry.id} · {entry.updated_at || "date unknown"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-sm text-slate-400">
+                  This is a bounded read-only sample of the existing corpus registry,
+                  not an independent task list. Mandate decisions and COP actions
+                  remain on their separately authenticated pathways.
+                </p>
+                <Link to="/cop/consent/continuation"
+                  className="mt-3 inline-block text-sm font-medium text-emerald-400 underline">
+                  Open John mandate and consent
+                </Link>
+              </article>
+            ) : (
+              <p className="rounded-xl border border-amber-700/50 p-5 text-amber-200">
+                Cogentia's local read-only snapshot is not available.
+              </p>
+            )}
+          </section>
+        ) : null}
+
         <section className="mt-8 rounded-xl border border-slate-800 bg-slate-900/40 p-5 text-sm text-slate-300">
           <h2 className="font-semibold text-slate-100">Boundary in this increment</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5">

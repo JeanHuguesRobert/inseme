@@ -95,6 +95,25 @@ The public link now targets the functioning `/ops/dashboard`, not the
 No ONA action endpoint is proxied; GET-only is enforced by the FractaFunction
 Deno guard. The browser uses only its same-origin, bearer-protected API.
 
+## Principal Cogentia cockpit snapshot (2026-11-18)
+
+The same Supabase-verified Principal GET now reads the *existing* Cogentia
+daemon on Fracta2 via the strictly pinned `NASA_COGENTIA_URL` instance
+configuration (`http://127.0.0.1:8790` injected by Operium's Deno bootstrap).
+Its `/api/views/snapshot?limit=8&no_store_probe=1` is the canonical read-only
+cockpit projection. The returned JSON is filtered to workload estimates,
+continuation counts, a bounded title/status/reference sample, and open issue
+counts. No raw continuation payloads, context, resume recipes, credentials or
+daemon command/action APIs reach the browser. The External Views Store is
+deliberately not probed by this query.
+
+This view is not an independent task registry, an authorization grant, or a
+live mandate ledger. The separate mandate/continuation decision endpoints
+remain protected by COP; their HTTP 403 responses must **not** be bypassed.
+John's current consent flow is linked as a separate authenticated workflow.
+A Cogentia daemon failure is represented as `cockpit.status=unavailable`,
+without hiding an otherwise healthy ONA observer.
+
 ## Deployment checklist
 
 Before publishing the John increment:

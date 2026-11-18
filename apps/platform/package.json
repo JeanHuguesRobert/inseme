@@ -7,6 +7,7 @@
   },
   "scripts": {
     "test": "node scripts/test-runner.js",
+    "test:nasa": "node --test scripts/test-nasa-observer.js scripts/test-nasa-cogentia-snapshot.js",
     "backfill:lastModifiedBy": "node scripts/backfill-lastmodifiedby.js",
     "dev": "pnpm run compile:briques && pnpm vite",
     "compile:briques": "node ../../packages/cop-host/scripts/compile-briques.js",

@@ -1,4 +1,5 @@
 import { readLocalNasaObserver } from "./nasa-observer.js";
+import { readLocalCogentiaSnapshot } from "./nasa-cogentia-snapshot.js";
 
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
@@ -75,9 +76,14 @@ export default async function nasaControl(request) {
   // Private ONA observations are for the identified Principal, not generic delegates.
   // Same-origin browser requests never receive ONA credentials or action capabilities.
   let observer = { status: "principal_only", view: null };
+  let cockpit = { status: "principal_only", view: null };
   if (accessClass === "principal") {
-    const origin = vaultValue(vault.config, "NASA_OBSERVER_URL");
-    observer = await readLocalNasaObserver(origin);
+    const observerOrigin = vaultValue(vault.config, "NASA_OBSERVER_URL");
+    const cockpitOrigin = vaultValue(vault.config, "NASA_COGENTIA_URL");
+    [observer, cockpit] = await Promise.all([
+      readLocalNasaObserver(observerOrigin),
+      readLocalCogentiaSnapshot(cockpitOrigin),
+    ]);
   }
   return response({
     authenticated: true,
@@ -85,5 +91,6 @@ export default async function nasaControl(request) {
     access_class: accessClass,
     action_bridge: "not_configured",
     observer,
+    cockpit,
   });
 }
