@@ -157,11 +157,76 @@ export default function NasaPage() {
                 The Fracta2 local observer is not available from this runtime.
               </p>
             )}
+            {control.observer.view?.compute ? (
+              <article className="rounded-xl border border-slate-700 bg-slate-900/60 p-5">
+                <h3 className="text-lg font-semibold">Local compute evidence</h3>
+                <p className="mt-1 text-xs text-slate-400">
+                  Direct SOMA measurements from the serving node. Raw CPU load is
+                  not normalized by processor count and is not packet throughput.
+                </p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                  <Metric label="CPU load — 1 min" value={control.observer.view.compute.cpu_load_1m?.value} />
+                  <Metric label="Memory free — GiB" value={
+                    control.observer.view.compute.memory_free?.value == null ? null :
+                      (control.observer.view.compute.memory_free.value / (1024 ** 3)).toFixed(2)
+                  } />
+                  <Metric label="Memory used — %" value={control.observer.view.compute.memory_used_percent?.value} />
+                </div>
+                <p className="mt-4 text-sm text-slate-400">
+                  Measured compute availability, packet-specific processing rate,
+                  queue delay, reservations and accelerator inventory are not yet
+                  exposed by this projection.
+                </p>
+              </article>
+            ) : null}
+            {control.observer.view?.neighbors ? (
+              <article className="rounded-xl border border-slate-700 bg-slate-900/60 p-5">
+                <h3 className="text-lg font-semibold">Known neighbors — Fracta2 locality</h3>
+                <p className="mt-1 text-xs text-slate-400">
+                  Local ONA registry: {control.observer.view.neighbors.known_count} known,
+                  {" "}{control.observer.view.neighbors.fresh_count} fresh.
+                  Last blackboard sync: {control.observer.view.neighbors.last_blackboard_sync_at || "unknown"}.
+                  Expired attractors remain historical evidence, not live routes.
+                </p>
+                <div className="mt-4 divide-y divide-slate-800">
+                  {control.observer.view.neighbors.nodes.length === 0 ? (
+                    <p className="py-3 text-sm text-slate-400">No currently known neighbor records.</p>
+                  ) : control.observer.view.neighbors.nodes.map((neighbor, i) => (
+                    <div className="py-3 text-sm" key={neighbor.node_id || i}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-medium">{neighbor.hostname || neighbor.node_id}</span>
+                        <span className={neighbor.fresh ? "text-emerald-400" : "text-amber-300"}>
+                          {neighbor.fresh ? "attractor fresh" : "stale / unconfirmed"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Capabilities: {neighbor.capabilities.join(", ") || "not declared"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Last advertisement: {neighbor.last_seen || "unknown"} ·
+                        Expires: {neighbor.expires_at || "unknown"} ·
+                        Direct mesh observation: {neighbor.direct_mesh_reachable === true ? "reachable" :
+                          neighbor.direct_mesh_reachable === false ? "unreachable when probed" : "not measured"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Routing eligibility: not evaluated (no packet, path assessment or COP admission).
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-xs text-slate-400">
+                  FractaRouting must compare packet-specific destination capacity,
+                  queueing, cost, path observations and stigmergic traces. This view
+                  makes no automatic dispatch and creates no routing decision.
+                </p>
+              </article>
+            ) : null}
             {control.observer.view?.fleet ? (
               <article className="rounded-xl border border-slate-700 bg-slate-900/60 p-5">
-                <h3 className="text-lg font-semibold">Fleet observed from Fracta2</h3>
+                <h3 className="text-lg font-semibold">Legacy fleet probe (fixed inventory)</h3>
                 <p className="mt-1 text-xs text-slate-400">
-                  An unknown state is not an outage. Snapshot: {control.observer.view.fleet.generated_at || "unknown"}.
+                  This older five-host probe is supplementary, not the local routing registry.
+                  Unknown state is not an outage. Snapshot: {control.observer.view.fleet.generated_at || "unknown"}.
                 </p>
                 <div className="mt-4 divide-y divide-slate-800">
                   {control.observer.view.fleet.nodes.map((node, i) => (

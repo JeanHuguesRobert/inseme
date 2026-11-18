@@ -114,6 +114,33 @@ John's current consent flow is linked as a separate authenticated workflow.
 A Cogentia daemon failure is represented as `cockpit.status=unavailable`,
 without hiding an otherwise healthy ONA observer.
 
+## Locality, neighboring capacities and path evidence (2026-11-18)
+
+The Principal-only GET now reads four fixed loopback ONA endpoints:
+`/node/status`, `/cgi-bin/fleet`, `/node/peers?fresh=0` and
+`/soma/object`. The last two provide a **bounded, source-matched** projection
+of local CPU/memory observations and locally known peer attractors,
+capability declarations, last-seen timestamps, TTL and independently observed
+direct mesh reachability when available. Peer endpoints, raw private
+metadata and irrelevant SOMA attributes never reach the browser.
+
+The ONA SQLite local peer registry (not the five hard-coded legacy fleet
+entries) represents this node's observed *neighbor knowledge*. Freshness is
+checked at read-time in ONA and in the protected JHN projection. Historical
+peers remain inspectable after expiry but are not thereby routable.
+An ONA `operium.node.v1` attractor is not a Cognitive Packet executor.
+No throughput, queue estimate, multi-hop path, authority or packet-relative
+attractiveness is manufactured from CPU load or TTL alone.
+
+Stigmergic path evidence is a subsequent, separately testable layer. It
+must derive from source-local COP event/effect receipts and their assimilation,
+indexed by packet class, capability, destination and path/hops, with
+provenance, decay, rejection and negative experience. This increment creates
+**no new routing log or authority, no dispatch action and no simulated score**.
+See the 2026-11-18 research addendum in
+`cogentia/research/informational_gravity.md` and
+`barons-Mariani/research/the_network_is_the_learning_computer.md`.
+
 ## Deployment checklist
 
 Before publishing the John increment:
