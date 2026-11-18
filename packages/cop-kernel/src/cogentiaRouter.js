@@ -387,8 +387,133 @@ export async function routePacketResiliently(
   };
 }
 
+/**
+ * Read-only, situated next-hop projection for the existing CPS router.
+ * No global directory, dispatch, inferred auth, or synthetic attractor score.
+ * Path traces must have receipt_verified=true from an independent COP
+ * verifier, not merely a string that looks like a receipt reference.
+ * The caller supplies local evidence from the existing capability registry,
+ * node-local peer records, and (when present) COP-derived path traces.
+ *
+ * A "candidate" is NOT a handoff: actual packet claim, mandate, budget,
+ * receipt and Ithaca custody are handled by the canonical COP machinery.
+ */
+export function projectCognitiveNextHop(pkt, {
+  observerNode, peers = [], handlerOffers = [], pathTraces = [],
+  now = new Date(), maxHops = 4,
+} = {}) {
+  const observedAt = now instanceof Date ? now : new Date(now);
+  if (!Number.isFinite(observedAt.getTime())) throw new Error("invalid_observation_time");
+  const envelope = pkt?.envelope || {};
+  const packetId = String(envelope.id || "").trim();
+  const required = String(envelope.requiredCapability || "").trim();
+  const observer = String(observerNode || "").trim();
+  const hopHistory = (Array.isArray(envelope.hops) ? envelope.hops : [])
+    .map(h => String(h?.node_id || "").trim()).filter(Boolean);
+  const visited = new Set(hopHistory);
+  // The current node may already be recorded as the LAST received hop.
+  // That is not a loop, but a return to it after visiting another node is.
+  if (hopHistory.at(-1) === String(observerNode || "").trim())
+    visited.delete(String(observerNode || "").trim());
+  const base = {
+    schema: "cop.fractarouting.next_hop_projection.v1",
+    read_only: true,
+    packet_ref: packetId || null,
+    observer_node: observer || null,
+    required_capability: required || null,
+    observed_at: observedAt.toISOString(),
+    status: null,
+    next_hop: null,
+    destination_node: null,
+    source_trace_ref: null,
+    candidate_basis: null,
+    route_cost_ms: null,
+    execution_authorized: null,
+    claim_acquired: false,
+    packet_forwarded: false,
+    reasons: [],
+  };
+  const result = (status, reasons = [], candidate = {}) =>
+    ({ ...base, status, reasons, ...candidate });
+
+  if (!packetId || !observer || !required)
+    return result("unclassified", ["missing_packet_identity_observer_or_required_capability"]);
+  if (!Number.isSafeInteger(maxHops) || maxHops < 1 ||
+      hopHistory.length >= maxHops || visited.has(observer))
+    return result("park_no_route", ["hop_budget_or_loop_exhausted"]);
+
+  const allowedHandlers = envelope.closure?.admissible_handlers ??
+    envelope.admissible_handlers;
+  const allowed = new Set(Array.isArray(allowedHandlers) ? allowedHandlers : []);
+  const permits = (node) => !allowed.size || allowed.has(node);
+  const evidenceFresh = (entry) => {
+    const at = Date.parse(String(entry?.last_seen || entry?.observed_at || ""));
+    const ttl = Number(entry?.ttl_seconds);
+    const age = observedAt.getTime() - at;
+    return Number.isFinite(at) && Number.isFinite(ttl) && ttl > 0 &&
+      Number.isFinite(age) && age >= 0 && age <= ttl * 1000;
+  };
+  const offers = handlerOffers.filter(h => h?.available === true &&
+    Array.isArray(h.capabilities) && h.capabilities.includes(required) &&
+    typeof h.node_id === "string" && h.node_id.length > 0 &&
+    typeof h.evidence_ref === "string" && h.evidence_ref.length > 0 &&
+    evidenceFresh(h) && permits(h.node_id));
+  if (offers.some(h => h.node_id === observer)) {
+    return result("local_handler_candidate", ["locality_first", "claim_and_mandate_unverified"], {
+      next_hop: observer, destination_node: observer,
+      candidate_basis: "current_local_capability_offer",
+    });
+  }
+  // Each peer is locally observed; even a fresh ONA endpoint is not itself
+  // evidence of a packet processing handler.
+  const adjacent = peers.filter(p => p?.fresh === true && p.node_id !== observer &&
+    !visited.has(p.node_id) && evidenceFresh(p));
+  const neighborIds = new Set(adjacent.map(p => p.node_id));
+  const candidateRoutes = [];
+
+  for (const offer of offers) {
+    if (visited.has(offer.node_id) || offer.node_id === observer) continue;
+    if (neighborIds.has(offer.node_id)) {
+      candidateRoutes.push({ next_hop: offer.node_id,
+        destination_node: offer.node_id, candidate_basis: "direct_capability_offer",
+        source_trace_ref: null, route_cost_ms: null });
+    }
+    for (const trace of pathTraces) {
+      if (!trace || trace.capability !== required ||
+          trace.destination_node !== offer.node_id ||
+          !neighborIds.has(trace.next_hop) ||
+          !trace.receipt_ref || trace.receipt_verified !== true ||
+          trace.success !== true || !evidenceFresh(trace) ||
+          visited.has(trace.next_hop) ||
+          !permits(trace.destination_node)) continue;
+      candidateRoutes.push({
+        next_hop: trace.next_hop, destination_node: offer.node_id,
+        candidate_basis: "cop_receipt_path_trace",
+        source_trace_ref: String(trace.receipt_ref).slice(0, 180),
+        route_cost_ms: Number.isFinite(trace.total_ms) && trace.total_ms >= 0 ?
+          trace.total_ms : null,
+      });
+    }
+  }
+  if (!candidateRoutes.length)
+    return result("park_no_route", [
+      "no_fresh_evidenced_next_hop_for_required_capability",
+      "local_and_remote_packet_handlers_not_inferred_from_ssh_or_ona",
+    ]);
+  // No fabricated cost: measured paths precede unmeasured direct offers,
+  // then stable names break ties deterministically. No permanent monopoly
+  // is established: traces expire and discovery retains alternatives.
+  candidateRoutes.sort((a, b) =>
+    (a.route_cost_ms === null ? 1 : 0) - (b.route_cost_ms === null ? 1 : 0) ||
+    (a.route_cost_ms ?? 0) - (b.route_cost_ms ?? 0) ||
+    a.next_hop.localeCompare(b.next_hop) ||
+    a.destination_node.localeCompare(b.destination_node));
+  return result("next_hop_candidate", ["needs_governed_claim_and_transfer_ack"], candidateRoutes[0]);
+}
+
 export default {
   cogentiaRoutePacket,
   createCogentiaRouterAgent,
   routePacketResiliently,
+  projectCognitiveNextHop,
 };
