@@ -10,8 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import dotenv from 'dotenv';
-import {createClient} from '@supabase/supabase-js';
+import {parseEnv} from 'node:util';
 import {createInstanceVaultConfigCore} from './lib/vault-config-core.js';
 
 const args=process.argv.slice(2),at=(name)=>args.indexOf(name);
@@ -30,7 +29,7 @@ if(!names.length||names.length>20||new Set(names).size!==names.length||
 const repo=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../..');
 const local=path.join(repo,'.env');
 if(!fs.existsSync(local)){console.log(JSON.stringify({ok:false,error:'trusted_cache_missing'}));process.exit(2)}
-const config=dotenv.parse(fs.readFileSync(local)),validNames=names.every(n=>
+const config=parseEnv(fs.readFileSync(local,'utf8')),validNames=names.every(n=>
   typeof config[n]==='string'&&config[n].trim().length>0);
 if(!validNames){console.log(JSON.stringify({ok:false,error:'selected_local_value_missing'}));process.exit(2)}
 const url=config.SUPABASE_URL||config.VITE_SUPABASE_URL;
@@ -44,7 +43,53 @@ if(!apply){
     selected:refKeys.map(x=>x.key),values_exposed:false}));
   process.exit(0);
 }
-const client=createClient(url,role,{auth:{autoRefreshToken:false,persistSession:false}});
+// Minimal, fixed-origin PostgREST adapter; no third-party Node dependencies
+// or generic URL/SQL input from the caller. This stays inside trusted runtime.
+const restEndpoint=new URL('/rest/v1/instance_config',url);
+function createRestClient(){
+  return {
+    from(table){
+      if(table!=='instance_config')throw Error('invalid_vault_table');
+      let method='GET',body=null,selection='*';
+      const filters=new Map();
+      return {
+        select(columns){selection=columns;return this;},
+        eq(field,value){
+          if(field!=='instance_id'&&field!=='key')throw Error('invalid_vault_filter');
+          filters.set(field,'eq.'+value);return this;
+        },
+        insert(value){method='POST';body=value;return this;},
+        async maybeSingle(){return this.request();},
+        async single(){return this.request();},
+        async request(){
+          const endpoint=new URL(restEndpoint);
+          endpoint.searchParams.set('select',selection);
+          for(const [k,v] of filters)endpoint.searchParams.set(k,v);
+          let response;
+          try{
+            response=await fetch(endpoint,{
+              method,signal:AbortSignal.timeout(20000),redirect:'error',
+              headers:{apikey:role,Authorization:'Bearer '+role,
+                Accept:'application/json',
+                ...(method==='POST'?{'Content-Type':'application/json',
+                  Prefer:'return=representation'}:{})},
+              ...(method==='POST'?{body:JSON.stringify(body)}:{}),
+            });
+          }catch{return {data:null,error:{code:'VAULT_TRANSPORT_FAILED'}};}
+          if(!response.ok)return {data:null,error:{code:'VAULT_HTTP_'+response.status}};
+          let rows;
+          try{rows=await response.json();}catch{
+            return {data:null,error:{code:'VAULT_RESPONSE_INVALID'}};
+          }
+          if(!Array.isArray(rows)||rows.length>1)
+            return {data:null,error:{code:'VAULT_RESPONSE_UNEXPECTED'}};
+          return {data:rows[0]||null,error:null};
+        },
+      };
+    },
+  };
+}
+const client=createRestClient();
 const core=createInstanceVaultConfigCore({client});
 const receipts=[];
 for(const {source,key} of refKeys) {
