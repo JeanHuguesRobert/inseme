@@ -33,3 +33,5 @@ export * from "./packet-parent-continuations.js";
 export * from "./packet-temperature.js";
 export * from "./packet-task-step-cursor.js";
 export * from "./packet-work-assignment.js";
+
+export * from "./logical-agent-composition.js";

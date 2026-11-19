@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "test": "vitest run && node --test test/mandate-amendment.node-test.mjs test/packet-parent-continuations.node-test.mjs test/packet-temperature.node-test.mjs test/packet-task-step-cursor.node-test.mjs test/packet-work-assignment.node-test.mjs test/work-multi-account-agent-identity.node-test.mjs",
+    "test": "vitest run && node --test test/mandate-amendment.node-test.mjs test/packet-parent-continuations.node-test.mjs test/packet-temperature.node-test.mjs test/packet-task-step-cursor.node-test.mjs test/packet-work-assignment.node-test.mjs test/work-multi-account-agent-identity.node-test.mjs test/logical-agent-composition.node-test.mjs",
     "trace:verify": "node bin/verify-trace-lifecycle.js",
     "spool": "node bin/fractalog-spool.js"
   },
