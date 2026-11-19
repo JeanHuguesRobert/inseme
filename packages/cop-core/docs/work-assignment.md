@@ -1,9 +1,11 @@
 ---
 title: "COP — Work assignment, commissioning and lazy legacy reconciliation"
+author: "Jean Hugues Noël Robert, baron Mariani"
+affiliation: "Institut Mariani / C.O.R.S.I.C.A."
 date: "2026-11-19"
 last_modified_at: "2026-11-19"
 version: "0.1"
-status: "operational pilot — core projection and one task-step activation path"
+status: "working-paper — operational pilot"
 document_role: "operational"
 document_kind: "implementation-note"
 visibility: "public"
