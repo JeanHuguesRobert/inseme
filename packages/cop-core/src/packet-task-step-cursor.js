@@ -9,6 +9,8 @@
  */
 import {createHash} from 'node:crypto';
 import {projectPacketTemperature} from './packet-temperature.js';
+import {ensurePacketWorkAssignmentWithinTransaction,
+  assignPacketWorkWithinTransaction} from './packet-work-assignment.js';
 
 export const PACKET_TASK_STEP_CURSOR_PROFILE='cop.packet-task-step-cursor/v1';
 const ref=x=>typeof x==='string'&&/^[a-zA-Z][a-zA-Z0-9_.:/-]{2,255}$/.test(x);
@@ -75,7 +77,7 @@ export function projectPacketTaskSteps(store,{packet_ref}={}){
  * Task/Step ids are projections, not additional canonical work identities.
  */
 export function declarePacketTaskSteps(store,{packet_ref,task_ref,step_refs,
-  plan_id}={}){
+  plan_id,work_assignment=null}={}){
   if(typeof store?.transaction!=='function'||!packetRef(packet_ref)||
      !ref(task_ref)||!id(plan_id)||!Array.isArray(step_refs)||
      step_refs.length<1||step_refs.length>128||step_refs.some(x=>!ref(x))||
@@ -92,11 +94,23 @@ export function declarePacketTaskSteps(store,{packet_ref,task_ref,step_refs,
         receipt_ref:eid,version:old.version,next_step_ref:old.next_step_ref}:
         fail('step_plan_conflict');
     }
+    // New packet authors can record the explicit logical owner/mandant in
+    // the *same* canonical COP transaction as the initial task plan. Older
+    // API callers retain their previous behavior and will be reconciled at
+    // the next resumed step.
+    let assignment=null;
+    if(work_assignment!==null){
+      assignment=assignPacketWorkWithinTransaction(tx,{
+        packet_ref,...work_assignment,expected_revision:0});
+      if(!assignment.ok)return assignment;
+    }
     const p=tx.append(event(packet_ref,'steps_declared',eid,{packet_ref,
       task_ref,step_refs:[...step_refs],plan_id}));
     if(!p.ok)throw Error(p.error||'step_plan_append_failed');
     return {ok:true,status:'declared',duplicate:false,receipt_ref:eid,
-      version:0,next_step_ref:step_refs[0]};
+      version:0,next_step_ref:step_refs[0],
+      work_assignment_status:assignment?.status??'legacy_pending',
+      work_assignment_receipt_ref:assignment?.receipt_ref??null};
   });
   return t.ok?t.value:fail('step_plan_commit_failed');
 }
@@ -106,7 +120,8 @@ export function declarePacketTaskSteps(store,{packet_ref,task_ref,step_refs,
  * pure local step, not a claim of independent permission for external effects.
  */
 export function advancePacketTaskStep(store,{packet_ref,task_ref,
-  expected_step_ref,expected_version,transition_id,source_ref=null}={}){
+  expected_step_ref,expected_version,transition_id,source_ref=null,
+  legacy_work=null}={}){
   if(typeof store?.transaction!=='function'||!packetRef(packet_ref)||
      !ref(task_ref)||!ref(expected_step_ref)||
      !Number.isSafeInteger(expected_version)||expected_version<0||
@@ -133,6 +148,13 @@ export function advancePacketTaskStep(store,{packet_ref,task_ref,
        cur.next_step_ref!==expected_step_ref)return fail('stale_step_cursor');
     const temp=projectPacketTemperature(tx,{packet_ref});
     if(!temp.ok||!temp.runnable)return fail('packet_not_runnable');
+    // Every reactivated legacy packet gets either a deterministic assignment
+    // or a durable, deduplicated request for Judgment. The latter is an
+    // additive migration signal: legacy work must not become unresumable
+    // merely because old records predate the assignment contract.
+    const assignment=ensurePacketWorkAssignmentWithinTransaction(tx,{
+      packet_ref,legacy_work});
+    if(!assignment.ok)return assignment;
     const idx=cur.version+1;
     const next=cur.step_refs[idx]||null;
     const p=tx.append(event(packet_ref,'step_advanced',eid,{
@@ -143,7 +165,9 @@ export function advancePacketTaskStep(store,{packet_ref,task_ref,
     if(!p.ok)throw Error(p.error||'step_advance_append_failed');
     return {ok:true,status:next?'advanced':'completed',
       duplicate:false,receipt_ref:eid,version:idx,
-      next_step_ref:next,terminal:!next};
+      next_step_ref:next,terminal:!next,
+      work_assignment_status:assignment.status,
+      work_assignment_receipt_ref:assignment.receipt_ref};
   });
   return t.ok?t.value:fail('step_advance_commit_failed');
 }

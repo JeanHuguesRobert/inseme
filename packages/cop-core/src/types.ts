@@ -504,6 +504,12 @@ export interface COPTask {
 
   /** Optional durable mandate-bearing continuity responsible for the work. */
   assignedLogicalAgentRef?: string;
+  /** Mandating logical agent. Distinct from this task's responsible agent. */
+  commissionedByLogicalAgentRef?: string;
+
+  /** Root-boundary exception: a person/institution directly commissioned its root agent. */
+  commissionedByPrincipalRef?: string;
+
 
   /** Optional handler profile expected to execute the work. */
   assignedHandlerProfile?: string;
