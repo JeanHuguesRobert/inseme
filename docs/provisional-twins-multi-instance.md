@@ -49,6 +49,12 @@ The **Provisional Twin** pattern introduces a **fractal, multi-instance hosting 
 
 ---
 
+**2026-11-19 extension:** Digital-native agents are not provisional Twins.
+The canonical distinction, schema and migration are in
+[Digital-native hosted agents](digital-native-hosted-agents.md).
+The following historical Twin-specific workflow continues to apply to
+representations of external referents, not to digital-native subjects.
+
 ## 2. Definitional Taxonomies
 
 To prevent semantic conflation, the following concepts are strictly distinguished:
@@ -97,8 +103,8 @@ Certain identity-bound configuration keys are strictly isolated and never leak t
 - `community_code`
 - `app_url`
 - `canonical_slug`
-- `twin_root_ref`
-- `represented_subject_ref`
+- Identity lives in `instances.subject_ref` and
+  `instances.subject_root_ref`, not in `instance_config`.
 - `owner_email`
 - `owner_subject_ref`
 

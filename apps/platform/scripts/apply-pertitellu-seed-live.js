@@ -33,7 +33,7 @@ async function applySeed() {
         display_name: "Le Petit Parti — Corte",
         bot_name: "Ophélia",
         subject_ref: "collective:pertitellu-corte",
-        twin_root_ref: "twin:pertitellu-corte",
+        subject_root_ref: "twin:pertitellu-corte",
         status: "autonomous",
         deployment_kind: "civic",
         subject_kind: "collective",

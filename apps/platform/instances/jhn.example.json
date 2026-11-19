@@ -18,7 +18,7 @@
   "host_domain": "baronsmariani.org",
   "canonical_url": "https://jhn.baronsmariani.org",
   "visibility_default": "sovereign_private",
-  "represented_subject_ref": "subject:jhn",
-  "twin_root_ref": "twin:jhn",
+  "subject_ref": "subject:jhn",
+  "subject_root_ref": "twin:jhn",
   "notes": "Schema enum community_type is still community-oriented; personal semantics live in deployment_kind / metadata until instance-schema is extended (inseme#17). Do not commit real service_role keys. Copy to jhn.json locally."
 }

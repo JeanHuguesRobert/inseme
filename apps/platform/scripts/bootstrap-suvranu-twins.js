@@ -194,7 +194,7 @@ async function run() {
             display_name: provisionTarget,
             bot_name: "Ophélia",
             subject_ref: `subject:x:${provisionTarget.toLowerCase()}`,
-            twin_root_ref: `twin:${provisionTarget.toLowerCase()}`,
+            subject_root_ref: `twin:${provisionTarget.toLowerCase()}`,
             status: "provisional",
             deployment_kind: "personal",
             subject_kind: "living_person",

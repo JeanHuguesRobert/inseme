@@ -35,11 +35,11 @@ export function createJhnOwnerSshEnrollment({adminClient}={}) {
         if(profileError||profile?.id!==userId||profile?.email?.toLowerCase()!==OWNER_EMAIL||profile.role!=='admin')
           return refuse('owner_admin_profile_not_confirmed');
         const {data:instance,error:instanceError}=await adminClient.from('instances')
-          .select('id,canonical_slug,status,subject_kind,subject_ref,twin_root_ref,principal_id')
+          .select('id,canonical_slug,status,subject_kind,subject_ref,subject_root_ref,principal_id')
           .eq('id',JHN_VAULT_INSTANCE_ID).maybeSingle();
         if(instanceError||instance?.id!==JHN_VAULT_INSTANCE_ID||instance.canonical_slug!=='jhn'||
             instance.status!=='autonomous'||instance.subject_kind!=='living_person'||
-            instance.subject_ref!=='subject:jhn'||instance.twin_root_ref!=='twin:jhn')
+            instance.subject_ref!=='subject:jhn'||instance.subject_root_ref!=='twin:jhn')
           return refuse('jhn_instance_identity_invalid');
         if(instance.principal_id===userId)return Object.freeze({ok:true,changed:false,already_bound:true,instance:'jhn',principal_ref:'principal:jhn'});
         if(instance.principal_id!==null)return refuse('instance_already_claimed');

@@ -24,7 +24,7 @@ export const OLEOLE_PUBLISHER = {
   role: "editeur",
   canonical_host: OLEOLE_CANONICAL_HOST,
   service_agent: "john",
-  twin_root_ref: "twin:jhn",
+  subject_root_ref: "twin:jhn",
 };
 
 /**
@@ -107,7 +107,7 @@ export function getActiveServiceContext() {
     return {
       service: "oleole",
       agent: "john",
-      twin_root_ref: OLEOLE_PUBLISHER.twin_root_ref,
+      subject_root_ref: OLEOLE_PUBLISHER.subject_root_ref,
       facade_of: "agent-jhn",
       memory_scope: "service:oleole",
       host_role: role,
@@ -120,7 +120,7 @@ export function getActiveServiceContext() {
   return {
     service: "jhn",
     agent: "john",
-    twin_root_ref: "twin:jhn",
+    subject_root_ref: "twin:jhn",
     facade_of: null,
     memory_scope: "twin:jhn",
     host_role: null,

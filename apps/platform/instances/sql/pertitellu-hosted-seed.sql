@@ -14,7 +14,7 @@ BEGIN
   -- 1. Enregistrement de l'instance pertitellu-corte
   INSERT INTO public.instances (
     id, host_instance_id, canonical_slug, display_name, bot_name,
-    subject_ref, twin_root_ref, status, deployment_kind, subject_kind, is_claimable, metadata
+    subject_ref, subject_root_ref, status, deployment_kind, subject_kind, is_claimable, metadata
   )
   VALUES (
     v_pertitellu_id,

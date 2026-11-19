@@ -242,8 +242,6 @@ const NON_INHERITABLE_KEYS = new Set([
   "community_code",
   "bot_name",
   "app_url",
-  "twin_root_ref",
-  "represented_subject_ref",
   "canonical_slug",
   "contact_email",
   "owner_email",

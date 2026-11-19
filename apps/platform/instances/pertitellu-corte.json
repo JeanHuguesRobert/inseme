@@ -23,7 +23,7 @@
   "host_domain": "lepp.baronsmariani.org",
   "canonical_url": "https://lepp.baronsmariani.org",
   "bot_name": "Ophélia",
-  "twin_root_ref": "twin:pertitellu-corte",
-  "represented_subject_ref": "collective:pertitellu-corte",
+  "subject_root_ref": "twin:pertitellu-corte",
+  "subject_ref": "collective:pertitellu-corte",
   "notes": "Hosted on JHN root Supabase project (ndiysuhzmztatpxbkezn) via instance_config inheritance (migration 20260827130000)."
 }

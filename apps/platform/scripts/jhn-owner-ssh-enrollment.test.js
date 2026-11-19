@@ -4,7 +4,7 @@ import {createJhnOwnerSshEnrollment} from './lib/jhn-owner-ssh-enrollment.js';
 import {JHN_VAULT_INSTANCE_ID} from './lib/vault-catalog.js';
 const uuid='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const smoke='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-const row={id:JHN_VAULT_INSTANCE_ID,canonical_slug:'jhn',status:'autonomous',subject_kind:'living_person',subject_ref:'subject:jhn',twin_root_ref:'twin:jhn',principal_id:null};
+const row={id:JHN_VAULT_INSTANCE_ID,canonical_slug:'jhn',status:'autonomous',subject_kind:'living_person',subject_ref:'subject:jhn',subject_root_ref:'twin:jhn',principal_id:null};
 function fixture(opts={}) {
   let principal=opts.principal??null, writes=0;
   const users=opts.users??[{id:smoke,email:'smoke@example.org',email_confirmed_at:'today'},{id:uuid,email:'jhr@baronsmariani.org',email_confirmed_at:'today',is_anonymous:false}];
