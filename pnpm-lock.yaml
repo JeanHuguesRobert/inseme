@@ -1174,6 +1174,8 @@ importers:
         specifier: workspace:*
         version: link:../cop-kernel
 
+  packages/labels: {}
+
   packages/magistral:
     dependencies:
       '@inseme/cop-core':
