@@ -1,0 +1,11 @@
+{
+  "name": "@inseme/labels",
+  "version": "0.1.0",
+  "description": "Minimal label entities and conjunctive selectors for Inseme",
+  "type": "module",
+  "exports": "./index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
