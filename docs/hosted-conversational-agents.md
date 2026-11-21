@@ -10,8 +10,11 @@ date: '2026-11-21'
 
 # A Conversational Agent is not its Personal Twin
 
-Each real person's Personal Twin has a first child agent, a conversational
-interface powered by ChatGPT. This *agent identity* is independent of both
+For the current JHN-hosted pilot, a Personal Twin can have a first
+conversational child agent declared for the ChatGPT interface. This declaration
+is an **architectural identity**, not an assertion that every person has
+signed in, installed a Cogentia plugin or already used that interface.
+This *agent identity* is independent of both
 the human's ChatGPT account/session and the Twin that supervises it. Its
 canonical `agent:<twin-slug>:chatgpt` identity lives in COP's LogicalAgent
 composition event journal. Supabase `instances` and `cop_logical_agents` are
@@ -29,6 +32,29 @@ a projection failure can be retried without rewriting the declaration. Other
 specialized children, providers and alternative conversation agents can be
 added without changing the model. This initial bootstrap only supports the
 first ChatGPT interface for a `living_person` Twin.
+
+## Inaugural real-user pilot — status and meaning
+
+As of 2026-11-21, three identities are declared in the JHN COP journal and
+projected into JHN Supabase:
+
+| Personal Twin | Conversational agent | Real-user trial status |
+| --- | --- | --- |
+| John/JHN | `agent:jhn:chatgpt` | JHN is an active first user/developer; this new per-agent OAuth enrollment is not established by the declaration |
+| Maguy | `agent:marguerite-ghionga:chatgpt` | Hosted provisional Twin, ChatGPT Free declared; individual login/MCP and first real task remain to be tested |
+| Frédéric (Aréopage) | `agent:frederic-lecourtois:chatgpt` | Hosted provisional Twin, ChatGPT Free declared; individual login/MCP and first real task remain to be tested |
+
+They are *de facto* alpha/beta participants in the evolving Cogentia system,
+not evidence of a public beta release. **A registry status such as
+`mcp_connection: not_connected` describes this onboarding/binding path only**;
+it does not negate an existing, separately verified JHN tool connection or
+prove that a person's ChatGPT account lacks every possible MCP capability.
+Keep **provisioned / authenticated / connected / used / validated** as separate
+claims. Each person's own concrete work is the end-to-end Reality Test; the
+burden of understanding or debugging CPS belongs primarily to Cogentia.
+
+Field learning and personal-data locality are specified in
+[FractaCognition §9](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/fractacognition_principles.md#9-validated-learning-and-selective-propagation).
 
 ## Operator use on the JHN host
 

@@ -22,9 +22,14 @@ doubles of nonexistent originals and not additional human Principals.
 
 - `public.instances`: one semantic instance UUID per agent, each with its
   own `subject_ref` and `subject_root_ref` (both equal to `agent:…` for
-  digital-native agents), `subject_kind='digital_native'`,
-  `host_instance_id` pointing to JHN and `principal_id` bound to the
-  verified human Principal of the host. Hosting is movable without losing ID.
+  digital-native agents), `subject_kind='digital_native'`. `host_instance_id`
+  points to the **immediate hosting parent instance**, not necessarily JHN;
+  `principal_id` is the verified Principal **when one is bound** and may be
+  `null` for a child of an unclaimed Personal Twin. For the specific
+  Minesteggio agents Vulcain and Mercure, the hosting parent is JHN and
+  the Principal is JHN's. For Maguy's and Frédéric's ChatGPT children,
+  the hosting parents are their respective provisional Twins and their
+  `principal_id` remains `null`. Hosting is movable without losing ID.
 - `public.cop_logical_agents`: an operational projection of COP identity,
   joined to `instances.id` through `instance_id`. It is **not** a second
   issuer of authority or memory and never mints a child mandate.
