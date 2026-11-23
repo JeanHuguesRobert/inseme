@@ -47,15 +47,22 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/mcp") {
       if (!authorize(req)) return sendJson(res, 401, { error: "unauthorized" });
       const body = await readJson(req);
+      // FBF 2026-11-23: keep MCP 2026-07-28 routing and version headers
+      // visible to the hub; otherwise mismatched versions silently pass.
+      const transport = {
+        protocolVersionHeader: String(req.headers["mcp-protocol-version"] || ""),
+        mcpMethod: String(req.headers["mcp-method"] || ""),
+        mcpName: String(req.headers["mcp-name"] || ""),
+      };
       if (Array.isArray(body)) {
         const results = [];
         for (const message of body) {
-          const response = await hub.handleJsonRpc(message);
+          const response = await hub.handleJsonRpc(message, transport);
           if (response) results.push(response);
         }
         return sendJson(res, 200, results);
       }
-      const response = await hub.handleJsonRpc(body);
+      const response = await hub.handleJsonRpc(body, transport);
       if (!response) {
         res.writeHead(202);
         return res.end();
@@ -91,7 +98,7 @@ function applyCors(res) {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Inseme-Token, X-Ritornu-Token"
+    "Content-Type, Authorization, X-Inseme-Token, X-Ritornu-Token, MCP-Protocol-Version, Mcp-Method, Mcp-Name"
   );
 }
 
