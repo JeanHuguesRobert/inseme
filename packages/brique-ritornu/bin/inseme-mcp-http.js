@@ -54,20 +54,42 @@ const server = http.createServer(async (req, res) => {
         mcpMethod: String(req.headers["mcp-method"] || ""),
         mcpName: String(req.headers["mcp-name"] || ""),
       };
+      // FBF: July 2026 Streamable HTTP headers are mandatory and match the body.
+      // Legacy POST clients retain the earlier permissive transport contract.
+      function headerError(message) {
+        const declared = message?.params?._meta?.["io.modelcontextprotocol/protocolVersion"];
+        if (declared !== "2026-07-28" && transport.protocolVersionHeader !== "2026-07-28")
+          return null;
+        const method = String(message?.method || "");
+        const expectedName = method === "tools/call" || method === "prompts/get"
+          ? message?.params?.name
+          : method === "resources/read" ? message?.params?.uri
+          : ["tasks/get", "tasks/update", "tasks/cancel"].includes(method)
+            ? message?.params?.taskId : null;
+        if (transport.protocolVersionHeader !== "2026-07-28" ||
+            transport.mcpMethod !== method ||
+            (expectedName != null && transport.mcpName !== String(expectedName))) {
+          return {
+            jsonrpc: "2.0", id: message?.id ?? null,
+            error: { code: -32020, message: "MCP HTTP headers missing or inconsistent" },
+          };
+        }
+        return null;
+      }
       if (Array.isArray(body)) {
         const results = [];
         for (const message of body) {
-          const response = await hub.handleJsonRpc(message, transport);
+          const response = headerError(message) || await hub.handleJsonRpc(message, transport);
           if (response) results.push(response);
         }
         return sendJson(res, 200, results);
       }
-      const response = await hub.handleJsonRpc(body, transport);
+      const response = headerError(body) || await hub.handleJsonRpc(body, transport);
       if (!response) {
         res.writeHead(202);
         return res.end();
       }
-      return sendJson(res, 200, response);
+      return sendJson(res, response?.error?.code === -32020 ? 400 : 200, response);
     }
 
     return sendJson(res, 404, { error: "not_found" });
