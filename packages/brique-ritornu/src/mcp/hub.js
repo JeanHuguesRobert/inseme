@@ -333,6 +333,16 @@ export function createHubMcp(env = process.env, options = {}) {
         return jsonRpcResult(message.id, protocol.modern ? modernResult(result) : result);
       }
       if (COGENTIA_FORWARDED_METHODS.has(message.method)) {
+        // FBF: discovery must remain functional when Cogentia is absent.
+        if (message.method === "server/discover" && !cogentia?.handleJsonRpc) {
+          return jsonRpcResult(message.id, modernResult({
+            supportedVersions: [...HUB_SUPPORTED_PROTOCOLS],
+            capabilities: { tools: { listChanged: false } },
+            instructions: initialize().instructions,
+            ttlMs: HUB_LIST_TTL_MS,
+            cacheScope: "private",
+          }));
+        }
         const forwarded = await forwardCogentia(message, transport);
         if (protocol.modern && forwarded?.result)
           forwarded.result = modernResult(forwarded.result);
@@ -340,10 +350,11 @@ export function createHubMcp(env = process.env, options = {}) {
       }
       return jsonRpcError(message.id, -32601, "Method not found");
     } catch (error) {
-      return jsonRpcResult(message.id, {
+      const result = {
         content: [{ type: "text", text: error?.message || String(error) }],
         isError: true,
-      });
+      };
+      return jsonRpcResult(message.id, protocol.modern ? modernResult(result) : result);
     }
   }
 
