@@ -231,3 +231,68 @@ test("hub forwards Cogentia resources and SEP-2640 skills", async () => {
   assert.equal(body.ok, true);
   assert.ok(body.count >= 1);
 });
+
+test("FBF: July 2026 discovery and calls carry stateless result metadata", async () => {
+  const hub = makeHub();
+  const meta = {
+    "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+    "io.modelcontextprotocol/clientInfo": { name: "fbf-test", version: "1" },
+    "io.modelcontextprotocol/clientCapabilities": {},
+  };
+  const discovery = await hub.handleJsonRpc({
+    jsonrpc: "2.0", id: 301, method: "server/discover", params: { _meta: meta },
+  });
+  assert.equal(discovery.result.resultType, "complete");
+  assert.ok(discovery.result.supportedVersions.includes("2026-07-28"));
+  assert.equal(discovery.result._meta["io.modelcontextprotocol/serverInfo"].name, HUB_SERVER_NAME);
+
+  const tools = await hub.handleJsonRpc({
+    jsonrpc: "2.0", id: 302, method: "tools/list", params: { _meta: meta },
+  }, { protocolVersionHeader: "2026-07-28" });
+  assert.equal(tools.result.resultType, "complete");
+  assert.equal(tools.result.cacheScope, "private");
+  assert.ok(tools.result.ttlMs > 0);
+  assert.ok(tools.result.tools.some(t => t.name === "inseme_list_surfaces"));
+
+  const call = await hub.handleJsonRpc({
+    jsonrpc: "2.0", id: 303, method: "tools/call",
+    params: { _meta: meta, name: "inseme_list_surfaces", arguments: {} },
+  }, { protocolVersionHeader: "2026-07-28", mcpMethod: "tools/call", mcpName: "inseme_list_surfaces" });
+  assert.equal(call.result.resultType, "complete");
+  assert.equal(call.result._meta["io.modelcontextprotocol/protocolVersion"], "2026-07-28");
+  assert.equal(JSON.parse(call.result.content[0].text).ok, true);
+});
+
+test("FBF: modern handshake is not advertised through legacy initialize", async () => {
+  const hub = makeHub();
+  const reply = await hub.handleJsonRpc({
+    jsonrpc: "2.0", id: 304, method: "initialize",
+    params: { protocolVersion: "2026-07-28", capabilities: {}, clientInfo: { name: "legacy" } },
+  });
+  assert.notEqual(reply.result.protocolVersion, "2026-07-28");
+});
+
+test("FBF: reject inconsistent headers and unsupported versions", async () => {
+  const hub = makeHub();
+  const request = {
+    jsonrpc: "2.0", id: 305, method: "tools/list",
+    params: { _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28" } },
+  };
+  const mismatch = await hub.handleJsonRpc(request, { protocolVersionHeader: "2025-11-25" });
+  assert.equal(mismatch.error.code, -32600);
+  const unsupported = await hub.handleJsonRpc({
+    ...request,
+    params: { _meta: { "io.modelcontextprotocol/protocolVersion": "2099-01-01" } },
+  });
+  assert.equal(unsupported.error.code, -32022);
+});
+
+test("FBF: modern discovery works without Cogentia forwarding", async () => {
+  const hub = makeHub({ env: { INSEME_MCP_SURFACE: "ritornu" }, cogentia: null });
+  const response = await hub.handleJsonRpc({
+    jsonrpc: "2.0", id: 306, method: "server/discover",
+    params: { _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28" } },
+  });
+  assert.equal(response.result.resultType, "complete");
+  assert.deepEqual(response.result.capabilities.tools, { listChanged: false });
+});
