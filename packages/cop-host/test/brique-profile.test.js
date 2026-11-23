@@ -46,7 +46,7 @@ test("a profile selects only declared brique capabilities", () => {
   }
 });
 
-test("the JHN profile contains only its two declared Edge capabilities", () => {
+test("the JHN profile matches its declared briques and Edge capabilities", () => {
   const testDirectory = dirname(fileURLToPath(import.meta.url));
   const profilePath = join(testDirectory, "../../../apps/platform/brique-profiles/jhn.json");
   const profile = loadBriqueProfile(profilePath);
@@ -54,12 +54,23 @@ test("the JHN profile contains only its two declared Edge capabilities", () => {
   assert.equal(profile.id, "jhn");
   assert.deepEqual(profile.briques, [
     { id: "ophelia", routes: [], functions: [], edge_functions: [] },
+    { id: "oleole", routes: ["/", "/oleole"], functions: [], edge_functions: [] },
   ]);
   assert.deepEqual(profile.core.edge_functions, [
     {
       function: "nasa-control",
       path: "/api/nasa/control",
       source: "netlify/edge-functions/nasa-control.js",
+    },
+    {
+      function: "interactions-desk",
+      path: "/api/interactions/desk",
+      source: "netlify/edge-functions/interactions-desk.js",
+    },
+    {
+      function: "principal-consent-proxy",
+      path: "/api/cop/principal-consent/*",
+      source: "netlify/edge-functions/principal-consent-proxy.js",
     },
     {
       function: "gen-ophelia-chat-stream",
@@ -70,6 +81,21 @@ test("the JHN profile contains only its two declared Edge capabilities", () => {
       function: "jhn-cop-events",
       path: "/api/jhn-cop-events",
       source: "netlify/edge-functions/jhn-cop-events.js",
+    },
+    {
+      function: "github-webhook",
+      path: "/api/webhooks/github",
+      source: "netlify/edge-functions/github-webhook.js",
+    },
+    {
+      function: "gen-oleole-presence-api",
+      path: "/api/oleole/*",
+      source: "netlify/edge-functions/oleole-presence-api.source.js",
+    },
+    {
+      function: "gen-corsica-context-api",
+      path: "/api/corsica/context",
+      source: "netlify/edge-functions/corsica-context-api.source.js",
     },
   ]);
   assert.deepEqual(profile.core.runtime, {

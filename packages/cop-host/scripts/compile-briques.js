@@ -18,6 +18,7 @@ import {
 } from "fs";
 import { platform } from "os";
 import { loadBriqueProfile, selectBriqueCapabilities } from "../src/brique-profile.js";
+import { auditPublicProjections } from "../src/public-projection-audit.js";
 
 /**
  * PATH NORMALIZATION
@@ -98,7 +99,9 @@ function readCliOption(name) {
 
 const selectedHostApp = readCliOption("--app");
 const profileArgument = readCliOption("--profile");
-const isReportOnly = process.argv.includes("--report");
+const isProjectionAudit = process.argv.includes("--check-projections");
+const isReportOnly = process.argv.includes("--report") || isProjectionAudit;
+const auditBrique = readCliOption("--brique");
 const profilePath = profileArgument
   ? resolve(
       profileArgument.includes("/") ||
@@ -264,7 +267,7 @@ async function compile() {
   for (const appName of hostApps) validateProfileRuntime(join(APPS_PATH, appName));
 
   if (isVerbose) console.log(`🏠 Host applications detected: ${hostApps.join(", ")}`);
-  if (BRIQUE_PROFILE) {
+  if (BRIQUE_PROFILE && !isProjectionAudit) {
     console.log(
       `🎛️  Applying deployment profile ${BRIQUE_PROFILE.id} to ${BRIQUE_PROFILE.host_app}: ${BRIQUE_PROFILE.briques.map((brique) => brique.id).join(", ") || "core only"}`
     );
@@ -597,6 +600,14 @@ export const config = {
     }
   }
 
+  if (isProjectionAudit) {
+    const reports = hostApps.map(appName => auditPublicProjections({
+      root: ROOT, appName, selectedBriques: briques, briqueId: auditBrique
+    }));
+    console.log(JSON.stringify({ mode: "read_only", reports }, null, 2));
+    return;
+  }
+
   if (isReportOnly) {
     console.log(
       JSON.stringify(
@@ -724,7 +735,7 @@ export const config = {
     }
   }
 
-  console.log(
+  if (!isProjectionAudit) console.log(
     "   Note: No brique is currently marked 'active' (massive refactoring still in progress).\n"
   );
 
