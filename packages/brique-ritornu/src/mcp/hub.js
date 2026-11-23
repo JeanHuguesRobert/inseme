@@ -304,21 +304,24 @@ export function createHubMcp(env = process.env, options = {}) {
     // for every request. Never silently answer an unsupported version as legacy.
     const protocol = protocolOf(message, transport);
     if (protocol.mismatch)
-      return jsonRpcError(message.id, -32600, "MCP protocol header and request _meta disagree");
+      return jsonRpcError(message.id, -32020, "MCP protocol header and request _meta disagree");
     if (protocol.unsupported)
       return jsonRpcError(message.id, MODERN_ERROR_UNSUPPORTED_VERSION,
         "Unsupported protocol version", { supportedVersions: [...HUB_SUPPORTED_PROTOCOLS] });
     if (transport.mcpMethod && transport.mcpMethod !== message.method)
-      return jsonRpcError(message.id, -32600, "Mcp-Method header does not match request method");
+      return jsonRpcError(message.id, protocol.modern ? -32020 : -32600, "Mcp-Method header does not match request method");
     if (transport.mcpName && message.method === "tools/call" &&
         transport.mcpName !== String(message.params?.name || ""))
-      return jsonRpcError(message.id, -32600, "Mcp-Name header does not match tool name");
+      return jsonRpcError(message.id, protocol.modern ? -32020 : -32600, "Mcp-Name header does not match tool name");
     try {
       if (message.method === "initialize") {
         return jsonRpcResult(message.id, initialize(message.params || {}));
       }
       if (message.method === "ping") {
-        return jsonRpcResult(message.id, protocol.modern ? modernResult({}) : {});
+        // FBF: ping is not part of the July 2026 method set.
+        return protocol.modern
+          ? jsonRpcError(message.id, -32601, "Method not found")
+          : jsonRpcResult(message.id, {});
       }
       if (message.method === "tools/list") {
         const result = { tools: listTools() };
