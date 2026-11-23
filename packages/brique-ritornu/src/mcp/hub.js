@@ -308,6 +308,18 @@ export function createHubMcp(env = process.env, options = {}) {
     if (protocol.unsupported)
       return jsonRpcError(message.id, MODERN_ERROR_UNSUPPORTED_VERSION,
         "Unsupported protocol version", { supportedVersions: [...HUB_SUPPORTED_PROTOCOLS] });
+    // FBF 2026-11-23: the stateless request itself MUST carry both fields.
+    // The optional clientInfo may be omitted. Discovery is also used as a
+    // first probe by older hosts and remains accessible without this envelope.
+    if (protocol.modern && message.method !== "server/discover") {
+      const meta = message.params?._meta;
+      if (meta?.[META_VERSION] !== HUB_MODERN_PROTOCOL ||
+          !meta["io.modelcontextprotocol/clientCapabilities"] ||
+          typeof meta["io.modelcontextprotocol/clientCapabilities"] !== "object" ||
+          Array.isArray(meta["io.modelcontextprotocol/clientCapabilities"])) {
+        return jsonRpcError(message.id, -32602, "Invalid modern MCP request metadata");
+      }
+    }
     if (transport.mcpMethod && transport.mcpMethod !== message.method)
       return jsonRpcError(message.id, protocol.modern ? -32020 : -32600, "Mcp-Method header does not match request method");
     if (transport.mcpName && message.method === "tools/call" &&
