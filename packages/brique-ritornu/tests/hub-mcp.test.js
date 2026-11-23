@@ -301,11 +301,20 @@ test("FBF: ping is legacy-only; modern request rejects removed method", async ()
   const hub = makeHub();
   const modern = await hub.handleJsonRpc({
     jsonrpc: "2.0", id: 307, method: "ping",
-    params: { _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28" } },
+    params: { _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28", "io.modelcontextprotocol/clientCapabilities": {} } },
   });
   assert.equal(modern.error.code, -32601);
   const legacy = await hub.handleJsonRpc({
     jsonrpc: "2.0", id: 308, method: "ping", params: {},
   });
   assert.deepEqual(legacy.result, {});
+});
+
+test("FBF: modern invocations reject missing per-request client capabilities", async () => {
+  const hub = makeHub();
+  const response = await hub.handleJsonRpc({
+    jsonrpc: "2.0", id: 309, method: "tools/list",
+    params: { _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28" } },
+  });
+  assert.equal(response.error.code, -32602);
 });
