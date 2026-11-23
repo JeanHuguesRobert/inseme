@@ -30,12 +30,39 @@ import {
 
 export const HUB_SERVER_NAME = "inseme-mcp";
 export const HUB_SERVER_VERSION = "0.4.0";
-export const HUB_SUPPORTED_PROTOCOLS = new Set([
-  "2026-07-28",
-  PROTOCOL_VERSION,
-  "2025-06-18",
-  "2024-11-05",
-]);
+export const HUB_MODERN_PROTOCOL = "2026-07-28";
+export const HUB_LEGACY_PROTOCOLS = new Set([PROTOCOL_VERSION, "2025-06-18", "2024-11-05"]);
+export const HUB_SUPPORTED_PROTOCOLS = new Set([HUB_MODERN_PROTOCOL, ...HUB_LEGACY_PROTOCOLS]);
+
+// FBF 2026-11-23: July 2026 is stateless: initialize belongs only to the legacy era.
+// Naming a modern protocol version without its per-request wire contract was a compliance bug.
+const META_VERSION = "io.modelcontextprotocol/protocolVersion";
+const META_SERVER = "io.modelcontextprotocol/serverInfo";
+const MODERN_ERROR_UNSUPPORTED_VERSION = -32022;
+const HUB_LIST_TTL_MS = 60_000;
+
+function protocolOf(message, transport = {}) {
+  const meta = message?.params?._meta || {};
+  const header = String(transport.protocolVersionHeader || "");
+  const declared = String(meta[META_VERSION] || "");
+  if (header && declared && header !== declared) return { mismatch: true };
+  if (message.method === "initialize") return { modern: false };
+  const version = header || declared || (message.method === "server/discover" ? HUB_MODERN_PROTOCOL : "");
+  if (version && !HUB_SUPPORTED_PROTOCOLS.has(version)) return { unsupported: version };
+  return { modern: version === HUB_MODERN_PROTOCOL, version };
+}
+function modernResult(result) {
+  return {
+    ...result,
+    resultType: result?.resultType || "complete",
+    _meta: {
+      ...(result?._meta || {}),
+      [META_VERSION]: HUB_MODERN_PROTOCOL,
+      [META_SERVER]: { name: HUB_SERVER_NAME, version: HUB_SERVER_VERSION },
+    },
+  };
+}
+
 
 /**
  * @param {NodeJS.ProcessEnv} [env]
@@ -124,7 +151,7 @@ export function createHubMcp(env = process.env, options = {}) {
     const toolCount = listTools().length;
     const cogentiaInit = cogentia?.initialize ? cogentia.initialize(params) : null;
     return {
-      protocolVersion: HUB_SUPPORTED_PROTOCOLS.has(requested) ? requested : PROTOCOL_VERSION,
+      protocolVersion: HUB_LEGACY_PROTOCOLS.has(requested) ? requested : PROTOCOL_VERSION,
       capabilities: hubCapabilities(cogentiaInit),
       serverInfo: { name: HUB_SERVER_NAME, version: HUB_SERVER_VERSION },
       instructions:
@@ -273,24 +300,43 @@ export function createHubMcp(env = process.env, options = {}) {
     if (message.id === undefined) {
       return null;
     }
+    // FBF 2026-11-23: validate the stateless modern protocol independently
+    // for every request. Never silently answer an unsupported version as legacy.
+    const protocol = protocolOf(message, transport);
+    if (protocol.mismatch)
+      return jsonRpcError(message.id, -32600, "MCP protocol header and request _meta disagree");
+    if (protocol.unsupported)
+      return jsonRpcError(message.id, MODERN_ERROR_UNSUPPORTED_VERSION,
+        "Unsupported protocol version", { supportedVersions: [...HUB_SUPPORTED_PROTOCOLS] });
+    if (transport.mcpMethod && transport.mcpMethod !== message.method)
+      return jsonRpcError(message.id, -32600, "Mcp-Method header does not match request method");
+    if (transport.mcpName && message.method === "tools/call" &&
+        transport.mcpName !== String(message.params?.name || ""))
+      return jsonRpcError(message.id, -32600, "Mcp-Name header does not match tool name");
     try {
       if (message.method === "initialize") {
         return jsonRpcResult(message.id, initialize(message.params || {}));
       }
       if (message.method === "ping") {
-        return jsonRpcResult(message.id, {});
+        return jsonRpcResult(message.id, protocol.modern ? modernResult({}) : {});
       }
       if (message.method === "tools/list") {
-        return jsonRpcResult(message.id, { tools: listTools() });
+        const result = { tools: listTools() };
+        if (protocol.modern) Object.assign(result, { ttlMs: HUB_LIST_TTL_MS, cacheScope: "private" });
+        return jsonRpcResult(message.id, protocol.modern ? modernResult(result) : result);
       }
       if (message.method === "tools/call") {
         const name = String(message.params?.name || "");
         const args = message.params?.arguments || {};
         const data = await callTool(name, args);
-        return jsonRpcResult(message.id, mcpToolResult(data));
+        const result = mcpToolResult(data);
+        return jsonRpcResult(message.id, protocol.modern ? modernResult(result) : result);
       }
       if (COGENTIA_FORWARDED_METHODS.has(message.method)) {
-        return forwardCogentia(message, transport);
+        const forwarded = await forwardCogentia(message, transport);
+        if (protocol.modern && forwarded?.result)
+          forwarded.result = modernResult(forwarded.result);
+        return forwarded;
       }
       return jsonRpcError(message.id, -32601, "Method not found");
     } catch (error) {
