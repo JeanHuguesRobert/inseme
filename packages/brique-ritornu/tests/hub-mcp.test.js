@@ -279,7 +279,7 @@ test("FBF: reject inconsistent headers and unsupported versions", async () => {
     params: { _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28" } },
   };
   const mismatch = await hub.handleJsonRpc(request, { protocolVersionHeader: "2025-11-25" });
-  assert.equal(mismatch.error.code, -32600);
+  assert.equal(mismatch.error.code, -32020);
   const unsupported = await hub.handleJsonRpc({
     ...request,
     params: { _meta: { "io.modelcontextprotocol/protocolVersion": "2099-01-01" } },
@@ -295,4 +295,17 @@ test("FBF: modern discovery works without Cogentia forwarding", async () => {
   });
   assert.equal(response.result.resultType, "complete");
   assert.deepEqual(response.result.capabilities.tools, { listChanged: false });
+});
+
+test("FBF: ping is legacy-only; modern request rejects removed method", async () => {
+  const hub = makeHub();
+  const modern = await hub.handleJsonRpc({
+    jsonrpc: "2.0", id: 307, method: "ping",
+    params: { _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28" } },
+  });
+  assert.equal(modern.error.code, -32601);
+  const legacy = await hub.handleJsonRpc({
+    jsonrpc: "2.0", id: 308, method: "ping", params: {},
+  });
+  assert.deepEqual(legacy.result, {});
 });
