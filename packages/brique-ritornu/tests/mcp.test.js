@@ -52,6 +52,13 @@ test("tools/list returns catalog", async () => {
   });
   assert.equal(res.result.tools.length, TOOLS.length);
   assert.ok(res.result.tools.some((t) => t.name === "ritornu_prepare_substack"));
+  for (const name of ["ritornu_health", "ritornu_boundaries"]) {
+    const item = res.result.tools.find(t => t.name === name);
+    assert.equal(item.annotations?.readOnlyHint, true);
+  }
+  assert.notEqual(res.result.tools.find(
+    t => t.name === "ritornu_prepare_substack"
+  ).annotations?.readOnlyHint, true);
 });
 
 test("notifications/initialized is silent", async () => {

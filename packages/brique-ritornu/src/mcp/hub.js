@@ -129,6 +129,7 @@ export function createHubMcp(env = process.env, options = {}) {
           name: t.name,
           description: t.description,
           inputSchema: t.inputSchema,
+          ...(t.annotations ? { annotations: t.annotations } : {}),
         });
       }
     }

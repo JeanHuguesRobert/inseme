@@ -65,6 +65,14 @@ test("federated catalog includes hub + cogentia + ritornu tools", () => {
   assert.ok(names.has("cogentia_continuation_list"));
   assert.ok(names.has("ritornu_prepare_substack"));
   assert.ok(names.has("ritornu_health"));
+  // The federated projection must preserve source annotations, not silently
+  // strip away the read-only information needed by a composition client.
+  assert.equal(tools.find(t => t.name === "ritornu_health")
+    .annotations?.readOnlyHint, true);
+  assert.equal(tools.find(t => t.name === "ritornu_boundaries")
+    .annotations?.readOnlyHint, true);
+  assert.notEqual(tools.find(t => t.name === "ritornu_prepare_substack")
+    .annotations?.readOnlyHint, true);
 
   // Larger than either surface alone
   assert.ok(tools.length > RITORNU_TOOLS.length);

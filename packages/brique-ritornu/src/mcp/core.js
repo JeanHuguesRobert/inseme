@@ -33,6 +33,7 @@ export const SUPPORTED_PROTOCOLS = new Set([PROTOCOL_VERSION, "2025-06-18", "202
 export const TOOLS = [
   {
     name: "ritornu_health",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     description:
       "Health and mandate snapshot for Ritornu (personal publication retrofit). Reports storage backend, schema versions, and non-negotiable boundaries. Prefer this first when connecting a new host.",
     inputSchema: {
@@ -43,6 +44,7 @@ export const TOOLS = [
   },
   {
     name: "ritornu_boundaries",
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
     description:
       "List Ritornu invariants: private capture storage, human review before corpus handoff, no direct Git write, no recursive collection, no auth/CAPTCHA/paywall bypass. Read-only.",
     inputSchema: {
