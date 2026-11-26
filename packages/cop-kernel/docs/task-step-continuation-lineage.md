@@ -3,7 +3,7 @@ title: Task / Step / Continuation Lineage in COP
 author: Jean Hugues Noël Robert, baron Mariani
 affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
 date: '2026-09-15'
-last_modified_at: '2026-09-15'
+last_modified_at: '2026-11-26'
 version: '0.1'
 status: working-paper
 license: CC BY-SA 4.0
@@ -411,6 +411,10 @@ this kind of agentic, distributed, traceable computation:
 Inox's control structures (loops, conditionals via verbs on stacks, actors) and actor model are
 natural vehicles for implementing COP Schedulers, Task/Step executors, and Continuation resumption
 with low overhead and excellent observability.
+
+### Reference runtime milestone (2026-11-26)
+
+The local substrate is no longer only prospective: [Inox #42](https://github.com/JeanHuguesRobert/Inox/issues/42) has published cooperative task lifecycle/join and exception unwinding (6cccc7b), synchronization primitives, Boxon/Outcome composition, actor-stack relocation (fd6ced5) and one-shot Parole/Whisper (b28fe9d). See [dated source evidence](https://github.com/JeanHuguesRobert/Inox/blob/master/research/histoire-du-developpement-inox-l9.md). Parole advances when its explicit next Boxon settles, not when the step returns. Actor stacks remain local, movable within the VM; a continuation crossing an address-space boundary still needs an explicit portable contract. COP's durable delivery, authorization, receipts and host/event reentry are not supplied by this local library. Do not migrate existing COP handlers solely on this milestone.
 
 ## Practical Usage Implications (for apps/platform and briques)
 
