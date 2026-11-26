@@ -105,10 +105,9 @@ export default function CopPrincipalConsentPage(){
     <h1>{standingDirect?'Mandat permanent JHN':'Consentement COP — Principal JHN'}</h1>
     {!standingDirect?<p>Cette interface recueille votre décision dans votre session Supabase authentifiée. Pour une extension de mandat explicitement activable, la décision favorable peut aussi appliquer cet amendement canonique après vérification. Elle n’envoie aucun courrier et ne dispense pas des contrôles COP lors des actions futures.</p>:null}
     {standingDirect?<section>
-      <p>Administration générale de Fracta2 et du ThinkPad avec le mandat
-      permanent JHN, dans ses limites COP existantes. Votre session Supabase
-      identifie le Principal. Aucun challenge, lien d'expiration ou deuxième
-      approbation n'est nécessaire.</p>
+      <p>Activation du mandat permanent JHN et de son amendement préparé
+      par le serveur. Votre session Supabase identifie le Principal.
+      Aucun challenge, lien d'expiration ou deuxième approbation n'est nécessaire.</p>
       {!loading&&!token?<div role="status">
         <p><strong>Supabase : non connecté. Aucun mandat n'a été validé.</strong></p>
         <button type="button" onClick={()=>setShowAuth(true)}>Se connecter</button>
@@ -129,7 +128,9 @@ export default function CopPrincipalConsentPage(){
             <dt>Mandat</dt><dd>{receipt.mandate_ref}</dd>
             <dt>Version active</dt><dd>{receipt.mandate_version}</dd>
             <dt>Exécution autorisée</dt>
-            <dd>Mode normal sur Fracta2 et le ThinkPad, selon le mandat COP.</dd>
+            <dd>Mode normal sur Fracta2 et le ThinkPad, selon le mandat COP.
+              {receipt.mandate_version==='v8'?' Périmètre administratif super sur Fracta2 ratifié ; chaque acte reste soumis à son admission COP.':' '}
+            </dd>
             <dt>Traçabilité</dt>
             <dd>{receipt.approval_evidence_ref||'Déjà enregistré dans COP'}</dd>
           </dl>
