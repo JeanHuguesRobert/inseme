@@ -15,6 +15,29 @@ Pendant le développement, un nouveau registre COP expérimental peut commencer 
 
 Le `Z0` n'est **pas** une date implicite. C'est un événement durable `accounting.epoch.opened`, muni d'un `epoch_id` stable, d'un `effective_at`, d'une référence de mandat, d'un schéma et d'un identifiant idempotent. Son instant ne doit pas être antidaté. La première écriture du nouveau registre vient après cet événement.
 
+## Clarification du Principal — 26 novembre 2026 : Instant T
+
+Les Z0 de développement sont des époques d'expérimentation, distinctes de
+l'Instant T où la comptabilité stricte deviendra une exigence opérationnelle
+de continuité. L'ouverture d'un Z0 ne déclare pas cet Instant T. Celui-ci
+n'est pas encore décidé.
+
+Les ruptures de continuité et incohérences des écritures techniques
+expérimentales antérieures à T sont principalement des résidus de
+tâtonnements. Ne pas lancer de migration ou de réconciliation de ces soldes
+pour eux-mêmes, ni faire dépendre un nouveau mécanisme de leur réparation.
+Conserver les traces utiles à Janus. Ne reporter que les engagements réels
+identifiés, par transfert explicite ; ne pas annuler les réservations
+actives ou élargir les mandats par un simple changement d'époque.
+
+Construire dès maintenant le mécanisme correct : allocation au budget
+propriétaire du Paquet Cognitif, microtransactions dans sa localité,
+remontée d'une synthèse au parent, et références aux preuves externes.
+Le choix de T devra expliciter l'époque, les ressources et les engagements
+repris. Aucune bascule de production n'est effectuée par cette clarification.
+
+Source : [Cogentia #285, réexamen du 26 novembre](https://github.com/JeanHuguesRobert/cogentia/issues/285#issuecomment-7199823593).
+
 ## Invariants minimaux
 
 1. Toute écriture, réservation, projection, dépense et imputation du nouveau registre porte un `epoch_id`. Les requêtes de solde et de disponibilité sont explicitement filtrées par cet identifiant. Aucun mélange inter-époques.

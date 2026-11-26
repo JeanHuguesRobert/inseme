@@ -5,10 +5,10 @@ description: Source profile for integrating FractaLog semantics into COP, with C
 author: Jean Hugues Noël Robert, baron Mariani
 affiliation: Institut Mariani / C.O.R.S.I.C.A. / Inseme
 canonical_url: https://github.com/JeanHuguesRobert/inseme/blob/main/research/cop_fractalog_profile.md
-version: 0.2-draft
+version: 0.3-draft
 status: source profile draft — human validation required before COP-core extraction
 date: '2026-07-06'
-last_modified_at: '2026-08-16'
+last_modified_at: '2026-11-26'
 last_stamped_at: '2026-08-16'
 license: CC BY-SA 4.0
 language: en
@@ -163,6 +163,38 @@ It is:
 
 > **Put source facts where the accountable act occurs; when the act is packet-borne cognitive work,
 > keep its source trace packet-local; consolidate higher-level views by projection.**
+
+### 4.1 Administrative acts: three source localities (2026-11-26)
+
+A packet-commissioned host administration Act spans three distinct sources:
+
+- The Principal locality owns mandate declarations, authenticated consent,
+  revocation and parent budget allocations.
+- The Cognitive Packet locality owns preparation, reservation and settlement
+  of its delegated budget, and the causal history of the work, including
+  references to the node's effect evidence.
+- The FractaNode locality owns the actual administrative admission,
+  consumption of an effect authorization, execution result and observations
+  of the affected resource.
+
+The packet references the node receipt; it does not import the node audit
+journal. Parent budgets receive allocation/settlement summaries, not all
+packet microtransactions. A node receipt must not become a second charge for
+the same packet Act. Mandate revocation stops future effects, not the
+recording of already observed effects. A successful command exit is not
+itself an observation of the desired postcondition.
+
+Physical co-location in one database is permissible when logical ownership
+and commitments remain distinct. Independent physical placement is a useful
+test, not a mandatory database per packet.
+
+**Evidence:** the Cogentia #285 three-store test projects a synthetic
+protected node receipt to the packet and settles its local reservation;
+only a summary returns to the parent. This validates the source/projection
+and accounting contract, not live privileged execution or a deployed issuer.
+See [a6ece8ef](https://github.com/JeanHuguesRobert/cogentia/commit/a6ece8ef152051b8e0ee05f8a71810283feb055c).
+The development accounting boundary is described in
+[Instant Zéro](../docs/cop-accounting-instant-zero.md).
 
 ## 5. Packet trace profile
 
