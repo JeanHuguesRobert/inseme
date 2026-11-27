@@ -6,7 +6,7 @@ import { loadInstanceConfig } from "../../common/config/instanceConfig.client.js
 import { AuthModal as SharedAuthModal } from "@inseme/ui";
 import { recoveryRequestErrorMessage } from "../../lib/authRecoveryError.js";
 
-export default function AuthModal({ onClose, onSuccess }) {
+export default function AuthModal({ onClose, onSuccess, showAnonymous = true, showProviders = true }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [recoveryNotice, setRecoveryNotice] = useState("");
@@ -155,6 +155,8 @@ export default function AuthModal({ onClose, onSuccess }) {
   return (
     <SharedAuthModal
       onClose={onClose}
+      showAnonymous={showAnonymous}
+      showProviders={showProviders}
       onSignInAnonymously={handleSignInAnonymously}
       onSignInWithProvider={handleSignInWithProvider}
       onSignInWithPassword={handleSignInWithPassword}

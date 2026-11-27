@@ -34,6 +34,7 @@ import FacebookDeletionInstructions from "./pages/FacebookDeletionInstructions";
 import OAuthCallback from "./pages/OAuthCallback";
 import FacebookDeletionStatus from "./pages/FacebookDeletionStatus";
 import OAuthConsent from "./pages/OAuthConsent";
+import McpOAuthConsent from "./pages/McpOAuthConsent";
 import DataCollector from "./pages/DataCollector";
 // Lazy-loaded admin components (separate chunk - only loads when visiting /admin/*)
 const Admin = lazy(() => import("./pages/Admin"));
@@ -312,6 +313,7 @@ export function App() {
         <Route path="/oauth/facebook/deletion-status" element={<FacebookDeletionStatus />} />
         <Route path="/oauth/:provider/callback" element={<OAuthCallback />} />
         <Route path="/oauth/consent" element={<OAuthConsent />} />
+        <Route path="/oauth/authorize" element={<McpOAuthConsent />} />
         {/* Missions/tasks UI lives in brique-tasks as /projects/* (see BRIQUES registry).
             Legacy /missions and /tasks paths referenced removed components (MissionsPage, etc.). */}
         <Route path="/missions/*" element={<Navigate to="/projects" replace />} />
