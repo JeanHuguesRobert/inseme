@@ -99,6 +99,8 @@
 
 ## Key Seed Doctrines & Resolution Map
 
+- **Cognitive Packet Switching**: [research/cognitive_packet_switching.md](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/cognitive_packet_switching.md)
+  - Aliases: cps, commutation de paquets cognitifs
 - **Potentics**: [research/potentics.md](https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/potentics.md)
   - Aliases: potentics, science des possibles, transition possibiliste, potentialite graduee
 - **Channels Fragmentation**: [research/vigilia.md](https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/vigilia.md)

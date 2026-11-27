@@ -12,7 +12,7 @@ author: Jean Hugues Noël Robert, baron Mariani
 affiliation: Institut Mariani / C.O.R.S.I.C.A., 1 cours Paoli, F-20250 Corte, Corsica
 license: CC BY-SA 4.0
 last_stamped_at: 2026-09-05T00:00:00.000Z
-last_modified_at: '2026-10-04'
+last_modified_at: '2026-11-10'
 title: What is Potentics?
 date: '2026-05-09'
 status: draft — auto-filled (frontmatter cleanup)
@@ -30,6 +30,7 @@ related_documents:
   - cogentia/research/learning_computer_genese_et_architecture.md
   - research/principe_rossignol.md
 changelog:
+  - '2026-11-10 — reconciled the historical presencology-capability-recombination branch as an explicitly unconfirmed co-presence mechanism and Olé Olé application candidate; no empirical validation claimed.'
   - '2026-10-04 — pointed the word latent, in §1.1, at the distinction proposed in le_reel_le_virtuel_et_l_actuel.md: already structured and present, not yet exercised. No Potentics claim was changed. The clarification itself is not yet a stabilized publication.'
   - '2026-09-27 — added the Necessary Means Principle as the reciprocal of early impossibility detection: when a valuable possible lacks a required capability, explore admissible means-to-the-means under Measured Risk rather than confusing absence with impossibility.'
   - '2026-09-27 — linked Potentics/ERP to early impossibility detection and the Accessible Inputs Gate: prune branches with decisively impossible preconditions early while distinguishing impossible from blocked, unknown or not-yet-available.'
@@ -107,6 +108,20 @@ Potentics proposes to unify and radicalize these partial approaches under a comm
 > **Potentics is the rational exploration of the possible.**
 
 Each word carries weight. *Rational*: rigorous, tool-assisted, falsifiable, not merely intuitive. *Exploration*: iterative, open-ended, proceeding by trial and error, not by prior optimization. *The possible*: not what is, not what is certain, but what could become real — with a propensity that can be measured, cultivated, and inhibited.
+
+**Why *Rational* is indispensable (2026-11-08).** An Exploration of The
+Possible *without* the adjective could wander through speculation without
+using the contributions of reason. **Rational Exploration** instead draws
+on argument, relevant evidence, inherited knowledge, objections,
+feasibility constraints and proportionate action. Reason itself remains
+corrigible: a current model, category or deductive argument cannot turn
+what it fails to represent into an impossibility. Imagination generates
+candidate branches; reason examines them; the Real answers through
+consequences; the [Second Method](second_method.md) records and revises
+claims, objections and traces. This is disciplined openness, **not** a
+claim that imagination is sovereign over physical constraints, or a
+mandate to produce simulations when real work already supplies evidence.
+
 
 ### 1.1 The Possible versus possibilities
 
@@ -409,7 +424,22 @@ This distinction allows Potentics to accommodate simultaneously actualization, c
 
 ### 3.5 Spirit of Synthesis
 
-Potentics calls **Spirit of Synthesis** the hypothesized generative dynamic by which previously separate elements, observations, capabilities, structures, or partial solutions combine so that additional possibles become accessible and, sometimes, actualized. The term is deliberately non-mystical here: it names a research object — the mechanisms by which synthesis creates order, capability, and new reachable states from previously dispersed components.
+Potentics calls **Spirit of Synthesis** the generative phenomenon by which previously separate elements, observations, capabilities, structures, or partial solutions combine so that additional possibles become accessible and, sometimes, actualized. The **existence of emergent organization** is an observed fact of cosmic and biological history, not the hypothesis at issue. The term names a research object: the diverse **mechanisms, conditions, and compositional pathways** by which order, capability, and new reachable states emerge. It does not assert a distinct supernatural agent or a new physical force.
+
+**Epistemic distinction (2026-11-08):** galaxies, stars, chemical structures,
+living organisms, and reflective cognition demonstrate that localized organized
+structures and novel capacities have emerged over cosmic history. The observed
+phenomenon should not be marked *hypothetical* merely because its mechanisms
+are incompletely understood. Nor does this fact alone demonstrate that every
+particular coordination method creates generative synthesis. The early cosmos
+should not literally be characterized as an undifferentiated "initial chaos":
+cosmic microwave background observations show remarkable early smoothness with
+small fluctuations, and gravitational instability later generated structure.
+Local self-organization is consistent with thermodynamics in systems whose
+energy flows and entropy production support order. See NASA's [cosmic structure
+account](https://imagine.gsfc.nasa.gov/science/questions/lumpy.html),
+[Lineweaver & Egan, 2008](https://doi.org/10.1016/j.plrev.2008.08.002), and
+[Crutchfield et al., *On principles of emergent organization*, 2024](https://doi.org/10.1016/j.physrep.2024.04.001).
 
 A minimal formulation is:
 
@@ -437,22 +467,57 @@ realization changes what becomes accessible next
 
 > Synthesis can enlarge the accessible possible by creating new combinations and capabilities.
 
+### Candidate mechanism — semantic reconciliation of Cognitive Packets (2026-11-08)
+
+**Specific mechanism hypothesis, not an existential hypothesis:** the *Spirit of Synthesis* may operate, in
+part, through the discovery of meaningful relations between cognitive works
+that were previously handled separately. A conversation acting as a cognitive
+routing/interpretation handler can identify relevant already-existing
+Cognitive Packets, attach observed Acts and new findings to one or several of
+them, and propose relations between their distinct results, constraints or
+capacities. Such reconciliation can occasionally make a continuation or a
+combination *accessible* that was not accessible to the separately considered
+work loci. In that event it would constitute one candidate **mechanism** of
+generative synthesis, not just a more economical archive.
+
+The mechanism is **not** validated merely by increasing the number of links or
+reducing duplicate packets. Those are organizational outcomes. Its generative
+claim requires an attributable instance in which the new combination makes a
+previously inaccessible capability, solution or Act achievable. Neither the
+existence of a conversation nor an AI-generated relation proves that outcome.
+
+An agile, revisable graph is essential: existing packets should be searched
+before creating new ones; relations can be contested or later revised;
+historical Acts and their original provenance remain unchanged. Today's
+organization must not restrict tomorrow's exploration of the Possible. This
+hypothesis draws on [Cognitive Packets](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/cognitive_packets.md)
+and the Janus Past/Future distinction; it does not require a new runtime
+component or new synthetic packet merely to record the hypothesis.
+
 ### 3.5.1 Collective Achievable Capacity and the Spirit of Synthesis ($C_{\text{collective}}(T)$ and $G_{\text{RAIX}}$)
 
-The Spirit of Synthesis finds an exact mathematical and empirical formalization in the *Potentics of Compute* ([`potentics_of_compute.md`](potentics_of_compute.md)) through the concept of **collective achievable capacity**.
+A **domain-specific operational proxy** for one aspect of generative synthesis is proposed in the *Potentics of Compute* ([`potentics_of_compute.md`](potentics_of_compute.md)) through **collective achievable capacity**. This is neither an exact mathematical characterization of the Spirit of Synthesis across domains nor a physical law.
 
 Consider $n$ heterogeneous capabilities or processors $C_1, C_2, \ldots, C_n$. When assembled under an interaction and routing topology $T$, their collective capacity is not a scalar addition, but a functional composition:
 $$C_{\text{collective}}(T) = F_T(C_1, C_2, \ldots, C_n)$$
 
-The empirical test of whether the Spirit of Synthesis is actively operating is given by the **RAIX array gain metric** $G_{\text{RAIX}}(T)$:
+A **candidate, task-relative proxy** for a measured performance gain is the **RAIX array gain** $G_{\\text{RAIX}}(T)$, provided the comparison is well-defined:
 $$G_{\text{RAIX}}(T) = \frac{\text{Capability}(C_{\text{collective}}(T))}{\sum_{i=1}^n \text{Capability}(C_i)}$$
 
 Three distinct regimes emerge:
-1. **Super-additivity ($G_{\text{RAIX}} > 1$) :** The Spirit of Synthesis is genuinely achieved. Plural, specialized capabilities (e.g., deterministic real-time MCU, neural NPU, edge SBC, and external reasoning model) cooperate to achieve tasks that no individual processor nor simple parallel replication could ever achieve.
-2. **Strict redundancy ($G_{\text{RAIX}} = 1$) :** Pure replication for fault tolerance without qualitative expansion of accessible possibles.
-3. **Collective deficit ($G_{\text{RAIX}} < 1$) :** The coordination overhead and latency trap dominate, shrinking the accessible possible.
+1. **Super-additivity ($G_{\\text{RAIX}} > 1$):** under the chosen workload and metric, composition outperforms the stated additive baseline. This is evidence of a performance gain in that domain, **not proof** of universal generative synthesis or the appearance of a qualitatively new capability.
+2. **Baseline equality ($G_{\\text{RAIX}} = 1$):** equivalent performance on this measure; redundancy, robustness or novel functionality may still matter outside the measured dimension.
+3. **Measured deficit ($G_{\\text{RAIX}} < 1$):** underperformance on the stated measure; coordination overhead may explain it, but does not by itself establish contraction of the entire accessible Possible.
 
-Furthermore, under **policy learning** (as embodied in the Ithaca memory of the [Learning Computer](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/learning_computer_genese_et_architecture.md)), the system continuously learns *which* topology $T$ maximizes $G_{\text{RAIX}}(T)$ for each class of task, transforming the Spirit of Synthesis from a static philosophical concept into a trainable, evolutionary computational discipline.
+**Measurement boundary.** The denominator is meaningful only when the
+individual capabilities have been expressed in **comparable units over an
+explicit workload and evaluation protocol**. Heterogeneous capabilities
+are often not additively commensurable. A scalar gain may conceal a novel
+capability, resilience, safety or constraint satisfaction; conversely,
+a favorable scalar alone cannot establish that a new qualitative option
+became possible. Record the baseline and observed new behavior separately.
+
+Furthermore, under **policy learning** (as embodied in the Ithaca memory of the [Learning Computer](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/learning_computer_genese_et_architecture.md)), the system continuously learns *which* topology $T$ maximizes $G_{\text{RAIX}}(T)$ for each class of task, making **one operational mechanism of capability composition** amenable to learning and correction, without claiming to train or exhaust the Spirit of Synthesis itself.
 
 ---
 
@@ -666,6 +731,115 @@ In this reading, **“the function creates the organ”**: recurrent useful tran
 
 This is **not presented as an established physical theory**. Its scientific value depends entirely on whether it can be formalized sufficiently to generate discriminating, falsifiable consequences and survive Reality Tests. Failure to do so, or repeated conflict with the Real, is itself a legitimate Potentic result and should lead to correction, narrowing, or abandonment of the hypothesis.
 
+#### Expansion (2026-11-08): from a situated Learning Computer to a computational Universe
+
+The conjunction with [*The Network is the Learning Computer*](the_network_is_the_learning_computer.md)
+changes the possible **scale**, not the epistemic status, of the conjecture.
+Three propositions must remain distinct:
+
+1. **Computational description:** physical systems can be modeled, to varying
+   degrees, with computational or informational structures. This alone does
+   not entail that the Universe *is* a computer.
+2. **Physical information processing:** physics constrains how systems store,
+   transform and transmit information. Lloyd (2002) derives computational
+   capacity bounds for the Universe; this does not identify a literal global
+   program, packet format or learning objective.
+3. **Computational ontology:** reality may fundamentally consist of
+   computational transformations. This stronger claim remains debated, and
+   an even stronger **learning Universe** would need its own definition of
+   adaptive capability changes distinguishable from ordinary state evolution.
+
+If one *conditionally adopts* the third proposition, a situated Fractanet
+Learning Computer can be interpreted as **an emergent computational
+organization within a computational Universe**, not an external machine
+simulating Reality. At different scales, traces of earlier transformations
+constrain later transformations; localized configurations may preserve
+functional structures; interactions may permit new combinations and new
+reachable capabilities. Human reflection and packet-based cognitive routing
+would then be a specialized late-emerging case of the more general process,
+not evidence that stars, particles or the cosmos possess human-like goals,
+consciousness, symbolic packet identities, or governed mandates.
+
+The recent [Janus](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/janus_cognitive_gatekeeper.md)
+and [Cognitive Packet](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/cognitive_packets.md)
+analysis offers a **heuristic**, not a claimed physical isomorphism:
+
+- **Past:** observed traces allow evidence-qualified reconstructions of
+  antecedent pathways; history persists without being exhaustively knowable.
+- **Present:** some previously separate observations and capacities may be
+  combined; the *Spirit of Synthesis* names the emergence of new accessible
+  possibilities through such composition.
+- **Future:** realized combinations change subsequent reachable paths;
+  the organization of those paths is itself revisable, not frozen by the
+  present model.
+
+Crucially, **evolution is not automatically learning**. Learning in the
+Fractanet sense requires demonstrable, experience-dependent alteration of
+future behavior or capability composition with grounded feedback. Neither
+increasing cosmic complexity nor ordinary irreversible dynamics, by
+itself, supplies such a criterion. Also, causal events in physics are not
+literally COP Acts, and physical state is not literally a Cognitive Packet.
+The strongest open question is whether a useful scale-independent concept
+of *capability formation* can be stated **without** equivocation among
+causal dynamics, computation, adaptation and deliberate cognitive learning.
+
+Relevant prior work and objections: Konrad Zuse, *Rechnender Raum* (1969);
+Edward Fredkin, *Digital Mechanics* (1990);
+[Seth Lloyd, *Computational Capacity of the Universe* (2002)](https://doi.org/10.1103/PhysRevLett.88.237901);
+[Seth Lloyd, *The Universe as Quantum Computer* (2013)](https://arxiv.org/abs/1312.4455);
+[Wolfram Physics Project](https://wolframinstitute.org/research/wolfram-physics-project);
+[Stanford Encyclopedia of Philosophy, *Computation in Physical Systems*](https://plato.stanford.edu/entries/computation-physicalsystems/);
+and [Anderson & Piccinini, *Ontic Pancomputationalism* (2024)](https://doi.org/10.1093/9780191872075.003.0009).
+This is a conditional conceptual expansion of an existing hypothesis, **not**
+an assertion of a new cosmological theory or a mandate to launch simulations.
+
+#### Physical thermodynamics versus metaphorical thermodynamics (2026-11-08)
+
+Maintain a strict epistemic separation. **Physical thermodynamics** concerns
+measurable energy, heat, work, entropy, and physical transformations. It
+applies literally to computers and networks as physical systems (power,
+heat dissipation and resource limits), and to natural systems through the
+appropriate physical models. The rise of local organization is not an
+exception to thermodynamic constraints.
+
+**Metaphorical thermodynamics** in cognitive, social, organizational or
+Potentic reasoning is a heuristic for phenomena such as dissipation of
+attention, irreversible decisions, information dispersion, coordination
+cost, or resource constraints. These are not automatically thermodynamic
+entropy, state functions or conservation laws; in particular "cognitive
+entropy" must specify its variables and domain before any mathematical
+claim. Analogies with exergy do not make the Possible an energy or
+validate conversion formulas between cognitive and physical units.
+
+A formal information-theoretic entropy, when precisely defined over a
+probability distribution, is a legitimate mathematical quantity, but its
+relationship to physical thermodynamic entropy requires a distinct
+physical argument. Do not transfer the second law, physical temperature,
+force fields, or universal scaling laws by verbal similarity.
+
+**Informational Gravity** is likewise an explicit metaphor for situated
+cognitive-packet routing, not physical gravitation (see
+[Cogentia's canonical definition](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/informational_gravity.md)).
+The computational-Universe conjecture does not erase these boundaries:
+physical substrate, computational description, organizational analogy,
+and speculative ontology retain separate claims and standards of evidence.
+
+#### Recursive locality and scale (2026-11-08)
+
+The computational-Universe conjecture also raises a **scale-continuity**
+question. [Fractalisation](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/fractalisation_method_hypothesis_2026-11-02.md)
+and the [Principle of Locality](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/locality_principle.md)
+allow us to consider situated compositions below, at, and above human and
+agent scales: neither human cognition nor our Fractanet need be the first or
+last organizational level. This is a conjecture about recursively useful
+organizational **relations**, not an established infinite geometrical
+fractal or a scale-invariant law of physics. In particular, physical
+relativistic locality differs from the method's minimum-sufficient-locality
+rule; observed large-scale cosmic homogeneity constrains literal universal
+spatial fractality. The potential continuity of *mechanisms of capability
+formation* is the interesting question, while their material substrates,
+constraints and epistemic regimes can differ sharply.
+
 ### 8.3 Methodological Commitments
 
 Any Potentic investigation should:
@@ -716,6 +890,40 @@ Rational Exploration of The Possible
 ```
 
 The canonical source for this complementary programme is [`presencology.md`](presencology.md).
+
+
+#### Candidate mechanism: co-presence and recombination of capabilities
+
+A distinct, **unconfirmed causal hypothesis** is that the relevant co-presence
+of carriers of complementary capacities can make additional possibles visible
+or actionable. Those carriers can be persons, institutions, agents, datasets,
+compute, energy, legal powers or other compatible resources. Neither proximity
+nor an encounter alone proves increased potentiality.
+
+    separate capacities
+      -> relevant co-presence
+      -> encounter and possible coordination
+      -> recombined, jointly actionable capacity
+      -> newly visible or more accessible possibles
+
+Two outcomes must be distinguished: **epistemic visibility** (a possibility
+becomes perceptible) and **capacity for actualization** (resources or abilities
+become jointly available). Presencology can observe or propose relevant
+presence configurations; Potentics asks whether these genuinely change the
+accessible possible set or its potentialities. Trust, mandate, timing,
+compatibility, incentives and communication remain possible inhibitors.
+
+The local **Olé Olé** service is a candidate field of application, not evidence
+that the hypothesis is established: improved perception of nearby presences
+*might* facilitate encounters, exchange and capacity recombination. Outcomes
+could range from a changed individual plan to a lasting collective project.
+Neither the service nor its agents should prescribe encounters or goals to
+people by default. The purpose is to increase informed options, subject to
+consent and actual observed effects.
+
+*Provenance:* recovered and reconciled from the historical
+presencology-capability-recombination branch (2026-07), rather than
+promoting its superseded addendum wholesale.
 
 ---
 
@@ -785,13 +993,13 @@ Robert, J. H. (2026). What is Potentics? Toward a science of organized potential
 - [Parked: External review of Potentics v1.0-rc1 received — human arbitration pending](../.cogentia/issues/jeanhuguesrobert-barons-mariani/issue-00024.md)
 - [Potentics Addendum — The Possible versus possibilities](potentics_the_possible_addendum.md)
 - [Quand le Réel répond](quand_le_reel_repond_pkd.md)
+- [Reactive Corpus semantic propagation: Learning Computer genesis, Trace primitive, and RAIX array cascades](../.cogentia/issues/jeanhuguesrobert-barons-mariani/issue-00055.md)
 - [Research Index — barons-Mariani](index.md)
 - [Rossignol — l’âne qui interroge le Réel](rossignol.fr.md)
 - [Rossignol — the donkey who questions Reality](rossignol.md)
 - [Sailing the Cognitive Waves](cognitive_waves.md)
 - [Trail — Capable](trails/capable.md)
 - [Ubuesque, kafkaïen et Machine à Empêcher](autonomia/grille_ubuesque_kafkaien_machine_a_empecher.md)
-- [[Reality Test] FractaCognition récursive — transmettre puis vérifier une leçon entre handlers](https://github.com/JeanHuguesRobert/cogentia/issues/261)
 - [Cogentia Workflows](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/cogentia_workflows.md)
 - [FractaXXXX — A Generative Grammar of Possibilities](https://github.com/JeanHuguesRobert/cogentia/blob/main/research/fractaxxxx.md)
 <!-- END_AUTO: backlinks -->
@@ -1839,8 +2047,8 @@ Attribution requise :
 - [Research Index — barons-Mariani](index.md)
 - [Stigmergie sans limite haute](stigmergie_sans_limite_haute.md)
 - [vigilia - moved](../vigilia.md)
-- [Research Index — Inox](https://github.com/JeanHuguesRobert/Inox/blob/main/research/index.md)
-- [The Iɴᴏx programming language](https://github.com/JeanHuguesRobert/Inox/blob/main/README.md)
+- [Research Index — Inox](https://github.com/JeanHuguesRobert/Inox/blob/master/research/index.md)
+- [The Iɴᴏx programming language](https://github.com/JeanHuguesRobert/Inox/blob/master/README.md)
 <!-- END_AUTO: backlinks -->
 
 
@@ -1855,7 +2063,7 @@ author: "Jean Hugues Noël Robert, baron Mariani"
 affiliation: "Institut Mariani / C.O.R.S.I.C.A. / Cogentia"
 license: "CC BY-SA 4.0"
 date: "2026-07-20"
-last_modified_at: "2026-07-20"
+last_modified_at: "2026-11-18"
 published_at: "2026-07-20"
 version: "1.0"
 status: "published — human validated"
@@ -2269,6 +2477,16 @@ objection, safer destination, or explicit failure.
 Informational gravity is an engineering and institutional metaphor. It does not claim inverse-square
 behavior, conservation laws, physical mass, or universal mathematical necessity.
 
+**Cross-domain boundary (2026-11-08):** physical gravitation is a
+physical interaction described by empirically constrained theories;
+`informational_gravity(packet, candidate, context, time)` is a
+**task-relative comparison for routing**. Even if an attraction function
+is quantified or optimized, this does not make it a force, a mass, a
+spacetime geometry or an inverse-square law. Physical information/energy
+costs of computing remain real, whereas the name *gravity* here is an
+engineering analogy. A conjecture of a computational Universe does not
+promote this routing vocabulary into physical ontology.
+
 ### 13.6 Autonomous moral ranking
 
 The concept does not authorize a global social-credit system, secret scoring, or an algorithmic
@@ -2390,6 +2608,101 @@ Provisional correspondences to test:
 
 Cross-links: [FractaXXXX](fractaxxxx.md), [Locality Principle / FractaCache](locality_principle.md), [Corpus Sleep Cycle](memory_and_corpus_sleep_cycle.md), [FractaCognition](fractacognition_principles.md).
 
+
+
+## Local path stigmergy for a Mesh Network Learning Computer (2026-11-18)
+
+**Research addendum, not a revision of the human-validated v1.0 doctrine.**
+The conceptual setting is [The Network is the Learning Computer](https://github.com/JeanHuguesRobert/barons-Mariani/blob/main/research/the_network_is_the_learning_computer.md),
+[Packet Attractor](https://github.com/JeanHuguesRobert/inseme/blob/main/research/packet_attractor_fractanet.md),
+[Locality Principle](locality_principle.md) and
+[Cognitive Packet Switching](cognitive_packet_switching.md).
+
+The mesh must not merely **transport** information: a Cognitive Packet may
+**undergo computation** at a node, an interchangeable handler, or a transient
+RAIX capability array. The meaning of *destination* is the useful result
+returned to Ithaca; intermediate processors are hops. The node holding the
+packet should decide whether to work locally, postpone, or transfer it through
+one of its known admissible paths to a mobilizable capability.
+
+A packet-relative routing decision requires **two separate classes of evidence**:
+
+1. **Capacity:** declared capability, measured throughput for this class of
+   packet, queue/backlog, available resources, budget/cost, operating regime,
+   identity and validity. An `operium.node.v1` ONA attractor is evidence of
+   *observability*, not proof of Cognitive Packet processing capability.
+2. **Path experience:** direct and multi-hop transport/processing experience
+   for (packet class, required capability, intended destination, path), with
+   independent forward, service and return observations. The best destination
+   can differ by packet, deadline and governing mandate. One link's
+   reachability does not prove an end-to-end path.
+
+### Trace projection; retain causal sources near their origins
+
+A *stigmergic path trace* SHOULD be a derived, expiring **guidance view** over
+already-existing source-local, append-only COP FractaLog events and verified
+effect receipts, **not** another global history database. A minimum candidate
+record contains:
+
+- `trace_ref`, `event_ref`, `effect_receipt_ref`; `observer_node`, `source_node`,
+  `packet_class` (or appropriately private packet reference),
+  `capability_ref`, `destination_ref`, `path_ref` and bounded ordered `hop_refs`;
+- `observed_at`, `valid_until`, `evidence_kind` (measured/reported/inferred),
+  scope/operating regime, capability and path versions, confidence and
+  source-local provenance;
+- measurable forwarding/return latency, time queued and processed, failures,
+  refusal/retry, power, bandwidth and money/Kudos cost *when actually known*;
+- independently observed semantic progress, packet lineage, custody and the
+  result eventually assimilated at Ithaca; applicable mandate/budget **refs**,
+  but no credentials or unnecessary private payload.
+
+A successful handoff is not successful cognition. An end-to-end result may
+reinforce, contradict or cool earlier guidance only after bounded, attributable
+observation, ideally including the return-to-Ithaca outcome. Guidance expires
+or loses influence; historical receipts and imputation do not. Reactivation
+requires new evidence under present authority. Loop detection, hop limits,
+packet fencing, local custody and idempotent handoff remain essential.
+
+### Selection and stigmergic learning
+
+Informational Gravity remains a **vector of evidence and a versioned,
+packet-relative policy**, not an unexplained universal scalar. Compare
+`T_local = local_queue + local_service` with observed or bounded estimates of
+`T_remote = handoff + path_transport + remote_queue + remote_service + return`
+plus uncertainty and resource costs. A general CPU load average is **not**
+packet-specific throughput or queue delay. Missing observations remain
+unknown; do not invent attractiveness to fill a dashboard.
+
+Routes that delivered verified progress can be reinforced; poor or expensive
+paths must become less attractive; evidence must decay and be revisited after
+conditions change. Anti-capture and bounded exploration preserve alternate
+paths. An expired attractor can remain in local historical memory, but cannot
+be a current forwarding authorization. Mandate, consent, privacy and budget
+are **independent hard admissibility checks**, not adjustable attraction
+weights. The node retains path evidence near its own locality and propagates
+bounded references/projections to its neighbors as needed.
+
+### Reality test and current status
+
+1. On Fracta2 and a reachable ThinkPad, compare a bounded real packet handled
+   locally and remotely; measure queue, processing, transfer, return, useful
+   progress, and COP receipts using the same budget.
+2. Repeat with artificial load, stale attractors and blackboard loss. Ensure
+   expiration removes routing influence without erasing history, and no
+   duplicate effect or packet identity is lost.
+3. Introduce a third node, competing direct and two-hop paths, and a
+   temporarily unavailable hop. Compare locality-first and learned path
+   routing, while auditing all candidates and rejected alternatives.
+4. Replay source receipts and replace the router. Demonstrate that learned
+   guidance actually changes future route choices and survives handler
+   replacement without becoming a new authoritative registry.
+
+**Verified as of 2026-11-18:** Operium ONA exposes local peer records
+with TTL and SOMA CPU/memory observations; the Fracta2 NASA can derive a
+Principal-only view. The current ONA event sample is dominated by probe/job
+events, not measured cognitive-packet route outcomes. A path-stigmergy
+projection backed by packet-specific effect receipts, multi-hop selection,
+resource reservations and Ithaca assimilation is **not yet deployed**.
 
 
 ---
@@ -3131,7 +3444,7 @@ René, merci. On continue.
 - [FractaVolta](https://github.com/JeanHuguesRobert/FractaVolta/blob/main/README.md)
 - Methodology
 - [Research Index — FractaVolta](https://github.com/JeanHuguesRobert/FractaVolta/blob/main/research/index.md)
-- [Research Index — Inox](https://github.com/JeanHuguesRobert/Inox/blob/main/research/index.md)
+- [Research Index — Inox](https://github.com/JeanHuguesRobert/Inox/blob/master/research/index.md)
 - Inseme
 - [Research Index — Inseme](https://github.com/JeanHuguesRobert/inseme/blob/main/research/index.md)
 - [Agent Brief — Representing Jean Hugues Noël Robert](https://github.com/JeanHuguesRobert/JeanHuguesRobert/blob/main/research/agent_brief.md)
@@ -3140,6 +3453,7 @@ René, merci. On continue.
 - [MareNostrum](https://github.com/JeanHuguesRobert/marenostrum/blob/main/README.md)
 - [Pacte anti-capture solaire et inférentielle](https://github.com/JeanHuguesRobert/marenostrum/blob/main/research/pacte_anti_capture_solaire_inferentielle.md)
 - [Research Index — MareNostrum](https://github.com/JeanHuguesRobert/marenostrum/blob/main/research/index.md)
+- [On n’est jamais si bien servi que par soi-même ; demain, cela fera beaucoup de monde](https://github.com/JeanHuguesRobert/ubikia/blob/main/artifacts/audible/on-nest-jamais-si-bien-servi/source.md)
 <!-- END_AUTO: backlinks -->
 
 
@@ -3629,9 +3943,9 @@ sharing process internals or SQLite tables.
 Short form:
 
 ```text
-Cogentia owns the corpus.
-Magistral owns capability routing, including model routing.
-The boundary is an AI Router API.
+Cogentia owns the corpus, cognitive memory, mandates and CPS decisions.
+Magistral supplies substitutable capabilities: inference and byte custody.
+The boundaries are explicit, minimal contracts; standards are optional facades.
 ```
 
 ## Responsibilities
@@ -3654,10 +3968,40 @@ Magistral is responsible for:
 - ACP client and provider surfaces for explicitly exposed rich-agent sessions;
 - provider failover, local fallback and degraded modes;
 - provider health, metrics and traffic logs;
-- optional local operational cache.
+- optional local operational cache;
+- provider-neutral custody of immutable, content-addressed bytes, without
+  deciding what an agent should remember, forget, infer, or materialize.
 
 The two services may run on the same machine. They should still keep separate
 stores and talk through explicit APIs.
+
+## Object Memory Contract (experimental v0, 16 November 2026)
+
+The first code increment is published in Inseme at
+[Magistral Object Memory v0](https://github.com/JeanHuguesRobert/inseme/blob/main/packages/magistral/docs/object-memory-v0.md)
+(commit fd0d7da). It is a small local Node.js library and CLI, NOT a new
+network service or an S3 server.
+
+- Object identity is the existing COP SHA-256 content reference, decoupled
+  from the physical storage location.
+- Providers only expose byte custody: immutable put and verified get.
+  A put can require N verified physical copies, with explicit warnings
+  that distinct directories are not independent failure domains.
+- v0 rejects paid or unknown-billing providers with mandatory zero
+  monetary budget. It requires an explicit absolute local storage path.
+- A successful storage receipt is evidence of observed bytes, NOT proof
+  of a Cogentia mandate, a cognitive task's completion, permanent storage,
+  offsite redundancy, or an authorization to delete an original.
+- Object choice, retention, provenance, epistemic assessment, CPS
+  continuations, reconciliation, and control-plane authority belong to
+  Cogentia/COP. Magistral's technical fallback never replaces these acts.
+- S3, Google Drive, Dropbox, and recipe-based materialization remain
+  potential optional adapters, deliberately not claimed as implemented.
+  Unsupported portions of an external standard must be advertised as such.
+
+This increment does not rewrite historic Git objects or alter existing
+COP artifact schemas. Existing content_ref and TraceRef identifiers are
+sufficient for future integration.
 
 ## AI Router Contract
 
