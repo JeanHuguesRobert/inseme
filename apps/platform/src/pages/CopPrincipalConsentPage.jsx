@@ -4,7 +4,7 @@
  * fake issuer, fallback approval, or effect execution on browser errors.
  */
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {useNavigate,useParams} from 'react-router-dom';
+import {useNavigate,useParams,useSearchParams} from 'react-router-dom';
 import AuthModal from '../components/common/AuthModal';
 import {useSupabase} from '../contexts/SupabaseContext';
 import './CopPrincipalConsentPage.css';
@@ -18,6 +18,11 @@ export default function CopPrincipalConsentPage(){
   // Owner-authenticated direct activation: no expiring challenge or
   // second confirmation. A deliberate POST is the Principal's one act.
   const standingDirect=challengeId==='standing';
+  const workDirect=challengeId==='work-commission';
+  const [searchParams]=useSearchParams();
+  const workPlanHash=searchParams.get('plan')||'';
+  const validWorkPlan=SHA.test(workPlanHash);
+  const workAttempted=useRef(null);
   const {session,loading}=useSupabase();
   const [showAuth,setShowAuth]=useState(false);
   const [request,setRequest]=useState(null);
@@ -85,6 +90,32 @@ export default function CopPrincipalConsentPage(){
     directAttempted.current=true;
     void activateStanding();
   },[standingDirect,loading,token]);
+  async function commissionWork(){
+    if(!workDirect||!validWorkPlan||!token||busy)return;
+    setBusy(true);setError('');
+    try{
+      const response=await fetch('/api/cop/principal-consent/work-commission',{
+        method:'POST',headers:{Authorization:`Bearer ${token}`,
+          'Content-Type':'application/json',Accept:'application/json'},
+        body:JSON.stringify({plan_hash:workPlanHash}),cache:'no-store'
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok||data.ok!==true||data.grants_authority!==false||
+         !(data.funded===true||data.status==='completed'))
+        throw Error(data.error||'work_commission_unavailable');
+      if(data.funded===true&&data.plan_hash!==workPlanHash)
+        throw Error('work_commission_receipt_mismatch');
+      setReceipt(data);
+    }catch(e){setError(e.message||'work_commission_unavailable');}
+    finally{setBusy(false);}
+  }
+  // The explicitly labelled link carries the exact already reviewed plan.
+  // The session token stays in the browser-to-canonical-service request.
+  useEffect(()=>{
+    if(!workDirect||!validWorkPlan||loading||!token||workAttempted.current===workPlanHash)return;
+    workAttempted.current=workPlanHash;
+    void commissionWork();
+  },[workDirect,validWorkPlan,workPlanHash,loading,token]);
   async function decide(decision){
     if(!request||request.status!=='pending'||!token||busy||!validId)return;
     setBusy(true);setError('');
@@ -102,8 +133,21 @@ export default function CopPrincipalConsentPage(){
     finally{setBusy(false);}
   }
   return <main style={{maxWidth:720,margin:'2rem auto',padding:'1rem'}}>
-    <h1>{standingDirect?'Mandat permanent JHN':'Consentement COP — Principal JHN'}</h1>
-    {!standingDirect?<p>Cette interface recueille votre décision dans votre session Supabase authentifiée. Pour une extension de mandat explicitement activable, la décision favorable peut aussi appliquer cet amendement canonique après vérification. Elle n’envoie aucun courrier et ne dispense pas des contrôles COP lors des actions futures.</p>:null}
+    <h1>{workDirect?'Commissionnement d’un travail COP':standingDirect?'Mandat permanent JHN':'Consentement COP — Principal JHN'}</h1>
+    {!standingDirect&&!workDirect?<p>Cette interface recueille votre décision dans votre session Supabase authentifiée. Pour une extension de mandat explicitement activable, la décision favorable peut aussi appliquer cet amendement canonique après vérification. Elle n’envoie aucun courrier et ne dispense pas des contrôles COP lors des actions futures.</p>:null}
+    {workDirect?<section>
+      <p>Commissionnement du travail exact préparé sur le serveur, dans le mandat et le budget existants de John. Aucun amendement de mandat, aucun acte administratif exécuté par cette page.</p>
+      {!validWorkPlan?<p role="alert">Empreinte du travail invalide.</p>:null}
+      {validWorkPlan&&!loading&&!token?<button type="button" onClick={()=>setShowAuth(true)}>Se connecter</button>:null}
+      {validWorkPlan&&token&&!receipt&&!error?<p role="status">Vérification et commissionnement en cours…</p>:null}
+      {validWorkPlan&&token&&error?<button type="button" disabled={busy} onClick={commissionWork}>Réessayer</button>:null}
+      {receipt?.funded||receipt?.status==='completed'?<div role="status">
+        <p><strong>{receipt.funded?'Travail commissionné et financé.':'Ce travail a déjà été traité.'}</strong></p>
+        <dl><dt>Paquet</dt><dd>{receipt.packet_ref}</dd>
+        <dt>Allocation</dt><dd>{receipt.allocation?.max_steps??'Déjà traitée'} Steps</dd>
+        <dt>Empreinte</dt><dd><code style={{overflowWrap:'anywhere'}}>{workPlanHash}</code></dd></dl>
+      </div>:null}
+    </section>:null}
     {standingDirect?<section>
       <p>Activation du mandat permanent JHN et de son amendement préparé
       par le serveur. Votre session Supabase identifie le Principal.
@@ -144,8 +188,8 @@ export default function CopPrincipalConsentPage(){
       </button>:null}
       {receipt?.already_authorized?<p role="status">Cette capacité figure déjà dans le mandat.</p>:null}
     </section>:null}
-    {!creating&&!standingDirect&&!validId?<p role="alert">Référence de demande invalide.</p>:null}
-    {!creating&&!standingDirect&&!loading&&!token?<><p>Connectez-vous avec votre compte Supabase JHN pour consulter la proposition.</p><button type="button" onClick={()=>setShowAuth(true)}>Connexion</button></>:null}
+    {!creating&&!standingDirect&&!workDirect&&!validId?<p role="alert">Référence de demande invalide.</p>:null}
+    {!creating&&!standingDirect&&!workDirect&&!loading&&!token?<><p>Connectez-vous avec votre compte Supabase JHN pour consulter la proposition.</p><button type="button" onClick={()=>setShowAuth(true)}>Connexion</button></>:null}
     {showAuth?<AuthModal onClose={()=>setShowAuth(false)} onSuccess={()=>{setShowAuth(false);load();}}/>:null}
     {error?<p role="alert">Service de consentement indisponible ou demande refusée : {error}</p>:null}
     {request?<section aria-label="Proposition COP" style={{border:'1px solid #888',borderRadius:8,padding:'1rem',marginTop:'1rem'}}>

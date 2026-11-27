@@ -70,3 +70,22 @@ test('direct standing activation requires only same-origin Supabase-authenticate
    assert.equal('cookie' in observed.opts.headers,false);
  }finally{globalThis.fetch=previous;}
 });
+
+test('existing consent proxy forwards exact work hash and owner bearer, never grants authority',async()=>{
+ const url='https://jhn.baronsmariani.org/api/cop/principal-consent/work-commission';
+ const origin='https://jhn.baronsmariani.org';
+ const body=JSON.stringify({plan_hash:'sha256:'+'a'.repeat(64)});
+ assert.equal((await handler(new Request(url))).status,405);
+ assert.equal((await handler(new Request(url,{method:'POST',headers:{origin},body}))).status,401);
+ const previous=globalThis.fetch;let calls=0;
+ globalThis.fetch=async(destination,options)=>{
+   calls++;assert.equal(destination,'https://browser.fractavolta.com/api/cop/principal-consent/work-commission');
+   assert.equal(options.body,body);
+   return Response.json({ok:true,funded:true,grants_authority:false});
+ };
+ try{
+  assert.equal((await handler(new Request(url,{method:'POST',headers:{origin:'https://evil.test',authorization:'Bearer owner-long-token'},body}))).status,403);
+  const response=await handler(new Request(url,{method:'POST',headers:{origin,authorization:'Bearer owner-long-token'},body}));
+  assert.equal(response.status,200);assert.equal((await response.json()).grants_authority,false);assert.equal(calls,1);
+ }finally{globalThis.fetch=previous}
+});
