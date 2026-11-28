@@ -89,3 +89,16 @@ test('existing consent proxy forwards exact work hash and owner bearer, never gr
   assert.equal(response.status,200);assert.equal((await response.json()).grants_authority,false);assert.equal(calls,1);
  }finally{globalThis.fetch=previous}
 });
+
+test('work observation compatibility relay only forwards authenticated GET',async()=>{
+ const url='https://jhn.baronsmariani.org/api/cop/principal-consent/work-observation';
+ const headers={authorization:'Bearer owner-long-token'};
+ const original=globalThis.fetch;let calls=0;
+ try {
+  globalThis.fetch=async(destination,opts)=>{calls++;assert.equal(destination,'https://browser.fractavolta.com/api/cop/principal-consent/work-observation');assert.equal(opts.method,'GET');return Response.json({schema:'cogentia.nasa.work/v1',items:[]})};
+  assert.equal((await handler(new Request(url))).status,401);
+  assert.equal((await handler(new Request(url,{method:'POST',headers}))).status,405);
+  assert.equal((await handler(new Request(url,{headers}))).status,200);
+  assert.equal(calls,1);
+ }finally{globalThis.fetch=original}
+});

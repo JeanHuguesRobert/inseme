@@ -11,8 +11,10 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const json=(status,error)=>new Response(JSON.stringify({ok:false,error,grants_mandate_authority:false}),{status,headers:{'content-type':'application/json','cache-control':'no-store','x-content-type-options':'nosniff'}});
 export default async function principalConsentProxy(request){
  const url=new URL(request.url);
- const match=/^\/api\/cop\/principal-consent\/([a-f0-9-]{36}|continuation-request|repository-request|standing-apply|work-commission)$/.exec(url.pathname);
- if(url.origin!==FRONT||!match||!(UUID.test(match[1])||['continuation-request','repository-request','standing-apply','work-commission'].includes(match[1]))||url.search)return json(404,'consent_route_not_found');
+ const match=/^\/api\/cop\/principal-consent\/([a-f0-9-]{36}|continuation-request|repository-request|standing-apply|work-commission|work-observation(?:-[0-9a-f-]{36})?)$/.exec(url.pathname);
+ const observation=!!match&&/^work-observation(?:-[0-9a-f-]{36})?$/.test(match[1]);
+ if(url.origin!==FRONT||!match||!(observation||UUID.test(match[1])||['continuation-request','repository-request','standing-apply','work-commission'].includes(match[1]))||url.search)return json(404,'consent_route_not_found');
+ if(observation&&request.method!=='GET')return json(405,'method_not_allowed');
  if(!['GET','POST'].includes(request.method))return json(405,'method_not_allowed');
  if(['continuation-request','repository-request','standing-apply','work-commission'].includes(match[1])&&request.method!=='POST')return json(405,'method_not_allowed');
  const bearer=request.headers.get('authorization');

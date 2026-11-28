@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import NasaWorkBrowser from "./NasaWorkBrowser.jsx";
 import AuthModal from "../components/common/AuthModal";
 import { useSupabase } from "../contexts/SupabaseContext";
 
@@ -247,6 +248,8 @@ export default function NasaPage() {
             </p>
           </section>
         ) : null}
+
+        {accessClass === "principal" && session?.access_token ? <NasaWorkBrowser key={session.user?.id} token={session.access_token}/> : null}
 
         {accessClass === "principal" && control?.cockpit ? (
           <section className="mt-8 space-y-4" aria-label="Cogentia work overview">
